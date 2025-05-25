@@ -7,6 +7,7 @@ import { AuthProvider } from './Context/AuthContext/AuthProvider.tsx'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
+
       <App />
     </AuthProvider>
   </StrictMode>,

@@ -1,9 +1,13 @@
-export default function Button({onClick, text, color}: {onClick: () => void, text: string, color: string}) {
+export default function Button({children, onClick, color}: {children: React.ReactNode, onClick: () => void, color: string}) {
   return (
     <button 
-        className={`rounded-lg ${color === 'green' ? 'bg-lime-600' : 'bg-red-600'} text-white p-2 hover:cursor-pointer w-[80%]`}
+        type="button"
+        className={`rounded-lg h-[3.5rem] w-[80%] max-w-[20rem] p-2 cursor-pointer border 
+            ${color === 'green' 
+            ? 'bg-my-green-base text-black hover:bg-my-red-dark hover:text-my-white-light' 
+            : 'bg-my-red-dark text-my-white-dark hover:bg-my-red-dark hover:text-my-white-dark'}`} 
         onClick={onClick}>
-      {text}
+      {children}
     </button>
   )
 }
