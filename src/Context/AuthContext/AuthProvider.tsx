@@ -10,7 +10,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Listen for Firebase auth state changes
   useEffect(() => {
-    console.log('Setting up auth state observer');
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
       console.log('Auth state changed:', authUser);
       setUser(authUser);

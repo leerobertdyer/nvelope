@@ -17,7 +17,7 @@ import Button from "./Button";
 import type { Envelope, Folder } from "../types";
 import { IoIosTrash } from "react-icons/io";
 import { generateId } from "../utility";
-import { useDatabase } from "../Context/DatabaseContext/useDatabase";
+import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
 
 interface NvelopeProps {
   kind: "folder" | "envelope" | "del" | "addFolder" | "addEnvelope" | "sub" | "dash" | "heart" | "all" | "edit";
@@ -34,7 +34,7 @@ interface NvelopeProps {
   handleDeleteEnvelope?: () => void;
 }
 export default function Nvelope({ kind, id, name, total, spent, children, onClick, handleBack, handleSaveEnvelope, handleSaveFolder, handleEditEnvelope, handleDeleteEnvelope }: NvelopeProps) {
-  const {totalSpendingBudget} = useDatabase()
+  const {totalSpendingBudget} = useGetDatabase()
   const [isOpen, setIsOpen] = useState(false);
   const [newEnvelopeName, setNewEnvelopeName] = useState('');
   const [newEnvelopeTotal, setNewEnvelopeTotal] = useState('');
@@ -277,7 +277,7 @@ export default function Nvelope({ kind, id, name, total, spent, children, onClic
                   x1="0" y1={dottedHeight} 
                   x2={dottedWidth} y2={dottedHeight} 
                   stroke="green" 
-                  stroke-dasharray="6, 4, 5, 3" 
+                  strokeDasharray="6, 4, 5, 3" 
                   strokeWidth={dottedStrokeWidth} />
               {/* Top Line */}
             <line 
@@ -285,7 +285,7 @@ export default function Nvelope({ kind, id, name, total, spent, children, onClic
                   x1="0" y1="0" 
                   x2={dottedWidth} y2="0" 
                   stroke="green" 
-                  stroke-dasharray="6, 4, 5, 3" 
+                  strokeDasharray="6, 4, 5, 3" 
                   strokeWidth={dottedStrokeWidth} />
               {/* Left Line */}
             <line 
@@ -293,7 +293,7 @@ export default function Nvelope({ kind, id, name, total, spent, children, onClic
                   x1="0" y1={dottedHeight} 
                   x2="0" y2={0} 
                   stroke="green" 
-                  stroke-dasharray="6, 4, 5, 3" 
+                  strokeDasharray="6, 4, 5, 3" 
                   strokeWidth={dottedStrokeWidth} />
               {/* Right Line */}
             <line 
@@ -301,7 +301,7 @@ export default function Nvelope({ kind, id, name, total, spent, children, onClic
                   x1={dottedWidth} y1={dottedHeight} 
                   x2={dottedWidth} y2={0} 
                   stroke="green" 
-                  stroke-dasharray="6, 4, 5, 3" 
+                  strokeDasharray="6, 4, 5, 3" 
                   strokeWidth={dottedStrokeWidth} />
               {/* Left Diagnal */}
             <line 
@@ -309,7 +309,7 @@ export default function Nvelope({ kind, id, name, total, spent, children, onClic
                   x1="0" y1="0" 
                   x2={dottedWidth * .5} y2={dottedHeight * .35} 
                   stroke="green" 
-                  stroke-dasharray="8, 2" 
+                  strokeDasharray="8, 2" 
                   strokeWidth={dottedStrokeWidth * .35} />
               {/* Right Diagnal */}
             <line 
@@ -317,7 +317,7 @@ export default function Nvelope({ kind, id, name, total, spent, children, onClic
                   x1={dottedWidth} y1="0" 
                   x2={dottedWidth * .5} y2={dottedHeight * .35} 
                   stroke="green" 
-                  stroke-dasharray="8, 2" 
+                  strokeDasharray="8, 2" 
                   strokeWidth={dottedStrokeWidth * .35} />
           </svg>
       </div>);

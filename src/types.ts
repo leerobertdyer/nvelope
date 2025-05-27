@@ -10,3 +10,10 @@ export interface Envelope {
     total: number,
     spent: number
 }
+
+export interface Bill {
+    name: string,
+    amount: number
+}
+
+export type Interval = "monthly" | "weekly" | "biweekly" | null;

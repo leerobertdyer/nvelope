@@ -24,6 +24,10 @@
     --color-my-white-base: #ffe0a3;
     --color-my-white-dark: #fcca68;
 
+    --color-my-black-light: #484848;
+    --color-my-black-base: #242424;
+    --color-my-black-dark: #121212;
+
 
     /* Animations */
     --animate-march: march 10s linear infinite;

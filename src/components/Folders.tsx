@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../Context/AuthContext/useAuth";
-import loadUserData from "../firebase/loadUserData";
 import type { Envelope, Folder } from "../types";
-import editFolders from "../firebase/editFolder";
+import {editFolders} from "../firebase/editData";
 import Nvelope from "./Nvelope";
 import { IoIosTrash } from "react-icons/io";
 import { IoPencil } from "react-icons/io5";
-import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import Button from "./Button";
+import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
+import { useNavigate } from "react-router-dom";
 
 export default function Folders() {
     const { user } = useAuth();
-    const {totalSpendingBudget} = useDatabase()
-    const [folders, setFolders] = useState<Folder[]>([]);
+    const { folders, setFolders, totalSpendingBudget, isNewUser } = useGetDatabase();
     const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -20,23 +19,22 @@ export default function Folders() {
     const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
     const [isAddingFolder, setIsAddingFolder] = useState(false);
     const [showBudgetWarning, setShowBudgetWarning] = useState(false);
+    const navigate = useNavigate();
 
     // UI state for editing envelopes
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
+
+    useEffect(() => {
+        if (isNewUser) {
+            navigate('/settings');
+        }
+    }, [isNewUser, navigate]);
 
     function getFolderBalance(folder: Folder) {
         const balance = folder.envelopes.reduce((acc, envelope) => acc + envelope.total - envelope.spent, 0);
         console.log('balance', balance);
         return balance;
     }
-
-    useEffect(() => {
-        if (user) {
-            loadUserData(user.uid).then((data) => {
-                setFolders(data.folders || []);
-            });
-        }
-    }, [user]);
 
     function handleShowEnvelopes(folderName: string) {
         if (expandedFolders.includes(folderName)) {
@@ -112,37 +110,37 @@ export default function Folders() {
         }
     }
 
-    // async function deleteFolder(folder: Folder) {
-    //     console.log('deleting folder')
-    //     try {
-    //         const newFolders = [...folders];
-    //         const folderIndex = newFolders.findIndex(f => f.id === folder.id);
-    //         if (folderIndex === -1) return;
+    async function deleteFolder(folder: Folder) {
+        console.log('deleting folder')
+        try {
+            const newFolders = [...folders];
+            const folderIndex = newFolders.findIndex(f => f.id === folder.id);
+            if (folderIndex === -1) return;
     
-    //         newFolders.splice(folderIndex, 1);
-    //         setFolders(newFolders);
-    //         await editFolders(newFolders, user?.uid || '');
-    //         resetState();
-    //     } catch (error) {
-    //         console.error('Error deleting folder:', error);
-    //     }
-    // }
+            newFolders.splice(folderIndex, 1);
+            setFolders(newFolders);
+            await editFolders(newFolders, user?.uid || '');
+            resetState();
+        } catch (error) {
+            console.error('Error deleting folder:', error);
+        }
+    }
 
-    // async function editFolder(folder: Folder) {
-    //     console.log('editing folder')
-    //     try {
-    //         const newFolders = [...folders];
-    //         const folderIndex = newFolders.findIndex(f => f.id === folder.id);
-    //         if (folderIndex === -1) return;
+    async function editFolder(folder: Folder) {
+        console.log('editing folder')
+        try {
+            const newFolders = [...folders];
+            const folderIndex = newFolders.findIndex(f => f.id === folder.id);
+            if (folderIndex === -1) return;
     
-    //         newFolders[folderIndex] = folder;
-    //         setFolders(newFolders);
-    //         await editFolders(newFolders, user?.uid || '');
-    //         resetState();
-    //     } catch (error) {
-    //         console.error('Error editing folder:', error);
-    //     }
-    // }
+            newFolders[folderIndex] = folder;
+            setFolders(newFolders);
+            await editFolders(newFolders, user?.uid || '');
+            resetState();
+        } catch (error) {
+            console.error('Error editing folder:', error);
+        }
+    }
 
     async function handleEditEnvelope(envelope: Envelope) {
         console.log('editing envelope')
@@ -207,6 +205,10 @@ export default function Folders() {
         });
     }
 
+    function handleNewUser() {
+        navigate('/settings');
+    }
+
    if (isEditing && envelopeToEdit) {
     return <Nvelope kind="edit" 
         id={envelopeToEdit.id} 
@@ -264,7 +266,7 @@ export default function Folders() {
    }
     
     return (
-        <div className="w-full text-center flex flex-col items-center h-screen overflow-y-auto py-[2rem]">
+        <div className="z-12 w-full text-center flex flex-col items-center h-screen overflow-y-auto py-[2rem] relative">
             Available Budget: ${totalSpendingBudget.toFixed(2)}
             <div className="w-full flex justify-center items-center mt-8">
                 <Nvelope 
