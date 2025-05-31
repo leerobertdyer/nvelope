@@ -1,16 +1,44 @@
 import "./App.css";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import Home from "./Views/Home";
 import Settings from "./Views/Settings";
+import { useAuth } from "./Context/AuthContext/useAuth";
+import Spending from "./Views/Spending";
+
+// Protected route component that redirects to home if no user
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <>{children}</>;
+}
 
 function App() {
-
-
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route 
+          path="/settings" 
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/spending" 
+          element={
+            <ProtectedRoute>
+              <Spending />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Redirect any unknown routes to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

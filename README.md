@@ -17,7 +17,8 @@ A personal finance management app built with React, TypeScript, and Firebase.
 
 
 # TODO
-- Make Folders Editable
-- Add Total Working Balance to DB
 - Only Allow adding of funds to envelope when available
-- Make envelope editing more user-friendly
+- Find a way to easily take from one envelope and put in another
+
+# Nice To Have
+- Make money flip like it's an actual counter like at a baseball game

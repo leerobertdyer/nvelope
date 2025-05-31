@@ -1,6 +1,6 @@
-import type { Value } from "react-calendar/src/shared/types.js";
+import type { ChangeValue } from "../types";
 
-export default function ClosingX({ onClick, text, changeValue }: { onClick: () => void, text?: string, changeValue?: boolean | string | null | Value | number}) {
+export default function ClosingX({ onClick, text, changeValue }: { onClick: () => void, text?: string, changeValue?: ChangeValue}) {
     return <p 
         onClick={onClick}
         className={`

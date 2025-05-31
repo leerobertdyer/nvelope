@@ -14,16 +14,19 @@ export default async function loadUserData(user: User) {
         if (userSnapshot.exists()) {
             return userSnapshot.data();
         } else {
+            console.log("it doesn't exist")
             // If this is a new user, create a default document
             const defaultUserData = {
                 id: user.uid,
                 isNewUser: true,
-                folders: [],
+                envelopes: [],
                 payDate: null,
                 interval: "",
                 bills: [],
                 email: user.email,
-                income: 0
+                income: 0,
+                totalSpendingBudget: 0,
+                oneTimeCash: null
             };
             
             // Create the user document

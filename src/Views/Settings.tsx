@@ -1,235 +1,290 @@
-import Button from "../components/Button";
-import ClosingX from "../components/ClosingX";
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import { editBills, editIncome, editInterval, editIsNewUser, editPayDate } from "../firebase/editData";
-import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
-import Calendar from 'react-calendar';
+import Button from "../components/Button";
 import Header from "../components/Header";
-import 'react-calendar/dist/Calendar.css';
-import DemoStep from "../components/DemoStep";
+import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
 import type { Bill, Interval } from "../types";
-import { IoIosSad } from "react-icons/io";
+import { editBills } from "../firebase/editData";
+import { useAuth } from "../Context/AuthContext/useAuth";
+import { IoIosClipboard, IoIosTrash } from "react-icons/io";
+import Popup from "../components/Popup";
+import signout from "../firebase/signOut";
 
-
-type ValuePiece = Date | null;
-type Value = ValuePiece | [ValuePiece, ValuePiece];
 
 export default function Settings() {
-    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, interval, setInterval, bills, setBills} = useGetDatabase();
     const {user} = useAuth();
-    const [step, setStep] = useState(4);
-    const [newPayDate, setNewPayDate] = useState<Value | null>(null);
-    const [newIncome, setNewIncome] = useState<number | null>(null);
-    const [newInterval, setNewInterval] = useState<string | null>(null);
-    const [newBills, setNewBills] = useState<Bill[] | null>(null);
-    const [newBillName, setNewBillName] = useState('');
-    const [newBillAmount, setNewBillAmount] = useState<number | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [period, setPeriod] = useState<string>('')
+    const { interval, setInterval, setIncome, bills, setBills } = useGetDatabase();
+
+    const [showIntervalSettings, setShowIntervalSettings] = useState<boolean>(false);
+    const [newIncome, setNewIncome] = useState<string>('');
+    const [newInterval, setNewInterval] = useState<Interval | null>(null);
+    const [showBillSettings, setShowBillSettings] = useState<boolean>(false);
+    const [showBillInputs, setShowBillInputs] = useState<boolean>(false);
+    const [billToEdit, setBillToEdit] = useState<Bill | null>(null);
+    const [newBill, setNewBill] = useState<Bill | null>(null);
+    const [showDeleteBill, setShowDeleteBill] = useState<boolean>(false);
+    const [showBillAdded, setShowBillAdded] = useState<boolean>(false);
+    const [showBillError, setShowBillError] = useState<boolean>(false);
+    const [isAddingBill, setIsAddingBill] = useState<boolean>(false);
 
     useEffect(() => {
-        // Give firebase time to load user data
-        // That way if there is already a startDate but user has not finished remaining steps
-        // We allow them to start where left off
+        if (showBillAdded) setNewBill(null)
         setTimeout(() => {
-            setIsLoading(false)
+            setShowBillAdded(false)
+            setShowBillError(false)
         }, 2500)
-    }, [])
+    }, [showBillAdded, showBillError])
 
-    useEffect(() => {
-        if (newInterval) {
-            let temp = ''
-            if (newInterval === 'weekly') temp = 'week'
-            if (newInterval === 'biweekly') temp = '2 weeks'
-            if (newInterval === 'monthly') temp = 'month'
-            setPeriod(temp)
+
+    function handleIntervalChange(interval: Interval) {
+        setShowIntervalSettings(true);
+        setNewInterval(interval);
+    }
+
+    async function handleEditBill(bill: Bill) {
+        setShowBillInputs(true);
+        setBillToEdit(bill);
+        setNewBill(bill);
+    }
+
+    async function editBill() {
+        if (!user || !newBill || !billToEdit) return;
+        const updatedBills = bills.map((b) => b.name === billToEdit.name ? newBill : b);
+        setBills(updatedBills);
+        await editBills(updatedBills, user.uid);
+        resetBillState()
+    }
+
+    function handleDeleteBill(bill: Bill) {
+        setBillToEdit(bill);
+        setShowDeleteBill(true);
+        
+    }
+    
+    async function deleteBill() {
+        if (!user || !billToEdit) return;
+        const updatedBills = bills.filter((b) => b.name !== billToEdit.name);
+        setBills(updatedBills);
+        await editBills(updatedBills, user.uid);
+        resetBillState()
+    }
+
+    function handleAddBill() {
+        setNewBill(null);
+        setBillToEdit(null);
+        setShowBillInputs(true);
+        setIsAddingBill(true);
+    }
+    async function addBill() {
+        if (!user || !newBill) return;
+        if (bills.some(b => b.name === newBill.name)) {
+            console.log('NOPE')
+            setShowBillError(true);
+            return;
         }
-    }, [newInterval])
-
-    async function handleFirstStep() {
-        console.log('handleFirstStep')
-        if (payDate) {
-            setNewPayDate(payDate.toDate())
-            if (interval) {
-                setNewInterval(interval)
-                setStep(4)
-            } else {
-                console.log('Paydate found, No interval found')
-                setStep(3)
-            }
-        } else { 
-            console.log('No pay date found')
-            setStep(2)
-        }
+        const updatedBills = [...bills, newBill];
+        setBills(updatedBills);
+        setShowBillAdded(true);
+        await editBills(updatedBills, user.uid);
     }
 
-    async function handleSecondStep() {
-        console.log('handleSecondStep')
-        if (!newPayDate || Array.isArray(newPayDate)) return; 
-        await editPayDate(newPayDate, user?.uid || '')
-        setStep(3)
+    function resetBillState() {
+        setShowBillInputs(false);
+        setBillToEdit(null);
+        setNewBill({ name: '', amount: 0 });
+        setIsAddingBill(false);
+        setShowBillAdded(false);
+        setShowBillError(false);
     }
 
-    async function handleThirdStep() {
-        console.log('handleThirdStep')
-        if (!newInterval && !interval) return;
-        await editInterval(newInterval as Interval, user?.uid || '')
-        setStep(4)
+    if (showDeleteBill) {
+        return <div className="absolute inset-0 w-screen h-screen z-100 select-none">
+            <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
+                <p className="p-4 rounded-md text-my-white-dark w-full text-center">
+                    Are you sure you want to delete {billToEdit?.name}?
+                </p>
+                <div className="flex gap-4 items-center justify-center w-full">
+                    <Button
+                        color="red"
+                        onClick={() => {
+                            setShowDeleteBill(false);
+                            resetBillState();
+                        }}
+                        >
+                        No
+                    </Button>
+                    <Button
+                        color="green"
+                        onClick={() => {
+                            deleteBill();
+                            setShowDeleteBill(false);
+                            resetBillState();
+                        }}
+                        >
+                        Yes
+                    </Button>
+                </div>
+            </div>
+        </div>
     }
 
-    function handleFourthStep() {
-        if (income) {
-            setStep(6)
-        } else {
-            setStep(5)
-        }
+    if (showIntervalSettings) {
+        return <div className="absolute inset-0 w-screen h-screen z-100 select-none">
+            <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
+                <p className="p-4 rounded-md text-my-white-dark w-full text-center">
+                    What will your new {newInterval} total budget be?
+                </p>
+                <input
+                    type="number"
+                    className="w-[85%] max-w-[20rem] border p-2 rounded-md my-4 border-my-white-dark bg-my-white-light text-my-black-dark"
+                    value={newIncome}
+                    onChange={(e) => setNewIncome(e.target.value)}
+                    placeholder="Enter new income"
+                />
+                <div className="flex flex-col items-center gap-4 w-full">
+                    <Button
+                        color="red"
+                        onClick={() => setShowIntervalSettings(false)}
+                        >
+                        Cancel
+                    </Button>
+                    <Button
+                        color="green"
+                        onClick={() => {
+                            setIncome(Number(newIncome));
+                            setInterval(newInterval);
+                            setShowIntervalSettings(false);
+                        }}
+                        >
+                        Save
+                    </Button>
+                </div>
+            </div>
+        </div>
     }
 
-    async function handleFifthStep() {
-        console.log('handleFifthStep')
-        if (!newIncome) return;
-        await editIncome(newIncome, user?.uid || '')
-        setStep(6)
+    if (showBillInputs) {
+        return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-dark">
+            {showBillAdded && <Popup type="success">Bill added!</Popup>}
+            {showBillError && <Popup type="error">Bill name already exists</Popup>}
+            <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden">
+                <div className="flex flex-col gap-2 mb-2 items-center justify-center w-full">
+                    <p className="p-2 rounded-md text-my-white-dark w-full text-center text-2xl">{newBill? `${newBill.name}` : "Add Bill"}</p>
+                    <div className="flex flex-col items-center w-full my-2">
+                        <label className="text-my-white-light" htmlFor="name">Bill Name</label>
+                        <input
+                            id="name"
+                            maxLength={21}
+                            type="text"
+                            className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                            value={newBill?.name.toLowerCase() || ''}
+                            onChange={(e) => setNewBill({ name: e.target.value, amount: newBill?.amount || 0 })}
+                            placeholder="Enter new bill name"
+                            />
+                    </div>
+                    <div className="flex flex-col items-center w-full mb-4">
+                        <label className="text-my-white-light" htmlFor="amount">Bill Amount</label>
+                        <input
+                            id="amount"
+                            type="number"
+                            className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                            value={newBill?.amount || ''}
+                            onChange={(e) => setNewBill({ name: newBill?.name || '', amount: Number(e.target.value) })}
+                            placeholder="Enter new bill amount"
+                        />
+                    </div>
+                    <div className="flex gap-4 items-center justify-center w-full">
+                        <Button
+                            color="red"
+                            onClick={() => setShowBillInputs(false)}
+                            >
+                            back
+                        </Button>
+                        <Button
+                            color="green"
+                            onClick={isAddingBill ? () => addBill() : () => editBill()}
+                            >
+                            Save
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
     }
 
-    function handleSixthStep() {
-        console.log('handleSixthStep')
-        if (bills && bills.length > 0) {
-            setStep(8)
-        } else {
-            setStep(7)
-        }
-    }
-
-    async function handleSeventhStep() {
-        console.log('handleSeventhStep')
-        if (!newBills) return;
-        await editBills(newBills, user?.uid || '')
-        setStep(8)
-    }
-
-    async function handleFinalStep() {
-        console.log('handleFinalStep')
-        // update ALL STATE HERE and set isNewUser false...
-    }
-
-    function handleAddNewBill() {
-        console.log('handleAddNewBill')
-        if (!newBillName || !newBillAmount) return;
-        setNewBills([...(newBills || []), { name: newBillName, amount: newBillAmount }])
-        setNewBillName('')
-        setNewBillAmount(0)
-    }
-
-
-    if (isLoading) {
-        return <div className="w-full h-full flex items-center justify-center text-center animate-pulse text-my-red-dark">Loading...</div>
+    if (showBillSettings) {
+        return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-dark">
+            <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden">
+                <div className="flex flex-col gap-2 mb-2 items-center justify-center w-[10rem]">
+                    <p className="pt-2 rounded-md text-my-white-dark w-full text-center text-2xl">Edit Bills</p>
+                    <Button
+                        color="green"
+                        onClick={() => handleAddBill()}
+                        >
+                        New Bill+
+                    </Button>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-4 w-[95%] h-[24rem] py-4 rounded-md overflow-y-scroll overflow-x-hidden border-4 border-my-white-dark">
+                {bills.map((bill) => (
+                        <div key={bill.name}
+                            onClick={() => handleEditBill(bill)}
+                            className="flex flex-col cursor-pointer w-[12rem] items-center gap-2 bg-my-white-dark rounded-md p- text-my-black-base border-2 border-my-red-dark">
+                            <p className="">{bill.name}</p>
+                            <p className="">${bill.amount.toFixed(2)}</p>
+                            <div className="flex gap-2 items-center mb-2">
+                                <IoIosClipboard 
+                                    className="text-2xl text-my-red-light bg-my-white-dark hover:text-my-white-dark hover:bg-my-red-light rounded-lg p-[2px] border-2 border-my-black-dark" 
+                                    size={27} onClick={() => handleEditBill(bill)} />
+                                <IoIosTrash 
+                                    className="text-2xl text-my-white-dark bg-my-red-dark hover:text-my-red-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark" 
+                                    size={27} onClick={() => handleDeleteBill(bill)} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex gap-4 items-center justify-center w-[95%] mt-6">
+                    <Button
+                        color="red"
+                        onClick={() => setShowBillSettings(false)}
+                        >
+                        Cancel
+                    </Button>
+                    <Button
+                        color="green"
+                        onClick={() => setShowBillSettings(false)}
+                        >
+                        Save
+                    </Button>
+                </div>
+            </div>
+        </div>
     }
 
     return (
         <>
-        {user && <Header step={step}/>}
-        <div className="text-center flex flex-col items-center justify-around h-full">
-            <h2>Settings</h2>
-
-            {isNewUser && step === 1
-                ? <>
-                    <div className="absolute inset-0 bg-my-black-dark opacity-80"></div>
-                    <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center text-white">
-                        <h3>Let's get you set up first...</h3>
-                        <ClosingX text="Start" onClick={handleFirstStep} />
-                    </div>
-                </>
-                : step === 2 
-                ? <DemoStep onClick={handleSecondStep} text="Save Pay Date" changeValue={newPayDate}>
-                        <h3 className='text-sm sm:text-lg p-2'>Here are days remaining til your next paycheck</h3>
-                        <p className='text-sm sm:text-lg'>Speaking of which, when was <span className='text-my-green-base'>your last paycheck?</span></p>
-                        <div className='text-black rounded-md overflow-hidden border-2'>
-                            <Calendar
-                                calendarType='gregory'
-                                onChange={setNewPayDate} 
-                                value={newPayDate} 
-                                selectRange={false} />
-                        </div>
-                  </DemoStep>
-                    : step === 3
-                    ? <DemoStep onClick={handleThirdStep} text="Save Schedule" changeValue={newInterval}>
-                        <h3 className='text-sm sm:text-lg p-2'>Great! And how often are you paid?</h3>
-                        <p className='text-sm'>(Or more importantly, how often do you want to budget?)</p>
-                        <select 
-                            className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
-                            onChange={(e) => setNewInterval(e.target.value as Interval)} 
-                            value={newInterval || ''}
-                        >
-                            <option value="weekly">Weekly</option>
-                            <option value="biweekly">Biweekly</option>
-                            <option value="monthly">Monthly</option>
-                        </select>
-                    </DemoStep>
-                    : step === 4
-                    ? <DemoStep onClick={handleFourthStep} text="Next" changeValue={true}>
-                            <h3 className='text-sm sm:text-lg p-2'>This is what you have left until your next paycheck</h3>
-                            <p className='text-sm sm:text-lg'>It includes <span className='text-my-green-base'>$$$</span> from all your <span className="text-my-red-light">Nvelopes</span>, and any unspent cash as well.</p>
-                        </DemoStep>
-                    : step === 5
-                    ? <DemoStep onClick={handleFifthStep} text="Save Income" changeValue={newIncome}>
-                        <h3 className='text-sm sm:text-lg p-2'>Now, how much do you make every {period}?</h3>
-                        <p className='text-sm sm:text-lg italic'>Include all household income <span className="text-my-red-light">before</span> expenses.</p>
-                            <input 
-                                className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem]'
-                                type="number" 
-                                placeholder="Estimated Income"
-                                value={newIncome?.toString() || ''} 
-                            onChange={(e) => setNewIncome(Number(e.target.value))} 
-                            />
-                        </DemoStep>
-                    : step === 6
-                    ? <DemoStep onClick={handleSixthStep} text="Next" changeValue={true}>
-                            <h3 className='text-sm sm:text-lg p-2'>Time for the final and most exciting step</h3>
-                            <p className='text-sm sm:text-lg'>Let's add your <span className='text-my-red-light'>bills <IoIosSad className="inline"/></span></p>
-                        </DemoStep>
-                    : step === 7
-                    ? <DemoStep onClick={handleSeventhStep} text="Save Bills" changeValue={newBills}>
-                            <p className='text-sm sm:text-lg'>Only add monthly necessities.</p>
-                            <p className='text-sm sm:text-lg'>Think <span className='text-my-red-light'>rent</span>, <span className='text-my-white-base'>utilities</span>, <span className='text-my-white-dark'>loans</span>, etc.</p>
-                            <p className='text-sm sm:text-lg'>For things like shopping, entertainment, etc... we will use <span className='text-my-red-light'>Nvelopes</span></p>
-                            <form className="flex flex-col gap-2 w-full items-center" onSubmit={handleAddNewBill}>
-                                <input
-                                    className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
-                                    type="text"
-                                    placeholder="Bill Name"
-                                    value={newBillName}
-                                    onChange={(e) => setNewBillName(e.target.value)}
-                                />
-                                <input
-                                    className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
-                                    type="number"
-                                    placeholder="Amount"
-                                    value={newBillAmount}
-                                    onChange={(e) => setNewBillAmount(Number(e.target.value))}
-                                />
-                                <Button 
-                                    onClick={handleAddNewBill}
-                                    color="green"
-                                    children="Add Bill"
-                                />
-                            </form>
-                        </DemoStep>
-                    : step === 8
-                    ? <DemoStep onClick={handleFinalStep} text="Save" changeValue={true}>
-                            <h3 className='text-sm sm:text-lg p-2'>Final step</h3>
-                            <p className='text-sm sm:text-lg'>You're all set!</p>
-                        </DemoStep>
-                    : null
-                }
-
-            <Button
-                onClick={() => {}}
-                color="green"
-                children="Save"
-                />
-        </div>
-    </>
-    );
+            <Header />
+            <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md">Settings</h1>   
+            <div className="overflow-y-scroll overflow-x-hidden flex flex-col items-center justify-center pb-4 h-[22rem] bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
+                <Button 
+                    color="green"
+                    onClick={() => setShowBillSettings(true)}>Edit Bills</Button>
+                <div className="bg-my-black-base w-[80%] max-w-[20rem] border-2 p-2 rounded-md my-4 flex flex-col items-center">
+                    <p className="text-my-white-dark text-center w-full">
+                        Change Budget Interval
+                    </p>
+                    <select 
+                        value={interval ?? ''}
+                        onChange={(e) => handleIntervalChange(e.target.value as Interval)}
+                        className="w-[80%] max-w-[20rem] border-2 bg-my-white-light p-2 rounded-md my-4">
+                        <option value="" disabled>Select Interval</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="biweekly">Biweekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                <Button 
+                    color="red"
+                    onClick={() => signout()}>Log Out</Button>
+            </div>
+        </>
+    )
 }
