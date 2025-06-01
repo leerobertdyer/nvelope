@@ -1,4 +1,4 @@
-import type { Bill, Envelope, Interval, OneTimeCash } from "../types";
+import type { Bill, Envelope, Interval, OneTimeCash, PreviousIntervalDetails } from "../types";
 import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
@@ -117,15 +117,22 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
     // Calculate next pay date based on interval
     switch (interval) {
         case "weekly":
-            nextPayDate.setDate(nextPayDate.getDate() + 7);
+            while (nextPayDate < currentDate) {
+                nextPayDate.setDate(nextPayDate.getDate() + 7);
+            }
             break;
         case "biweekly":
-            nextPayDate.setDate(nextPayDate.getDate() + 14);
+            while (nextPayDate < currentDate) {
+                nextPayDate.setDate(nextPayDate.getDate() + 14);
+            }
             break;
         case "monthly":
-            nextPayDate.setMonth(nextPayDate.getMonth() + 1);
+            while (nextPayDate < currentDate) {
+                nextPayDate.setMonth(nextPayDate.getMonth() + 1);
+            }
             break;
         default:
+            console.log("RESET: no interval found. Skipping reset.")
             return; 
             // For now just returns
             // Eventually would like to default to a non-time based budget
@@ -161,8 +168,22 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
         console.log("RESET: next interval base income after bills: ", budget, "current totalSpendingBudget: ", totalSpendingBudget)
 
         budget = budget + totalSpendingBudget;
+
         console.log("RESET: next interval base income after bills and current totalSpendingBudget: ", budget)
-        
+
+        // Before updating data and state, save the previous interval data
+        const previousIntervalDetails = {
+            payDate,
+            interval,
+            envelopes,
+            bills,
+            income,
+            totalSpendingBudget,
+            oneTimeCash
+        }
+
+        await editPreviousIntervalDetails(previousIntervalDetails, user.uid);
+
         // Update the pay date to the new pay date
         await editPayDate(nextPayDate, user.uid);
         setPayDate(Timestamp.fromDate(nextPayDate));
@@ -178,3 +199,21 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
         console.log("checkAndResetBudget() => Budget reset complete for interval:", interval);
     }
 };
+
+export async function editPreviousIntervalDetails(previousIntervalDetails: PreviousIntervalDetails, userId: string) {
+    console.log(`Firebase, editPreviousIntervalDetails Started, previousIntervalDetails: ${previousIntervalDetails}`)
+    try {
+        const userDocRef = doc(db, "users", userId);
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+            const { previousIntervalDetails } = docSnap.data() || [];
+            await updateDoc(userDocRef, { previousIntervalDetails: [...(previousIntervalDetails || []), previousIntervalDetails] });
+            console.log('Firebase, editPreviousIntervalDetails Completed')
+        } else {
+            console.error("Firebase, editPreviousIntervalDetails Failed: Document does not exist");
+        }
+    } catch (error) {
+        console.error("Firebase, editPreviousIntervalDetails Failed", error);
+    }
+    return;
+}

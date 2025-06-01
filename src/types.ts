@@ -21,6 +21,16 @@ export interface OneTimeCash {
     date: Timestamp
 }
 
+export interface PreviousIntervalDetails {
+    payDate: Timestamp,
+    interval: Interval,
+    envelopes: Envelope[],
+    bills: Bill[],
+    income: number,
+    totalSpendingBudget: number,
+    oneTimeCash: OneTimeCash[] | null
+}
+
 export type Interval = "monthly" | "weekly" | "biweekly" | null;
 
 export type ChangeValue = boolean | string | null | Value | number | Bill[]
