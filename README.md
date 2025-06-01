@@ -22,3 +22,6 @@ A personal finance management app built with React, TypeScript, and Firebase.
 
 # Nice To Have
 - Make money flip like it's an actual counter like at a baseball game
+- Finish 3d button and give it time before it moves to next page...
+- Make sure data is persisted between resets
+- Report page

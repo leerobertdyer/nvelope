@@ -145,7 +145,7 @@ export default function Nvelope({
       );
     case "spendingEnvelope":
       return (
-        <NvelopeCalculator envelope={envelope} selectEnvelope={envelope === null} handleEnterAmount={handleEnterAmountAndId} handleBack={handleBack} />
+        <NvelopeCalculator envelope={envelope} selectEnvelope={envelope.id === ''} handleEnterAmount={handleEnterAmountAndId} handleBack={handleBack} />
       )
     case "editEnvelope":
       return (

@@ -147,46 +147,42 @@ export default function Header({ step }: { step?: number }) {
                         ${totalSpendingBudget <= 0 ? "bg-my-red-dark" : "bg-my-green-dark"}`}>
               ${totalSpendingBudget.toFixed(2)}
             </p>
-          <Link
-            to={currentScreen !== "spending" ? "/spending" : "/"}
+          {currentScreen !== "spending" && <Link
+            to={"/spending"}
             className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
-            {currentScreen === "spending" ? "Home" : "Spending"}
-          </Link>
-            <IoMenu
-              onClick={() => setShowMenu(true)}
-              className="sm:hidden w-10 h-10 cursor-pointer rounded-md shadow-md shadow-black bg-my-white-light hover:bg-my-white-dark"/>
-            {currentScreen !== "settings" 
-            ?
-                <Link
-                  to="/settings"
-                  className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
-                  Settings
-                </Link>
-            : 
-                <Link
-                  to="/spending"
-                  className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
-                  Spending
-                </Link>
-            }
-            <Link to="/" className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">Home</Link>
+            Spending
+          </Link>}
+          {currentScreen !== "settings" && <Link
+            to={"/settings"}
+            className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
+            Settings
+          </Link>}
+          {currentScreen !== "home" && <Link
+            to={"/"}
+            className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
+            Home
+          </Link>}
+          <IoMenu
+            onClick={() => setShowMenu(true)}
+            className="sm:hidden w-10 h-10 cursor-pointer rounded-md shadow-md shadow-black bg-my-white-light hover:bg-my-white-dark"/>
           </>
         ) : (
           <>
-            {currentScreen !== "settings" || step === 9 
-            ?
+            {currentScreen !== "settings" || step === 9 &&
               <Link
                 to="/settings"
                 className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
                 Settings
-              </Link>
-             : 
+              </Link>}
+             {currentScreen !== "spending" &&
               <Link to="/spending"
                 className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
                 Spending
               </Link>
             }
-            <Link to="/" className="shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">Home</Link>
+            {currentScreen !== "home" &&
+              <Link to="/" className="sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">Homae</Link>
+            }
             <p className="shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark" 
               onClick={() => setShowMenu(false)}>X</p>
           </>
