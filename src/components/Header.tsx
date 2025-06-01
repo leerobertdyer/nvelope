@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import signout from "../firebase/signOut";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Timestamp } from "firebase/firestore";
 import { IoMenu } from "react-icons/io5";
 import SpotlightOverlay from "./SpotlightOverlay";
 
 export default function Header({ step }: { step?: number }) {
   const { totalSpendingBudget, interval, payDate } = useGetDatabase();
-  const navigate = useNavigate();
   const [daysTillReset, setDaysTillReset] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
   const location = useLocation();
@@ -130,10 +128,6 @@ export default function Header({ step }: { step?: number }) {
     if (step) setShowMenu(false);
   }, [step]);
   
-  function handleSignout() {
-    signout();
-    navigate("/");
-  }
 
   return (
     <>
@@ -141,85 +135,60 @@ export default function Header({ step }: { step?: number }) {
         {!showMenu ? (
           <>
             {rect && step && <SpotlightOverlay targetRect={rect} />}
-            <p
-              ref={step === 2 || step === 3 ? stepRef : null}
-              className={`text-xl rounded-md 
-                        ${
-                          daysTillReset > 3
-                            ? "bg-my-red-dark"
-                            : "bg-my-green-dark"
-                        } 
-                        text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light`}
-            >
+            <p ref={step === 2 || step === 3 ? stepRef : null}
+              className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
+                  ${daysTillReset > 3
+                    ? "bg-my-red-dark"
+                    : "bg-my-green-dark"}`}>
               {daysTillReset} days
             </p>
-            <p
-              ref={step && step > 3 && step < 9? stepRef : null}
-              className={`text-xl rounded-md ${
-                totalSpendingBudget <= 0 ? "bg-my-red-dark" : "bg-my-green-dark"
-              } text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light`}
-            >
+            <p ref={step && step > 3 && step < 9? stepRef : null}
+              className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
+                        ${totalSpendingBudget <= 0 ? "bg-my-red-dark" : "bg-my-green-dark"}`}>
               ${totalSpendingBudget.toFixed(2)}
             </p>
           <Link
             to={currentScreen !== "spending" ? "/spending" : "/"}
-            className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark"
-          >
+            className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
             {currentScreen === "spending" ? "Home" : "Spending"}
           </Link>
             <IoMenu
               onClick={() => setShowMenu(true)}
-              className="sm:hidden w-10 h-10 cursor-pointer rounded-md shadow-md shadow-black bg-my-white-light hover:bg-my-white-dark"
-            />
-            {currentScreen !== "settings" ?
+              className="sm:hidden w-10 h-10 cursor-pointer rounded-md shadow-md shadow-black bg-my-white-light hover:bg-my-white-dark"/>
+            {currentScreen !== "settings" 
+            ?
                 <Link
                   to="/settings"
-                  className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark"
-                  >
+                  className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
                   Settings
                 </Link>
-            : <Link
-                to="/"
-                className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
-                Home
-              </Link>
+            : 
+                <Link
+                  to="/spending"
+                  className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
+                  Spending
+                </Link>
             }
-            <p
-              className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark"
-              onClick={() => handleSignout()}
-            >
-              Logout
-            </p>
+            <Link to="/" className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">Home</Link>
           </>
         ) : (
           <>
-            {currentScreen !== "settings" || step === 9?(
+            {currentScreen !== "settings" || step === 9 
+            ?
               <Link
                 to="/settings"
-                className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark"
-              >
+                className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
                 Settings
               </Link>
-            ) : (
-              <Link
-                to="/"
-                className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark"
-              >
-                Home
+             : 
+              <Link to="/spending"
+                className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
+                Spending
               </Link>
-            )}
-            <p
-              className="shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark"
-              onClick={() => handleSignout()}
-            >
-              Logout
-            </p>
-            <p
-              className="shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark"
-              onClick={() => setShowMenu(false)}
-            >
-              X
-            </p>
+            }
+            <Link to="/" className="shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">Home</Link>
+            <p className="shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark" 
+              onClick={() => setShowMenu(false)}>X</p>
           </>
         )}
       </div>
