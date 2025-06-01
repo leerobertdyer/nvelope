@@ -77,11 +77,16 @@ export async function editPayDate(payDate: Date, userId: string) {
     return;
 }
 
-export async function editOneTimeCashAndBudget(newCashEntry: OneTimeCash, userId: string, currentBudget: number) {
+export async function editOneTimeCashAndBudget(newCashEntry: OneTimeCash | null, userId: string, currentBudget: number) {
     console.log(`Firebase, editOneTimeCashAndBudget Started, newCashEntry: ${JSON.stringify(newCashEntry)}`)
     try {
         const userDocRef = doc(db, "users", userId);
         const docSnap = await getDoc(userDocRef);
+        if (!newCashEntry) {
+            await updateDoc(userDocRef, { oneTimeCash: [], totalSpendingBudget: currentBudget });
+            console.log('Firebase, editOneTimeCashAndBudget Completed')
+            return;
+        }
         if (docSnap.exists()) {
             const { oneTimeCash } = docSnap.data() || [];
             const nextOneTimeCash = [...(oneTimeCash || []), newCashEntry];
@@ -162,7 +167,7 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
             interval,
             bills,
             envelopes,
-            oneTimeCash: oneTimeCash || []
+            oneTimeCash: oneTimeCash || [],
         })
 
         console.log("RESET: next interval base income after bills: ", budget, "current totalSpendingBudget: ", totalSpendingBudget)
@@ -182,7 +187,11 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
             oneTimeCash
         }
 
-        await editPreviousIntervalDetails(previousIntervalDetails, user.uid);
+        // Save data for future reporting
+        await storePreviousIntervalDetails(previousIntervalDetails, user.uid);
+
+        //reset OneTimeCash to empty array
+        await editOneTimeCashAndBudget(null, user.uid, budget);
 
         // Update the pay date to the new pay date
         await editPayDate(nextPayDate, user.uid);
@@ -200,20 +209,20 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
     }
 };
 
-export async function editPreviousIntervalDetails(previousIntervalDetails: PreviousIntervalDetails, userId: string) {
-    console.log(`Firebase, editPreviousIntervalDetails Started, previousIntervalDetails: ${previousIntervalDetails}`)
+export async function storePreviousIntervalDetails(previousIntervalDetails: PreviousIntervalDetails, userId: string) {
+    console.log(`Firebase, storePreviousIntervalDetails Started, previousIntervalDetails: ${previousIntervalDetails}`)
     try {
         const userDocRef = doc(db, "users", userId);
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
             const { previousIntervalDetails } = docSnap.data() || [];
             await updateDoc(userDocRef, { previousIntervalDetails: [...(previousIntervalDetails || []), previousIntervalDetails] });
-            console.log('Firebase, editPreviousIntervalDetails Completed')
+            console.log('Firebase, storePreviousIntervalDetails Completed')
         } else {
-            console.error("Firebase, editPreviousIntervalDetails Failed: Document does not exist");
+            console.error("Firebase, storePreviousIntervalDetails Failed: Document does not exist");
         }
     } catch (error) {
-        console.error("Firebase, editPreviousIntervalDetails Failed", error);
+        console.error("Firebase, storePreviousIntervalDetails Failed", error);
     }
     return;
 }

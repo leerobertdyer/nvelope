@@ -7,14 +7,13 @@ export function calculateBudgetByInterval(params: {
     interval: Interval;
     bills: Bill[];
     envelopes: Envelope[];
-    oneTimeCash: OneTimeCash[];
+    oneTimeCash: OneTimeCash[] | null;
   }): number {
     const { income, interval, bills, envelopes, oneTimeCash } = params;
     
     const billsTotal = bills ? bills.reduce((acc, bill) => acc + bill.amount, 0) : 0;
     const envelopesTotal = envelopes ? envelopes.reduce((acc, envelope) => acc + envelope.total, 0) : 0;
-    const currentOneTimeCash = oneTimeCash ? oneTimeCash.filter((cash) => cash.date.toDate() >= new Date()) : [];
-    const oneTimeCashTotal = currentOneTimeCash.length > 0 ? currentOneTimeCash.reduce((acc, cash) => acc + cash.amount, 0) : 0;
+    const oneTimeCashTotal = oneTimeCash && oneTimeCash.length > 0 ? oneTimeCash.reduce((acc, cash) => acc + cash.amount, 0) : 0;
     
     let budget = 0;
     switch (interval) {
