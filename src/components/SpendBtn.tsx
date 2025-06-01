@@ -10,7 +10,7 @@ export default function SpendBtn({ onClick }: { onClick: () => void }) {
         w-[10rem] h-[10rem]  
         flex items-center justify-center bg-my-green-dark cursor-pointer"
         >
-        <span className="absolute bg-my-green-light w-[10rem] h-[10rem] rounded-full -translate-y-[8px] active:translate-y-[-2px] flex justify-center items-center text-my-black-dark">SPEND</span>
+        <span className="absolute bg-my-green-light w-[10rem] h-[10rem] rounded-full -translate-y-[8px] active:translate-y-[-2px] flex justify-center items-center text-my-black-dark text-[2rem]">SPEND</span>
       </div>
     </div>
   );
