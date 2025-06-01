@@ -3,7 +3,7 @@ import Button from "../components/Button";
 import Header from "../components/Header";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
 import type { Bill, Envelope, Interval, OneTimeCash } from "../types";
-import { editBills, editTotalSpendingBudget } from "../firebase/editData";
+import { editBills, editInterval, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { IoIosClipboard, IoIosTrash } from "react-icons/io";
 import Popup from "../components/Popup";
@@ -136,6 +136,17 @@ export default function Settings() {
         </div>
     }
 
+    async function handleUpdateInterval() {
+        if (!newIncome || !newInterval) return;
+        setIncome(Number(newIncome));
+        setInterval(newInterval);
+        await editInterval(newInterval, user!.uid);
+        const nextBudget = calculateBudgetByInterval({ income: Number(newIncome), interval: newInterval, bills, envelopes, oneTimeCash: oneTimeCash || [] })
+        await editTotalSpendingBudget(nextBudget, user!.uid)
+        setTotalSpendingBudget(nextBudget)
+        setShowIntervalSettings(false);
+    }
+
     if (showIntervalSettings) {
         return <div className="absolute inset-0 w-screen h-screen z-100 select-none">
             <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
@@ -158,11 +169,7 @@ export default function Settings() {
                     </Button>
                     <Button
                         color="green"
-                        onClick={() => {
-                            setIncome(Number(newIncome));
-                            setInterval(newInterval);
-                            setShowIntervalSettings(false);
-                        }}
+                        onClick={() => handleUpdateInterval()}
                         >
                         Save
                     </Button>

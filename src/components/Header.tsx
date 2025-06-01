@@ -168,7 +168,7 @@ export default function Header({ step }: { step?: number }) {
           </>
         ) : (
           <>
-            {currentScreen !== "settings" || step === 9 &&
+            {(currentScreen !== "settings" || step === 9) &&
               <Link
                 to="/settings"
                 className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
@@ -181,7 +181,7 @@ export default function Header({ step }: { step?: number }) {
               </Link>
             }
             {currentScreen !== "home" &&
-              <Link to="/" className="sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">Homae</Link>
+              <Link to="/" className="sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">Home</Link>
             }
             <p className="shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark" 
               onClick={() => setShowMenu(false)}>X</p>

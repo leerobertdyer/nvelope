@@ -3,6 +3,7 @@ import Button from "./Button";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
 import Popup from "./Popup";
 import type { Envelope } from "../types";
+import { IoIosSad } from "react-icons/io";
 
 interface NvelopeCalculatorProps {
     handleEnterAmount: (amount: number, envelopeId?: string) => void;
@@ -18,7 +19,7 @@ export default function NvelopeCalculator({ handleEnterAmount, handleBack, selec
 
     return (
         <div className="absolute inset-0 bg-my-black-base text-my-white-dark flex items-center justify-center flex-col gap-5">
-            {showError && <Popup type="error" >Must enter a valid amount: More than zero, less than envelope balance ;)</Popup>}
+            {showError && <Popup type="error" >Must enter a valid amount: More than zero, less than envelope balance <IoIosSad className="text-my-white-dark w-[2rem] h-[2rem]" /></Popup>}
             <h2 className="text-2xl">Enter Amount{envelope?.name ? ` for ${envelope.name}` : ''}</h2>
             <input 
                 className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-[80%] max-w-[20rem] text-my-black-dark"
@@ -48,7 +49,7 @@ export default function NvelopeCalculator({ handleEnterAmount, handleBack, selec
                 onClick={() => handleBack?.()}
                 color="red"
             >
-                Cancel
+                {selectEnvelope ? 'View Nvelopes' : 'Cancel'}
             </Button>
         </div>
     )
