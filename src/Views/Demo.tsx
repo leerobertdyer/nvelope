@@ -1,7 +1,7 @@
 import Button from "../components/Button";
 import ClosingX from "../components/ClosingX";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import { editBills, editIncome, editInterval, editIsNewUser, editPayDate } from "../firebase/editData";
+import { editBills, editIncome, editInterval, editIsNewUser, editPayDate, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
 import Calendar from 'react-calendar';
@@ -13,12 +13,13 @@ import { IoIosSad } from "react-icons/io";
 import Popup from "../components/Popup";
 import { Timestamp } from "firebase/firestore";
 import SpendBtn from "../components/SpendBtn";
+import { calculateBudgetByInterval } from "../util";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
 export default function Demo() {
-    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, interval, setInterval, bills, setBills} = useGetDatabase();
+    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, interval, setInterval, bills, setBills, setTotalSpendingBudget} = useGetDatabase();
     const {user} = useAuth();
 
     const [step, setStep] = useState(0);
@@ -51,11 +52,11 @@ export default function Demo() {
 
     useEffect(() => {
         if (newInterval) {
-            let temp = ''
-            if (newInterval === 'weekly') temp = 'week'
-            if (newInterval === 'biweekly') temp = '2 weeks'
-            if (newInterval === 'monthly') temp = 'month'
-            setPeriod(temp)
+            let p = ''
+            if (newInterval === 'weekly') p = 'week'
+            if (newInterval === 'biweekly') p = '2 weeks'
+            if (newInterval === 'monthly') p = 'month'
+            setPeriod(p)
         }
     }, [newInterval])
 
@@ -68,6 +69,9 @@ export default function Demo() {
             return
         }
         await editBills([...newBills, { name: newBillName, amount: newBillAmount }], user?.uid || '')
+        const nextBudget = calculateBudgetByInterval({ income, interval, bills: newBills, envelopes: [], oneTimeCash: [] })
+        await editTotalSpendingBudget(nextBudget, user?.uid || '')
+        setTotalSpendingBudget(nextBudget)
         setNewBills([...newBills, { name: newBillName, amount: newBillAmount }])
         setBills([...newBills, { name: newBillName, amount: newBillAmount }])
         setNewBillName('')
@@ -95,7 +99,7 @@ export default function Demo() {
     async function handleSecondStep() {
         console.log('handleSecondStep')
         if (!newPayDate || Array.isArray(newPayDate)) return; 
-        await editPayDate(newPayDate, user?.uid || '')
+        await editPayDate(newPayDate, user!.uid)
         if (newPayDate instanceof Date) {
             setPayDate(Timestamp.fromDate(newPayDate))
         }
@@ -105,7 +109,10 @@ export default function Demo() {
     async function handleThirdStep() {
         console.log('handleThirdStep')
         if (!newInterval && !interval) return;
-        await editInterval(newInterval as Interval, user?.uid || '')
+        await editInterval(newInterval as Interval, user!.uid)
+        const nextBudget = calculateBudgetByInterval({ income, interval: newInterval as Interval, bills, envelopes: [], oneTimeCash: [] })
+        await editTotalSpendingBudget(nextBudget, user!.uid)
+        setTotalSpendingBudget(nextBudget)
         setInterval(newInterval as Interval)
         setStep(4)
     }
@@ -124,7 +131,10 @@ export default function Demo() {
     async function handleFifthStep() {
         console.log('handleFifthStep')
         if (!newIncome) return;
-        await editIncome(newIncome, user?.uid || '')
+        await editIncome(newIncome, user!.uid)
+        const nextBudget = calculateBudgetByInterval({ income: newIncome, interval, bills, envelopes: [], oneTimeCash: [] })
+        await editTotalSpendingBudget(nextBudget, user!.uid)
+        setTotalSpendingBudget(nextBudget)
         setIncome(newIncome)
         setStep(6)
     }
@@ -144,7 +154,10 @@ export default function Demo() {
     async function handleSeventhStep() {
         console.log('handleSeventhStep')
         if (!newBills) return;
-        await editBills(newBills, user?.uid || '')
+        await editBills(newBills, user!.uid)
+        const nextBudget = calculateBudgetByInterval({ income, interval, bills: newBills, envelopes: [], oneTimeCash: [] })
+        await editTotalSpendingBudget(nextBudget, user!.uid)
+        setTotalSpendingBudget(nextBudget)
         setBills(newBills)
         setStep(8)
     }
@@ -156,13 +169,10 @@ export default function Demo() {
 
     async function handleNinthStep() {
         console.log('handleNinthStep')
-        await editIsNewUser(false, user?.uid || '')
+        await editIsNewUser(false, user!.uid)
         setIsNewUser(false)
         setStep(10)
     }
-
-    
-
 
 
     if (isLoading) {

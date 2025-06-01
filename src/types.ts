@@ -1,3 +1,4 @@
+import type { Timestamp } from "firebase/firestore";
 import type { Value } from "react-calendar/src/shared/types.js";
 
 export interface Envelope {
@@ -17,6 +18,7 @@ export interface OneTimeCash {
     id: string,
     name: string,
     amount: number
+    date: Timestamp
 }
 
 export type Interval = "monthly" | "weekly" | "biweekly" | null;

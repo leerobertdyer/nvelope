@@ -30,27 +30,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
             });
         } 
     }, [user]);
-
-    useEffect(() => {
-        const billsTotal =  bills ? bills.reduce((acc: number, bill: Bill) => acc + bill.amount, 0) : 0;
-        console.log('billsTotal', billsTotal);
-        let budget = 0;
-        switch (interval) {
-            case 'monthly':
-                budget = income - billsTotal;
-                break;
-            case 'weekly':
-                budget = income - (billsTotal / 4);
-                break;
-            case 'biweekly':
-                budget = income - (billsTotal / 2);
-                break;
-            default:
-                budget = 0;
-                break;
-        }
-        setTotalSpendingBudget(budget);
-    }, [income, interval, bills, oneTimeCash]);
     
     const value = {
         payDate,

@@ -2,17 +2,18 @@ import { useEffect, useState } from "react";
 import Button from "../components/Button";
 import Header from "../components/Header";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import type { Bill, Interval } from "../types";
-import { editBills } from "../firebase/editData";
+import type { Bill, Envelope, Interval, OneTimeCash } from "../types";
+import { editBills, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { IoIosClipboard, IoIosTrash } from "react-icons/io";
 import Popup from "../components/Popup";
 import signout from "../firebase/signOut";
+import { calculateBudgetByInterval } from "../util";
 
 
 export default function Settings() {
     const {user} = useAuth();
-    const { interval, setInterval, setIncome, bills, setBills } = useGetDatabase();
+    const { interval, setInterval, setIncome, bills, setBills, envelopes, oneTimeCash, income, setTotalSpendingBudget } = useGetDatabase();
 
     const [showIntervalSettings, setShowIntervalSettings] = useState<boolean>(false);
     const [newIncome, setNewIncome] = useState<string>('');
@@ -34,6 +35,11 @@ export default function Settings() {
         }, 2500)
     }, [showBillAdded, showBillError])
 
+    async function handleUpdateBudget(income: number, interval: Interval, bills: Bill[], envelopes: Envelope[], oneTimeCash: OneTimeCash[] | null) {
+        const nextBudget = calculateBudgetByInterval({ income, interval, bills, envelopes, oneTimeCash: oneTimeCash || [] })
+        await editTotalSpendingBudget(nextBudget, user!.uid);
+        setTotalSpendingBudget(nextBudget)
+    }
 
     function handleIntervalChange(interval: Interval) {
         setShowIntervalSettings(true);
@@ -51,6 +57,7 @@ export default function Settings() {
         const updatedBills = bills.map((b) => b.name === billToEdit.name ? newBill : b);
         setBills(updatedBills);
         await editBills(updatedBills, user.uid);
+        handleUpdateBudget(income, interval, updatedBills, envelopes, oneTimeCash)
         resetBillState()
     }
 
@@ -65,6 +72,7 @@ export default function Settings() {
         const updatedBills = bills.filter((b) => b.name !== billToEdit.name);
         setBills(updatedBills);
         await editBills(updatedBills, user.uid);
+        handleUpdateBudget(income, interval, updatedBills, envelopes, oneTimeCash)
         resetBillState()
     }
 
@@ -85,6 +93,7 @@ export default function Settings() {
         setBills(updatedBills);
         setShowBillAdded(true);
         await editBills(updatedBills, user.uid);
+        handleUpdateBudget(income, interval, updatedBills, envelopes, oneTimeCash)
     }
 
     function resetBillState() {

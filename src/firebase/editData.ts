@@ -1,7 +1,8 @@
 import type { Bill, Envelope, Interval, OneTimeCash } from "../types";
-import { doc, updateDoc, Timestamp } from "firebase/firestore";
+import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
+import { calculateBudgetByInterval } from "../util";
 
 export async function editEnvelopes(envelopes: Envelope[], userId: string) {
     console.log(`Firebase, editEnvelopes Started, envelopes: ${envelopes}`)
@@ -76,14 +77,21 @@ export async function editPayDate(payDate: Date, userId: string) {
     return;
 }
 
-export async function editOneTimeCash(newCashEntry: OneTimeCash, userId: string, currentBudget: number) {
-    console.log(`Firebase, editOneTimeCash Started, newCashEntry: ${JSON.stringify(newCashEntry)}`)
+export async function editOneTimeCashAndBudget(newCashEntry: OneTimeCash, userId: string, currentBudget: number) {
+    console.log(`Firebase, editOneTimeCashAndBudget Started, newCashEntry: ${JSON.stringify(newCashEntry)}`)
     try {
         const userDocRef = doc(db, "users", userId);
-        await updateDoc(userDocRef, { oneTimeCash: newCashEntry, totalSpendingBudget: currentBudget + newCashEntry.amount });
-        console.log('Firebase, editOneTimeCash Completed')
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+            const { oneTimeCash } = docSnap.data() || [];
+            const nextOneTimeCash = [...(oneTimeCash || []), newCashEntry];
+            await updateDoc(userDocRef, { oneTimeCash: nextOneTimeCash, totalSpendingBudget: currentBudget + newCashEntry.amount });
+            console.log('Firebase, editOneTimeCashAndBudget Completed')
+        } else {
+            console.error("Firebase, editOneTimeCashAndBudget Failed: Document does not exist");
+        }
     } catch (error) {
-        console.error("Firebase, editOneTimeCash Failed", error);
+        console.error("Firebase, editOneTimeCashAndBudget Failed", error);
     }
     return;
 }
@@ -100,7 +108,7 @@ export async function editTotalSpendingBudget(newTotal: number, userId: string) 
     return;
 }
 
-export async function checkAndResetBudget(payDate: Timestamp, interval: Interval, envelopes: Envelope[], user: User, setPayDate: (payDate: Timestamp) => void, setEnvelopes: (envelopes: Envelope[]) => void, setTotalSpendingBudget: (totalSpendingBudget: number) => void, income: number, totalSpendingBudget: number) {
+export async function checkAndResetBudget(payDate: Timestamp, interval: Interval, envelopes: Envelope[], user: User, setPayDate: (payDate: Timestamp) => void, setEnvelopes: (envelopes: Envelope[]) => void, setTotalSpendingBudget: (totalSpendingBudget: number) => void, income: number, totalSpendingBudget: number, bills: Bill[], oneTimeCash: OneTimeCash[] | null) {
     const currentDate = new Date();
     const lastPayDate = payDate.toDate();
     const nextPayDate = new Date(lastPayDate);
@@ -118,7 +126,12 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
             nextPayDate.setMonth(nextPayDate.getMonth() + 1);
             break;
         default:
-            return; // Invalid interval
+            return; 
+            // For now just returns
+            // Eventually would like to default to a non-time based budget
+            // Where user has a fixed amount income they can manually add to
+            // And then they use envelopes that never reset 
+            // Probably should have done this for mvp but I'm crazy
     }
 
     // If we've passed the next pay date, it's time to reset
@@ -137,13 +150,26 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
             spent: 0
         }));
 
+        let budget = calculateBudgetByInterval({
+            income,
+            interval,
+            bills,
+            envelopes,
+            oneTimeCash: oneTimeCash || []
+        })
+
+        console.log("RESET: next interval base income after bills: ", budget, "current totalSpendingBudget: ", totalSpendingBudget)
+
+        budget = budget + totalSpendingBudget;
+        console.log("RESET: next interval base income after bills and current totalSpendingBudget: ", budget)
+        
         // Update the pay date to the new pay date
         await editPayDate(nextPayDate, user.uid);
         setPayDate(Timestamp.fromDate(nextPayDate));
         
         // Set total spending budget to income plus any remaining budget
-        await editTotalSpendingBudget(income + totalSpendingBudget, user.uid);
-        setTotalSpendingBudget(income + totalSpendingBudget);
+        await editTotalSpendingBudget(budget, user.uid);
+        setTotalSpendingBudget(budget);
         
         // Update envelopes if needed
         await editEnvelopes(updatedEnvelopes, user.uid);

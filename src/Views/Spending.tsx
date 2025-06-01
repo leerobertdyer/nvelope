@@ -3,14 +3,16 @@ import Header from "../components/Header";
 import Nvelopes from "../components/Nvelopes";
 import type { Envelope } from "../types";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import { checkAndResetBudget, editEnvelopes, editOneTimeCash, editTotalSpendingBudget } from "../firebase/editData";
+import { checkAndResetBudget, editEnvelopes, editOneTimeCashAndBudget, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
+import { Timestamp } from "firebase/firestore";
+import { addOrSubtractFromBudget } from "../util";
 
 export default function Spending() {
     const {user} = useAuth();
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, setPayDate, interval } = useGetDatabase();
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, setPayDate, interval, bills, oneTimeCash } = useGetDatabase();
 
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
     const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
@@ -28,16 +30,8 @@ export default function Spending() {
     // This useEffect checks if we need to reset the budget based on interval and date
     useEffect(() => {
         if (!payDate || !interval || !user) return;
-        checkAndResetBudget(payDate, interval, envelopes, user, setPayDate, setEnvelopes, setTotalSpendingBudget, income, totalSpendingBudget);
-    }, [payDate, interval, income, user, envelopes, setPayDate, setEnvelopes, setTotalSpendingBudget, totalSpendingBudget]);
-
-
-    async function updateBudget(amount: number, type: 'add' | 'sub') {
-        if (!user) return;
-        const newBudget = type === 'add' ? totalSpendingBudget + amount : totalSpendingBudget - amount;
-        await editTotalSpendingBudget(newBudget, user.uid);
-        setTotalSpendingBudget(newBudget);
-    }
+        checkAndResetBudget(payDate, interval, envelopes, user, setPayDate, setEnvelopes, setTotalSpendingBudget, income, totalSpendingBudget, bills, oneTimeCash);
+    }, [payDate, interval, income, user, envelopes, setPayDate, setEnvelopes, setTotalSpendingBudget, totalSpendingBudget, bills, oneTimeCash]);
 
     async function saveNewEnvelope(envelope: Envelope) {
         console.log('saving new envelope')
@@ -51,8 +45,8 @@ export default function Spending() {
             recurring: envelope.recurring
         });
 
-        await updateBudget(Number(envelope.total), "sub"); 
-        await editEnvelopes(newEnvelopes, user?.uid || '');
+        await addOrSubtractFromBudget(Number(envelope.total), "sub", user!, totalSpendingBudget, setTotalSpendingBudget); 
+        await editEnvelopes(newEnvelopes, user!.uid);
         setEnvelopes(newEnvelopes);
         resetState();
     }
@@ -68,8 +62,8 @@ export default function Spending() {
         try {
             const newEnvelopes = [...envelopes].filter(e => e.id !== envelopeToEdit?.id);
             setEnvelopes(newEnvelopes);
-            await updateBudget(Number(envelopeToEdit?.total || 0), "add");
-            await editEnvelopes(newEnvelopes, user?.uid || '');
+            await addOrSubtractFromBudget(Number(envelopeToEdit?.total || 0), "add", user!, totalSpendingBudget, setTotalSpendingBudget);
+            await editEnvelopes(newEnvelopes, user!.uid);
             resetState();
         } catch (error) {
             console.error('Error deleting envelope:', error);
@@ -82,13 +76,13 @@ export default function Spending() {
             const originalEnvelope = envelopes.find(e => e.id === envelope.id);
             if (!originalEnvelope) return;
             if (originalEnvelope.total > envelope.total) {
-                await updateBudget(Number(originalEnvelope.total - envelope.total), "add");
+                await addOrSubtractFromBudget(Number(originalEnvelope.total - envelope.total), "add", user!, totalSpendingBudget, setTotalSpendingBudget);
             } else if (originalEnvelope.total < envelope.total) {
-                await updateBudget(Number(envelope.total - originalEnvelope.total), "sub");
+                await addOrSubtractFromBudget(Number(envelope.total - originalEnvelope.total), "sub", user!, totalSpendingBudget, setTotalSpendingBudget);
             }
             const newEnvelopes = [...envelopes].map(e => e.id === envelope.id ? envelope : e);
             setEnvelopes(newEnvelopes);
-            await editEnvelopes(newEnvelopes, user?.uid || '');
+            await editEnvelopes(newEnvelopes, user!.uid);
             resetState();
         } catch (error) {
             console.error('Error editing envelope:', error);
@@ -136,7 +130,15 @@ export default function Spending() {
     async function addCashToDb() {
         if (!cashAmount || !cashName || !user) return;
         const randomId = crypto.randomUUID();
-        await editOneTimeCash({ id: randomId, name: cashName, amount: Number(cashAmount) }, user.uid, totalSpendingBudget);
+        //newCashEntry: OneTimeCash, userId: string, currentBudget: number, date: Date
+        const date = Timestamp.fromDate(new Date());
+        const newOneTimeCash = {
+            id: randomId,
+            name: cashName,
+            amount: Number(cashAmount),
+            date
+        }
+        await editOneTimeCashAndBudget(newOneTimeCash, user.uid, totalSpendingBudget);
         setTotalSpendingBudget(totalSpendingBudget + Number(cashAmount));
         resetState();
     }
@@ -146,7 +148,7 @@ export default function Spending() {
         setIsEditingCash(true);
     }
 
-    async function editCashInDB() {
+    async function manuallySetBudgetInDB() {
         if (!cashAmount || !user) return;
         await editTotalSpendingBudget(Number(cashAmount), user.uid);
         setTotalSpendingBudget(Number(cashAmount));
@@ -245,7 +247,7 @@ export default function Spending() {
            
            <div className="flex flex-col w-full gap-2 justify-center items-center">
                 <Button 
-                    onClick={editCashInDB}
+                    onClick={manuallySetBudgetInDB}
                     color="green"
                 >
                     Save    

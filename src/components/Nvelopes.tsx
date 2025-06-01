@@ -48,7 +48,7 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
             envelopeToEdit.total = envelopeToEdit.spent;
         }
         await editEnvelope(envelopeToEdit);
-        await editTotalSpendingBudget(remainingBalancePlusTotal, user?.uid || '');
+        await editTotalSpendingBudget(remainingBalancePlusTotal, user!.uid);
         setTotalSpendingBudget(remainingBalancePlusTotal);
         handleBack();
     }
@@ -63,7 +63,7 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
         newEnvelopes[envelopeIndex] = envelope;
         const envelopeToEditIndex = newEnvelopes.findIndex(e => e.id === envelopeToEdit.id);
         newEnvelopes[envelopeToEditIndex] = envelopeToEdit;
-        await editEnvelopes(newEnvelopes, user?.uid || '');
+        await editEnvelopes(newEnvelopes, user!.uid);
         setEnvelopes(newEnvelopes);
         handleBack();
     }
