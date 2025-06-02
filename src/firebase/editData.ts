@@ -17,10 +17,11 @@ export async function editEnvelopes(envelopes: Envelope[], userId: string) {
 }
 
 export async function editBills(bills: Bill[], userId: string) {
-    console.log(`Firebase, editBills Started, bills: ${bills}`)
+    const sortedBills = bills.sort((a, b) => a.dayOfMonth - b.dayOfMonth)
+    console.log(`Firebase, editBills Started, bills: ${sortedBills}`)
     try {
         const userDocRef = doc(db, "users", userId);
-        await updateDoc(userDocRef, { bills });
+        await updateDoc(userDocRef, { bills: sortedBills });
         console.log('Firebase, editBills Completed')
     } catch (error) {
         console.error("Firebase, editBills Failed", error);

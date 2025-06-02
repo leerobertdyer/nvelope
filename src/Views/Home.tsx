@@ -13,7 +13,6 @@ export default function Home() {
   const {isNewUser} = useGetDatabase();
   const [isLoading, setIsLoading] = useState(true);
 
-
   useEffect(() => {
     if (user) {
       setIsLoading(false);
@@ -22,8 +21,6 @@ export default function Home() {
       setIsLoading(false);
     }, 1000);
   }, [user]);
-
-
 
   if (user && isNewUser) {
     return <Demo />;
@@ -36,7 +33,7 @@ export default function Home() {
         {isLoading 
           ? <p className="text-center animate-pulse text-my-red-dark">Loading...</p>
           : user 
-            ? <SpendBtn onClick={() => navigate('/spending')} /> 
+            ? <SpendBtn onClick={() => navigate("/nvelopes?showSpendingPage=true")} /> 
             : <LoginOptions />}
       </div>
     </>

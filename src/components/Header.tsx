@@ -10,7 +10,7 @@ export default function Header({ step }: { step?: number }) {
   const [daysTillReset, setDaysTillReset] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
   const location = useLocation();
-  const currentScreen = location.pathname === "/settings" ? "settings" : location.pathname === "/spending" ? "spending" : "home";
+  const currentScreen = location.pathname === "/settings" ? "settings" : location.pathname === "/nvelopes" ? "nvelopes" : "home";
   const stepRef = useRef<HTMLDivElement>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
@@ -147,20 +147,20 @@ export default function Header({ step }: { step?: number }) {
                         ${totalSpendingBudget <= 0 ? "bg-my-red-dark" : "bg-my-green-dark"}`}>
               ${totalSpendingBudget.toFixed(2)}
             </p>
-          {currentScreen !== "spending" && <Link
-            to={"/spending"}
+          {currentScreen !== "home" && <Link
+            to={"/"}
             className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
-            Spending
+            Home
+          </Link>}
+          {currentScreen !== "nvelopes" && <Link
+            to={"/nvelopes"}
+            className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
+            Nvelopes
           </Link>}
           {currentScreen !== "settings" && <Link
             to={"/settings"}
             className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
             Settings
-          </Link>}
-          {currentScreen !== "home" && <Link
-            to={"/"}
-            className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
-            Home
           </Link>}
           <IoMenu
             onClick={() => setShowMenu(true)}
@@ -168,20 +168,20 @@ export default function Header({ step }: { step?: number }) {
           </>
         ) : (
           <>
+            {currentScreen !== "home" &&
+              <Link to="/" className="sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">Home</Link>
+            }
             {(currentScreen !== "settings" || step === 9) &&
               <Link
                 to="/settings"
                 className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
                 Settings
               </Link>}
-             {currentScreen !== "spending" &&
-              <Link to="/spending"
+             {currentScreen !== "nvelopes" &&
+              <Link to="/nvelopes"
                 className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
-                Spending
+                Nvelopes
               </Link>
-            }
-            {currentScreen !== "home" &&
-              <Link to="/" className="sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">Home</Link>
             }
             <p className="shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark" 
               onClick={() => setShowMenu(false)}>X</p>

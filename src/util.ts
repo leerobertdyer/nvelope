@@ -44,4 +44,7 @@ export function calculateBudgetByInterval(params: {
 }
 
 
+export function billsTotal(bills: Bill[]) {
+  return bills.reduce((acc: number, b: Bill) => acc + b.amount, 0)
+}
     

@@ -8,7 +8,7 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import { IoIosClipboard, IoIosTrash } from "react-icons/io";
 import Popup from "../components/Popup";
 import signout from "../firebase/signOut";
-import { calculateBudgetByInterval } from "../util";
+import { billsTotal, calculateBudgetByInterval } from "../util";
 
 
 export default function Settings() {
@@ -99,7 +99,7 @@ export default function Settings() {
     function resetBillState() {
         setShowBillInputs(false);
         setBillToEdit(null);
-        setNewBill({ name: '', amount: 0 });
+        setNewBill({ name: '', amount: 0, dayOfMonth: 0 });
         setIsAddingBill(false);
         setShowBillAdded(false);
         setShowBillError(false);
@@ -145,6 +145,12 @@ export default function Settings() {
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)
         setShowIntervalSettings(false);
+    }
+
+    function handleSetDayOfMonth(dayOfMonth: string) {
+        let day = Number(dayOfMonth)
+        if (day > 28) day = 28
+        setNewBill({ name: newBill?.name || '', amount: newBill?.amount || 0, dayOfMonth: day || 1 })
     }
 
     if (showIntervalSettings) {
@@ -193,7 +199,7 @@ export default function Settings() {
                             type="text"
                             className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
                             value={newBill?.name.toLowerCase() || ''}
-                            onChange={(e) => setNewBill({ name: e.target.value, amount: newBill?.amount || 0 })}
+                            onChange={(e) => setNewBill({ name: e.target.value, amount: newBill?.amount || 0, dayOfMonth: newBill?.dayOfMonth || 1 })}
                             placeholder="Enter new bill name"
                             />
                     </div>
@@ -202,10 +208,24 @@ export default function Settings() {
                         <input
                             id="amount"
                             type="number"
+                            min={0}
                             className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
                             value={newBill?.amount || ''}
-                            onChange={(e) => setNewBill({ name: newBill?.name || '', amount: Number(e.target.value) })}
+                            onChange={(e) => setNewBill({ name: newBill?.name || '', amount: Number(e.target.value), dayOfMonth: newBill?.dayOfMonth || 1 })}
                             placeholder="Enter new bill amount"
+                        />
+                    </div>
+                    <div className="flex flex-col items-center w-full mb-4">
+                        <label className="text-my-white-light" htmlFor="dayOfMonth">Day of Month</label>
+                        <input
+                            id="dayOfMonth"
+                            type="number"
+                            min={1}
+                            max={31}
+                            className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                            value={newBill?.dayOfMonth.toString() || ''}
+                            onChange={(e) => handleSetDayOfMonth(e.target.value)}
+                            placeholder="Enter new bill day of month"
                         />
                     </div>
                     <div className="flex gap-4 items-center justify-center w-full">
@@ -230,21 +250,29 @@ export default function Settings() {
     if (showBillSettings) {
         return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-dark">
             <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden">
-                <div className="flex flex-col gap-2 mb-2 items-center justify-center w-[10rem]">
-                    <p className="pt-2 rounded-md text-my-white-dark w-full text-center text-2xl">Edit Bills</p>
-                    <Button
-                        color="green"
+                <div className="flex flex-col gap-2 mb-2 items-center justify-center w-full">
+                    <p className="pt-2 rounded-md text-my-white-dark w-full text-center text-2xl">Edit Bills (current total = ${billsTotal(bills).toFixed(2)})</p>
+                    <button
+                        className="h-[3rem] w-[6rem] bg-my-red-dark text-my-white-light hover:bg-my-black-light  rounded-md p-2 border-2 border-my-white-light cursor-pointer"
                         onClick={() => handleAddBill()}
                         >
                         New Bill+
-                    </Button>
+                    </button>
                 </div>
-                <div className="flex flex-wrap items-center justify-center gap-4 w-[95%] h-[24rem] py-4 rounded-md overflow-y-scroll overflow-x-hidden border-4 border-my-white-dark">
+                <div className="flex flex-wrap items-center justify-center gap-4 w-[90%] h-[24rem] p-4 rounded-md overflow-y-scroll overflow-x-hidden border-4 border-my-white-dark bg-my-black-base">
                 {bills.map((bill) => (
                         <div key={bill.name}
                             onClick={() => handleEditBill(bill)}
-                            className="flex flex-col cursor-pointer w-[12rem] items-center gap-2 bg-my-white-dark rounded-md p- text-my-black-base border-2 border-my-red-dark">
+                            className={`flex flex-col justify-center cursor-pointer w-[12rem] items-center gap-2 rounded-md text-my-black-base border-2 border-my-red-dark text-center h-[9rem]
+                              ${bill.dayOfMonth < new Date().getDate()+1 
+                                ? 'bg-my-green-dark'
+                                : bill.dayOfMonth === new Date().getDate()+1
+                                ? 'bg-my-red-light'
+                                : 'bg-my-white-dark'}
+                                `}>
                             <p className="">{bill.name}</p>
+                            <p className="text-xs">
+                                {new Date().toLocaleDateString('default', { month: 'long' })} {bill.dayOfMonth}</p>
                             <p className="">${bill.amount.toFixed(2)}</p>
                             <div className="flex gap-2 items-center mb-2">
                                 <IoIosClipboard 
@@ -270,6 +298,14 @@ export default function Settings() {
                         >
                         Save
                     </Button>
+                </div>
+                <div className="flex gap-2 items-center justify-center w-[95%] mt-6 text-my-white-light">
+                    Already Paid
+                    <div className="rounded-sm w-[1rem] h-[1rem] bg-my-green-dark border-2 border-my-white-dark mr-4"></div>
+                    Due Today
+                    <div className="rounded-sm w-[1rem] h-[1rem] bg-my-red-light border-2 border-my-white-dark mr-4"></div>
+                    Upcoming
+                    <div className="rounded-sm w-[1rem] h-[1rem] bg-my-white-dark border-2 border-my-red-dark"></div>
                 </div>
             </div>
         </div>

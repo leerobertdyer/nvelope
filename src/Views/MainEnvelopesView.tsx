@@ -9,10 +9,14 @@ import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import { addOrSubtractFromBudget } from "../util";
+import { useLocation, useNavigate } from "react-router-dom";
 
-export default function Spending() {
+export default function MainEnvelopesView() {
     const {user} = useAuth();
     const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, setPayDate, interval, bills, oneTimeCash } = useGetDatabase();
+    
+    const { search } = useLocation();
+    const navigate = useNavigate();
 
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
     const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
@@ -32,6 +36,18 @@ export default function Spending() {
         if (!payDate || !interval || !user) return;
         checkAndResetBudget(payDate, interval, envelopes, user, setPayDate, setEnvelopes, setTotalSpendingBudget, income, totalSpendingBudget, bills, oneTimeCash);
     }, [payDate, interval, income, user, envelopes, setPayDate, setEnvelopes, setTotalSpendingBudget, totalSpendingBudget, bills, oneTimeCash]);
+
+    useEffect(() => {
+        if (showSpendPage) return;
+        navigate('/nvelopes', { replace: true });
+    }, [showSpendPage, navigate])
+
+
+    useEffect(() => {
+        const showSpendPage = new URLSearchParams(search).get('showSpendingPage') === 'true';
+        console.log('showSpendPage', showSpendPage)
+        setShowSpendPage(showSpendPage);
+    }, [search]);
 
     async function saveNewEnvelope(envelope: Envelope) {
         console.log('saving new envelope')

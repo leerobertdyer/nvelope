@@ -12,6 +12,7 @@ export interface Envelope {
 export interface Bill {
     name: string,
     amount: number,
+    dayOfMonth: number
 }
 
 export interface OneTimeCash {

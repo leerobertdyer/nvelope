@@ -29,6 +29,7 @@ export default function Demo() {
     const [newBills, setNewBills] = useState<Bill[]>([]);
     const [newBillName, setNewBillName] = useState('');
     const [newBillAmount, setNewBillAmount] = useState<number | null>(null);
+    const [newBillDayOfMonth, setNewBillDayOfMonth] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [period, setPeriod] = useState<string>('')
     const [showBillAdded, setShowBillAdded] = useState<boolean>(false)
@@ -62,18 +63,18 @@ export default function Demo() {
 
     async function handleAddNewBill() {
         console.log('handleAddNewBill')
-        if (!newBillName || !newBillAmount) return;
+        if (!newBillName || !newBillAmount || !newBillDayOfMonth) return;
         // check to see if name is already used
         if (newBills.some(bill => bill.name === newBillName)) {
             setShowBillError(true)
             return
         }
-        await editBills([...newBills, { name: newBillName, amount: newBillAmount }], user?.uid || '')
+        await editBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth) }], user?.uid || '')
         const nextBudget = calculateBudgetByInterval({ income, interval, bills: newBills, envelopes: [], oneTimeCash: [] })
         await editTotalSpendingBudget(nextBudget, user?.uid || '')
         setTotalSpendingBudget(nextBudget)
-        setNewBills([...newBills, { name: newBillName, amount: newBillAmount }])
-        setBills([...newBills, { name: newBillName, amount: newBillAmount }])
+        setNewBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth) }])
+        setBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth) }])
         setNewBillName('')
         setNewBillAmount(0)
         setShowBillAdded(true)
@@ -174,6 +175,12 @@ export default function Demo() {
         setStep(10)
     }
 
+    function handleSetDayOfMonth(dayOfMonth: string) {
+        let day = Number(dayOfMonth)
+        if (day > 28) day = 28
+        setNewBillDayOfMonth(day.toString())
+    }
+
 
     if (isLoading) {
         return <div className="w-full h-full flex items-center justify-center text-center animate-pulse text-my-red-dark">Loading...</div>
@@ -265,6 +272,15 @@ export default function Demo() {
                                     placeholder="Monthly Amount"
                                     value={newBillAmount || ''}
                                     onChange={(e) => setNewBillAmount(Number(e.target.value))}
+                                />
+                                <input
+                                    className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
+                                    type="number"
+                                    min="1"
+                                    max="31"
+                                    placeholder="Day of Month"
+                                    value={newBillDayOfMonth || ''}
+                                    onChange={(e) => handleSetDayOfMonth(e.target.value)}
                                 />
                                 <Button 
                                     onClick={handleAddNewBill}
