@@ -1,7 +1,7 @@
 import Button from "../components/Button";
 import ClosingX from "../components/ClosingX";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import { editBills, editIncome, editInterval, editIsNewUser, editPayDate, editTotalSpendingBudget } from "../firebase/editData";
+import { editBills, editIncome, editInterval, editIsNewUser, editPayDate, editRent, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
 import Calendar from 'react-calendar';
@@ -14,26 +14,29 @@ import Popup from "../components/Popup";
 import { Timestamp } from "firebase/firestore";
 import SpendBtn from "../components/SpendBtn";
 import { calculateBudgetByInterval } from "../util";
+import { useNavigate } from "react-router-dom";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
 export default function Demo() {
-    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, interval, setInterval, bills, setBills, setTotalSpendingBudget} = useGetDatabase();
+    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, setRent, interval, setInterval, bills, setBills, setTotalSpendingBudget, rent} = useGetDatabase();
     const {user} = useAuth();
 
-    const [step, setStep] = useState(0);
+    const [step, setStep] = useState(1);
     const [newPayDate, setNewPayDate] = useState<Value | null>(null);
     const [newIncome, setNewIncome] = useState<number | null>(null);
     const [newInterval, setNewInterval] = useState<string | null>(null);
     const [newBills, setNewBills] = useState<Bill[]>([]);
-    const [newBillName, setNewBillName] = useState('');
+    const [newBillName, setNewBillName] = useState('rent');
     const [newBillAmount, setNewBillAmount] = useState<number | null>(null);
     const [newBillDayOfMonth, setNewBillDayOfMonth] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [period, setPeriod] = useState<string>('')
     const [showBillAdded, setShowBillAdded] = useState<boolean>(false)
     const [showBillError, setShowBillError] = useState<boolean>(false)
+    const [rentNotSet, setRentNotSet] = useState<boolean>(false)
+    const navigate = useNavigate();
 
     useEffect(() => {
         setTimeout(() => {
@@ -63,12 +66,32 @@ export default function Demo() {
 
     async function handleAddNewBill() {
         console.log('handleAddNewBill')
-        if (!newBillName || !newBillAmount || !newBillDayOfMonth) return;
+        if (!newBillName || !newBillAmount) return;
+
+        // Make sure rent is set before allowing new bills:
+        if (newBillName !== 'rent' && rent?.total === 0) {
+            console.log(newBills)
+            setRentNotSet(true)
+            return
+        } else if (newBillName === 'rent') {
+            await editRent(newBillAmount, user!.uid)
+            setRent({name: 'rent', total: newBillAmount, spent: 0, recurring: true, id: 'rent'})
+            setNewBillAmount(null)
+            setNewBillName('')
+            setNewBillDayOfMonth('')
+            return
+        }
+
         // check to see if name is already used
         if (newBills.some(bill => bill.name === newBillName)) {
             setShowBillError(true)
             return
         }
+
+        if (!newBillDayOfMonth) {
+            return
+        }
+        
         await editBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth) }], user?.uid || '')
         const nextBudget = calculateBudgetByInterval({ income, interval, bills: newBills, envelopes: [], oneTimeCash: [] })
         await editTotalSpendingBudget(nextBudget, user?.uid || '')
@@ -173,6 +196,7 @@ export default function Demo() {
         await editIsNewUser(false, user!.uid)
         setIsNewUser(false)
         setStep(10)
+        navigate('/nvelopes')
     }
 
     function handleSetDayOfMonth(dayOfMonth: string) {
@@ -191,6 +215,7 @@ export default function Demo() {
         {user && <Header step={step}/>}
         {showBillAdded && <Popup type="success">Bill added!</Popup>}
         {showBillError && <Popup type="error">Bill name already exists</Popup>}
+        {rentNotSet && <Popup type="error">Please set rent first</Popup>}
         <div className="text-center flex flex-col items-center justify-around h-full">
 
             {isNewUser && step === 0
@@ -257,14 +282,17 @@ export default function Demo() {
                     ? <DemoStep onClick={handleSeventhStep} text="Save Bills" changeValue={newBills}>
                             <p className='text-sm sm:text-lg'>Add your fixed <span className='text-my-green-base underline'>monthly</span> expenses.</p>
                             <p className='text-sm sm:text-lg'>Think <span className='text-my-red-light'>rent</span>, <span className='text-my-white-base'>utilities</span>, <span className='text-my-white-dark'>loans</span>, etc.</p>
-                            <p className='text-sm sm:text-lg'>For groceries, entertainment, etc... we will use <span className='text-my-red-light'>Nvelopes</span></p>
+                            <p className='text-sm sm:text-lg'>For everything else we will use <span className='text-my-red-light'>Nvelopes</span></p>
+                            <p className='text-sm sm:text-lg'>Let's start with <span className='text-my-red-light'>rent</span></p>
                             <form className="flex flex-col gap-2 w-full items-center" onSubmit={handleAddNewBill}>
                                 <input
                                     className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
                                     type="text"
                                     placeholder="Bill Name"
-                                    value={newBillName}
-                                    onChange={(e) => setNewBillName(e.target.value.toLowerCase())}
+                                    value={newBillName === 'rent' ? 'rent' : newBillName || ''}
+                                    onChange={newBillName === 'rent' 
+                                        ? () => () => {} 
+                                        : (e) => setNewBillName(e.target.value.toLowerCase())}
                                 />
                                 <input
                                     className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
@@ -273,7 +301,8 @@ export default function Demo() {
                                     value={newBillAmount || ''}
                                     onChange={(e) => setNewBillAmount(Number(e.target.value))}
                                 />
-                                <input
+                                {newBillName !== 'rent' && (
+                                    <input
                                     className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
                                     type="number"
                                     min="1"
@@ -282,6 +311,7 @@ export default function Demo() {
                                     value={newBillDayOfMonth || ''}
                                     onChange={(e) => handleSetDayOfMonth(e.target.value)}
                                 />
+                                )}
                                 <Button 
                                     onClick={handleAddNewBill}
                                     color="green"

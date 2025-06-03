@@ -19,13 +19,15 @@ interface NvelopeProps {
     editEnvelope: (envelope: Envelope) => Promise<void>;
     handleSetShowSpendingPage: (envelope: Envelope) => void;
     handleDeleteEnvelope: (id?: string) => void;
+    handleEditRent: (amount: number) => Promise<void>;
 }
 
-export default function Nvelopes({handleEditCash, handleAddCash, resetState, handleSetupNewEnvelope, handleSetupEdit, editEnvelope, handleSetShowSpendingPage, handleDeleteEnvelope }: NvelopeProps) {
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes } = useGetDatabase();
+export default function Nvelopes({handleEditCash, handleAddCash, resetState, handleSetupNewEnvelope, handleSetupEdit, editEnvelope, handleSetShowSpendingPage, handleDeleteEnvelope, handleEditRent }: NvelopeProps) {
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, rent } = useGetDatabase();
     const { user } =  useAuth();
     const [showGiveAndTake, setShowGiveAndTake] = useState(false);
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
+
 
     const emptyEnvelope = { id: '', name: '', total: 0, spent: 0, recurring: false }
 
@@ -102,6 +104,7 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
             <Nvelope kind="dash" envelope={{...emptyEnvelope, name: 'Nvelope'}} onClick={handleSetupNewEnvelope} handleBack={resetState} />
             <div className="flex flex-wrap justify-around items-center gap-4 mt-8 pb-[20rem]">
 
+            <Nvelope kind="rent" envelope={rent || {name: 'notSet', total: 0, spent: 0, recurring: true, id: 'rent'}} handleBack={resetState} onClick={() => handleSetShowSpendingPage(rent || {name: 'notSet', total: 0, spent: 0, recurring: true, id: 'rent'})}  editRent={handleEditRent}/>
             {envelopes.map(envelope => (
                 <div className="relative cursor-pointer hover:scale-105" key={envelope.id} >
                     <div 

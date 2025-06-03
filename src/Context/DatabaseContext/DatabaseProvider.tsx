@@ -15,6 +15,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [isNewUser, setIsNewUser] = useState<boolean>(true);
     const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
     const [oneTimeCash, setOneTimeCash] = useState<OneTimeCash[] | null>(null);
+    const [rent, setRent] = useState<Envelope | null>(null);
     
     useEffect(() => {
         if (user) {
@@ -27,6 +28,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                 setIsNewUser(data.isNewUser);
                 setTotalSpendingBudget(data.totalSpendingBudget || 0);
                 setOneTimeCash(data.oneTimeCash || null);
+                setRent(data.rent || {name: 'rentUnset', total: 0, spent: 0, recurring: true, id: 'rent'});
             });
         } 
     }, [user]);
@@ -47,7 +49,9 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         totalSpendingBudget,
         setTotalSpendingBudget,
         oneTimeCash,
-        setOneTimeCash
+        setOneTimeCash,
+        rent,
+        setRent
     };
 
     return (

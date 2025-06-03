@@ -12,6 +12,7 @@ export default function Home() {
   const { user } = useAuth();
   const {isNewUser} = useGetDatabase();
   const [isLoading, setIsLoading] = useState(true);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -22,10 +23,24 @@ export default function Home() {
     }, 1000);
   }, [user]);
 
-  if (user && isNewUser) {
+  useEffect(() => {
+    if (!isNewUser) {
+      setShowDemo(false);
+    }
+  }, [isNewUser, setShowDemo]);
+
+  if (showDemo) {
     return <Demo />;
   }
 
+  function handleClickSpend() {
+    if (!isNewUser) {
+      navigate("/nvelopes?showSpendingPage=true");
+    } else {
+      setShowDemo(true);
+    }
+  }
+  
   return (
     <>
       {user &&<Header />}
@@ -33,7 +48,7 @@ export default function Home() {
         {isLoading 
           ? <p className="text-center animate-pulse text-my-red-dark">Loading...</p>
           : user 
-            ? <SpendBtn onClick={() => navigate("/nvelopes?showSpendingPage=true")} /> 
+            ? <SpendBtn onClick={handleClickSpend} /> 
             : <LoginOptions />}
       </div>
     </>

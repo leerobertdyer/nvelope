@@ -18,6 +18,7 @@ interface NvelopeProps {
     | "addEnvelope"
     | "sub"
     | "dash"
+    | "rent"
     | "heart"
     | "editEnvelope"
     | "spendingEnvelope";
@@ -27,6 +28,7 @@ interface NvelopeProps {
   handleSaveEnvelope?: (envelope: Envelope) => Promise<void>;
   editEnvelope?: (envelope: Envelope) => Promise<void>;
   handleDeleteEnvelope?: () => void;
+  editRent?: (amount: number) => Promise<void>;
 }
 export default function Nvelope({
   kind,
@@ -36,6 +38,7 @@ export default function Nvelope({
   handleSaveEnvelope,
   editEnvelope,
   handleDeleteEnvelope,
+  editRent
 }: NvelopeProps) {
   const { envelopes } = useGetDatabase();
 
@@ -59,7 +62,13 @@ export default function Nvelope({
   const dottedStrokeWidth = 8;
 
   function handleEnterAmountAndId(amount: number) {
-    console.log('handleEnterAmountAndId', amount, envelope.id);
+    console.log('handleEnterAmountAndId', amount, envelope.name);
+    if (amount <= 0) return;
+    if (envelope.name === 'rent') {
+      editRent?.(amount);
+      handleBack?.();
+      return;
+    }
     const envelopeToEdit = envelopes.find(e => e.id === envelope.id);
     if (!envelopeToEdit) return;
     envelopeToEdit.spent = Number(envelopeToEdit.spent) + amount;
@@ -69,8 +78,9 @@ export default function Nvelope({
 
   switch (kind) {
     case "envelope":
+    case "rent":
       return (
-        <div className="w-[14rem] h-[14rem] relative group">
+        <div className="w-[14rem] h-[14rem] relative group" onClick={() => onClick?.()}>
           <div className="z-333 absolute top-[-10%] left-[-2.5%] w-[105%] h-[105%] cursor-pointer group-hover:flex hidden bg-[#0d916744] text-my-green-dark rounded-lg justify-center items-center">
             <p className="z-333 flex justify-center items-center p-2 bg-white rounded-md">
               Spend
@@ -104,7 +114,8 @@ export default function Nvelope({
             className="w-[80%] h-[80%] top-0 left-1/2 -translate-x-1/2 absolute z-10"
             strokeWidth={0.4}
           />
-          <BsEnvelopePaperFill
+          {kind === "envelope" 
+          ? <BsEnvelopePaperFill
             className={`w-[80%] h-[80%] top-0 left-1/2 -translate-x-1/2 absolute ${
               envelope.total && (envelope.spent || envelope.spent === 0)
                 ? envelope.total - envelope.spent <= 0
@@ -115,6 +126,17 @@ export default function Nvelope({
                 : "text-my-green-dark"
             }`}
           />
+         : <BsEnvelopePaperFill
+         className={`w-[80%] h-[80%] top-0 left-1/2 -translate-x-1/2 absolute ${
+           envelope.total && (envelope.spent || envelope.spent === 0)
+             ? envelope.total - envelope.spent <= 0
+               ? "text-my-green-dark"
+               : envelope.total - envelope.spent < envelope.total / 2
+               ? "text-my-white-dark"
+               : "text-my-red-dark"
+             : "text-my-red-dark"
+         }`}
+       />}
           {envelope.recurring && (
             <IoStar
               className="bottom-[4rem] left-1/2 -translate-x-1/2 absolute z-10 text-my-white-dark animate-pulse"

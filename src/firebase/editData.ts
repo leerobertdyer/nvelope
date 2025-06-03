@@ -29,6 +29,24 @@ export async function editBills(bills: Bill[], userId: string) {
     return;
 }
 
+export async function editRent(amount: number, userId: string) {
+    console.log(`Firebase, editRent started, amount=${amount}`)
+    const rent = {
+        name: 'rent',
+        total: amount,
+        spent: 0,
+        recurring: true
+    }
+    try {
+        const userDocRef = doc(db, "users", userId);
+        await updateDoc(userDocRef, { rent });
+        console.log('Firebase, editRent Completed')
+    } catch (error) {
+        console.error("Firebase, editRent Failed", error);
+    }
+    return;
+}
+
 export async function editIncome(income: number, userId: string) {
     console.log(`Firebase, editIncome Started, income: ${income}`)
     try {

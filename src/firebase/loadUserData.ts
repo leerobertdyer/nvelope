@@ -26,7 +26,8 @@ export default async function loadUserData(user: User) {
                 email: user.email,
                 income: 0,
                 totalSpendingBudget: 0,
-                oneTimeCash: null
+                oneTimeCash: null,
+                rent: {name: 'rent', total: 0, spent: 0, recurring: true, id: 'rent'}
             };
             
             // Create the user document

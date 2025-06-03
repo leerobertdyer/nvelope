@@ -32,6 +32,6 @@ export interface PreviousIntervalDetails {
     oneTimeCash: OneTimeCash[] | null
 }
 
-export type Interval = "monthly" | "weekly" | "biweekly" | null;
+export type Interval = "monthly" | "weekly" | "biweekly" | "fixed" | null;
 
 export type ChangeValue = boolean | string | null | Value | number | Bill[]

@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import Nvelopes from "../components/Nvelopes";
 import type { Envelope } from "../types";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import { checkAndResetBudget, editEnvelopes, editOneTimeCashAndBudget, editTotalSpendingBudget } from "../firebase/editData";
+import { checkAndResetBudget, editEnvelopes, editOneTimeCashAndBudget, editRent, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
@@ -13,7 +13,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 export default function MainEnvelopesView() {
     const {user} = useAuth();
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, setPayDate, interval, bills, oneTimeCash } = useGetDatabase();
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, setPayDate, interval, bills, oneTimeCash, rent, setRent } = useGetDatabase();
     
     const { search } = useLocation();
     const navigate = useNavigate();
@@ -48,6 +48,14 @@ export default function MainEnvelopesView() {
         console.log('showSpendPage', showSpendPage)
         setShowSpendPage(showSpendPage);
     }, [search]);
+
+
+    async function handleEditRent(amount: number) {
+        console.log("AMOUNT", amount)
+        if (!rent) return;
+        await editRent(amount, user!.uid);
+        setRent({ id: 'rent', name: 'rent', total: rent.total, spent: Number(rent.spent) + amount, recurring: true });
+    }
 
     async function saveNewEnvelope(envelope: Envelope) {
         console.log('saving new envelope')
@@ -177,6 +185,7 @@ export default function MainEnvelopesView() {
         envelope={envelopeSent} 
         editEnvelope={editEnvelope} 
         handleBack={resetState} 
+        editRent={handleEditRent}
         />
    }
 
@@ -291,6 +300,7 @@ export default function MainEnvelopesView() {
                 editEnvelope={editEnvelope}
                 handleSetShowSpendingPage={handleSetShowSpendingPage}
                 handleDeleteEnvelope={handleSetupDelete}
+                handleEditRent={handleEditRent}
             />
         </>
     )
