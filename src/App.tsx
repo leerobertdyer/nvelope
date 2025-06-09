@@ -4,6 +4,7 @@ import Home from "./Views/Home";
 import Settings from "./Views/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
 import MainEnvelopesView from "./Views/MainEnvelopesView";
+import Bills from "./Views/Bills";
 
 // Protected route component that redirects to home if no user
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,14 @@ function App() {
           element={
             <ProtectedRoute>
               <MainEnvelopesView />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/bills" 
+          element={
+            <ProtectedRoute>
+              <Bills />
             </ProtectedRoute>
           } 
         />

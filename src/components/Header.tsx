@@ -4,13 +4,23 @@ import { Link, useLocation } from "react-router-dom";
 import { Timestamp } from "firebase/firestore";
 import { IoMenu } from "react-icons/io5";
 import SpotlightOverlay from "./SpotlightOverlay";
+import { BsEnvelopeHeartFill, BsFillEnvelopeHeartFill } from "react-icons/bs";
 
 export default function Header({ step }: { step?: number }) {
   const { totalSpendingBudget, interval, payDate } = useGetDatabase();
   const [daysTillReset, setDaysTillReset] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
   const location = useLocation();
-  const currentScreen = location.pathname === "/settings" ? "settings" : location.pathname === "/nvelopes" ? "nvelopes" : "home";
+
+  // Map pathnames to screen names
+  const routeMap: Record<string, string> = {
+    "/": "home",
+    "/settings": "settings",
+    "/nvelopes": "nvelopes",
+    "/bills": "bills"
+  };
+  const currentScreen = routeMap[location.pathname] || "home";
+
   const stepRef = useRef<HTMLDivElement>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
@@ -162,6 +172,11 @@ export default function Header({ step }: { step?: number }) {
             className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
             Settings
           </Link>}
+          {currentScreen !== "bills" && <Link
+            to={"/bills"}
+            className="hidden sm:block shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
+            Bills
+          </Link>}
           <IoMenu
             onClick={() => setShowMenu(true)}
             className="sm:hidden w-10 h-10 cursor-pointer rounded-md shadow-md shadow-black bg-my-white-light hover:bg-my-white-dark"/>
@@ -174,13 +189,19 @@ export default function Header({ step }: { step?: number }) {
             {(currentScreen !== "settings" || step === 9) &&
               <Link
                 to="/settings"
-                className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
+                className="text-sm shadow-md shadow-black rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
                 Settings
               </Link>}
              {currentScreen !== "nvelopes" &&
               <Link to="/nvelopes"
-                className=" shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
-                Nvelopes
+                className="text-sm shadow-md shadow-black rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
+                <BsEnvelopeHeartFill className="w-5 h-5" />
+              </Link>
+            }
+            {currentScreen !== "bills" &&
+              <Link to="/bills"
+                className="text-sm shadow-md shadow-black rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark">
+                Bills
               </Link>
             }
             <p className="shadow-md shadow-black text-xl rounded-md bg-my-white-light cursor-pointer py-[.3rem] px-3 font-bold border hover:bg-my-white-dark" 
