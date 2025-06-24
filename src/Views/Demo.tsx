@@ -13,14 +13,14 @@ import { IoIosSad } from "react-icons/io";
 import Popup from "../components/Popup";
 import { Timestamp } from "firebase/firestore";
 import SpendBtn from "../components/SpendBtn";
-import { calculateBudgetByInterval } from "../util";
+import { getIncomeByInterval, isDateInInterval, recalculateBudget } from "../util";
 import { useNavigate } from "react-router-dom";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
 export default function Demo() {
-    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, setRent, interval, setInterval, bills, setBills, setTotalSpendingBudget, rent} = useGetDatabase();
+    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, setRent, interval, setInterval, bills, setBills, setTotalSpendingBudget, rent, totalSpendingBudget} = useGetDatabase();
     const {user} = useAuth();
 
     const [step, setStep] = useState(1);
@@ -92,12 +92,12 @@ export default function Demo() {
             return
         }
         
-        await editBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth) }], user?.uid || '')
-        const nextBudget = calculateBudgetByInterval({ income, interval, bills: newBills, envelopes: [], oneTimeCash: [] })
+        await editBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth), paid: false }], user?.uid || '')
+        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInInterval(Number(newBillDayOfMonth), interval) ? newBillAmount : 0 })
         await editTotalSpendingBudget(nextBudget, user?.uid || '')
         setTotalSpendingBudget(nextBudget)
-        setNewBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth) }])
-        setBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth) }])
+        setNewBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth), paid: false }])
+        setBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth), paid: false }])
         setNewBillName('')
         setNewBillAmount(0)
         setShowBillAdded(true)
@@ -133,8 +133,9 @@ export default function Demo() {
     async function handleThirdStep() {
         console.log('handleThirdStep')
         if (!newInterval && !interval) return;
+        const newIncomeAmount = getIncomeByInterval(interval, newInterval as Interval, income)
         await editInterval(newInterval as Interval, user!.uid)
-        const nextBudget = calculateBudgetByInterval({ income, interval: newInterval as Interval, bills, envelopes: [], oneTimeCash: [] })
+        const nextBudget = recalculateBudget({ currentAvailableBudget: newIncomeAmount, diffAmount: 0 })
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)
         setInterval(newInterval as Interval)
@@ -155,8 +156,9 @@ export default function Demo() {
     async function handleFifthStep() {
         console.log('handleFifthStep')
         if (!newIncome) return;
+        const diffAmount = newIncome - income
         await editIncome(newIncome, user!.uid)
-        const nextBudget = calculateBudgetByInterval({ income: newIncome, interval, bills, envelopes: [], oneTimeCash: [] })
+        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount })
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)
         setIncome(newIncome)
@@ -178,8 +180,9 @@ export default function Demo() {
     async function handleSeventhStep() {
         console.log('handleSeventhStep')
         if (!newBills) return;
+        const diffAmount = newBills.reduce((acc, bill) => acc + bill.amount, 0) * -1
         await editBills(newBills, user!.uid)
-        const nextBudget = calculateBudgetByInterval({ income, interval, bills: newBills, envelopes: [], oneTimeCash: [] })
+        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount })
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)
         setBills(newBills)
@@ -212,7 +215,7 @@ export default function Demo() {
 
     return (
         <>
-        {user && <Header step={step}/>}
+        {user && <Header links={[{label: 'Nvelopes', href: '/nvelopes',}, {label: 'Bills', href: '/bills'}, {label: 'Settings', href: '/settings'}]} step={step}/>}
         {showBillAdded && <Popup type="success">Bill added!</Popup>}
         {showBillError && <Popup type="error">Bill name already exists</Popup>}
         {rentNotSet && <Popup type="error">Please set rent first</Popup>}

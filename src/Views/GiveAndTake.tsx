@@ -6,12 +6,12 @@ import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
 interface GiveAndTakeProps {
     envelope: Envelope;
     handleBack: () => void;
-    takeAndGive: (envelope: Envelope, amount: number) => Promise<void>;
-    takeFromEnvelope: (amount?: number) => Promise<void>;
+    takeAndGive: (e: Envelope, n: number) => Promise<void>;
+    takeFromEnvelope: (n?: number) => Promise<void>;
 }
 
 export default function GiveAndTake({ envelope, handleBack, takeAndGive, takeFromEnvelope }: GiveAndTakeProps) {
-    const [amount, setAmount] = useState('');
+    const [amountToGiveOrTake, setAmountToGiveOrTake] = useState('');
     const [isGiving, setIsGiving] = useState(false);
     const [envelopeToGiveTo, setEnvelopeToGiveTo] = useState<Envelope | null>(null);
     const { envelopes } = useGetDatabase();
@@ -27,15 +27,15 @@ export default function GiveAndTake({ envelope, handleBack, takeAndGive, takeFro
                     max={envelope.total - envelope.spent} 
                     type="number" 
                     placeholder="Enter amount" 
-                    onChange={(e) => setAmount(e.target.value)} 
-                    value={amount} 
+                    onChange={(e) => setAmountToGiveOrTake(e.target.value)} 
+                    value={amountToGiveOrTake} 
                 />
-                <label htmlFor="giveOrTake">Do you want to give to another envelope?</label>
+                <label htmlFor="giveOrTake" className="text-my-white-light">Where do you want to put the $$$?</label>
                 <div className="flex justify-center w-full gap-2 items-center">
-                    <input type="radio" id="give" name="giveOrTake" value="yes" onChange={() => setIsGiving(true)} />
-                    <label htmlFor="give">Yes</label>
-                    <input type="radio" id="take" name="giveOrTake" value="no" onChange={() => setIsGiving(false)} />
-                    <label htmlFor="take">No</label>
+                    <input type="radio" id="give" checked={isGiving} name="giveOrTake" value="yes" onChange={() => setIsGiving(true)} />
+                    <label htmlFor="give">Another Envelope</label>
+                    <input type="radio"  id="take" checked={!isGiving} name="giveOrTake" value="no" onChange={() => setIsGiving(false)} />
+                    <label htmlFor="take">Available Budget</label>
                 </div>
                 {isGiving && (
                     <>
@@ -52,19 +52,21 @@ export default function GiveAndTake({ envelope, handleBack, takeAndGive, takeFro
                         </select>
                     </>
                 )}
-                {isGiving && envelopeToGiveTo !== null ? <Button
-                    onClick={() => takeAndGive(envelopeToGiveTo, Number(amount))}
-                    color="green"
-                >
-                    Give
-                </Button>
-                : !isGiving &&<Button
-                    onClick={() => (amount === '' || amount === '0') ? takeFromEnvelope() : takeFromEnvelope(Number(amount))}
-                    color="gold"
-                >
-                    Take
-                </Button>
-                }  
+                {isGiving && envelopeToGiveTo !== null 
+                    ? <Button
+                        onClick={() => takeAndGive(envelopeToGiveTo, Number(amountToGiveOrTake))}
+                        color="green"
+                    >
+                        Give
+                    </Button>
+                    : !isGiving &&
+                        <Button
+                            onClick={() => (amountToGiveOrTake === '' || amountToGiveOrTake === '0') ? takeFromEnvelope(Number(0)) : takeFromEnvelope(Number(amountToGiveOrTake))}
+                            color="gold"
+                        >
+                            Take
+                        </Button>
+                }
                 <Button
                     onClick={handleBack}
                     color="red"

@@ -4,7 +4,7 @@ export default function Popup({ children, type }: { children: React.ReactNode; t
   const [show, setShow] = useState(true)
     return (
     <>
-      <div className={`z-9998 absolute inset-0 bg-my-black-dark opacity-80 ${show ? "" : "hidden"}`}></div>
+      <div className={`z-9999 absolute inset-0 bg-my-black-dark opacity-80 ${show ? "" : "hidden"}`}></div>
       <div
         className={`z-9999 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-[4rem] w-[15rem] flex items-end justify-center text-xs text-center
             ${show ? "" : "hidden"}

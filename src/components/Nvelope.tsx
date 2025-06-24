@@ -80,13 +80,8 @@ export default function Nvelope({
     case "envelope":
     case "rent":
       return (
-        <div className="w-[14rem] h-[14rem] relative group" onClick={() => onClick?.()}>
-          <div className="z-333 absolute top-[-10%] left-[-2.5%] w-[105%] h-[105%] cursor-pointer group-hover:flex hidden bg-[#0d916744] text-my-green-dark rounded-lg justify-center items-center">
-            <p className="z-333 flex justify-center items-center p-2 bg-white rounded-md">
-              Spend
-            </p>
-          </div>
-          <div className="z-12 flex flex-col gap-[.5rem] absolute w-full h-full items-center pt-3">
+        <div className="w-[11rem] h-[11rem] relative group" onClick={() => onClick?.()}>
+          <div className="z-12 flex flex-col gap-[.15rem] absolute w-full h-full items-center pt-2">
             <p
               className={`w-fit text-center text-[.8rem] ${
                 envelope.total && (envelope.spent || envelope.spent === 0)
@@ -101,11 +96,11 @@ export default function Nvelope({
               {envelope.name}
             </p>
             <div className="flex flex-col items-center w-full gap-[.15rem]">
-              <p className="w-fit px-2 bg-white rounded-md text-center text-[.65rem]">
+              <p className="w-fit px-[.15rem] bg-white rounded-md text-center text-[.6rem]">
                 ${envelope.spent}
               </p>
               <hr className="w-[40%] h-[2px] bg-black my-[3px]" />
-              <p className="w-fit px-2 bg-white rounded-md text-center text-[.65rem]">
+              <p className="w-fit px-[.15rem] bg-white rounded-md text-center text-[.6rem]">
                 ${envelope.total}
               </p>
             </div>

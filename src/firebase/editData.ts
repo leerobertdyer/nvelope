@@ -2,7 +2,7 @@ import type { Bill, Envelope, Interval, OneTimeCash, PreviousIntervalDetails } f
 import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
-import { calculateBudgetByInterval } from "../util";
+import { isDateInInterval } from "../util";
 
 export async function editEnvelopes(envelopes: Envelope[], userId: string) {
     console.log(`Firebase, editEnvelopes Started, envelopes: ${envelopes}`)
@@ -132,13 +132,13 @@ export async function editTotalSpendingBudget(newTotal: number, userId: string) 
     return;
 }
 
-export async function checkAndResetBudget(payDate: Timestamp, interval: Interval, envelopes: Envelope[], user: User, setPayDate: (payDate: Timestamp) => void, setEnvelopes: (envelopes: Envelope[]) => void, setTotalSpendingBudget: (totalSpendingBudget: number) => void, income: number, totalSpendingBudget: number, bills: Bill[], oneTimeCash: OneTimeCash[] | null) {
+export async function checkAndResetBudget(payDate: Timestamp, interval: Interval, envelopes: Envelope[], user: User, setPayDate: (payDate: Timestamp) => void, setEnvelopes: (envelopes: Envelope[]) => void, setTotalSpendingBudget: (totalSpendingBudget: number) => void, setOneTimeCash: (oneTimeCash: OneTimeCash[] | null) => void, income: number, totalSpendingBudget: number, bills: Bill[], oneTimeCash: OneTimeCash[] | null) {
     const currentDate = new Date();
     const lastPayDate = payDate.toDate();
     const nextPayDate = new Date(lastPayDate);
     let shouldReset = false;
 
-    // Calculate next pay date based on interval
+    // Calculate next pay date and based on interval
     switch (interval) {
         case "weekly":
             while (nextPayDate < currentDate) {
@@ -180,20 +180,17 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
             // Reset spent values here
             spent: 0
         }));
+        
+        const totalBillsInInterval = bills.reduce((acc, bill) => (
+            isDateInInterval(bill.dayOfMonth, interval) ? acc + bill.amount : acc
+        ), 0);
 
-        let budget = calculateBudgetByInterval({
-            income,
-            interval,
-            bills,
-            envelopes,
-            oneTimeCash: oneTimeCash || [],
-        })
+        const totalOneTimeCash = oneTimeCash ? oneTimeCash.reduce((acc, cash) => (
+            isDateInInterval(cash.date.toDate().getDate(), interval) ? acc + cash.amount : acc), 0) : 0;
 
-        console.log("RESET: next interval base income after bills: ", budget, "current totalSpendingBudget: ", totalSpendingBudget)
+        const totalEnvelopes = updatedEnvelopes.reduce((acc, envelope) => acc + envelope.total, 0);
 
-        budget = budget + totalSpendingBudget;
-
-        console.log("RESET: next interval base income after bills and current totalSpendingBudget: ", budget)
+        const remainingBudget = income - totalBillsInInterval - totalOneTimeCash - totalEnvelopes
 
         // Before updating data and state, save the previous interval data
         const previousIntervalDetails = {
@@ -209,16 +206,14 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
         // Save data for future reporting
         await storePreviousIntervalDetails(previousIntervalDetails, user.uid);
 
-        //reset OneTimeCash to empty array
-        await editOneTimeCashAndBudget(null, user.uid, budget);
+        //reset OneTimeCash to empty array and update totalSpendingBudget
+        await editOneTimeCashAndBudget(null, user.uid, remainingBudget);
+        setTotalSpendingBudget(remainingBudget);
+        setOneTimeCash([]);
 
-        // Update the pay date to the new pay date
+        // Update the pay date to the next interval
         await editPayDate(nextPayDate, user.uid);
         setPayDate(Timestamp.fromDate(nextPayDate));
-        
-        // Set total spending budget to income plus any remaining budget
-        await editTotalSpendingBudget(budget, user.uid);
-        setTotalSpendingBudget(budget);
         
         // Update envelopes if needed
         await editEnvelopes(updatedEnvelopes, user.uid);

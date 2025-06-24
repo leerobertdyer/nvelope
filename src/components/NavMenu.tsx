@@ -1,0 +1,27 @@
+import { IoIosMenu } from "react-icons/io";
+import ClosingX from "./ClosingX";
+import { Link } from "react-router-dom";
+
+interface NavMenuProps {
+    showMenu: boolean;
+    setShowMenu: (show: boolean) => void;
+    links: { label: string, href: string }[];
+}
+
+export default function NavMenu({ showMenu, setShowMenu, links }: NavMenuProps) {
+    return (<>
+        {showMenu
+            ? <div className={`absolute z-9999 top-0 w-full h-fit flex flex-col items-center justify-center py-2 gap-2 text-2xl bg-[#242424CC] border-b-2 border-my-white-dark text-my-white-light  ${showMenu ? "" : "hidden"}`}>
+                {links.map((link) => (
+                    <Link  to={link.href} key={link.label} 
+                        className="w-full py-2  text-center hover:bg-my-white-light hover:text-my-black-base cursor-pointer 
+                            text-my-white-dark bg-my-black-base">
+                       {link.label}</Link>
+                ))}
+                    <ClosingX onClick={() => setShowMenu(false)} />
+                </div>
+            : <IoIosMenu className="text-my-white-base bg-my-black-base rounded-md p-2 cursor-pointer text-3xl border-my-black-dark" onClick={() => setShowMenu(true)} />
+        }
+    </>
+    )
+}

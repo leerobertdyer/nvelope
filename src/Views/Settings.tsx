@@ -6,13 +6,13 @@ import type { Interval } from "../types";
 import { editInterval, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
-import {  calculateBudgetByInterval } from "../util";
+import {  getIncomeByInterval, recalculateBudget } from "../util";
 import { useNavigate } from "react-router-dom";
 
 
 export default function Settings() {
     const {user} = useAuth();
-    const { interval, setInterval, setIncome, bills, envelopes, oneTimeCash, setTotalSpendingBudget } = useGetDatabase();
+    const { interval, setInterval, setIncome, setTotalSpendingBudget, totalSpendingBudget } = useGetDatabase();
     const navigate = useNavigate();
 
     const [showIntervalSettings, setShowIntervalSettings] = useState<boolean>(false);
@@ -26,10 +26,11 @@ export default function Settings() {
     
     async function handleUpdateInterval() {
         if (!newIncome || !newInterval) return;
+        const diffAmount = getIncomeByInterval(interval, newInterval, Number(newIncome));
         setIncome(Number(newIncome));
         setInterval(newInterval);
         await editInterval(newInterval, user!.uid);
-        const nextBudget = calculateBudgetByInterval({ income: Number(newIncome), interval: newInterval, bills, envelopes, oneTimeCash: oneTimeCash || [] })
+        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount })
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)
         setShowIntervalSettings(false);
@@ -69,7 +70,11 @@ export default function Settings() {
 
     return (
         <>
-            <Header />
+            <Header links={[
+                { label: "Home", href: "/" },
+                { label: "Bills", href: "/bills" },
+                { label: "Nvelopes", href: "/nvelopes" },
+            ]} />
             <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md">Settings</h1>   
             <div className="overflow-y-scroll overflow-x-hidden flex flex-col items-center justify-center pb-4 h-[22rem] bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
                 <Button 

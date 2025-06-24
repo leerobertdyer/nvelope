@@ -1,68 +1,82 @@
 import type { User } from "firebase/auth";
-import type { Bill, Envelope, Interval, OneTimeCash } from "./types";
+import type { Bill, Interval } from "./types";
 import { editTotalSpendingBudget } from "./firebase/editData";
 
-export function calculateBudgetByInterval(params: {
-    income: number;
-    interval: Interval;
-    bills: Bill[];
-    envelopes: Envelope[];
-    oneTimeCash: OneTimeCash[] | null;
+export function recalculateBudget(params: {
+    currentAvailableBudget: number;
+    diffAmount: number;
   }): number {
-    const { income, interval, bills, envelopes, oneTimeCash } = params;
+    const { currentAvailableBudget, diffAmount } = params;
+    return currentAvailableBudget - diffAmount
+  }
 
-    // If interval is fixed, we don't need to calculate bills
-    if (interval === "fixed") {
-      const oneTimeCashTotal = oneTimeCash && oneTimeCash.length > 0 ? oneTimeCash.reduce((acc, cash) => acc + cash.amount, 0) : 0;
-      return oneTimeCashTotal;
+export function getIntervalDates(interval: Interval) {      
+     // Calculate days in interval
+     let intervalDays = 0;
+     if (interval === 'monthly') {
+       // Calculate days until end of month
+       const today = new Date();
+       const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+       intervalDays = lastDay - today.getDate() + 1; // +1 to include today
+     } else if (interval === 'weekly') {
+       intervalDays = 7;
+     } else if (interval === 'biweekly') {
+       intervalDays = 14;
+     }    
+      
+      // Calculate the date range for the current interval
+      const today = new Date();
+      const endDate = new Date(today);
+      endDate.setDate(today.getDate() + intervalDays);
+      return { today, endDate };
+    }
+
+export function isDateInInterval(dayOfMonth: number, interval: Interval): boolean {
+    const { today, endDate } = getIntervalDates(interval);
+    
+    // Create bill date for current month
+    const billDate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
+    
+    // For today comparison, remove time component
+    const todayWithoutTime = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    // First check if the bill is within the current month's interval
+    if (billDate >= todayWithoutTime && billDate <= endDate) {
+        return true;
     }
     
-   // Calculate days in interval
-   let intervalDays = 0;
-   if (interval === 'monthly') {
-     // Calculate days until end of month
-     const today = new Date();
-     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-     intervalDays = lastDay - today.getDate() + 1; // +1 to include today
-   } else if (interval === 'weekly') {
-     intervalDays = 7;
-   } else if (interval === 'biweekly') {
-     intervalDays = 14;
-   }    
+    // If date is in the past this month, check next month
+    if (billDate < todayWithoutTime) {
+        const nextMonthBillDate = new Date(today.getFullYear(), today.getMonth() + 1, dayOfMonth);
+        return nextMonthBillDate <= endDate;
+    }
     
-    // Calculate the date range for the current interval
-    const today = new Date();
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + intervalDays);
-    
-    const billTotalForInterval = bills ? bills.reduce((acc, bill) => {
-      // Create a date object for this bill's due date in current month
-      const billDate = new Date(today.getFullYear(), today.getMonth(), bill.dayOfMonth);
-      
-      // If the bill date is in the past this month, it might be due next month
-      if (billDate < today) {
-        // Check if it falls in our interval by creating a date for next month
-        const nextMonthBillDate = new Date(today.getFullYear(), today.getMonth() + 1, bill.dayOfMonth);
-        if (nextMonthBillDate <= endDate) {
-          return acc + bill.amount; // Bill is due within our interval (in the next month)
-        }
-      } 
-      // Otherwise check if the bill date is within our interval
-      else if (billDate <= endDate) {
-        return acc + bill.amount; // Bill is due within our interval (in the current month)
-      }
-      
-      return acc; // Skip if not within our interval
-    }, 0) : 0;
+    return false;
+}
 
-    const envelopesTotal = envelopes ? envelopes.reduce((acc, envelope) => acc + envelope.total, 0) : 0;
-    const oneTimeCashTotal = oneTimeCash && oneTimeCash.length > 0 ? oneTimeCash.reduce((acc, cash) => acc + cash.amount, 0) : 0;
-    
-    // Calculate the budget
-    const budget = income - billTotalForInterval - envelopesTotal + oneTimeCashTotal;
-    
-    return budget;
+export function getIncomeByInterval(oldInterval: Interval, newInterval: Interval, income: number): number {
+  // First convert the income to monthly so we can calculate the new income
+  let monthlyIncome = 0;
+  if (oldInterval === 'monthly') {
+    monthlyIncome = income;
+  } else if (oldInterval === 'biweekly') {
+    monthlyIncome = income * 2;
+  } else if (oldInterval === 'weekly') {
+    monthlyIncome = income * 4;
   }
+  // Now use the new interval to calculate the new income
+  switch (newInterval) {
+      case 'monthly':
+          return monthlyIncome;
+      case 'weekly':
+          return monthlyIncome / 4;
+      case 'biweekly':
+          return monthlyIncome / 2;
+      default:
+          // If no viable option do nothing...
+          return income;
+  }
+}
 
 export async function addOrSubtractFromBudget(amount: number, type: 'add' | 'sub', user: User, totalSpendingBudget: number, setTotalSpendingBudget: (totalSpendingBudget: number) => void) {
     if (!user) return;

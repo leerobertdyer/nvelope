@@ -17,24 +17,17 @@ A personal finance management app built with React, TypeScript, and Firebase.
 
 
 # TODO
-1. Fix totalSpendingBudget
-    - It was in a useeffect that only updated the state, but needs to be handled manually to update both state AND DB
-    - Triggered By:
-        * Add Bill 
-        * Add Envelope 
-        * Add OneTimeCash 
-        * Edit Envelope 
-        * Edit Bill 
-        * Edit OneTimeCash 
-        * Delete Bill 
-        * Delete Envelope 
-        * Delete OneTimeCash 
-        * Edit CASH (mainpage edit) 
-        * Edit interval
-    - Make sure to check Demo as well
+
+** Another issue is that I am using the max of 28 calendar days.
+This is going to cause bugs down the road.... anytime at the end of the month if a bill is marked as 28th it is technically in the past, even though it isn't... lol Have to fix this....
+
+1. Fix totalSpendingBudget:
+    - When Deleting a bill
+    - When Adding a bill
+    - When Editing a bill
 
 2. Only Allow adding of funds to envelope when available
-3. Make sure data is persisted between resets
+3. Make sure data is persisted between budget resets
 4. Implement a non-time based budget that uses fixed income, never resets, and use of permanent envelopes
     - Use Erin's business as model
 
