@@ -1,6 +1,7 @@
 import type { User } from "firebase/auth";
 import type { Bill, Interval } from "./types";
 import { editTotalSpendingBudget } from "./firebase/editData";
+import type { Timestamp } from "firebase/firestore";
 
 export function recalculateBudget(params: {
     currentAvailableBudget: number;
@@ -28,30 +29,95 @@ export function getIntervalDates(interval: Interval) {
       const today = new Date();
       const endDate = new Date(today);
       endDate.setDate(today.getDate() + intervalDays);
-      return { today, endDate };
+      return { intervalDays, today, endDate };
     }
 
-export function isDateInInterval(dayOfMonth: number, interval: Interval): boolean {
-    const { today, endDate } = getIntervalDates(interval);
-    
-    // Create bill date for current month
-    const billDate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
-    
-    // For today comparison, remove time component
+export function isDateInInterval(dayOfMonth: number, interval: Interval, startDate: Timestamp): boolean {
+    const today = new Date();
     const todayWithoutTime = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const originalStart = startDate.toDate();
     
-    // First check if the bill is within the current month's interval
-    if (billDate >= todayWithoutTime && billDate <= endDate) {
-        return true;
+    // Calculate the current/next pay period start date based on the interval pattern
+    const currentStartDate = calculateCurrentPayPeriodStart(originalStart, interval);
+    
+    const { intervalDays } = getIntervalDates(interval);
+    
+    const endDate = new Date(currentStartDate);
+    endDate.setDate(currentStartDate.getDate() + intervalDays);
+    
+    const nextPaymentDate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
+    
+    // If the day has passed this month, look at next month
+    if (nextPaymentDate < todayWithoutTime) {
+        nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
     }
     
-    // If date is in the past this month, check next month
-    if (billDate < todayWithoutTime) {
-        const nextMonthBillDate = new Date(today.getFullYear(), today.getMonth() + 1, dayOfMonth);
-        return nextMonthBillDate <= endDate;
+    const billInInterval = nextPaymentDate >= currentStartDate && nextPaymentDate <= endDate;
+    
+    return billInInterval;
+}
+
+/**
+ * Calculate the start date of the current pay period based on the original reference date and interval
+ */
+export function calculateCurrentPayPeriodStart(originalDate: Date, interval: Interval): Date {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Clone the original date to avoid modifying it
+    let periodStart = new Date(originalDate);
+    periodStart.setHours(0, 0, 0, 0);
+    
+    // If the original date is in the future, use it as is
+    if (periodStart > today) {
+        return periodStart;
     }
     
-    return false;
+    // If original date is in the past, find the most recent/current period start
+    // based on the interval type
+    if (interval === 'monthly') {
+        // For monthly, advance by months until we find a start date <= today
+        while (periodStart <= today) {
+            const nextMonth = periodStart.getMonth() + 1;
+            periodStart.setMonth(nextMonth);
+            
+            // If we've gone too far (into the future), go back one month
+            if (periodStart > today) {
+                periodStart.setMonth(periodStart.getMonth() - 1);
+                break;
+            }
+        }
+    } 
+    else if (interval === 'biweekly') {
+        // For biweekly, add 14 days until we find a start date <= today
+        while (periodStart <= today) {
+            const nextStart = new Date(periodStart);
+            nextStart.setDate(nextStart.getDate() + 14);
+            
+            // If we've gone too far (into the future), keep the previous period
+            if (nextStart > today) {
+                break;
+            }
+            
+            periodStart = nextStart;
+        }
+    }
+    else if (interval === 'weekly') {
+        // For weekly, add 7 days until we find a start date <= today
+        while (periodStart <= today) {
+            const nextStart = new Date(periodStart);
+            nextStart.setDate(nextStart.getDate() + 7);
+            
+            // If we've gone too far (into the future), keep the previous period
+            if (nextStart > today) {
+                break;
+            }
+            
+            periodStart = nextStart;
+        }
+    }
+    
+    return periodStart;
 }
 
 export function getIncomeByInterval(oldInterval: Interval, newInterval: Interval, income: number): number {

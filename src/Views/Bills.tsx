@@ -12,7 +12,7 @@ import type { Value } from "react-calendar/src/shared/types.js";
 import Header from "../components/Header";
 
 export default function Bills() {
-    const {bills, setBills, interval, setTotalSpendingBudget, totalSpendingBudget} = useGetDatabase();
+    const {bills, setBills, interval, setTotalSpendingBudget, totalSpendingBudget, payDate} = useGetDatabase();
     const {user} = useAuth();
 
     const [newBill, setNewBill] = useState<Bill | null>(null);
@@ -27,13 +27,11 @@ export default function Bills() {
 
     // UseEffect to sort bills by date and paid/unpaid
     useEffect(() => {
-        const billsSortedByDate = [...bills].sort((a, b) => {
-            return a.dayOfMonth - b.dayOfMonth;
-        });
-        const billsSortedByDateAndPaid = [...billsSortedByDate].sort((a, b) => Number(a.paid) - Number(b.paid));
-        const sortedBillsWithInterval = billsSortedByDateAndPaid.map(b => ({...b, isInInterval: isDateInInterval(b.dayOfMonth, interval)}))
-            .sort((a, b) => Number(a.isInInterval) - Number(b.isInInterval));
-        setSortedBills(sortedBillsWithInterval);
+        const billsSortedByDateAndPaidAndInterval = [...bills].map(b => ({...b, isInInterval: isDateInInterval(b.dayOfMonth, interval, payDate!)}))
+            .sort((a, b) => Number(a.isInInterval) - Number(b.isInInterval))
+            .sort((a, b) => a.dayOfMonth - b.dayOfMonth)
+            .sort((a, b) => Number(a.paid) - Number(b.paid));
+        setSortedBills(billsSortedByDateAndPaidAndInterval);
     }, [bills, interval])
 
     useEffect(() => {
@@ -103,7 +101,7 @@ export default function Bills() {
         setBills(updatedBills);
         setShowBillAdded(true);
         await editBills(updatedBills, user.uid);
-        if (isDateInInterval(newBill.dayOfMonth, interval)) {
+        if (isDateInInterval(newBill.dayOfMonth, interval, payDate!)) {
             await handleUpdateBudget(newBill.amount * -1)
         }
         resetBillState()
@@ -155,7 +153,7 @@ export default function Bills() {
                 <span className="text-my-green-base px-[3px]">
                     ${totalSpendingBudget.toFixed(2)}
                 </span>
-                because it's already been paid this period.
+                because it's either paid already, or not in the current interval.
                 </p>}
                 <p className="p-4 rounded-md text-my-white-dark w-full text-center">
                     Are you sure you want to delete {billToEdit?.name}?
@@ -263,9 +261,9 @@ export default function Bills() {
                    { label: "Settings", href: "/settings" },
                    { label: "Nvelopes", href: "/nvelopes" },
                ]} />
-                <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden">
+                <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden gap-2">
                     <div className="flex flex-col gap-2 mb-2 items-center justify-center w-full">
-                        <p className="pt-2 rounded-md text-my-white-dark w-full text-center text-2xl">Edit Bills (current total = ${billsTotal(bills).toFixed(2)})</p>
+                        <p className="pt-2 rounded-md text-my-white-dark w-full text-center text-xl md:text-2xl">Edit Bills <br />Current bills = <span className="text-my-red-base">${billsTotal(bills).toFixed(2)}</span></p>
                         <button
                             className="h-[3rem] w-[6rem] bg-my-red-dark text-my-white-light hover:bg-my-black-light  rounded-md p-2 border-2 border-my-white-light cursor-pointer"
                             onClick={() => handleAddBill()}
@@ -275,7 +273,7 @@ export default function Bills() {
                     </div>
                     {sortedBills.map((bill) => (
                             <div key={bill.name}
-                                className={`grid grid-cols-4 w-full py-2 rounded-md text-my-black-base border-2 border-my-red-dark text-center
+                                className={`grid grid-cols-4 w-full py-2 text-my-black-base border-2 border-my-white-light text-center
                                   ${bill.paid
                                     ? 'bg-my-green-dark'
                                     : bill.dayOfMonth <= new Date().getDate() && !bill.paid
@@ -305,7 +303,7 @@ export default function Bills() {
                                 </div>
                             </div>
                         ))}
-                    <div className="fixed bottom-4 flex flex-wrap gap-2 items-center justify-center w-[95%] mt-6 text-my-white-light">
+                    <div className="fixed bottom-0 flex flex-wrap gap-2 items-center justify-center w-screen mt-6 text-my-white-light bg-my-black-dark p-4">
                         Past Due
                         <div className="rounded-sm w-[1rem] h-[1rem] bg-my-red-light border-2 border-my-white-dark mr-4"></div>
                         Paid

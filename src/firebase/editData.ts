@@ -2,7 +2,7 @@ import type { Bill, Envelope, Interval, OneTimeCash, PreviousIntervalDetails } f
 import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
-import { isDateInInterval } from "../util";
+import { calculateCurrentPayPeriodStart, getIntervalDates, isDateInInterval } from "../util";
 
 export async function editEnvelopes(envelopes: Envelope[], userId: string) {
     console.log(`Firebase, editEnvelopes Started, envelopes: ${envelopes}`)
@@ -134,59 +134,31 @@ export async function editTotalSpendingBudget(newTotal: number, userId: string) 
 
 export async function checkAndResetBudget(payDate: Timestamp, interval: Interval, envelopes: Envelope[], user: User, setPayDate: (payDate: Timestamp) => void, setEnvelopes: (envelopes: Envelope[]) => void, setTotalSpendingBudget: (totalSpendingBudget: number) => void, setOneTimeCash: (oneTimeCash: OneTimeCash[] | null) => void, income: number, totalSpendingBudget: number, bills: Bill[], oneTimeCash: OneTimeCash[] | null) {
     const currentDate = new Date();
-    const lastPayDate = payDate.toDate();
-    const nextPayDate = new Date(lastPayDate);
-    let shouldReset = false;
+    const originalPayDate = payDate.toDate();
+    const currentPayPeriodStart = calculateCurrentPayPeriodStart(originalPayDate, interval);
+    
+    const { intervalDays } = getIntervalDates(interval);
+    
+    const endDate = new Date(currentPayPeriodStart);
+    endDate.setDate(currentPayPeriodStart.getDate() + intervalDays);
 
-    // Calculate next pay date and based on interval
-    switch (interval) {
-        case "weekly":
-            while (nextPayDate < currentDate) {
-                nextPayDate.setDate(nextPayDate.getDate() + 7);
-            }
-            break;
-        case "biweekly":
-            while (nextPayDate < currentDate) {
-                nextPayDate.setDate(nextPayDate.getDate() + 14);
-            }
-            break;
-        case "monthly":
-            while (nextPayDate < currentDate) {
-                nextPayDate.setMonth(nextPayDate.getMonth() + 1);
-            }
-            break;
-        default:
-            console.log("RESET: no interval found. Skipping reset.")
-            return; 
-            // For now just returns
-            // Eventually would like to default to a non-time based budget
-            // Where user has a fixed amount income they can manually add to
-            // And then they use envelopes that never reset 
-            // Probably should have done this for mvp but I'm crazy
+    if (currentPayPeriodStart <= currentDate && currentDate <= endDate) {
+        return;
     }
-
-    // If we've passed the next pay date, it's time to reset
-    if (currentDate >= nextPayDate) {
-        console.log("checkAndResetBudget() => Time to reset the budget!");
-        shouldReset = true;
-    } else {
-        console.log("checkAndResetBudget() => No need to reset the budget.");
-    }
-
-    if (shouldReset) {
-        // Calculate what's left in each envelope and if recurring
-        const updatedEnvelopes = envelopes.filter(e => e.recurring).map(e => ({
-            ...e,
+    
+    // Calculate what's left in each envelope and if recurring
+    const updatedEnvelopes = envelopes.filter(e => e.recurring).map(e => ({
+        ...e,
             // Reset spent values here
             spent: 0
         }));
         
         const totalBillsInInterval = bills.reduce((acc, bill) => (
-            isDateInInterval(bill.dayOfMonth, interval) ? acc + bill.amount : acc
+            isDateInInterval(bill.dayOfMonth, interval, Timestamp.fromDate(currentPayPeriodStart)) ? acc + bill.amount : acc
         ), 0);
 
         const totalOneTimeCash = oneTimeCash ? oneTimeCash.reduce((acc, cash) => (
-            isDateInInterval(cash.date.toDate().getDate(), interval) ? acc + cash.amount : acc), 0) : 0;
+            isDateInInterval(cash.date.toDate().getDate(), interval, Timestamp.fromDate(currentPayPeriodStart)) ? acc + cash.amount : acc), 0) : 0;
 
         const totalEnvelopes = updatedEnvelopes.reduce((acc, envelope) => acc + envelope.total, 0);
 
@@ -210,17 +182,12 @@ export async function checkAndResetBudget(payDate: Timestamp, interval: Interval
         await editOneTimeCashAndBudget(null, user.uid, remainingBudget);
         setTotalSpendingBudget(remainingBudget);
         setOneTimeCash([]);
-
-        // Update the pay date to the next interval
-        await editPayDate(nextPayDate, user.uid);
-        setPayDate(Timestamp.fromDate(nextPayDate));
         
         // Update envelopes if needed
         await editEnvelopes(updatedEnvelopes, user.uid);
         setEnvelopes(updatedEnvelopes);
         
         console.log("checkAndResetBudget() => Budget reset complete for interval:", interval);
-    }
 };
 
 export async function storePreviousIntervalDetails(previousIntervalDetails: PreviousIntervalDetails, userId: string) {

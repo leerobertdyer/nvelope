@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import { Timestamp } from "firebase/firestore";
 import SpotlightOverlay from "./SpotlightOverlay";
 import NavMenu from "./NavMenu";
+import { calculateCurrentPayPeriodStart, getIntervalDates } from "../util";
 
 export default function Header({ step, links }: { step?: number, links: { label: string, href: string }[] }) {
   const { totalSpendingBudget, interval, payDate } = useGetDatabase();
@@ -45,83 +45,20 @@ export default function Header({ step, links }: { step?: number, links: { label:
         setDaysTillReset(0);
         return;
       }
-
-      // Convert Firebase Timestamp to JS Date
-      const start = payDate instanceof Timestamp 
-        ? payDate.toDate() 
-        : new Date(payDate);
-
-      const now = new Date();
-
-      let nextPayPeriod: Date;
-
-      if (interval === "monthly") {
-        // Find the next month where the day and time matches payDate
-        nextPayPeriod = new Date(start);
-        nextPayPeriod.setFullYear(
-          now.getFullYear(),
-          now.getMonth(),
-          start.getDate()
-        );
-        nextPayPeriod.setHours(
-          start.getHours(),
-          start.getMinutes(),
-          start.getSeconds(),
-          0
-        );
-
-        // If the next pay period is in the past, move to the next month
-        if (nextPayPeriod <= now) {
-          nextPayPeriod.setMonth(nextPayPeriod.getMonth() + 1);
-        }
-      } else if (interval === "weekly") {
-        // Weekly: find the next week where the weekday and time matches payDate
-        nextPayPeriod = new Date(now);
-        nextPayPeriod.setHours(
-          start.getHours(),
-          start.getMinutes(),
-          start.getSeconds(),
-          0
-        );
-
-        // Calculate the difference in days to the next weekday (0=Sunday, 5=Friday, etc.)
-        const startWeekday = start.getDay();
-        const nowWeekday = now.getDay();
-        let daysUntil = (startWeekday - nowWeekday + 7) % 7;
-        if (daysUntil === 0 && nextPayPeriod <= now) daysUntil = 7; // If today but time passed, move to next week
-        nextPayPeriod.setDate(now.getDate() + daysUntil);
-      } else if (interval === "biweekly") {
-        // Biweekly: find the next 14-day period since payDate
-        const msInDay = 24 * 60 * 60 * 1000;
-        const diff = Math.floor((now.getTime() - start.getTime()) / msInDay);
-        const daysSinceLast = diff % 14;
-        let daysUntil = 14 - daysSinceLast;
-        // If today but time passed, move to next period
-        const lastPay = new Date(now.getTime() - daysSinceLast * msInDay);
-        lastPay.setHours(
-          start.getHours(),
-          start.getMinutes(),
-          start.getSeconds(),
-          0
-        );
-        if (daysUntil === 14 && lastPay > now) daysUntil = 0;
-        nextPayPeriod = new Date(now.getTime() + daysUntil * msInDay);
-        nextPayPeriod.setHours(
-          start.getHours(),
-          start.getMinutes(),
-          start.getSeconds(),
-          0
-        );
-      } else {
-        setDaysTillReset(0);
-        return;
-      }
-
-      // Calculate days difference (rounded up)
-      const msPerDay = 24 * 60 * 60 * 1000;
-      const days = Math.ceil((nextPayPeriod.getTime() - now.getTime()) / msPerDay);
+      const currentPayPeriodStart = calculateCurrentPayPeriodStart(payDate.toDate(), interval);
+      const { intervalDays } = getIntervalDates(interval);
       
-      setDaysTillReset(days);
+      // Create proper end date
+      const endDate = new Date(currentPayPeriodStart);
+      endDate.setDate(currentPayPeriodStart.getDate() + intervalDays);
+      
+      // Calculate remaining days (more accurate than date math)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Remove time component
+      const diffTime = endDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      setDaysTillReset(diffDays > 0 ? diffDays : 0);
   }, [interval, payDate]);
   
 

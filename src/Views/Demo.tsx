@@ -93,7 +93,7 @@ export default function Demo() {
         }
         
         await editBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth), paid: false }], user?.uid || '')
-        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInInterval(Number(newBillDayOfMonth), interval) ? newBillAmount : 0 })
+        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInInterval(Number(newBillDayOfMonth), interval, payDate!) ? newBillAmount : 0 })
         await editTotalSpendingBudget(nextBudget, user?.uid || '')
         setTotalSpendingBudget(nextBudget)
         setNewBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth), paid: false }])
