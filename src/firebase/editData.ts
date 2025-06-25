@@ -132,7 +132,7 @@ export async function editTotalSpendingBudget(newTotal: number, userId: string) 
     return;
 }
 
-export async function checkAndResetBudget(payDate: Timestamp, interval: Interval, envelopes: Envelope[], user: User, setPayDate: (payDate: Timestamp) => void, setEnvelopes: (envelopes: Envelope[]) => void, setTotalSpendingBudget: (totalSpendingBudget: number) => void, setOneTimeCash: (oneTimeCash: OneTimeCash[] | null) => void, income: number, totalSpendingBudget: number, bills: Bill[], oneTimeCash: OneTimeCash[] | null) {
+export async function checkAndResetBudget(payDate: Timestamp, interval: Interval, envelopes: Envelope[], user: User, setEnvelopes: (envelopes: Envelope[]) => void, setTotalSpendingBudget: (totalSpendingBudget: number) => void, setOneTimeCash: (oneTimeCash: OneTimeCash[] | null) => void, income: number, totalSpendingBudget: number, bills: Bill[], oneTimeCash: OneTimeCash[] | null) {
     const currentDate = new Date();
     const originalPayDate = payDate.toDate();
     const currentPayPeriodStart = calculateCurrentPayPeriodStart(originalPayDate, interval);

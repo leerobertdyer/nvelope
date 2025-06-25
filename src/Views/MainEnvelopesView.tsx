@@ -13,7 +13,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 export default function MainEnvelopesView() {
     const {user} = useAuth();
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, setPayDate, interval, bills, oneTimeCash, setOneTimeCash, rent, setRent } = useGetDatabase();
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, interval, bills, oneTimeCash, setOneTimeCash, rent, setRent } = useGetDatabase();
     
     const { search } = useLocation();
     const navigate = useNavigate();
@@ -34,8 +34,8 @@ export default function MainEnvelopesView() {
     // This useEffect checks if we need to reset the budget based on interval and date
     useEffect(() => {
         if (!payDate || !interval || !user) return;
-        checkAndResetBudget(payDate, interval, envelopes, user, setPayDate, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash);
-    }, [payDate, interval, income, user, envelopes, setPayDate, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, totalSpendingBudget, bills, oneTimeCash]);
+        checkAndResetBudget(payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash);
+    }, [payDate, interval, income, user, envelopes, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, totalSpendingBudget, bills, oneTimeCash]);
 
     useEffect(() => {
         if (showSpendPage) return;
