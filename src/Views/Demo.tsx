@@ -69,13 +69,13 @@ export default function Demo() {
         if (!newBillName || !newBillAmount) return;
 
         // Make sure rent is set before allowing new bills:
-        if (newBillName !== 'rent' && rent?.total === 0) {
+        if (newBillName !== 'rent' && rent === 0) {
             console.log(newBills)
             setRentNotSet(true)
             return
         } else if (newBillName === 'rent') {
             await editRent(newBillAmount, user!.uid)
-            setRent({name: 'rent', total: newBillAmount, spent: 0, recurring: true, id: 'rent'})
+            setRent(0)
             setNewBillAmount(null)
             setNewBillName('')
             setNewBillDayOfMonth('')
