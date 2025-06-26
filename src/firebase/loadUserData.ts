@@ -27,7 +27,8 @@ export default async function loadUserData(user: User) {
                 income: 0,
                 totalSpendingBudget: 0,
                 oneTimeCash: null,
-                rent: {name: 'rent', total: 0, spent: 0, recurring: true, id: 'rent'}
+                rent: 0,
+                shouldReset: null
             };
             
             // Create the user document

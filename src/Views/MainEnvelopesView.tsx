@@ -9,13 +9,13 @@ import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import { addOrSubtractFromBudget } from "../util";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import Loading from "../components/Loading";
 
 export default function MainEnvelopesView() {
     const {user} = useAuth();
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, interval, bills, oneTimeCash, setOneTimeCash, rent, setRent } = useGetDatabase();
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, shouldReset, interval, bills, oneTimeCash, setOneTimeCash, rent, setRent } = useGetDatabase();
     
-    const { search } = useLocation();
     const navigate = useNavigate();
 
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
@@ -27,15 +27,22 @@ export default function MainEnvelopesView() {
     const [showBudgetWarning, setShowBudgetWarning] = useState(false);
     const [cashName, setCashName] = useState('');
     const [cashAmount, setCashAmount] = useState('');
-    const [showSpendPage, setShowSpendPage] = useState(true);
+    const [showSpendPage, setShowSpendPage] = useState(false);
+    const [showResetLoading, setShowResetLoading] = useState(false);
 
     const emptyEnvelope = { id: '', name: '', total: 0, spent: 0, recurring: false }
 
     // This useEffect checks if we need to reset the budget based on interval and date
     useEffect(() => {
         if (!payDate || !interval || !user) return;
-        checkAndResetBudget(payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash);
-    }, [payDate, interval, income, user, envelopes, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, totalSpendingBudget, bills, oneTimeCash]);
+        const checkResetShowLoader = async () => {
+            setShowResetLoading(true);
+            await checkAndResetBudget(shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash);
+            setShowResetLoading(false);
+        }
+        checkResetShowLoader();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [payDate, interval, user]);
 
     useEffect(() => {
         if (showSpendPage) return;
@@ -43,22 +50,14 @@ export default function MainEnvelopesView() {
     }, [showSpendPage, navigate])
 
 
-    useEffect(() => {
-        const showSpendPage = new URLSearchParams(search).get('showSpendingPage') === 'true';
-        console.log('showSpendPage', showSpendPage)
-        setShowSpendPage(showSpendPage);
-    }, [search]);
 
-
-    async function handleEditRent(amount: number) {
-        console.log("AMOUNT", amount)
+    async function handleEditRent(newRentAmount: number) {
         if (!rent) return;
-        await editRent(amount, user!.uid);
-        setRent({ id: 'rent', name: 'rent', total: rent.total, spent: Number(rent.spent) + amount, recurring: true });
+        await editRent(newRentAmount, user!.uid);
+        setRent(newRentAmount);
     }
 
     async function saveNewEnvelope(envelope: Envelope) {
-        console.log('saving new envelope')
         if (!envelope.name.trim()) return;
         const newEnvelopes = [...envelopes];
         newEnvelopes.push({
@@ -76,13 +75,11 @@ export default function MainEnvelopesView() {
     }
     
     async function handleSetShowSpendingPage(envelope: Envelope) {
-        console.log('handleSetShowSpendingPage', envelope)
         setEnvelopeToEdit(envelope);
         setShowSpendPage(true);
     }
         
     async function deleteEnvelope() {
-        console.log('deleting envelope')
         try {
             const newEnvelopes = [...envelopes].filter(e => e.id !== envelopeToEdit?.id);
             setEnvelopes(newEnvelopes);
@@ -95,7 +92,6 @@ export default function MainEnvelopesView() {
     }
 
     async function editEnvelope(envelope: Envelope) {
-        console.log('editing envelope:', envelope)
         try {
             const originalEnvelope = envelopes.find(e => e.id === envelope.id);
             if (!originalEnvelope) return;
@@ -114,7 +110,6 @@ export default function MainEnvelopesView() {
     }
     
     function handleSetupEdit(envelope: Envelope) {
-        console.log('handleSetupEdit', envelope)
         setIsDeleting(false)
         setEnvelopeToEdit(envelope);
         setIsEditingEnvelope(true);
@@ -147,7 +142,6 @@ export default function MainEnvelopesView() {
     }
 
     function handleAddCash() {
-        console.log('handleAddCash')
         setIsAddingCash(true);
     }
 
@@ -168,7 +162,6 @@ export default function MainEnvelopesView() {
     }
 
     function handleEditCash() {
-        console.log('handleEditCash')
         setIsEditingCash(true);
     }
 
@@ -290,6 +283,7 @@ export default function MainEnvelopesView() {
 
     return (
         <>
+        {showResetLoading && <Loading text="Resetting Budget..." />}
             <Header links={[
                 { label: "Home", href: "/" },
                 { label: "Bills", href: "/bills" },

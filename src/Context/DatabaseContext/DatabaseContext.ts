@@ -20,8 +20,10 @@ interface IDatabaseContext {
     setIsNewUser: (isNewUser: boolean) => void
     totalSpendingBudget: number
     setTotalSpendingBudget: (totalSpendingBudget: number) => void
-    rent: Envelope | null
-    setRent: (rent: Envelope | null) => void
+    rent: number
+    setRent: (rent: number) => void
+    shouldReset: Timestamp | null
+    setShouldReset: (shouldReset: Timestamp | null) => void
 }
 
 export const DatabaseContext = createContext<IDatabaseContext>({
@@ -41,6 +43,8 @@ export const DatabaseContext = createContext<IDatabaseContext>({
     setIsNewUser: () => {},
     totalSpendingBudget: 0,
     setTotalSpendingBudget: () => {},
-    rent: {name: 'rent', total: 0, spent: 0, recurring: true, id: 'rent'},
-    setRent: () => {}
+    rent: 0,
+    setRent: () => {},
+    shouldReset: null,
+    setShouldReset: () => {}
 });

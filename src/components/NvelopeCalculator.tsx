@@ -19,7 +19,6 @@ export default function NvelopeCalculator({ handleEnterAmount, handleBack, selec
 
     function handleSetAmount(amount: string) {
         if (!amount || Number(amount) <= 0) return;
-        console.log(amount)
         if (selectedEnvelope) {
             const envelope = envelopes.find(e => e.id === selectedEnvelope);
             if (envelope && Number(amount) > 0 && Number(amount) <= envelope.total) {
@@ -65,7 +64,6 @@ export default function NvelopeCalculator({ handleEnterAmount, handleBack, selec
                     if (envelope) {
                         envelopeTotal = envelope.total - envelope.spent
                     }
-                    console.log('total spending and amount and enveelpe', totalSpendingBudget, nextAmount, envelopeTotal)
                     if (totalSpendingBudget - nextAmount < 0) {
                         setShowError(true)
                     } else if (envelope && envelopeTotal > 0 && nextAmount > envelopeTotal) {

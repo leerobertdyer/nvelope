@@ -255,7 +255,7 @@ export default function Bills() {
         }
     
 
-    return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-dark overflow-y-auto">
+    return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-base overflow-y-auto">
                <Header links={[
                    { label: "Home", href: "/" },
                    { label: "Settings", href: "/settings" },
@@ -303,15 +303,23 @@ export default function Bills() {
                                 </div>
                             </div>
                         ))}
-                    <div className="fixed bottom-0 flex flex-wrap gap-2 items-center justify-center w-screen mt-6 text-my-white-light bg-my-black-dark p-4">
-                        Past Due
-                        <div className="rounded-sm w-[1rem] h-[1rem] bg-my-red-light border-2 border-my-white-dark mr-4"></div>
-                        Paid
-                        <div className="rounded-sm w-[1rem] h-[1rem] bg-my-green-dark border-2 border-my-white-dark mr-4"></div>
-                        Due Soon
-                        <div className="rounded-sm w-[1rem] h-[1rem] bg-my-white-dark border-2 border-my-white-light"></div>
-                        Due Later
-                        <div className="rounded-sm w-[1rem] h-[1rem] bg-my-black-light border-2 border-my-white-light"></div>
+                    <div className="fixed bottom-0 flex flex-wrap gap-2 items-center justify-center w-screen mt-6 text-my-white-light bg-my-black-dark p-4 border-t-2 border-my-white-light">
+                        <div className="flex items-center justify-start gap-2">
+                            <p>Past Due</p>
+                            <div className="rounded-sm w-[1rem] h-[1rem] bg-my-red-light border-2 border-my-white-dark mr-4"></div>
+                        </div>
+                        <div className="flex items-center justify-start gap-2">
+                            <p>Paid</p>
+                            <div className="rounded-sm w-[1rem] h-[1rem] bg-my-green-dark border-2 border-my-white-dark mr-4"></div>
+                        </div>
+                        <div className="flex items-center justify-start gap-2">
+                            <p>Due Soon</p>
+                            <div className="rounded-sm w-[1rem] h-[1rem] bg-my-white-dark border-2 border-my-white-light"></div>
+                        </div>
+                        <div className="flex items-center justify-start gap-2">
+                            <p>Due Later</p>
+                            <div className="rounded-sm w-[1rem] h-[1rem] bg-my-black-light border-2 border-my-white-light"></div>
+                        </div>
                     </div>
                 </div>
             </div>

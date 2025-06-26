@@ -62,7 +62,6 @@ export default function Nvelope({
   const dottedStrokeWidth = 8;
 
   function handleEnterAmountAndId(amount: number) {
-    console.log('handleEnterAmountAndId', amount, envelope.name);
     if (amount <= 0) return;
     if (envelope.name === 'rent') {
       editRent?.(amount);
@@ -325,7 +324,7 @@ export default function Nvelope({
           onClick={() => onClick?.()}
         >
           <p className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2">
-            {envelope.name}+
+            {envelope.name}
           </p>
           <svg width={dottedWidth} height={dottedHeight}>
             {/* Bottom Line */}

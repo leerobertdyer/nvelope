@@ -44,11 +44,9 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
         if (!envelopeToEdit) return;
         let remainingBalancePlusTotal;
         if (amount) {
-            console.log("using amount in takeBalanceFromEnvelope", amount)
             envelopeToEdit.total -= amount;
             remainingBalancePlusTotal = totalSpendingBudget + amount
         } else {
-            console.log("not using amount in takeBalanceFromEnvelope taking entire remainder")
             remainingBalancePlusTotal = totalSpendingBudget + (envelopeToEdit.total - envelopeToEdit.spent);
             envelopeToEdit.total = envelopeToEdit.spent;
         }
@@ -60,7 +58,6 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
 
     async function takeAndGive(envelope: Envelope, amount: number) {
         if (!envelope || !envelopeToEdit) return;
-        console.log('takeandgive')
         envelope.total += amount;
         envelopeToEdit.total -= amount;
         const newEnvelopes = [...envelopes];
@@ -109,7 +106,7 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
                     onClick={handleAddCash}
                     className="top-1/2 -translate-y-1/2 right-[-3rem] cursor-pointer absolute border-2 rounded-md bg-my-white-dark border-my-green-dark animate-glow shadow-lg shadow-my-green-light w-[2rem] h-[2rem]"  />
             </h3>
-            <Nvelope kind="dash" envelope={{...emptyEnvelope, name: 'Nvelope'}} onClick={handleSetupNewEnvelope} handleBack={resetState} />
+            <Nvelope kind="dash" envelope={{...emptyEnvelope, name: 'Nvelope+'}} onClick={handleSetupNewEnvelope} handleBack={resetState} />
             <div className="flex flex-col justify-center items-center gap-2 mt-8 pb-[20rem]">
                 {/* Grid Header Row */}
                 <div className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-5 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-black-dark text-my-white-light font-bold">
