@@ -284,7 +284,20 @@ export default function Nvelope({
               onChange={(e) => setNewEnvelopeSpent(e.target.value)}
               placeholder="Envelope spent"
             />
-            <div className="flex items-center gap-2 justify-between">
+            <div className="flex items-center gap-2 justify-between w-[8rem]">
+            <label htmlFor="newRollover">Rollover?</label>
+            <input
+              type="checkbox"
+              checked
+              id="newRollover"
+              value={newEnvelopeRollover ? "true" : "false"}
+              onChange={(e) =>
+                setNewEnvelopeRollover(e.target.value === "true")
+              }
+            />
+            </div>
+            <div className="flex items-center gap-2 justify-between w-[8rem]">
+              <label htmlFor="newRecurring">Recurring?</label>
               <input
                 type="checkbox"
                 checked
@@ -294,7 +307,6 @@ export default function Nvelope({
                   setNewEnvelopeRecurring(e.target.value === "true")
                 }
               />
-              <label htmlFor="newRecurring">Recurring?</label>
             </div>
             <Button
               onClick={() => {
