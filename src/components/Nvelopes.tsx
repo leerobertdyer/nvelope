@@ -92,7 +92,7 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
     }
 
     if (isEnvelopeSelected) {
-      return <BigEnvelope  envelope={envelopeToEdit!} resetState={resetState} editEnvelope={editEnvelope} handleSetShowSpendingPage={handleSetShowSpendingPage} handleSetupEdit={handleSetupEdit} setUpShowGiveAndTake={setUpShowGiveAndTake} handleDeleteEnvelope={handleDeleteEnvelope}/>
+      return <BigEnvelope handleBack={() => setIsEnvelopeSelected(false)}  envelope={envelopeToEdit!} resetState={resetState} editEnvelope={editEnvelope} handleSetShowSpendingPage={handleSetShowSpendingPage} handleSetupEdit={handleSetupEdit} setUpShowGiveAndTake={setUpShowGiveAndTake} handleDeleteEnvelope={handleDeleteEnvelope}/>
     }
 
     return (
@@ -109,14 +109,14 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
             <Nvelope kind="dash" envelope={{...emptyEnvelope, name: 'Nvelope+'}} onClick={handleSetupNewEnvelope} handleBack={resetState} />
             <div className="flex flex-col justify-center items-center gap-2 mt-8 pb-[20rem]">
                 {/* Grid Header Row */}
-                <div className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-5 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-black-dark text-my-white-light font-bold">
+                <div className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-black-dark text-my-white-light font-bold">
                     <div className="col-span-3 flex justify-center items-center">
                         <p className="text-sm">Nvelope</p>
                     </div>
-                    <div className="flex justify-center items-center">
+                    <div className="flex justify-center items-center col-span-2">
                         <p className="text-sm">Spent</p>
                     </div>
-                    <div className="flex justify-center items-center">
+                    <div className="flex justify-center items-center col-span-2">
                         <p className="text-sm">Total</p>
                     </div>
                 </div>

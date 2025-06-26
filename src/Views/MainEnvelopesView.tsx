@@ -9,14 +9,12 @@ import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import { addOrSubtractFromBudget } from "../util";
-import { useNavigate } from "react-router-dom";
 import Loading from "../components/Loading";
 
 export default function MainEnvelopesView() {
     const {user} = useAuth();
     const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, shouldReset, interval, bills, oneTimeCash, setOneTimeCash, rent, setRent } = useGetDatabase();
     
-    const navigate = useNavigate();
 
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
     const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
@@ -43,13 +41,6 @@ export default function MainEnvelopesView() {
         checkResetShowLoader();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [payDate, interval, user]);
-
-    useEffect(() => {
-        if (showSpendPage) return;
-        navigate('/nvelopes', { replace: true });
-    }, [showSpendPage, navigate])
-
-
 
     async function handleEditRent(newRentAmount: number) {
         if (!rent) return;
@@ -285,7 +276,6 @@ export default function MainEnvelopesView() {
         <>
         {showResetLoading && <Loading text="Resetting Budget..." />}
             <Header links={[
-                { label: "Home", href: "/" },
                 { label: "Bills", href: "/bills" },
                 { label: "Settings", href: "/settings" },
             ]} />

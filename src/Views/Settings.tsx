@@ -73,7 +73,6 @@ export default function Settings() {
             <Header links={[
                 { label: "Home", href: "/" },
                 { label: "Bills", href: "/bills" },
-                { label: "Nvelopes", href: "/nvelopes" },
             ]} />
             <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md">Settings</h1>   
             <div className="overflow-y-scroll overflow-x-hidden flex flex-col items-center justify-center pb-4 h-[22rem] bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">

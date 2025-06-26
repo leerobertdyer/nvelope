@@ -7,9 +7,8 @@ import {
 import Button from "./Button";
 import type { Envelope } from "../types";
 import { IoIosTrash } from "react-icons/io";
-import { IoStar } from "react-icons/io5";
+import { IoRefresh, IoStar } from "react-icons/io5";
 import NvelopeCalculator from "./NvelopeCalculator";
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
 
 interface NvelopeProps {
   kind:
@@ -40,12 +39,12 @@ export default function Nvelope({
   handleDeleteEnvelope,
   editRent
 }: NvelopeProps) {
-  const { envelopes } = useGetDatabase();
 
   const [newEnvelopeName, setNewEnvelopeName] = useState<string>("");
   const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>("");
   const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<string>("");
   const [newEnvelopeRecurring, setNewEnvelopeRecurring] = useState<boolean>(true);
+  const [newEnvelopeRollover, setNewEnvelopeRollover] = useState<boolean>(false);
 
   useEffect(() => {
     setNewEnvelopeName(envelope.name || "");
@@ -61,17 +60,15 @@ export default function Nvelope({
   const dottedHeight = 80;
   const dottedStrokeWidth = 8;
 
-  function handleEnterAmountAndId(amount: number) {
+  function handleEnterAmount(amount: number, n: Envelope) {
     if (amount <= 0) return;
-    if (envelope.name === 'rent') {
+    if (n.name === 'rent') {
       editRent?.(amount);
       handleBack?.();
       return;
     }
-    const envelopeToEdit = envelopes.find(e => e.id === envelope.id);
-    if (!envelopeToEdit) return;
-    envelopeToEdit.spent = Number(envelopeToEdit.spent) + amount;
-    editEnvelope?.(envelopeToEdit);
+    n.spent = Number(n.spent) + amount;
+    editEnvelope?.(n);
     handleBack?.();
   }
 
@@ -161,7 +158,7 @@ export default function Nvelope({
       );
     case "spendingEnvelope":
       return (
-        <NvelopeCalculator envelope={envelope} selectEnvelope={envelope.id === ''} handleEnterAmount={handleEnterAmountAndId} handleBack={handleBack} />
+        <NvelopeCalculator envelope={envelope} selectEnvelope={envelope.id === ''} handleEnterAmount={handleEnterAmount} handleBack={handleBack} />
       )
     case "editEnvelope":
       return (
@@ -195,6 +192,16 @@ export default function Nvelope({
                 onChange={(e) => setNewEnvelopeSpent(e.target.value)}
                 placeholder="Enter amount spent"
               />
+              <div className="w-[85%] flex justify-center items-center gap-2 p-2 rounded-md ">
+                <IoRefresh className="text-my-white-dark" size={20} />
+                <label htmlFor="newRecurring">Roll Over</label>
+                <input
+                  type="checkbox"
+                  id="newRecurring"
+                  checked={newEnvelopeRollover}
+                  onChange={(e) => setNewEnvelopeRollover(e.target.checked)}
+                />
+              </div>
               <div className="w-[85%] flex justify-center items-center gap-2 p-2 rounded-md ">
                 <IoStar className="text-my-white-dark" size={20} />
                 <label htmlFor="newRecurring">Recurring</label>

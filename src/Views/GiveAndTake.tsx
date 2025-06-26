@@ -59,13 +59,20 @@ export default function GiveAndTake({ envelope, handleBack, takeAndGive, takeFro
                     >
                         Give
                     </Button>
-                    : !isGiving &&
+                    : !isGiving &&<>
                         <Button
                             onClick={() => (amountToGiveOrTake === '' || amountToGiveOrTake === '0') ? takeFromEnvelope(Number(0)) : takeFromEnvelope(Number(amountToGiveOrTake))}
                             color="gold"
-                        >
+                            >
                             Take
                         </Button>
+                        <Button
+                            onClick={() => takeFromEnvelope(Number(envelope.total - envelope.spent))}
+                            color="green"
+                            >
+                            Take All
+                        </Button>
+                            </>
                 }
                 <Button
                     onClick={handleBack}

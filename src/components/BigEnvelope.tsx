@@ -4,8 +4,9 @@ import { IoPencil, IoTrash } from "react-icons/io5";
 import { IoIosHand } from "react-icons/io";
 import type { Envelope } from "../types";
 import SpendBtn from "./SpendBtn";
+import Button from "./Button";
 
-export default function BigEnvelope({envelope, resetState, editEnvelope, handleSetShowSpendingPage, handleSetupEdit, setUpShowGiveAndTake, handleDeleteEnvelope}: {envelope: Envelope, resetState: () => void, editEnvelope: (envelope: Envelope) => Promise<void>, handleSetShowSpendingPage: (envelope: Envelope) => void, handleSetupEdit: (envelope: Envelope) => void, setUpShowGiveAndTake: (envelope: Envelope) => void, handleDeleteEnvelope: (id: string) => void}) {
+export default function BigEnvelope({handleBack, envelope, resetState, editEnvelope, handleSetShowSpendingPage, handleSetupEdit, setUpShowGiveAndTake, handleDeleteEnvelope,}: {handleBack: () => void, envelope: Envelope, resetState: () => void, editEnvelope: (envelope: Envelope) => Promise<void>, handleSetShowSpendingPage: (envelope: Envelope) => void, handleSetupEdit: (envelope: Envelope) => void, setUpShowGiveAndTake: (envelope: Envelope) => void, handleDeleteEnvelope: (id: string) => void}) {
     return (
         <div className=" bg-my-white-light w-full overflow-y-auto">
             <div className="w-full flex flex-col items-center justify-start mt-[1rem]">
@@ -43,6 +44,9 @@ export default function BigEnvelope({envelope, resetState, editEnvelope, handleS
                                 className="p-[2px] cursor-pointer border-2 rounded-md bg-my-red-dark text-white border-my-black-dark"  size={27}/>
                             <p className="text-xs">Delete Envelope</p>
                         </div>
+                        <Button onClick={handleBack} color="red">
+                            Go Back
+                        </Button>
                     </div>
                 </div>
             </div>

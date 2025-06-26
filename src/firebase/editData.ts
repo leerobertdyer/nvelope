@@ -161,12 +161,17 @@ function toUTCDateString(date: Date): string {
         return;
       }
     }
-  
-    // ✅ Perform the reset
-  
+    
     const updatedEnvelopes = envelopes
       .filter(e => e.recurring)
-      .map(e => ({ ...e, spent: 0 }));
+      .map(e => {
+        if (e.rollover) {
+            const leftoverAmount = e.total - e.spent;
+            const newTotal = e.total + leftoverAmount;
+            return { ...e, spent: 0, total: newTotal };
+        }
+        return { ...e, spent: 0 };
+      });
   
     const totalBillsInInterval = bills.reduce((acc, bill) =>
       isDateInInterval(

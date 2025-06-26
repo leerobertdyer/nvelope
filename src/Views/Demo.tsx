@@ -215,7 +215,7 @@ export default function Demo() {
 
     return (
         <>
-        {user && <Header links={[{label: 'Nvelopes', href: '/nvelopes',}, {label: 'Bills', href: '/bills'}, {label: 'Settings', href: '/settings'}]} step={step}/>}
+        {user && <Header links={[{label: 'Bills', href: '/bills'}, {label: 'Settings', href: '/settings'}]} step={step}/>}
         {showBillAdded && <Popup type="success">Bill added!</Popup>}
         {showBillError && <Popup type="error">Bill name already exists</Popup>}
         {rentNotSet && <Popup type="error">Please set rent first</Popup>}

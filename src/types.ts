@@ -7,6 +7,7 @@ export interface Envelope {
     total: number,
     spent: number,
     recurring: boolean
+    rollover?: boolean
 }
 
 export interface Bill {

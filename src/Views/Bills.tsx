@@ -259,7 +259,6 @@ export default function Bills() {
                <Header links={[
                    { label: "Home", href: "/" },
                    { label: "Settings", href: "/settings" },
-                   { label: "Nvelopes", href: "/nvelopes" },
                ]} />
                 <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden gap-2">
                     <div className="flex flex-col gap-2 mb-2 items-center justify-center w-full">

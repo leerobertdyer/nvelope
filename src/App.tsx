@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 import Home from "./Views/Home";
 import Settings from "./Views/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
-import MainEnvelopesView from "./Views/MainEnvelopesView";
 import Bills from "./Views/Bills";
 
 // Protected route component that redirects to home if no user
@@ -27,14 +26,6 @@ function App() {
           element={
             <ProtectedRoute>
               <Settings />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/nvelopes" 
-          element={
-            <ProtectedRoute>
-              <MainEnvelopesView />
             </ProtectedRoute>
           } 
         />
