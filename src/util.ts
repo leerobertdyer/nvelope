@@ -1,5 +1,5 @@
 import type { User } from "firebase/auth";
-import type { Bill, Interval } from "./types";
+import type { Bill, Envelope, Interval } from "./types";
 import { editTotalSpendingBudget } from "./firebase/editData";
 import type { Timestamp } from "firebase/firestore";
 
@@ -8,8 +8,25 @@ export function recalculateBudget(params: {
     diffAmount: number;
   }): number {
     const { currentAvailableBudget, diffAmount } = params;
-    return currentAvailableBudget - diffAmount
+    return currentAvailableBudget + diffAmount
   }
+
+  export function replenishEnvelopes(envelopes: Envelope[]) {
+    const updatedEnvelopes = [...envelopes]
+    .filter(e => !e.oneTime)
+    .map(e => {
+      if (e.rollover) {
+        // For envelopes that keep growing each month add remainder
+          const leftoverAmount = e.total - e.spent;
+          const newTotal = e.total + leftoverAmount;
+          return { ...e, spent: 0, total: newTotal };
+      }
+      // otherwise clear spent to 0
+      return { ...e, spent: 0 };
+    });
+    return updatedEnvelopes;
+}
+
 
 export function getIntervalDates(interval: Interval) {      
      // Calculate days in interval

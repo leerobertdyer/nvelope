@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import {
+  BsEnvelope,
+  BsEnvelopeFill,
   BsEnvelopePaper,
   BsEnvelopePaperFill,
   BsEnvelopeX,
 } from "react-icons/bs";
 import Button from "./Button";
 import type { Envelope } from "../types";
-import { IoIosTrash } from "react-icons/io";
+import { IoIosRepeat, IoIosTrash } from "react-icons/io";
 import { IoRefresh, IoStar } from "react-icons/io5";
 import NvelopeCalculator from "./NvelopeCalculator";
 
@@ -17,7 +19,7 @@ interface NvelopeProps {
     | "addEnvelope"
     | "sub"
     | "dash"
-    | "rent"
+    | "replenish"
     | "heart"
     | "editEnvelope"
     | "spendingEnvelope";
@@ -43,7 +45,7 @@ export default function Nvelope({
   const [newEnvelopeName, setNewEnvelopeName] = useState<string>("");
   const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>("");
   const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<string>("");
-  const [newEnvelopeRecurring, setNewEnvelopeRecurring] = useState<boolean>(true);
+  const [newEnvelopeOneTime, setNewEnvelopeOneTime] = useState<boolean>(true);
   const [newEnvelopeRollover, setNewEnvelopeRollover] = useState<boolean>(false);
 
   useEffect(() => {
@@ -74,10 +76,9 @@ export default function Nvelope({
 
   switch (kind) {
     case "envelope":
-    case "rent":
       return (
-        <div className="w-[11rem] h-[11rem] relative group" onClick={() => onClick?.()}>
-          <div className="z-12 flex flex-col gap-[.15rem] absolute w-full h-full items-center pt-2">
+        <div className="w-[10rem] h-[10rem] relative group flex justify-center items-center" onClick={() => onClick?.()}>
+          <div className="z-12 flex flex-col gap-[.15rem] absolute w-full h-full items-center pt-6">
             <p
               className={`w-fit text-center text-[.8rem] ${
                 envelope.total && (envelope.spent || envelope.spent === 0)
@@ -102,12 +103,11 @@ export default function Nvelope({
             </div>
           </div>
           <BsEnvelopePaper
-            className="w-[80%] h-[80%] top-0 left-1/2 -translate-x-1/2 absolute z-10"
+            className="w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute z-10"
             strokeWidth={0.4}
           />
-          {kind === "envelope" 
-          ? <BsEnvelopePaperFill
-            className={`w-[80%] h-[80%] top-0 left-1/2 -translate-x-1/2 absolute ${
+          <BsEnvelopePaperFill
+            className={`w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute ${
               envelope.total && (envelope.spent || envelope.spent === 0)
                 ? envelope.total - envelope.spent <= 0
                   ? "text-my-red-dark"
@@ -117,23 +117,36 @@ export default function Nvelope({
                 : "text-my-green-dark"
             }`}
           />
-         : <BsEnvelopePaperFill
-         className={`w-[80%] h-[80%] top-0 left-1/2 -translate-x-1/2 absolute ${
-           envelope.total && (envelope.spent || envelope.spent === 0)
-             ? envelope.total - envelope.spent <= 0
-               ? "text-my-green-dark"
-               : envelope.total - envelope.spent < envelope.total / 2
-               ? "text-my-white-dark"
-               : "text-my-red-dark"
-             : "text-my-red-dark"
-         }`}
-       />}
-          {envelope.recurring && (
+          {!envelope.oneTime && (
             <IoStar
-              className="bottom-[4rem] left-1/2 -translate-x-1/2 absolute z-10 text-my-white-dark animate-pulse"
+              className="bottom-[1.75rem] left-1/2 -translate-x-1/2 absolute z-10 text-my-white-dark animate-pulse"
               size={20}
             />
           )}
+        </div>
+      );
+    case "replenish":
+      return (
+        <div className="relative w-[8rem] h-[8rem] flex items-center justify-center cursor-pointer"
+          onClick={() => onClick?.()}>  
+          <div className="w-fit h-fit p-6 rounded-full bg-my-black-dark border-2 border-my-white-light top-10 left-1/2 -translate-x-1/2 absolute z-200">
+            <IoIosRepeat className="w-[100%] h-[100%] text-my-white-dark absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2" />
+          </div>
+          <BsEnvelope
+          className="w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute z-10"
+          strokeWidth={0.4}
+          />
+          <BsEnvelopeFill
+            className={`w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute ${
+              envelope.total && (envelope.spent || envelope.spent === 0)
+                ? envelope.total - envelope.spent <= 0
+                  ? "text-my-green-dark"
+                  : envelope.total - envelope.spent < envelope.total / 2
+                  ? "text-my-white-dark"
+                  : "text-my-green-dark"
+                : "text-my-green-dark"
+            }`}
+          />
         </div>
       );
     case "deleteEnvelope":
@@ -208,8 +221,8 @@ export default function Nvelope({
                 <input
                   type="checkbox"
                   id="newRecurring"
-                  checked={newEnvelopeRecurring}
-                  onChange={(e) => setNewEnvelopeRecurring(e.target.checked)}
+                  checked={newEnvelopeOneTime}
+                  onChange={(e) => setNewEnvelopeOneTime(e.target.checked)}
                 />
               </div>
               <Button
@@ -225,7 +238,8 @@ export default function Nvelope({
                     name: newEnvelopeName || "",
                     total: Number(newEnvelopeTotal || 0),
                     spent: Number(newEnvelopeSpent || 0),
-                    recurring: newEnvelopeRecurring,
+                    oneTime: newEnvelopeOneTime,
+                    rollover: newEnvelopeRollover
                   });
                 }}
                 color="green"
@@ -284,27 +298,25 @@ export default function Nvelope({
               onChange={(e) => setNewEnvelopeSpent(e.target.value)}
               placeholder="Envelope spent"
             />
-            <div className="flex items-center gap-2 justify-between w-[8rem]">
-            <label htmlFor="newRollover">Rollover?</label>
+            <div className="flex items-center gap-2 justify-between w-[12rem]">
+            <label htmlFor="newRollover">Saving Envelope</label>
             <input
               type="checkbox"
-              checked
+              checked={newEnvelopeRollover}
               id="newRollover"
-              value={newEnvelopeRollover ? "true" : "false"}
               onChange={(e) =>
-                setNewEnvelopeRollover(e.target.value === "true")
+                setNewEnvelopeRollover(e.target.checked)
               }
             />
             </div>
-            <div className="flex items-center gap-2 justify-between w-[8rem]">
-              <label htmlFor="newRecurring">Recurring?</label>
+            <div className="flex items-center gap-2 justify-between w-[12rem]">
+              <label htmlFor="newRecurring">One Time Envelope</label>
               <input
                 type="checkbox"
-                checked
+                checked={newEnvelopeOneTime}
                 id="newRecurring"
-                value={newEnvelopeRecurring ? "true" : "false"}
                 onChange={(e) =>
-                  setNewEnvelopeRecurring(e.target.value === "true")
+                  setNewEnvelopeOneTime(e.target.checked)
                 }
               />
             </div>
@@ -315,7 +327,7 @@ export default function Nvelope({
                   name: newEnvelopeName || "",
                   total: Number(newEnvelopeTotal || 0),
                   spent: Number(newEnvelopeSpent || 0),
-                  recurring: newEnvelopeRecurring,
+                  oneTime: newEnvelopeOneTime,
                 });
               }}
               color="green"
@@ -339,7 +351,7 @@ export default function Nvelope({
     case "dash":
       return (
         <div
-          className="w-fit relative mb-4 cursor-pointer bg-white border hover:bg-my-green-light rounded-sm mt-8"
+          className="w-fit relative  cursor-pointer bg-white border hover:bg-my-green-light rounded-sm "
           onClick={() => onClick?.()}
         >
           <p className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2">

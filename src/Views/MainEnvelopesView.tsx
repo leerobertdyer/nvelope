@@ -1,19 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Header from "../components/Header";
 import Nvelopes from "../components/Nvelopes";
 import type { Envelope } from "../types";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import { checkAndResetBudget, editEnvelopes, editOneTimeCashAndBudget, editRent, editTotalSpendingBudget } from "../firebase/editData";
+import { editEnvelopes, editOneTimeCashAndBudget, editRent, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import { addOrSubtractFromBudget } from "../util";
-import Loading from "../components/Loading";
 
 export default function MainEnvelopesView() {
     const {user} = useAuth();
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, income, payDate, shouldReset, interval, bills, oneTimeCash, setOneTimeCash, rent, setRent } = useGetDatabase();
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, rent, setRent } = useGetDatabase();
     
 
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
@@ -26,21 +25,21 @@ export default function MainEnvelopesView() {
     const [cashName, setCashName] = useState('');
     const [cashAmount, setCashAmount] = useState('');
     const [showSpendPage, setShowSpendPage] = useState(false);
-    const [showResetLoading, setShowResetLoading] = useState(false);
 
-    const emptyEnvelope = { id: '', name: '', total: 0, spent: 0, recurring: false }
+    const emptyEnvelope = { id: '', name: '', total: 0, spent: 0, oneTime: false }
 
     // This useEffect checks if we need to reset the budget based on interval and date
-    useEffect(() => {
-        if (!payDate || !interval || !user) return;
-        const checkResetShowLoader = async () => {
-            setShowResetLoading(true);
-            await checkAndResetBudget(shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash);
-            setShowResetLoading(false);
-        }
-        checkResetShowLoader();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [payDate, interval, user]);
+    // Left in for future use. Currently using manual reset
+    // useEffect(() => {
+    //     if (!payDate || !interval || !user) return;
+    //     const checkResetShowLoader = async () => {
+    //         setShowResetLoading(true);
+    //         await checkAndResetBudget(shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash);
+    //         setShowResetLoading(false);
+    //     }
+    //     checkResetShowLoader();
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [payDate, interval, user]);
 
     async function handleEditRent(newRentAmount: number) {
         if (!rent) return;
@@ -56,7 +55,7 @@ export default function MainEnvelopesView() {
             name: envelope.name,
             total: Number(envelope.total),
             spent: Number(envelope.spent),
-            recurring: envelope.recurring
+            oneTime: envelope.oneTime
         });
 
         await addOrSubtractFromBudget(Number(envelope.total), "sub", user!, totalSpendingBudget, setTotalSpendingBudget); 
@@ -274,7 +273,7 @@ export default function MainEnvelopesView() {
 
     return (
         <>
-        {showResetLoading && <Loading text="Resetting Budget..." />}
+        {/* {showResetLoading && <Loading text="Resetting Budget..." />} */}
             <Header links={[
                 { label: "Bills", href: "/bills" },
                 { label: "Settings", href: "/settings" },

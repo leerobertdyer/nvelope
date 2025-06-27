@@ -6,7 +6,7 @@ export interface Envelope {
     name: string,
     total: number,
     spent: number,
-    recurring: boolean
+    oneTime: boolean
     rollover?: boolean
 }
 

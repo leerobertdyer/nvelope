@@ -7,13 +7,10 @@ import { editInterval, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
 import {  getIncomeByInterval, recalculateBudget } from "../util";
-import { useNavigate } from "react-router-dom";
-
 
 export default function Settings() {
     const {user} = useAuth();
     const { interval, setInterval, setIncome, setTotalSpendingBudget, totalSpendingBudget } = useGetDatabase();
-    const navigate = useNavigate();
 
     const [showIntervalSettings, setShowIntervalSettings] = useState<boolean>(false);
     const [newIncome, setNewIncome] = useState<string>('');
@@ -76,9 +73,6 @@ export default function Settings() {
             ]} />
             <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md">Settings</h1>   
             <div className="overflow-y-scroll overflow-x-hidden flex flex-col items-center justify-center pb-4 h-[22rem] bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
-                <Button 
-                    color="green"
-                    onClick={() => navigate("/bills")}>Edit Bills</Button>
                 <div className="bg-my-black-base w-[80%] max-w-[20rem] border-2 p-2 rounded-md my-4 flex flex-col items-center">
                     <p className="text-my-white-dark text-center w-full">
                         Change Budget Interval

@@ -10,6 +10,7 @@ import { useState } from "react";
 import GiveAndTake from "../Views/GiveAndTake";
 import ListEnvelope from "./ListEnvelope";
 import BigEnvelope from "./BigEnvelope";
+import ReplenishScreen from "./ReplenishScreen";
 
 interface NvelopeProps {
     handleEditCash: () => void;
@@ -29,9 +30,10 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
     const [showGiveAndTake, setShowGiveAndTake] = useState(false);
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
     const [isEnvelopeSelected, setIsEnvelopeSelected] = useState(false);
+    const [isShowingReplenish, setIsShowingReplenish] = useState(false);
 
 
-    const emptyEnvelope = { id: '', name: '', total: 0, spent: 0, recurring: false }
+    const emptyEnvelope = { id: '', name: '', total: 0, spent: 0, oneTime: false }
 
     function handleBack() {
         setShowGiveAndTake(false);
@@ -91,6 +93,19 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
         );
     }
 
+    function handleReplenishEnvelopes() {
+        setIsShowingReplenish(true);
+    }
+
+    if (isShowingReplenish) {
+        return (
+            <ReplenishScreen
+                handleBack={() => setIsShowingReplenish(false)}
+                envelopes={envelopes}
+            />
+        );
+    }
+
     if (isEnvelopeSelected) {
       return <BigEnvelope handleBack={() => setIsEnvelopeSelected(false)}  envelope={envelopeToEdit!} resetState={resetState} editEnvelope={editEnvelope} handleSetShowSpendingPage={handleSetShowSpendingPage} handleSetupEdit={handleSetupEdit} setUpShowGiveAndTake={setUpShowGiveAndTake} handleDeleteEnvelope={handleDeleteEnvelope}/>
     }
@@ -106,7 +121,10 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
                     onClick={handleAddCash}
                     className="top-1/2 -translate-y-1/2 right-[-3rem] cursor-pointer absolute border-2 rounded-md bg-my-white-dark border-my-green-dark animate-glow shadow-lg shadow-my-green-light w-[2rem] h-[2rem]"  />
             </h3>
-            <Nvelope kind="dash" envelope={{...emptyEnvelope, name: 'Nvelope+'}} onClick={handleSetupNewEnvelope} handleBack={resetState} />
+            <div className="w-full flex justify-center gap-4 items-center">
+                <Nvelope kind="replenish" envelope={emptyEnvelope} handleBack={resetState} onClick={handleReplenishEnvelopes}/>
+                <Nvelope kind="dash" envelope={{...emptyEnvelope, name: 'Nvelope+'}} onClick={handleSetupNewEnvelope} handleBack={resetState} />
+            </div>
             <div className="flex flex-col justify-center items-center gap-2 mt-8 pb-[20rem]">
                 {/* Grid Header Row */}
                 <div className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-black-dark text-my-white-light font-bold">

@@ -2,7 +2,7 @@ import type { Bill, Envelope, Interval, OneTimeCash, PreviousIntervalDetails } f
 import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
-import { calculateCurrentPayPeriodStart, getIntervalDates, isDateInInterval } from "../util";
+import { calculateCurrentPayPeriodStart, getIntervalDates, isDateInInterval, replenishEnvelopes } from "../util";
 
 export async function editShouldReset(shouldReset: Timestamp, userId: string) {
     try {
@@ -162,16 +162,7 @@ function toUTCDateString(date: Date): string {
       }
     }
     
-    const updatedEnvelopes = envelopes
-      .filter(e => e.recurring)
-      .map(e => {
-        if (e.rollover) {
-            const leftoverAmount = e.total - e.spent;
-            const newTotal = e.total + leftoverAmount;
-            return { ...e, spent: 0, total: newTotal };
-        }
-        return { ...e, spent: 0 };
-      });
+    const updatedEnvelopes = replenishEnvelopes(envelopes);
   
     const totalBillsInInterval = bills.reduce((acc, bill) =>
       isDateInInterval(
@@ -225,9 +216,6 @@ function toUTCDateString(date: Date): string {
     await editShouldReset(Timestamp.now(), user.uid);
   }
     
-
-
-
 export async function storePreviousIntervalDetails(latestIntervalDetails: PreviousIntervalDetails, userId: string) {
     try {
         const userDocRef = doc(db, "users", userId);

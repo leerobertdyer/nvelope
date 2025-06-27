@@ -10,15 +10,16 @@ export default function BigEnvelope({handleBack, envelope, resetState, editEnvel
     return (
         <div className=" bg-my-white-light w-full overflow-y-auto">
             <div className="w-full flex flex-col items-center justify-start mt-[1rem]">
+                <div id="envelopeAndSpendBtn"
+                     className="flex justify-center gap-4 mb-[2rem] items-center w-full">
                     <Nvelope 
                         kind="envelope" 
                         envelope={envelope} 
                         handleBack={resetState}
                         editEnvelope={editEnvelope}
                         />
-                    <div className="flex justify-center w-full mb-8">
-                        <SpendBtn onClick={() => handleSetShowSpendingPage(envelope)} />
-                    </div>
+                    <SpendBtn onClick={() => handleSetShowSpendingPage(envelope)} />
+                </div>
                     <div className="flex flex-col justify-center items-center gap-2">
                         <div className="flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
                             onClick={(e) => {e.stopPropagation(); handleSetShowSpendingPage(envelope)}}>

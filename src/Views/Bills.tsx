@@ -93,7 +93,6 @@ export default function Bills() {
     async function addBill() {
         if (!user || !newBill) return;
         if (bills.some(b => b.name === newBill.name)) {
-            console.log('NOPE')
             setShowBillError(true);
             return;
         }
@@ -101,7 +100,7 @@ export default function Bills() {
         setBills(updatedBills);
         setShowBillAdded(true);
         await editBills(updatedBills, user.uid);
-        if (isDateInInterval(newBill.dayOfMonth, interval, payDate!)) {
+        if (isDateInInterval(newBill.dayOfMonth, interval, payDate!) && !newBill.paid) {
             await handleUpdateBudget(newBill.amount * -1)
         }
         resetBillState()
@@ -114,6 +113,7 @@ export default function Bills() {
         setIsAddingBill(false);
         setShowBillAdded(false);
         setShowBillError(false);
+        setNewBillDate(null);
     }
 
     function handleCalendarChange(value: Value) {
@@ -148,7 +148,7 @@ export default function Bills() {
                     </span>
                     to your available budget
                 </p>
-                : <p className="text-my-white-light text-center">
+                : <p className="text-my-white-light text-center px-2">
                 Removing this bill will not change your available balance of 
                 <span className="text-my-green-base px-[3px]">
                     ${totalSpendingBudget.toFixed(2)}
@@ -158,7 +158,7 @@ export default function Bills() {
                 <p className="p-4 rounded-md text-my-white-dark w-full text-center">
                     Are you sure you want to delete {billToEdit?.name}?
                 </p>
-                <div className="flex gap-4 items-center justify-center w-full">
+                <div className="flex gap-2 items-center justify-center w-[95%]">
                     <Button
                         color="red"
                         onClick={() => {
