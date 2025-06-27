@@ -25,7 +25,9 @@ export default function Home() {
           ? <p className="text-center animate-pulse text-my-red-dark">Loading...</p>
           : user 
             ? <MainEnvelopesView />
-            : <div className="flex justify-center items-center w-full h-screen"><LoginOptions /></div>}
+            : <div className="flex justify-center items-center w-full h-screen">
+                  <LoginOptions />
+              </div>}
       </div>
     </>
   );

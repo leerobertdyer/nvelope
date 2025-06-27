@@ -7,6 +7,7 @@ import { editInterval, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
 import {  getIncomeByInterval, recalculateBudget } from "../util";
+// import CreateLoginWithEmail from "../components/CreateLoginWithEmail";
 
 export default function Settings() {
     const {user} = useAuth();
@@ -87,6 +88,7 @@ export default function Settings() {
                         <option value="monthly">Monthly</option>
                     </select>
                 </div>
+                {/* <CreateLoginWithEmail /> */}
                 <Button 
                     color="red"
                     onClick={() => signout()}>Log Out</Button>
