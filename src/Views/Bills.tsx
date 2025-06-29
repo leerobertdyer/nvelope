@@ -275,7 +275,7 @@ export default function Bills() {
                                 className={`grid grid-cols-4 w-full py-2 text-my-black-base border-2 border-my-white-light text-center
                                   ${bill.paid
                                     ? 'bg-my-green-dark'
-                                    : bill.dayOfMonth <= new Date().getDate() && !bill.paid
+                                    : bill.dayOfMonth <= new Date().getDate() && !bill.paid && !bill.isInInterval
                                     ? 'bg-my-red-light text-my-black-dark'
                                     : bill.isInInterval
                                     ? 'bg-my-white-dark'

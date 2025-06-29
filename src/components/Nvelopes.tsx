@@ -132,7 +132,7 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
                         <p className="text-sm">Nvelope</p>
                     </div>
                     <div className="flex justify-center items-center col-span-2">
-                        <p className="text-sm">Spent</p>
+                        <p className="text-sm">Remaining</p>
                     </div>
                     <div className="flex justify-center items-center col-span-2">
                         <p className="text-sm">Total</p>

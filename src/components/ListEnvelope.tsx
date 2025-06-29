@@ -20,7 +20,7 @@ export default function ListEnvelope({ envelope, onClick}: {envelope: Envelope, 
                     <p className="absolute left-1/2 -translate-x-1/2">{envelope.name}</p>
                 </div>
                 <div className="flex justify-center items-center col-span-2">
-                    <p className="text-sm">${envelope.spent.toFixed(2)}</p>
+                    <p className="text-sm">${(envelope.total - envelope.spent).toFixed(2)}</p>
                 </div>
                 <div className="flex justify-end items-center mr-2 gap-4 col-span-2">
                     <p className="text-sm">${envelope.total.toFixed(2)}</p>

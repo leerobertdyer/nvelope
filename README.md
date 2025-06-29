@@ -18,18 +18,20 @@ A personal finance management app built with React, TypeScript, and Firebase.
 
 # TODO
 
-** Another issue is that I am using the max of 28 calendar days.
+* Now that we are Manually setting payment/envelopes, the bills are not auto deducted....
+* Start Date is a Timestamp but it's used for interval calculations and leads to incorrect ui for bills...
+
+Add Drag Drop and Reorder for envelopes
+
+1. I am using the max of 28 calendar days.
 This is going to cause bugs down the road.... anytime at the end of the month if a bill is marked as 28th it is technically in the past, even though it isn't... lol Have to fix this....
 
-1. Fix totalSpendingBudget:
-    - When Deleting a bill
-    - When Adding a bill
-    - When Editing a bill
+2. There's no current method to add a bill by weekday (ie every thursday)
 
-2. Only Allow adding of funds to envelope when available
-3. Make sure data is persisted between budget resets
-4. Implement a non-time based budget that uses fixed income, never resets, and use of permanent envelopes
-    - Use Erin's business as model
+3. No way to set a bill to "last friday of month" etc...
+
+4. One Time Envelopes will currently still count towards the total, so when we replenish 
+
 
 # Nice To Have
 - Make money flip like it's an actual counter like at a baseball game
@@ -37,3 +39,25 @@ This is going to cause bugs down the road.... anytime at the end of the month if
 - Report page
 - Tie in bank account with Plaid and import transactions...
 - Turn into a full app available on app store
+
+
+Phase 2 (Automatic adjustments)
+
+1. Make sure the user can change days of their payment.
+2. Add ability to temporarily change days. 
+3. Confirm with user before updating.
+
+
+Phase 3 (TELLER - bank monitoring and notifications)
+1. Use Teller to get live read on bank account
+2. Prompt spending that doesn't match envelopes
+3. Auto-apply certain transactions to specific envelopes
+4. Auto-apply income
+
+
+Phase 4 (Baas Banking Envelopes) ** Dream app || Very Challenging **
+1. Add Moov or Unit for real envelopes + money movement
+2. Card Issuing with Real-Time Authorization Hooks
+3. in-App NFC Payments (not Apple Pay) (android app)
+4. UX Timing & Transaction Matching (IE "what envelope?")
+5. $$ ACTUALLY comes out of envelope
