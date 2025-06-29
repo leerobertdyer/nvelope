@@ -65,7 +65,8 @@ export default function MainEnvelopesView() {
             name: e.name,
             total: Number(e.total),
             spent: Number(e.spent),
-            saving: e.saving
+            saving: e.saving,
+            order: e.order || 0
         });
         setEnvelopes(newEnvelopes);
         await editEnvelopes(newEnvelopes, user!.uid);

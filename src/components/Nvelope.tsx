@@ -301,6 +301,7 @@ export default function Nvelope({
                   total: Number(newEnvelopeTotal || 0),
                   spent: Number(newEnvelopeSpent || 0),
                   saving: newEnvelopeSaving,
+                  order: 0
                 });
               }}
               color="green"
