@@ -1,20 +1,15 @@
 import Nvelope from "./Nvelope";
 
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import {  IoPencil } from "react-icons/io5";
 import type { Envelope } from "../types";
-import { GiMoneyStack } from "react-icons/gi";
 import { editEnvelopes, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import GiveAndTake from "../Views/GiveAndTake";
 import ListEnvelope from "./ListEnvelope";
 import BigEnvelope from "./BigEnvelope";
-import ReplenishScreen from "./ReplenishScreen";
 
 interface NvelopeProps {
-    handleEditCash: () => void;
-    handleAddCash: () => void;
     resetState: () => void;
     handleSetupNewEnvelope: () => void;
     handleSetupEdit: (envelope: Envelope) => void;
@@ -24,14 +19,19 @@ interface NvelopeProps {
     handleEditRent: (amount: number) => Promise<void>;
 }
 
-export default function Nvelopes({handleEditCash, handleAddCash, resetState, handleSetupNewEnvelope, handleSetupEdit, editEnvelope, handleSetShowSpendingPage, handleDeleteEnvelope }: NvelopeProps) {
+export default function Nvelopes({resetState, handleSetupNewEnvelope, handleSetupEdit, editEnvelope, handleSetShowSpendingPage, handleDeleteEnvelope }: NvelopeProps) {
     const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes } = useGetDatabase();
     const { user } =  useAuth();
     const [showGiveAndTake, setShowGiveAndTake] = useState(false);
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
     const [isEnvelopeSelected, setIsEnvelopeSelected] = useState(false);
-    const [isShowingReplenish, setIsShowingReplenish] = useState(false);
+    const [sortedEnvelopes, setSortedEnvelopes] = useState<Envelope[]>([]);
 
+    useEffect(() => {
+        const stupidLargeNumber = 1000;
+        const sorted = [...envelopes].sort((a, b) => (a.order || stupidLargeNumber) - (b.order || stupidLargeNumber));
+        setSortedEnvelopes(sorted);
+    }, [envelopes]);
 
     const emptyEnvelope = { id: '', name: '', total: 0, spent: 0, oneTime: false }
 
@@ -93,41 +93,50 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
         );
     }
 
-    function handleReplenishEnvelopes() {
-        setIsShowingReplenish(true);
-    }
-
-    if (isShowingReplenish) {
-        return (
-            <ReplenishScreen
-                handleBack={() => setIsShowingReplenish(false)}
-                envelopes={envelopes}
-            />
-        );
-    }
-
     if (isEnvelopeSelected) {
       return <BigEnvelope handleBack={() => setIsEnvelopeSelected(false)}  envelope={envelopeToEdit!} resetState={resetState} editEnvelope={editEnvelope} handleSetShowSpendingPage={handleSetShowSpendingPage} handleSetupEdit={handleSetupEdit} setUpShowGiveAndTake={setUpShowGiveAndTake} handleDeleteEnvelope={handleDeleteEnvelope}/>
     }
 
+    function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
+        event.dataTransfer.setData('text/plain', event.currentTarget.id);
+    }
+
+    function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
+        event.preventDefault();
+    }
+
+    async function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+        event.preventDefault();
+        const id = event.dataTransfer.getData('text/plain');
+        const draggedEnvelope = envelopes.find(e => e.id === id);
+        if (!draggedEnvelope) return;
+        console.log(`Dragging ${draggedEnvelope.name}`);
+        const newEnvelopes = [...envelopes];
+        const draggedEnvelopeIndex = newEnvelopes.findIndex(e => e.id === id);
+        newEnvelopes.splice(draggedEnvelopeIndex, 1); // removes the dragged envelope
+        const targetEnvelopeIndex = newEnvelopes.findIndex(e => e.id === event.currentTarget.id);
+        console.log(`Dropping ${draggedEnvelope.name} into ${newEnvelopes[targetEnvelopeIndex].name}`);
+        newEnvelopes.splice(targetEnvelopeIndex, 0, draggedEnvelope); // places the dragged envelope in the new position
+        // set the new order by looping over the newEnvelopes
+        for (let i = 0; i < newEnvelopes.length; i++) {
+            newEnvelopes[i].order = i + 1;
+        }
+        setEnvelopes(newEnvelopes);
+        await editEnvelopes(newEnvelopes, user!.uid);
+    }
+
+    function handleDragEnd(event: React.DragEvent<HTMLDivElement>) {
+        event.preventDefault();
+    }
+
     return (
-        <div className="z-12 w-full text-center flex flex-col items-center h-screen overflow-y-auto py-[2rem]">
-            <h3 className={`border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative`}>
-                <IoPencil 
-                    onClick={handleEditCash}
-                    className="top-1/2 -translate-y-1/2 left-[-3rem] cursor-pointer absolute border-2 rounded-md bg-my-white-dark border-my-red-dark text-my-red-dark animate-glow shadow-lg shadow-my-red-light w-[2rem] h-[2rem]"  />
-                Available Budget: ${totalSpendingBudget.toFixed(2)}
-                <GiMoneyStack 
-                    onClick={handleAddCash}
-                    className="top-1/2 -translate-y-1/2 right-[-3rem] cursor-pointer absolute border-2 rounded-md bg-my-white-dark border-my-green-dark animate-glow shadow-lg shadow-my-green-light w-[2rem] h-[2rem]"  />
-            </h3>
-            <div className="w-full flex justify-center gap-4 items-center">
-                <Nvelope kind="replenish" envelope={emptyEnvelope} handleBack={resetState} onClick={handleReplenishEnvelopes}/>
-                <Nvelope kind="dash" envelope={{...emptyEnvelope, name: 'Nvelope+'}} onClick={handleSetupNewEnvelope} handleBack={resetState} />
+        <div className="w-full text-center flex flex-col items-center h-screen">
+            <div className="w-full flex justify-center items-center ">
+                <Nvelope kind="dash" envelope={{...emptyEnvelope, name: 'New Envelope'}} onClick={handleSetupNewEnvelope} handleBack={resetState} />
             </div>
-            <div className="flex flex-col justify-center items-center gap-2 mt-8 pb-[20rem]">
+            <div className="flex flex-col justify-center items-center gap-2 mt-4 pb-[20rem]">
                 {/* Grid Header Row */}
-                <div className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-black-dark text-my-white-light font-bold">
+                <div className="w-screen max-w-[40rem]  h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-black-dark text-my-white-light font-bold">
                     <div className="col-span-3 flex justify-center items-center">
                         <p className="text-sm">Nvelope</p>
                     </div>
@@ -138,9 +147,13 @@ export default function Nvelopes({handleEditCash, handleAddCash, resetState, han
                         <p className="text-sm">Total</p>
                     </div>
                 </div>
-                {envelopes.map(envelope => (
-                    <div key={envelope.id}>
-                        <ListEnvelope envelope={envelope} onClick={() => handleSelectListEnvelope(envelope)}/>
+                {sortedEnvelopes.map(e => (
+                    <div key={e.id}>
+                        <ListEnvelope envelope={e} onClick={() => handleSelectListEnvelope(e)}
+                            onDragStart={handleDragStart}
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
+                            onDragEnd={handleDragEnd}/>
                     </div>
                 ))}
             </div>

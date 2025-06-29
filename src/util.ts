@@ -13,17 +13,15 @@ export function recalculateBudget(params: {
 
   export function replenishEnvelopes(envelopes: Envelope[]) {
     const updatedEnvelopes = [...envelopes]
-    .filter(e => !e.oneTime)
-    .map(e => {
-      if (e.rollover) {
-        // For envelopes that keep growing each month add remainder
+      .map(e => {
+        if (e.saving) {
+          // For envelopes that aren't reset, set total to leftover amount
           const leftoverAmount = e.total - e.spent;
-          const newTotal = e.total + leftoverAmount;
-          return { ...e, spent: 0, total: newTotal };
-      }
-      // otherwise clear spent to 0
-      return { ...e, spent: 0 };
-    });
+          return { ...e, spent: 0, total: leftoverAmount };
+        }
+        // otherwise just clear spent to 0
+        return { ...e, spent: 0 };
+      });
     return updatedEnvelopes;
 }
 

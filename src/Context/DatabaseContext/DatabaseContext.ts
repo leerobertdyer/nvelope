@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import type { Timestamp } from 'firebase/firestore';
-import type { Bill, Envelope, Interval, OneTimeCash } from "../../types";
+import type { Bill, Envelope, Interval, OneTimeCash, OneTimeExpense } from "../../types";
 
 
 interface IDatabaseContext {
@@ -24,6 +24,8 @@ interface IDatabaseContext {
     setRent: (rent: number) => void
     shouldReset: Timestamp | null
     setShouldReset: (shouldReset: Timestamp | null) => void
+    oneTimeExpenses: OneTimeExpense[] | null
+    setOneTimeExpenses: (oneTimeExpenses: OneTimeExpense[] | null) => void
 }
 
 export const DatabaseContext = createContext<IDatabaseContext>({
@@ -46,5 +48,7 @@ export const DatabaseContext = createContext<IDatabaseContext>({
     rent: 0,
     setRent: () => {},
     shouldReset: null,
-    setShouldReset: () => {}
+    setShouldReset: () => {},
+    oneTimeExpenses: null,
+    setOneTimeExpenses: () => {}
 });

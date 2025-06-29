@@ -1,23 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Nvelopes from "../components/Nvelopes";
 import type { Envelope } from "../types";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import { editEnvelopes, editOneTimeCashAndBudget, editRent, editTotalSpendingBudget } from "../firebase/editData";
+import { editEnvelopes, editOneTimeCashAndBudget, editOneTimeExpense, editRent, checkAndResetBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
-import { addOrSubtractFromBudget } from "../util";
+import { addOrSubtractFromBudget,  } from "../util";
+import { GiMoneyStack } from "react-icons/gi";
+import Loading from "../components/Loading";
 
 export default function MainEnvelopesView() {
     const {user} = useAuth();
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, rent, setRent } = useGetDatabase();
-    
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, rent, setRent, oneTimeCash, setOneTimeCash, income, bills, payDate, interval, shouldReset, oneTimeExpenses, setShouldReset } = useGetDatabase();
 
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
     const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
-    const [isEditingCash, setIsEditingCash] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [isAddingCash, setIsAddingCash] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -25,52 +25,62 @@ export default function MainEnvelopesView() {
     const [cashName, setCashName] = useState('');
     const [cashAmount, setCashAmount] = useState('');
     const [showSpendPage, setShowSpendPage] = useState(false);
+    const [loadingText, setLoadingText] = useState('');
+    const [showLoading, setShowLoading] = useState(false);
+    const [isAddingOneTimeBill, setIsAddingOneTimeBill] = useState(false);
 
     const emptyEnvelope = { id: '', name: '', total: 0, spent: 0, oneTime: false }
 
     // This useEffect checks if we need to reset the budget based on interval and date
-    // Left in for future use. Currently using manual reset
-    // useEffect(() => {
-    //     if (!payDate || !interval || !user) return;
-    //     const checkResetShowLoader = async () => {
-    //         setShowResetLoading(true);
-    //         await checkAndResetBudget(shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash);
-    //         setShowResetLoading(false);
-    //     }
-    //     checkResetShowLoader();
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [payDate, interval, user]);
+    useEffect(() => {
+        if (!payDate || !interval || !user) return;
+        const checkResetShowLoader = async () => {
+            setLoadingText("Checking Dates...")
+            setShowLoading(true);
+            await checkAndResetBudget(shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash, oneTimeExpenses, setShouldReset);
+            resetState();
+        }
+        checkResetShowLoader();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+
 
     async function handleEditRent(newRentAmount: number) {
         if (!rent) return;
+        setLoadingText("Editing Rent...")
+        setShowLoading(true);
         await editRent(newRentAmount, user!.uid);
         setRent(newRentAmount);
+        resetState();
     }
 
-    async function saveNewEnvelope(envelope: Envelope) {
-        if (!envelope.name.trim()) return;
+    async function saveNewEnvelope(e: Envelope) {
+        if (!e.name.trim()) return;
+        setLoadingText("Adding New Envelope...")
+        setShowLoading(true);
         const newEnvelopes = [...envelopes];
         newEnvelopes.push({
-            id: envelope.id,
-            name: envelope.name,
-            total: Number(envelope.total),
-            spent: Number(envelope.spent),
-            oneTime: envelope.oneTime
+            id: e.id,
+            name: e.name,
+            total: Number(e.total),
+            spent: Number(e.spent),
+            saving: e.saving
         });
-
-        await addOrSubtractFromBudget(Number(envelope.total), "sub", user!, totalSpendingBudget, setTotalSpendingBudget); 
-        await editEnvelopes(newEnvelopes, user!.uid);
         setEnvelopes(newEnvelopes);
+        await editEnvelopes(newEnvelopes, user!.uid);
         resetState();
     }
     
-    async function handleSetShowSpendingPage(envelope: Envelope) {
-        setEnvelopeToEdit(envelope);
+    async function handleSetShowSpendingPage(e: Envelope) {
+        setEnvelopeToEdit(e);
         setShowSpendPage(true);
     }
         
     async function deleteEnvelope() {
         try {
+            setLoadingText("Deleting Envelope...")
+            setShowLoading(true);
             const newEnvelopes = [...envelopes].filter(e => e.id !== envelopeToEdit?.id);
             setEnvelopes(newEnvelopes);
             await addOrSubtractFromBudget(Number(envelopeToEdit?.total || 0), "add", user!, totalSpendingBudget, setTotalSpendingBudget);
@@ -78,30 +88,34 @@ export default function MainEnvelopesView() {
             resetState();
         } catch (error) {
             console.error('Error deleting envelope:', error);
+            setShowLoading(false);
         }
     }
 
-    async function editEnvelope(envelope: Envelope) {
+    async function editEnvelope(n: Envelope) {
         try {
-            const originalEnvelope = envelopes.find(e => e.id === envelope.id);
+            const originalEnvelope = envelopes.find(e => e.id === n.id);
             if (!originalEnvelope) return;
-            if (originalEnvelope.total > envelope.total) {
-                await addOrSubtractFromBudget(Number(originalEnvelope.total - envelope.total), "add", user!, totalSpendingBudget, setTotalSpendingBudget);
-            } else if (originalEnvelope.total < envelope.total) {
-                await addOrSubtractFromBudget(Number(envelope.total - originalEnvelope.total), "sub", user!, totalSpendingBudget, setTotalSpendingBudget);
+            setLoadingText("Editing Envelope...")
+            setShowLoading(true);
+            if (originalEnvelope.total > n.total) {
+                await addOrSubtractFromBudget(Number(originalEnvelope.total - n.total), "add", user!, totalSpendingBudget, setTotalSpendingBudget);
+            } else if (originalEnvelope.total < n.total) {
+                await addOrSubtractFromBudget(Number(n.total - originalEnvelope.total), "sub", user!, totalSpendingBudget, setTotalSpendingBudget);
             }
-            const newEnvelopes = [...envelopes].map(e => e.id === envelope.id ? envelope : e);
+            const newEnvelopes = [...envelopes].map(e => e.id === n.id ? n : e);
             setEnvelopes(newEnvelopes);
             await editEnvelopes(newEnvelopes, user!.uid);
             resetState();
         } catch (error) {
             console.error('Error editing envelope:', error);
+            setShowLoading(false);
         }
     }
     
-    function handleSetupEdit(envelope: Envelope) {
+    function handleSetupEdit(n: Envelope) {
         setIsDeleting(false)
-        setEnvelopeToEdit(envelope);
+        setEnvelopeToEdit(n);
         setIsEditingEnvelope(true);
     }
 
@@ -118,13 +132,15 @@ export default function MainEnvelopesView() {
         setCashAmount('');
         setCashName('');
         setIsAddingCash(false);
-        setIsEditingCash(false);
         setShowSpendPage(false);
+        setShowBudgetWarning(false);
+        setIsAddingOneTimeBill(false);
+        setShowLoading(false);
     }
 
     function handleSetupDelete(id?: string) {
         if (id) {
-            setEnvelopeToEdit(envelopes.find(envelope => envelope.id === id) || null);
+            setEnvelopeToEdit(envelopes.find(e => e.id === id) || null);
         }
         setIsEditingEnvelope(false)
         setIsAdding(false);
@@ -137,60 +153,85 @@ export default function MainEnvelopesView() {
 
     async function addCashToDb() {
         if (!cashAmount || !cashName || !user) return;
+        setLoadingText("Adding Cash...")
+        setShowLoading(true);
         const randomId = crypto.randomUUID();
-        //newCashEntry: OneTimeCash, userId: string, currentBudget: number, date: Date
         const date = Timestamp.fromDate(new Date());
         const newOneTimeCash = {
             id: randomId,
             name: cashName,
             amount: Number(cashAmount),
-            date
+            date 
         }
         await editOneTimeCashAndBudget(newOneTimeCash, user.uid, totalSpendingBudget);
         setTotalSpendingBudget(totalSpendingBudget + Number(cashAmount));
         resetState();
     }
 
-    function handleEditCash() {
-        setIsEditingCash(true);
-    }
-
-    async function manuallySetBudgetInDB() {
-        if (!cashAmount || !user) return;
-        await editTotalSpendingBudget(Number(cashAmount), user.uid);
-        setTotalSpendingBudget(Number(cashAmount));
+    async function addOneTimeExpenseToDb() {
+        if (!cashAmount || !cashName || !user) return;
+        setLoadingText("Adding One Time Expense...")
+        setShowLoading(true);
+        const randomId = crypto.randomUUID(); 
+        const date = Timestamp.fromDate(new Date());
+        const newOneTimeExpense = {
+            id: randomId,
+            name: cashName,
+            amount: Number(cashAmount),
+            date 
+        }
+        await editOneTimeExpense(newOneTimeExpense, user.uid)
+        await addOrSubtractFromBudget(Number(cashAmount), "sub", user, totalSpendingBudget, setTotalSpendingBudget);
         resetState();
     }
 
+
+    function handleAddOneTimeBill() {
+        setIsAddingOneTimeBill(true);
+    }
+
+
    if (showSpendPage && envelopes.length > 0) { 
     const envelopeSent = envelopeToEdit || emptyEnvelope;
-    return <Nvelope kind="spendingEnvelope" 
+    return <>
+    {showLoading && <Loading text={loadingText} />}
+    <Nvelope kind="spendingEnvelope" 
         envelope={envelopeSent} 
         editEnvelope={editEnvelope} 
         handleBack={resetState} 
         editRent={handleEditRent}
         />
+    </>
    }
 
    if (isEditingEnvelope && envelopeToEdit) {
-    return <Nvelope kind="editEnvelope" 
+    return <>
+    {showLoading && <Loading text={loadingText} />}
+    <Nvelope kind="editEnvelope" 
         envelope={envelopeToEdit} 
         editEnvelope={editEnvelope} 
         handleBack={resetState} 
         handleDeleteEnvelope={() => handleSetupDelete()} />;
+        </>
    } 
    
    if (isDeleting && envelopeToEdit) {
-    return <Nvelope kind="deleteEnvelope" 
+    return <>
+        {showLoading && <Loading text={loadingText} />}
+    <Nvelope kind="deleteEnvelope" 
         envelope={envelopeToEdit} 
         handleBack={resetState} 
         handleDeleteEnvelope={() => deleteEnvelope()} />;
+        </>
    }
    
    if (isAdding) {
-    return <Nvelope kind="addEnvelope" 
+    return <>
+    {showLoading && <Loading text={loadingText} />}
+    <Nvelope kind="addEnvelope" 
         envelope={emptyEnvelope} 
         handleSaveEnvelope={saveNewEnvelope} handleBack={resetState} />;
+        </>
    }
 
    if (showBudgetWarning) {
@@ -206,8 +247,48 @@ export default function MainEnvelopesView() {
     </div>;
    }
 
+    if (isAddingOneTimeBill) {
+        return (
+            <>
+        {showLoading && <Loading text={loadingText} />}
+            <div className="absolute inset-0 bg-my-white-dark text-mywhite-dark w-full h-screen flex flex-col items-center justify-center">
+                <h3 className="p-2 text-my-green-dark mb-4">
+                    Add One Time Expense
+                </h3>
+                <input 
+                    value={cashName}
+                    onChange={(e) => setCashName(e.target.value)}
+                    type="text" 
+                    placeholder="Name" 
+                    className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative" />
+                <input 
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(e.target.value)}
+                    type="number" 
+                    placeholder="Amount" 
+                    className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative" />
+                <div className="flex flex-col w-full items-center gap-2">
+                    <Button 
+                        onClick={addOneTimeExpenseToDb}
+                        color="green"
+                        >
+                        Add
+                    </Button>
+                    <Button 
+                        onClick={() => resetState()}
+                        color="red"
+                        >
+                        Go Back
+                    </Button>
+                </div>
+            </div>
+            </>
+        );
+    }
+    
    if (isAddingCash) {
-    return (
+    return (<>
+        {showLoading && <Loading text={loadingText} />}
         <div className="absolute inset-0 bg-my-white-dark text-mywhite-dark w-full h-screen flex flex-col items-center justify-center">
             <h3 className="p-2 text-my-green-dark mb-4">
                 Add Cash
@@ -228,59 +309,45 @@ export default function MainEnvelopesView() {
                 <Button 
                     onClick={addCashToDb}
                     color="green"
-                >
+                    >
                     Add
                 </Button>
                 <Button 
                     onClick={() => setIsAddingCash(false)}
                     color="red"
-                >
+                    >
                     Go Back
                 </Button>
             </div>
         </div>
+                    </>
     );
-   }
-
-   if (isEditingCash) {
-    return (
-        <div className="absolute inset-0 bg-my-white-dark text-mywhite-dark w-full h-screen flex flex-col items-center justify-center">
-            <p className="text-lg mb-4 text-my-red-dark">Manually Adjusts Your Remaining Budget</p>
-            <input 
-                value={cashAmount}
-                onChange={(e) => setCashAmount(e.target.value)}
-                type="number" 
-                placeholder="Amount" 
-                className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative" />
-           
-           <div className="flex flex-col w-full gap-2 justify-center items-center">
-                <Button 
-                    onClick={manuallySetBudgetInDB}
-                    color="green"
-                >
-                    Save    
-                </Button>
-                <Button
-                    onClick={resetState}
-                    color="red"
-                >
-                    Back    
-                </Button>
-            </div>
-        </div>
-        )
    }
 
     return (
         <>
-        {/* {showResetLoading && <Loading text="Resetting Budget..." />} */}
+        {showLoading && <Loading text={loadingText} />}
             <Header links={[
                 { label: "Bills", href: "/bills" },
                 { label: "Settings", href: "/settings" },
             ]} />
+            <div className="flex flex-col items-center gap-[3rem] overflow-y-auto overflow-x-hidden">
+
+            <div className="flex w-full justify-center gap-4 items-center mt-[2rem]">
+                <div className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark animate-glow shadow-lg text-my-red-dark shadow-my-red-light"
+                    onClick={handleAddOneTimeBill}>
+                    <GiMoneyStack 
+                        className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base"  />
+                    <p className="text-sm">Expense</p>
+                </div>
+                <div className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark animate-glow shadow-lg text-my-green-dark shadow-my-green-light"
+                    onClick={handleAddCash}>
+                    <GiMoneyStack 
+                        className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-base "  />
+                    <p className="text-sm">Add Cash</p>
+                </div>
+            </div>
             <Nvelopes 
-                handleEditCash={handleEditCash}
-                handleAddCash={handleAddCash}
                 resetState={resetState}
                 handleSetupNewEnvelope={handleSetupNewEnvelope}
                 handleSetupEdit={handleSetupEdit}
@@ -288,7 +355,10 @@ export default function MainEnvelopesView() {
                 handleSetShowSpendingPage={handleSetShowSpendingPage}
                 handleDeleteEnvelope={handleSetupDelete}
                 handleEditRent={handleEditRent}
+                
             />
+            </div>
+
         </>
     )
 }

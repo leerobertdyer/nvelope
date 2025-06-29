@@ -6,7 +6,8 @@ export default function CreateLoginWithEmail() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     return (
-        <div>
+        <div className="bg-white p-4 rounded-md">
+            <h2 className="text-lg mb-4 text-my-red-dark">Edit Email/Password</h2>
              <form className="w-full h-full flex flex-col justify-center items-center gap-6">
                     <input 
                         type="text" 

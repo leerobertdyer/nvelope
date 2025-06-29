@@ -30,7 +30,6 @@ This is going to cause bugs down the road.... anytime at the end of the month if
 
 3. No way to set a bill to "last friday of month" etc...
 
-4. One Time Envelopes will currently still count towards the total, so when we replenish 
 
 
 # Nice To Have

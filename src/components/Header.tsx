@@ -59,7 +59,7 @@ export default function Header({ step, links }: { step?: number, links: { label:
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
       setDaysTillReset(diffDays > 0 ? diffDays : 0);
-  }, [interval, payDate]);
+  }, [interval, payDate, totalSpendingBudget]);
   
 
   return (
@@ -80,7 +80,7 @@ export default function Header({ step, links }: { step?: number, links: { label:
             </p>
             <NavMenu showMenu={showMenu} setShowMenu={setShowMenu} links={links}/>
         </div>
-      <div className="h-[4rem]"></div> {/* Spacer */}
+      <div className="h-[4.25rem]"></div> {/* Spacer */}
     </>
   );
 }

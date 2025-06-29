@@ -1,4 +1,3 @@
-import { IoIosCheckmarkCircle, IoIosCheckmarkCircleOutline, IoIosClipboard, IoIosTrash } from "react-icons/io";
 import Button from "../components/Button";
 import { billsTotal, recalculateBudget, isDateInInterval } from "../util";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
@@ -10,6 +9,7 @@ import Popup from "../components/Popup";
 import Calendar from "react-calendar";
 import type { Value } from "react-calendar/src/shared/types.js";
 import Header from "../components/Header";
+import BillMap from "../components/BillMap";
 
 export default function Bills() {
     const {bills, setBills, interval, setTotalSpendingBudget, totalSpendingBudget, payDate} = useGetDatabase();
@@ -23,16 +23,15 @@ export default function Bills() {
     const [showBillAdded, setShowBillAdded] = useState<boolean>(false);
     const [showBillError, setShowBillError] = useState<boolean>(false);
     const [newBillDate, setNewBillDate] = useState<Value | null>(null);
-    const [sortedBills, setSortedBills] = useState<Bill[]>([]);
+    const [currentBills, setCurrentBills] = useState<Bill[]>([]);
+    const [futureBills, setFutureBills] = useState<Bill[]>([]);
 
     // UseEffect to sort bills by date and paid/unpaid
     useEffect(() => {
-        const billsSortedByDateAndPaidAndInterval = [...bills].map(b => ({...b, isInInterval: isDateInInterval(b.dayOfMonth, interval, payDate!)}))
-            .sort((a, b) => Number(a.isInInterval) - Number(b.isInInterval))
-            .sort((a, b) => a.dayOfMonth - b.dayOfMonth)
-            .sort((a, b) => Number(a.paid) - Number(b.paid));
-        setSortedBills(billsSortedByDateAndPaidAndInterval);
-    }, [bills, interval])
+        const billsWithIntervals = [...bills].map(b => ({...b, isInInterval: isDateInInterval(b.dayOfMonth, interval, payDate!)}));
+        setCurrentBills(billsWithIntervals.filter(b => b.isInInterval).sort((a, b) => a.dayOfMonth - b.dayOfMonth))
+        setFutureBills(billsWithIntervals.filter(b => !b.isInInterval).sort((a, b) => a.dayOfMonth - b.dayOfMonth))
+    }, [bills, interval, payDate])
 
     useEffect(() => {
         if (showBillAdded) setNewBill(null)
@@ -220,7 +219,7 @@ export default function Bills() {
                             <Calendar
                                 calendarType='gregory'
                                 onChange={handleCalendarChange} 
-                                value={newBillDate} 
+                                value={newBillDate || new Date()} 
                                 selectRange={false} 
                                 className="cursor-pointer-calendar"/>
                         </div>
@@ -270,38 +269,10 @@ export default function Bills() {
                             New Bill+
                         </button>
                     </div>
-                    {sortedBills.map((bill) => (
-                            <div key={bill.name}
-                                className={`grid grid-cols-4 w-full py-2 text-my-black-base border-2 border-my-white-light text-center
-                                  ${bill.paid
-                                    ? 'bg-my-green-dark'
-                                    : bill.dayOfMonth <= new Date().getDate() && !bill.paid && !bill.isInInterval
-                                    ? 'bg-my-red-light text-my-black-dark'
-                                    : bill.isInInterval
-                                    ? 'bg-my-white-dark'
-                                    : 'bg-my-black-light text-my-white-base'}
-                                    ${bill.name.length > 20 && 'w-fit px-2'}`}>
-                                <p className="flex items-center justify-center">
-                                    {new Date().toLocaleDateString('default', { month: 'long' })} {bill.dayOfMonth}</p>
-                                <p className="flex items-center justify-center">{bill.name}</p>
-                                <p className="flex items-center justify-center">${bill.amount.toFixed(2)}</p>
-                                <div className="flex gap-2 items-center justify-center">
-                                    <IoIosClipboard 
-                                        className="text-2xl text-my-red-light bg-my-white-dark cursor-pointer hover:text-my-white-dark hover:bg-my-red-light rounded-lg p-[2px] border-2 border-my-black-dark" 
-                                        size={27} onClick={() => handleEditBill(bill)} />
-                                    <IoIosTrash 
-                                        className="text-2xl text-my-white-dark bg-my-red-dark cursor-pointer hover:text-my-red-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark" 
-                                        size={27} onClick={() => handleDeleteBill(bill)} />
-                                    {bill.paid 
-                                      ? <IoIosCheckmarkCircle 
-                                          onClick={() => handleUpdatePaid(bill)}
-                                          className="text-2xl text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark" size={27} /> 
-                                      : <IoIosCheckmarkCircleOutline 
-                                          onClick={() => handleUpdatePaid(bill)}
-                                          className="text-2xl text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark" size={27} />}
-                                </div>
-                            </div>
-                        ))}
+                    <h2 className="text-my-white-light text-center text-xl md:text-2xl">Current Bills</h2>
+                    {currentBills.length > 0 && <BillMap bills={currentBills} handleUpdatePaid={handleUpdatePaid} handleEditBill={handleEditBill} handleDeleteBill={handleDeleteBill} />}
+                    <h2 className="text-my-white-light text-center text-xl md:text-2xl">Future Bills</h2>
+                    {futureBills.length > 0 && <BillMap bills={futureBills} isFutureBills handleUpdatePaid={handleUpdatePaid} handleEditBill={handleEditBill} handleDeleteBill={handleDeleteBill} />}
                     <div className="fixed bottom-0 flex flex-wrap gap-2 items-center justify-center w-screen mt-6 text-my-white-light bg-my-black-dark p-4 border-t-2 border-my-white-light">
                         <div className="flex items-center justify-start gap-2">
                             <p>Past Due</p>
@@ -310,14 +281,6 @@ export default function Bills() {
                         <div className="flex items-center justify-start gap-2">
                             <p>Paid</p>
                             <div className="rounded-sm w-[1rem] h-[1rem] bg-my-green-dark border-2 border-my-white-dark mr-4"></div>
-                        </div>
-                        <div className="flex items-center justify-start gap-2">
-                            <p>Due Soon</p>
-                            <div className="rounded-sm w-[1rem] h-[1rem] bg-my-white-dark border-2 border-my-white-light"></div>
-                        </div>
-                        <div className="flex items-center justify-start gap-2">
-                            <p>Due Later</p>
-                            <div className="rounded-sm w-[1rem] h-[1rem] bg-my-black-light border-2 border-my-white-light"></div>
                         </div>
                     </div>
                 </div>

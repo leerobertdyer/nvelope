@@ -1,9 +1,17 @@
 import { BiEnvelope } from "react-icons/bi";
 import type { Envelope } from "../types";
 
-export default function ListEnvelope({ envelope, onClick}: {envelope: Envelope, onClick: () => void}) {
+interface IListEnvelopeProps {
+    envelope: Envelope;
+    onClick: () => void;
+    onDragStart?: (event: React.DragEvent<HTMLDivElement>) => void;
+    onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void;
+    onDrop?: (event: React.DragEvent<HTMLDivElement>) => void;
+    onDragEnd?: (event: React.DragEvent<HTMLDivElement>) => void;
+}
+export default function ListEnvelope({ envelope, onClick, onDragStart, onDragOver, onDrop, onDragEnd}: IListEnvelopeProps) {
     return (
-        <div className={`
+        <div draggable={true} id={envelope.id} className={`
             ${envelope.spent >= (envelope.total * 0.75)
                 ? 'bg-my-red-dark text-my-white-light'
                 : envelope.spent >= (envelope.total * 0.5) 
@@ -11,7 +19,11 @@ export default function ListEnvelope({ envelope, onClick}: {envelope: Envelope, 
                     : 'bg-my-green-dark text-my-white-dark'}
             w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark
             border-2 border-my-black-dark cursor-pointer`}
-            onClick={onClick}>
+            onClick={onClick}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            onDragEnd={onDragEnd}>
 
                 <div className="col-span-3 flex justify-start items-center ml-2 gap-10 relative text-xs">
                     <div className="w-fit h-[85%] flex justify-start items-center bg-white rounded-lg">

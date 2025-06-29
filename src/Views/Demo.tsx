@@ -239,8 +239,9 @@ export default function Demo() {
                             <Calendar
                                 calendarType='gregory'
                                 onChange={setNewPayDate} 
-                                value={newPayDate} 
-                                selectRange={false} />
+                                value={newPayDate || new Date()} 
+                                selectRange={false} 
+                                className="cursor-pointer-calendar"/>
                         </div>
                   </DemoStep>
                     : step === 3

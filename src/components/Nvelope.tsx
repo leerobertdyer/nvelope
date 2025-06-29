@@ -8,8 +8,8 @@ import {
 } from "react-icons/bs";
 import Button from "./Button";
 import type { Envelope } from "../types";
-import { IoIosRefresh, IoIosRepeat, IoIosTrash } from "react-icons/io";
-import { IoRefresh, IoStar } from "react-icons/io5";
+import { IoIosRepeat, IoIosStar, IoIosTrash } from "react-icons/io";
+import { IoAddCircle, IoStar } from "react-icons/io5";
 import NvelopeCalculator from "./NvelopeCalculator";
 
 interface NvelopeProps {
@@ -45,8 +45,7 @@ export default function Nvelope({
   const [newEnvelopeName, setNewEnvelopeName] = useState<string>("");
   const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>("");
   const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<string>("");
-  const [newEnvelopeOneTime, setNewEnvelopeOneTime] = useState<boolean>(false);
-  const [newEnvelopeRollover, setNewEnvelopeRollover] = useState<boolean>(false);
+  const [newEnvelopeSaving, setNewEnvelopeSaving] = useState<boolean>(false);
 
   useEffect(() => {
     setNewEnvelopeName(envelope.name || "");
@@ -117,7 +116,7 @@ export default function Nvelope({
                 : "text-my-green-dark"
             }`}
           />
-          {!envelope.oneTime && (
+          {!envelope.saving && (
             <IoStar
               className="bottom-[1.75rem] left-1/2 -translate-x-1/2 absolute z-10 text-my-white-dark animate-pulse"
               size={20}
@@ -206,40 +205,23 @@ export default function Nvelope({
                 placeholder="Enter amount spent"
               />
               <div className="w-[85%] flex justify-center items-center gap-2 p-2 rounded-md ">
-                <IoRefresh className="text-my-white-dark" size={20} />
+                <IoIosStar className="text-my-white-dark animate-pulse" size={20} />
                 <label htmlFor="newEnvelopeSaving">Saving Envelope</label>
                 <input
                   type="checkbox"
                   id="newEnvelopeSaving"
-                  checked={newEnvelopeRollover}
-                  onChange={(e) => setNewEnvelopeRollover(e.target.checked)}
-                />
-              </div>
-              <div className="w-[85%] flex justify-center items-center gap-2 p-2 rounded-md ">
-                <IoStar className="text-my-white-dark" size={20} />
-                <label htmlFor="newEnvelopeOneTime">One Time Envelope</label>
-                <input
-                  type="checkbox"
-                  id="newEnvelopeOneTime"
-                  checked={newEnvelopeOneTime}
-                  onChange={(e) => setNewEnvelopeOneTime(e.target.checked)}
+                  checked={newEnvelopeSaving}
+                  onChange={(e) => setNewEnvelopeSaving(e.target.checked)}
                 />
               </div>
               <Button
                 onClick={() => {
-                  console.log(
-                    "new envelope",
-                    newEnvelopeName,
-                    newEnvelopeTotal,
-                    newEnvelopeSpent
-                  );
                   editEnvelope?.({
                     id: envelope.id,
                     name: newEnvelopeName || "",
                     total: Number(newEnvelopeTotal || 0),
                     spent: Number(newEnvelopeSpent || 0),
-                    oneTime: newEnvelopeOneTime,
-                    rollover: newEnvelopeRollover
+                    saving: newEnvelopeSaving
                   });
                 }}
                 color="green"
@@ -303,24 +285,12 @@ export default function Nvelope({
               <label htmlFor="newEnvelopeSaving">Saving Envelope</label>
               <input
                 type="checkbox"
-                checked={newEnvelopeRollover}
+                checked={newEnvelopeSaving}
                 id="newEnvelopeSaving"
               onChange={(e) =>
-                setNewEnvelopeRollover(e.target.checked)
+                setNewEnvelopeSaving(e.target.checked)
               }
             />
-            </div>
-            <div className="flex items-center gap-2 justify-between w-[12rem]">
-              <IoIosRefresh className="text-my-white-dark" size={20} />
-              <label htmlFor="newRecurring">One Time Envelope</label>
-              <input
-                type="checkbox"
-                checked={newEnvelopeOneTime}
-                id="newRecurring"
-                onChange={(e) =>
-                  setNewEnvelopeOneTime(e.target.checked)
-                }
-              />
             </div>
             <Button
               onClick={() => {
@@ -329,7 +299,7 @@ export default function Nvelope({
                   name: newEnvelopeName || "",
                   total: Number(newEnvelopeTotal || 0),
                   spent: Number(newEnvelopeSpent || 0),
-                  oneTime: newEnvelopeOneTime,
+                  saving: newEnvelopeSaving,
                 });
               }}
               color="green"
@@ -353,11 +323,11 @@ export default function Nvelope({
     case "dash":
       return (
         <div
-          className="w-fit relative  cursor-pointer bg-white border hover:bg-my-green-light rounded-sm "
+          className="w-fit relative  cursor-pointer bg-white border hover:bg-my-white-dark hover:text-my-green-dark rounded-sm "
           onClick={() => onClick?.()}
         >
-          <p className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2">
-            {envelope.name}
+          <p className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center text-sm">
+            {envelope.name}{envelope.name !== "Loading..." && <IoAddCircle className="inline ml-[2px]" />}
           </p>
           <svg width={dottedWidth} height={dottedHeight}>
             {/* Bottom Line */}

@@ -8,7 +8,7 @@ import Button from "./Button";
 
 export default function BigEnvelope({handleBack, envelope, resetState, editEnvelope, handleSetShowSpendingPage, handleSetupEdit, setUpShowGiveAndTake, handleDeleteEnvelope,}: {handleBack: () => void, envelope: Envelope, resetState: () => void, editEnvelope: (envelope: Envelope) => Promise<void>, handleSetShowSpendingPage: (envelope: Envelope) => void, handleSetupEdit: (envelope: Envelope) => void, setUpShowGiveAndTake: (envelope: Envelope) => void, handleDeleteEnvelope: (id: string) => void}) {
     return (
-        <div className=" bg-my-white-light w-full overflow-y-auto">
+        <div className="absolute top-[6rem] bg-my-white-light w-full overflow-y-auto">
             <div className="w-full flex flex-col items-center justify-start mt-[1rem]">
                 <div id="envelopeAndSpendBtn"
                      className="flex justify-center gap-4 mb-[2rem] items-center w-full">

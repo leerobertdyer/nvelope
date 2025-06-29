@@ -6,8 +6,8 @@ export interface Envelope {
     name: string,
     total: number,
     spent: number,
-    oneTime: boolean
-    rollover?: boolean
+    saving?: boolean
+    order?: number
 }
 
 export interface Bill {
@@ -22,6 +22,13 @@ export interface OneTimeCash {
     id: string,
     name: string,
     amount: number
+    date: Timestamp
+}
+
+export interface OneTimeExpense {
+    id: string,
+    name: string,
+    amount: number,
     date: Timestamp
 }
 

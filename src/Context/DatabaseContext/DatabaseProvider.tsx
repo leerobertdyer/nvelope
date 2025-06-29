@@ -1,7 +1,7 @@
 import type { Timestamp } from "firebase/firestore";
 import { DatabaseContext } from "./DatabaseContext";
 import { useEffect, useState } from "react";
-import type { Bill, Envelope, Interval, OneTimeCash } from "../../types";
+import type { Bill, Envelope, Interval, OneTimeCash, OneTimeExpense } from "../../types";
 import loadUserData from "../../firebase/loadUserData";
 import { useAuth } from "../AuthContext/useAuth";
 
@@ -17,6 +17,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [oneTimeCash, setOneTimeCash] = useState<OneTimeCash[] | null>(null);
     const [rent, setRent] = useState<number>(0);
     const [shouldReset, setShouldReset] = useState<Timestamp | null>(null);
+    const [oneTimeExpenses, setOneTimeExpenses] = useState<OneTimeExpense[] | null>(null);
 
     
     useEffect(() => {
@@ -32,6 +33,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                 setOneTimeCash(data.oneTimeCash || null);
                 setRent(data.rent || 0);
                 setShouldReset(data.shouldReset || null);
+                setOneTimeExpenses(data.oneTimeExpenses || null);
             });
         } 
     }, [user]);
@@ -56,7 +58,9 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         rent,
         setRent,
         shouldReset,
-        setShouldReset
+        setShouldReset,
+        oneTimeExpenses,
+        setOneTimeExpenses
     };
 
     return (

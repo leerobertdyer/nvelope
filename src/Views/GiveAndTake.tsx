@@ -17,7 +17,7 @@ export default function GiveAndTake({ envelope, handleBack, takeAndGive, takeFro
     const { envelopes } = useGetDatabase();
 
     return (
-        <div className="w-full h-screen flex flex-col items-center justify-center bg-my-black-base text-my-white-dark">
+        <div className="absolute inset-0 w-full h-screen flex flex-col items-center justify-center bg-my-black-base text-my-white-dark">
             <h3 className="text-2xl font-bold mb-4">Give and Take</h3>
             <div className="flex flex-col items-center gap-2">
                 <label htmlFor="amount">Enter amount to <span className="text-my-red-light">take</span> from {envelope.name}</label>
