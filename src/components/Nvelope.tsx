@@ -221,7 +221,8 @@ export default function Nvelope({
                     name: newEnvelopeName || "",
                     total: Number(newEnvelopeTotal || 0),
                     spent: Number(newEnvelopeSpent || 0),
-                    saving: newEnvelopeSaving
+                    saving: newEnvelopeSaving,
+                    order: envelope.order || 1000
                   });
                 }}
                 color="green"
