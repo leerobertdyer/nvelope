@@ -189,18 +189,6 @@ export default function Bills() {
                 <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden">
                     <div className="flex flex-col gap-2 mb-2 items-center justify-center w-full">
                         <p className="p-2 rounded-md text-my-white-dark w-full text-center text-2xl">{newBill? `${newBill.name}` : "Add Bill"}</p>
-                        <div className="flex flex-col items-center w-full my-2">
-                            <label className="text-my-white-light" htmlFor="name">Bill Name</label>
-                            <input
-                                id="name"
-                                maxLength={25}
-                                type="text"
-                                className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                                value={newBill?.name.toLowerCase() || ''}
-                                onChange={(e) => setNewBill({ name: e.target.value, amount: newBill?.amount || 0, dayOfMonth: newBill?.dayOfMonth || 1, paid: newBill?.paid || false })}
-                                placeholder="Enter new bill name"
-                                />
-                        </div>
                         <div className="flex flex-col items-center w-full mb-4">
                             <label className="text-my-white-light" htmlFor="amount">Bill Amount</label>
                             <input
@@ -212,6 +200,18 @@ export default function Bills() {
                                 onChange={(e) => setNewBill({ name: newBill?.name || '', amount: Number(e.target.value), dayOfMonth: newBill?.dayOfMonth || 1, paid: newBill?.paid || false })}
                                 placeholder="Enter new bill amount"
                             />
+                        </div>
+                        <div className="flex flex-col items-center w-full my-2">
+                            <label className="text-my-white-light" htmlFor="name">Bill Name</label>
+                            <input
+                                id="name"
+                                maxLength={25}
+                                type="text"
+                                className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                                value={newBill?.name.toLowerCase() || ''}
+                                onChange={(e) => setNewBill({ name: e.target.value, amount: newBill?.amount || 0, dayOfMonth: newBill?.dayOfMonth || 1, paid: newBill?.paid || false })}
+                                placeholder="Enter new bill name"
+                                />
                         </div>
                         <div className="flex flex-col items-center w-full mb-4">
                             <label className="text-my-white-light" htmlFor="dayOfMonth">Day of Month</label>

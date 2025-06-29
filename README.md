@@ -18,17 +18,14 @@ A personal finance management app built with React, TypeScript, and Firebase.
 
 # TODO
 
-* Now that we are Manually setting payment/envelopes, the bills are not auto deducted....
-* Start Date is a Timestamp but it's used for interval calculations and leads to incorrect ui for bills...
-
-Add Drag Drop and Reorder for envelopes
-
 1. I am using the max of 28 calendar days.
 This is going to cause bugs down the road.... anytime at the end of the month if a bill is marked as 28th it is technically in the past, even though it isn't... lol Have to fix this....
 
 2. There's no current method to add a bill by weekday (ie every thursday)
 
 3. No way to set a bill to "last friday of month" etc...
+
+4. weekly/biweekly/monthly bill option would be nice same as above. For example: ACORNS doesn't fit my model atm.
 
 
 

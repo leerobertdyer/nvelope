@@ -256,16 +256,16 @@ export default function MainEnvelopesView() {
                     Add One Time Expense
                 </h3>
                 <input 
-                    value={cashName}
-                    onChange={(e) => setCashName(e.target.value)}
-                    type="text" 
-                    placeholder="Name" 
-                    className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative" />
-                <input 
                     value={cashAmount}
                     onChange={(e) => setCashAmount(e.target.value)}
                     type="number" 
                     placeholder="Amount" 
+                    className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative" />
+                <input 
+                    value={cashName}
+                    onChange={(e) => setCashName(e.target.value)}
+                    type="text" 
+                    placeholder="Name" 
                     className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative" />
                 <div className="flex flex-col w-full items-center gap-2">
                     <Button 
