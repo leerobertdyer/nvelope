@@ -18,6 +18,9 @@ A personal finance management app built with React, TypeScript, and Firebase.
 
 # TODO
 
+🐛 => Nvelope.Total is not reset properly. Need to add a ResetTotal to the envelopes so we can giveandtake from each envelope and when we reset it will use the ResetTotal instead. 
+
+
 1. I am using the max of 28 calendar days.
 This is going to cause bugs down the road.... anytime at the end of the month if a bill is marked as 28th it is technically in the past, even though it isn't... lol Have to fix this....
 

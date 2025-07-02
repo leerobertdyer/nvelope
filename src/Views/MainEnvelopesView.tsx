@@ -8,7 +8,7 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
-import { addOrSubtractFromBudget,  } from "../util";
+import { addSubFromBudgetStateAndDB,  } from "../util";
 import { GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
 
@@ -42,7 +42,7 @@ export default function MainEnvelopesView() {
         }
         checkResetShowLoader();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [payDate, interval, user]);
 
 
 
@@ -64,12 +64,14 @@ export default function MainEnvelopesView() {
             id: e.id,
             name: e.name,
             total: Number(e.total),
+            resetTotal: e.resetTotal ? e.resetTotal : e.total ?? 0,
             spent: Number(e.spent),
             saving: e.saving,
             order: e.order || 0
         });
         setEnvelopes(newEnvelopes);
         await editEnvelopes(newEnvelopes, user!.uid);
+        await addSubFromBudgetStateAndDB(Number(e.total), "sub", user!, totalSpendingBudget, setTotalSpendingBudget);
         resetState();
     }
     
@@ -84,7 +86,7 @@ export default function MainEnvelopesView() {
             setShowLoading(true);
             const newEnvelopes = [...envelopes].filter(e => e.id !== envelopeToEdit?.id);
             setEnvelopes(newEnvelopes);
-            await addOrSubtractFromBudget(Number(envelopeToEdit?.total || 0), "add", user!, totalSpendingBudget, setTotalSpendingBudget);
+            await addSubFromBudgetStateAndDB(Number(envelopeToEdit?.total || 0), "add", user!, totalSpendingBudget, setTotalSpendingBudget);
             await editEnvelopes(newEnvelopes, user!.uid);
             resetState();
         } catch (error) {
@@ -100,9 +102,9 @@ export default function MainEnvelopesView() {
             setLoadingText("Editing Envelope...")
             setShowLoading(true);
             if (originalEnvelope.total > n.total) {
-                await addOrSubtractFromBudget(Number(originalEnvelope.total - n.total), "add", user!, totalSpendingBudget, setTotalSpendingBudget);
+                await addSubFromBudgetStateAndDB(Number(originalEnvelope.total - n.total), "add", user!, totalSpendingBudget, setTotalSpendingBudget);
             } else if (originalEnvelope.total < n.total) {
-                await addOrSubtractFromBudget(Number(n.total - originalEnvelope.total), "sub", user!, totalSpendingBudget, setTotalSpendingBudget);
+                await addSubFromBudgetStateAndDB(Number(n.total - originalEnvelope.total), "sub", user!, totalSpendingBudget, setTotalSpendingBudget);
             }
             const newEnvelopes = [...envelopes].map(e => e.id === n.id ? n : e);
             setEnvelopes(newEnvelopes);
@@ -182,7 +184,7 @@ export default function MainEnvelopesView() {
             date 
         }
         await editOneTimeExpense(newOneTimeExpense, user.uid)
-        await addOrSubtractFromBudget(Number(cashAmount), "sub", user, totalSpendingBudget, setTotalSpendingBudget);
+        await addSubFromBudgetStateAndDB(Number(cashAmount), "sub", user, totalSpendingBudget, setTotalSpendingBudget);
         resetState();
     }
 

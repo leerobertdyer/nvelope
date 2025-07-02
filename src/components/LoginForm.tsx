@@ -9,39 +9,43 @@ interface LoginError {
 }
 
 export default function LoginForm() {
-    const {setUser, user} = useAuth();
+    const {setUser} = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showError, setShowError] = useState(false);
         
     async function loginOrSignup() {
-        setShowError(false);
-        try {
-          console.log('Attempting Login first for email:', email);
-          const loggedInUser = await loginWithEmailAndPassword(email, password);
-          if (loggedInUser) {
-            console.log('Logged in successfully:', loggedInUser);
-            setUser(loggedInUser);
-          }
-        } catch (error: unknown) {
-          console.error('Error logging in:', error);
-          if ((error as LoginError).code === "auth/user-not-found") {
-            try {
-              console.log('Attempting Signup for email:', email);
-              const newUser = await createUserEmailPass(email, password);
-              if (newUser) {
-                console.log('Signed up successfully:', newUser);
-                setUser(newUser);
-              }
-            } catch (signupError: LoginError | unknown) {
-              console.error('Error signing up:', signupError);
-            }
-          } 
+      setShowError(false);
+      try {
+        console.log('Attempting Login first for email:', email);
+        const loggedInUser = await loginWithEmailAndPassword(email, password);
+        if (loggedInUser) {
+          console.log('Logged in successfully:', loggedInUser);
+          setUser(loggedInUser);
         }
-        if (!user) {
-            setShowError(true);
+      } catch (error: unknown) {
+        console.error('Error logging in:', error);
+        // Change this line to catch both error types
+        if ((error as LoginError).code === "auth/user-not-found" || 
+            (error as LoginError).code === "auth/invalid-credential") {
+          try {
+            console.log('Attempting Signup for email:', email);
+            const newUser = await createUserEmailPass(email, password);
+            if (newUser) {
+              console.log('Signed up successfully:', newUser);
+              setUser(newUser);
+            }
+          } catch (signupError: LoginError | unknown) {
+            console.error('Error signing up:', signupError);
+            setShowError(true); // Show error if signup fails
+          }
+        } else {
+          // Show error for other types of login failures
+          setShowError(true);
         }
       }
+  }
+
   return (
     <form className="w-full h-full flex flex-col justify-center items-center gap-6">
         <input 

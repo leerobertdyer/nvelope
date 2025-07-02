@@ -30,5 +30,6 @@ export async function loginWithEmailAndPassword(email: string, password: string)
         const errorCode = (error as { code: string }).code;
         const errorMessage = (error as { message: string }).message;
         console.error('Error signing in:', { errorCode, errorMessage })
+        throw error;
     }
 }

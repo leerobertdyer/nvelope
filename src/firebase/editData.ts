@@ -209,6 +209,7 @@ export function toUTCDateString(date: Date): string {
     console.log("checkAndResetBudget", {shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash, oneTimeExpenses});
     
     const updatedEnvelopes = replenishEnvelopes(envelopes);
+    console.log("updatedEnvelopes", updatedEnvelopes);
   
     const totalBillsInInterval = bills.reduce((acc, bill) =>
       isDateInInterval(
@@ -249,10 +250,9 @@ export function toUTCDateString(date: Date): string {
         if (n.saving) {
           return acc;
         } else {
-          return acc + n.spent;
+          return acc + (n.resetTotal || 0);
         }
-      }, 0
-    );
+      }, 0);
   
     const remainingBudget = income - totalBillsInInterval + totalOneTimeCash - totalOneTimeExpenses - totalEnvelopes;
   

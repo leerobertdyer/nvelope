@@ -11,6 +11,11 @@ export function recalculateBudget(params: {
     return currentAvailableBudget + diffAmount
   }
 
+export function capitalizeFirstLetter(str: string | null): string {
+  if (!str) return '';
+  return str.slice(0, 1).toUpperCase() + str.slice(1)
+}
+
   export function replenishEnvelopes(envelopes: Envelope[]) {
     const updatedEnvelopes = [...envelopes]
       .map(e => {
@@ -19,8 +24,8 @@ export function recalculateBudget(params: {
           const leftoverAmount = e.total - e.spent;
           return { ...e, spent: 0, total: leftoverAmount };
         }
-        // otherwise just clear spent to 0
-        return { ...e, spent: 0 };
+        // otherwise clear spent to 0 and reset the total to the original amount
+        return { ...e, total: e.resetTotal || 0, spent: 0 };
       });
     return updatedEnvelopes;
 }
@@ -159,7 +164,7 @@ export function getIncomeByInterval(oldInterval: Interval, newInterval: Interval
   }
 }
 
-export async function addOrSubtractFromBudget(amount: number, type: 'add' | 'sub', user: User, totalSpendingBudget: number, setTotalSpendingBudget: (totalSpendingBudget: number) => void) {
+export async function addSubFromBudgetStateAndDB(amount: number, type: 'add' | 'sub', user: User, totalSpendingBudget: number, setTotalSpendingBudget: (totalSpendingBudget: number) => void) {
     if (!user) return;
     const newBudget = type === 'add' ? totalSpendingBudget + amount : totalSpendingBudget - amount;
     await editTotalSpendingBudget(newBudget, user.uid);

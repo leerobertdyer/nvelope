@@ -6,6 +6,7 @@ export interface Envelope {
     name: string,
     total: number,
     spent: number,
+    resetTotal?: number,
     saving?: boolean
     order?: number
 }

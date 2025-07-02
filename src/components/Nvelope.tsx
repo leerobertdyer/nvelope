@@ -11,6 +11,8 @@ import type { Envelope } from "../types";
 import { IoIosRepeat, IoIosStar, IoIosTrash } from "react-icons/io";
 import { IoAddCircle, IoStar } from "react-icons/io5";
 import NvelopeCalculator from "./NvelopeCalculator";
+import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
+import { capitalizeFirstLetter } from "../util";
 
 interface NvelopeProps {
   kind:
@@ -42,10 +44,13 @@ export default function Nvelope({
   editRent
 }: NvelopeProps) {
 
+  const { interval } = useGetDatabase();
+
   const [newEnvelopeName, setNewEnvelopeName] = useState<string>("");
   const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>("");
   const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<string>("");
   const [newEnvelopeSaving, setNewEnvelopeSaving] = useState<boolean>(false);
+  const [newEnvelopeResetTotal, setNewEnvelopeResetTotal] = useState<string>("");
 
   useEffect(() => {
     setNewEnvelopeName(envelope.name || "");
@@ -188,13 +193,21 @@ export default function Nvelope({
                 }
                 placeholder="Envelope name"
               />
+              <label htmlFor="newEnvelopeResetTotal">Envelope Reset Amount {newEnvelopeName}</label>
+              <input
+                type="number"
+                className="w-[85%] border p-2 rounded-md"
+                value={newEnvelopeResetTotal}
+                onChange={(e) => setNewEnvelopeResetTotal(e.target.value)}
+                placeholder="Amount To Reset To"
+              />
               <label htmlFor="newEnvelopeTotal">Total Budget for {newEnvelopeName}</label>
               <input
                 type="number"
                 className="w-[85%] border p-2 rounded-md"
                 value={newEnvelopeTotal}
                 onChange={(e) => setNewEnvelopeTotal(e.target.value)}
-                placeholder="Enter new envelope total"
+                placeholder="Available Funds"
               />
               <label htmlFor="newEnvelopeSpent">Amount Spent</label>
               <input
@@ -219,9 +232,10 @@ export default function Nvelope({
                   editEnvelope?.({
                     id: envelope.id,
                     name: newEnvelopeName || "",
-                    total: Number(newEnvelopeTotal || 0),
-                    spent: Number(newEnvelopeSpent || 0),
-                    saving: newEnvelopeSaving,
+                    total: Number(newEnvelopeTotal || envelope.total),
+                    spent: Number(newEnvelopeSpent || envelope.spent),
+                    saving: newEnvelopeSaving || envelope.saving,
+                    resetTotal: Number(newEnvelopeResetTotal || envelope.resetTotal),
                     order: envelope.order || 1000
                   });
                 }}
@@ -274,12 +288,14 @@ export default function Nvelope({
               onChange={(e) => setNewEnvelopeTotal(e.target.value)}
               placeholder="Envelope total"
             />
+            <label htmlFor="newEnvelopeResetTotal">{capitalizeFirstLetter(interval)} Reset Amount</label>
             <input
+              id="newEnvelopeResetTotal"
               type="number"
               className="w-[85%] border p-2 rounded-md"
-              value={newEnvelopeSpent}
-              onChange={(e) => setNewEnvelopeSpent(e.target.value)}
-              placeholder="Envelope spent"
+              value={newEnvelopeResetTotal}
+              onChange={(e) => setNewEnvelopeResetTotal(e.target.value)}
+              placeholder="Amount To Reset To"
             />
             <div className="flex items-center gap-2 justify-between w-[12rem]">
               <IoStar className="text-my-white-dark" size={20} />
@@ -288,10 +304,10 @@ export default function Nvelope({
                 type="checkbox"
                 checked={newEnvelopeSaving}
                 id="newEnvelopeSaving"
-              onChange={(e) =>
-                setNewEnvelopeSaving(e.target.checked)
-              }
-            />
+                onChange={(e) =>
+                  setNewEnvelopeSaving(e.target.checked)
+                }
+              />
             </div>
             <Button
               onClick={() => {
@@ -299,7 +315,8 @@ export default function Nvelope({
                   id: crypto.randomUUID(),
                   name: newEnvelopeName || "",
                   total: Number(newEnvelopeTotal || 0),
-                  spent: Number(newEnvelopeSpent || 0),
+                  resetTotal: Number(newEnvelopeResetTotal || 0),
+                  spent: Number(0), // setting new envelopes to 0 automatically
                   saving: newEnvelopeSaving,
                   order: 0
                 });

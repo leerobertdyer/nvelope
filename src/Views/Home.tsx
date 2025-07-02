@@ -24,7 +24,7 @@ export default function Home() {
     <>
       <div className="">
         {isLoading 
-          ? <Loading text="Loading Budget..." />
+          ? <Loading text="Welcome to Nvelopes..." />
           : user 
             ? <MainEnvelopesView />
             : <div className="flex justify-center items-center w-full h-screen">
