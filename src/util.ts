@@ -11,6 +11,13 @@ export function recalculateBudget(params: {
     return currentAvailableBudget + diffAmount
   }
 
+export function recalculateRentPayment(rent: number, interval: Interval): number {
+    if (interval === 'monthly') return rent;
+    if (interval === 'biweekly') return rent / 2;
+    if (interval === 'weekly') return rent / 4;
+    return rent;
+}
+
 export function capitalizeFirstLetter(str: string | null): string {
   if (!str) return '';
   return str.slice(0, 1).toUpperCase() + str.slice(1)

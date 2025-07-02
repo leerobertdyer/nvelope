@@ -15,7 +15,7 @@ export default function Header({ step, links }: { step?: number, links: { label:
   useEffect(() => { 
       // Handle Spotlight Setup and Resize
 
-      if (step) setShowMenu(true);
+      if (step) setShowMenu(false);
 
       if (step === 10) {
         updateRect(null);
@@ -64,7 +64,7 @@ export default function Header({ step, links }: { step?: number, links: { label:
 
   return (
     <>
-      <div className="fixed z-100 flex items-center justify-evenly gap-8 w-full py-4 h-[2rem] bg-my-white-base border-b-2 select-none">
+      <div className="fixed inset-0 z-9990 flex items-center justify-evenly gap-8 w-full py-4 h-[2rem] bg-my-white-base border-b-2 select-none">
         {rect && step && <SpotlightOverlay targetRect={rect} />}
         <p ref={step === 2 || step === 3 ? stepRef : null}
           className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
@@ -79,8 +79,8 @@ export default function Header({ step, links }: { step?: number, links: { label:
               ${totalSpendingBudget.toFixed(2)}
             </p>
             <NavMenu showMenu={showMenu} setShowMenu={setShowMenu} links={links}/>
-        </div>
-      <div className="h-[4.25rem]"></div> {/* Spacer */}
+        </div>  
+        <div className="h-[4rem] w-full"></div>
     </>
-  );
+    );
 }

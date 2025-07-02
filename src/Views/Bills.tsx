@@ -269,10 +269,17 @@ export default function Bills() {
                             New Bill+
                         </button>
                     </div>
+                    {currentBills.length === 0 && <p className="text-my-white-light text-center text-xl md:text-2xl mb-4">No bills due this pay period</p>}
+                    {currentBills.length > 0 && <>
                     <h2 className="text-my-white-light text-center text-xl md:text-2xl">Current Bills</h2>
-                    {currentBills.length > 0 && <BillMap bills={currentBills} handleUpdatePaid={handleUpdatePaid} handleEditBill={handleEditBill} handleDeleteBill={handleDeleteBill} />}
-                    <h2 className="text-my-white-light text-center text-xl md:text-2xl">Future Bills</h2>
-                    {futureBills.length > 0 && <BillMap bills={futureBills} isFutureBills handleUpdatePaid={handleUpdatePaid} handleEditBill={handleEditBill} handleDeleteBill={handleDeleteBill} />}
+                        <BillMap bills={currentBills} handleUpdatePaid={handleUpdatePaid} handleEditBill={handleEditBill} handleDeleteBill={handleDeleteBill} />
+                    </>
+                    }
+                    {futureBills.length > 0 && <>
+                        <h2 className="text-my-white-light text-center text-xl md:text-2xl">Future Bills</h2>
+                        <BillMap bills={futureBills} isFutureBills handleUpdatePaid={handleUpdatePaid} handleEditBill={handleEditBill} handleDeleteBill={handleDeleteBill} />
+                    </>
+                    }
                     <div className="fixed bottom-0 flex flex-wrap gap-2 items-center justify-center w-screen mt-6 text-my-white-light bg-my-black-dark p-4 border-t-2 border-my-white-light">
                         <div className="flex items-center justify-start gap-2">
                             <p>Past Due</p>
