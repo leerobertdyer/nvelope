@@ -17,9 +17,10 @@ interface NvelopeProps {
     handleSetShowSpendingPage: (envelope: Envelope) => void;
     handleDeleteEnvelope: (id?: string) => void;
     handleEditRent: (amount: number) => Promise<void>;
+    handleAddCashToEnvelope: (envelope: Envelope) => void;
 }
 
-export default function Nvelopes({resetState, handleSetupNewEnvelope, handleSetupEdit, editEnvelope, handleSetShowSpendingPage, handleDeleteEnvelope }: NvelopeProps) {
+export default function Nvelopes({resetState, handleSetupNewEnvelope, handleSetupEdit, editEnvelope, handleSetShowSpendingPage, handleDeleteEnvelope, handleAddCashToEnvelope }: NvelopeProps) {
     const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes } = useGetDatabase();
     const { user } =  useAuth();
     const [showGiveAndTake, setShowGiveAndTake] = useState(false);
@@ -94,7 +95,7 @@ export default function Nvelopes({resetState, handleSetupNewEnvelope, handleSetu
     }
 
     if (isEnvelopeSelected) {
-      return <BigEnvelope handleBack={() => setIsEnvelopeSelected(false)}  envelope={envelopeToEdit!} resetState={resetState} editEnvelope={editEnvelope} handleSetShowSpendingPage={handleSetShowSpendingPage} handleSetupEdit={handleSetupEdit} setUpShowGiveAndTake={setUpShowGiveAndTake} handleDeleteEnvelope={handleDeleteEnvelope}/>
+      return <BigEnvelope handleAddCashToEnvelope={handleAddCashToEnvelope} handleBack={() => setIsEnvelopeSelected(false)}  envelope={envelopeToEdit!} resetState={resetState} editEnvelope={editEnvelope} handleSetShowSpendingPage={handleSetShowSpendingPage} handleSetupEdit={handleSetupEdit} setUpShowGiveAndTake={setUpShowGiveAndTake} handleDeleteEnvelope={handleDeleteEnvelope}/>
     }
 
     function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
@@ -128,6 +129,7 @@ export default function Nvelopes({resetState, handleSetupNewEnvelope, handleSetu
     function handleDragEnd(event: React.DragEvent<HTMLDivElement>) {
         event.preventDefault();
     }
+
 
     return (
         <div className="w-full text-center flex flex-col items-center h-screen">
