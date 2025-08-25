@@ -21,7 +21,7 @@ export default function BillMap({bills, handleUpdatePaid, handleEditBill, handle
                         : 'bg-my-red-light text-my-black-dark'}
             ${bill.name.length > 20 && 'w-fit px-2'}`}>
         <p className="flex items-center justify-center">
-            {new Date().toLocaleDateString('default', { month: 'long' })} {bill.dayOfMonth}</p>
+            {new Date().toLocaleDateString('default', { month: 'long' })} {bill.originalDate.toDate().getDate()}</p>
         <p className="flex items-center justify-center">{bill.name}</p>
         <p className="flex items-center justify-center">${bill.amount.toFixed(2)}</p>
         <div className="flex gap-2 items-center justify-center">

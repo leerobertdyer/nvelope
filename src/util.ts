@@ -1,7 +1,7 @@
 import type { User } from "firebase/auth";
-import type { Bill, Envelope, Interval } from "./types";
+import type { Bill, Envelope, Interval, IntervalDates } from "./types";
 import { editTotalSpendingBudget } from "./firebase/editData";
-import type { Timestamp } from "firebase/firestore";
+import { BIWEEKLY, DAY_IN_MILLIS, FIRST, FOURTH, MONTHLY, SECOND, THIRD, WEEKLY } from "./constants";
 
 export function recalculateBudget(params: {
     currentAvailableBudget: number;
@@ -12,9 +12,9 @@ export function recalculateBudget(params: {
   }
 
 export function recalculateRentPayment(rent: number, interval: Interval): number {
-    if (interval === 'monthly') return rent;
-    if (interval === 'biweekly') return rent / 2;
-    if (interval === 'weekly') return rent / 4;
+    if (interval === MONTHLY) return rent;
+    if (interval === BIWEEKLY) return rent / 2;
+    if (interval === WEEKLY) return rent / 4;
     return rent;
 }
 
@@ -37,133 +37,128 @@ export function capitalizeFirstLetter(str: string | null): string {
     return updatedEnvelopes;
 }
 
-
-export function getIntervalDates(interval: Interval) {      
-     // Calculate days in interval
-     let intervalDays = 0;
-     if (interval === 'monthly') {
-       // Calculate days until end of month
-       const today = new Date();
-       const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-       intervalDays = lastDay - today.getDate() + 1; // +1 to include today
-     } else if (interval === 'weekly') {
-       intervalDays = 7;
-     } else if (interval === 'biweekly') {
-       intervalDays = 14;
-     }    
-      
-      // Calculate the date range for the current interval
-      const today = new Date();
-      const endDate = new Date(today);
-      endDate.setDate(today.getDate() + intervalDays);
-      return { intervalDays, today, endDate };
-    }
-
-export function isDateInInterval(dayOfMonth: number, interval: Interval, startDate: Timestamp): boolean {
+export function getAllOccurencesOfDate(d: number) {
     const today = new Date();
-    const todayWithoutTime = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const originalStart = startDate.toDate();
-    
-    // Calculate the current/next pay period start date based on the interval pattern
-    const currentStartDate = calculateCurrentPayPeriodStart(originalStart, interval);
-    
-    const { intervalDays } = getIntervalDates(interval);
-    
-    const endDate = new Date(currentStartDate);
-    endDate.setDate(currentStartDate.getDate() + intervalDays);
-    
-    const nextPaymentDate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
-    
-    // If the day has passed this month, look at next month
-    if (nextPaymentDate < todayWithoutTime) {
-        nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+    today.setHours(0, 0, 0, 0)
+    const freshMonth = new Date(today);
+    const lastDay = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+    let answer = {
+      count: 0,
+      first: new Date(today),
+      second: new Date(today),
+      third: new Date(today),
+      fourth: new Date(today)
     }
-    
-    const billInInterval = nextPaymentDate >= currentStartDate && nextPaymentDate <= endDate;
-    
-    return billInInterval;
+    for (let i = 1; i <= lastDay; i++) {
+      freshMonth.setDate(i)
+      if (freshMonth.getDay() === d) answer.count++;
+      switch(answer.count) {
+        case 1:
+          answer.first.setDate(i);
+          break;
+        case 2:
+          answer.second.setDate(i);
+          break;
+        case 3:
+          answer.third.setDate(i);
+          break;
+        case 4:
+          answer.fourth.setDate(i);
+          break;
+      }
+    }
+    return answer;
+  }
+
+
+// Helper to return the start and end dates of a given interval
+export function getIntervalDateRange(i: Interval, originalDate: Date): IntervalDates {
+  originalDate.setHours(0, 0, 0, 0)
+  const originalDateInMs = originalDate.getTime();
+  let intervalsPassed;
+  let start = new Date(), end = new Date(), today = new Date();
+  today.setHours(0, 0, 0, 0)
+
+  const elapsedDays = Math.floor((today.getTime() - originalDate.getTime()) / (DAY_IN_MILLIS))
+  const monthsElapsed = (today.getFullYear() - originalDate.getFullYear()) * 12 + (today.getMonth() - originalDate.getMonth()) 
+  switch(i) {
+    case FIRST:
+      const { first } = getAllOccurencesOfDate(originalDate.getDay());
+      start = new Date(first);
+      end = new Date(first);
+      break;
+    case SECOND:
+      const { second } = getAllOccurencesOfDate(originalDate.getDay());
+      start = new Date(second);
+      end = new Date(second);
+      break;
+    case THIRD:
+      const { third } = getAllOccurencesOfDate(originalDate.getDay());
+      start = new Date(third);
+      end = new Date(third);
+      break;
+    case FOURTH:
+      const { fourth } = getAllOccurencesOfDate(originalDate.getDay());
+      start = new Date(fourth);
+      end = new Date(fourth);
+      break;
+    case WEEKLY:
+      intervalsPassed = Math.floor(elapsedDays / 7);
+      start.setTime(originalDateInMs + (intervalsPassed * 7 * DAY_IN_MILLIS))
+      end.setDate(start.getDate() + 6)
+      break
+    case BIWEEKLY:
+      intervalsPassed = Math.floor(elapsedDays / 14);
+      start.setTime(originalDateInMs + (intervalsPassed * 14 * DAY_IN_MILLIS))
+      end.setDate(start.getDate() + 13)
+      break
+    case MONTHLY:
+      start = new Date(originalDate);
+      start.setMonth(originalDate.getMonth() + monthsElapsed);
+      end = new Date(start.getFullYear(), start.getMonth() + 1, start.getDate());
+      // Check to see if the date exists next month and if not use the day before the month ahead of it
+      end.setDate(Math.min(
+        start.getDate(), 
+        new Date(start.getFullYear(), start.getMonth() + 2, 0).getDate()
+      ));
+      end.setDate(end.getDate() - 1);
+      break
+    default:
+      console.warn("Interval or date not handled properly: ", {i, originalDate})
+  }
+  return {
+    start, end
+  }
+} 
+
+export async function getBillCurrentDueDate(bill: Bill) {
+  
 }
 
-/**
- * Calculate the start date of the current pay period based on the original reference date and interval
- */
-export function calculateCurrentPayPeriodStart(originalDate: Date, interval: Interval): Date {
+export function isDateInInterval(i: Interval, d: Date): boolean {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Clone the original date to avoid modifying it
-    let periodStart = new Date(originalDate);
-    periodStart.setHours(0, 0, 0, 0);
-    
-    // If the original date is in the future, use it as is
-    if (periodStart > today) {
-        return periodStart;
-    }
-    
-    // If original date is in the past, find the most recent/current period start
-    // based on the interval type
-    if (interval === 'monthly') {
-        // For monthly, advance by months until we find a start date <= today
-        while (periodStart <= today) {
-            const nextMonth = periodStart.getMonth() + 1;
-            periodStart.setMonth(nextMonth);
-            
-            // If we've gone too far (into the future), go back one month
-            if (periodStart > today) {
-                periodStart.setMonth(periodStart.getMonth() - 1);
-                break;
-            }
-        }
-    } 
-    else if (interval === 'biweekly') {
-        // For biweekly, add 14 days until we find a start date <= today
-        while (periodStart <= today) {
-            const nextStart = new Date(periodStart);
-            nextStart.setDate(nextStart.getDate() + 14);
-            
-            // If we've gone too far (into the future), keep the previous period
-            if (nextStart > today) {
-                break;
-            }
-            
-            periodStart = nextStart;
-        }
-    }
-    else if (interval === 'weekly') {
-        // For weekly, add 7 days until we find a start date <= today
-        while (periodStart <= today) {
-            const nextStart = new Date(periodStart);
-            nextStart.setDate(nextStart.getDate() + 7);
-            
-            // If we've gone too far (into the future), keep the previous period
-            if (nextStart > today) {
-                break;
-            }
-            
-            periodStart = nextStart;
-        }
-    }
-    
-    return periodStart;
+    today.setHours(0, 0, 0, 0)
+    const { start, end } = getIntervalDateRange(i, d)
+    return today >= start && today <= end;
 }
 
 export function getIncomeByInterval(oldInterval: Interval, newInterval: Interval, income: number): number {
   // First convert the income to monthly so we can calculate the new income
   let monthlyIncome = 0;
-  if (oldInterval === 'monthly') {
+  if (oldInterval === MONTHLY) {
     monthlyIncome = income;
-  } else if (oldInterval === 'biweekly') {
+  } else if (oldInterval === BIWEEKLY) {
     monthlyIncome = income * 2;
-  } else if (oldInterval === 'weekly') {
+  } else if (oldInterval === WEEKLY) {
     monthlyIncome = income * 4;
   }
   // Now use the new interval to calculate the new income
   switch (newInterval) {
-      case 'monthly':
+      case MONTHLY:
           return monthlyIncome;
-      case 'weekly':
+      case WEEKLY:
           return monthlyIncome / 4;
-      case 'biweekly':
+      case BIWEEKLY:
           return monthlyIncome / 2;
       default:
           // If no viable option do nothing...

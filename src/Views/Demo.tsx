@@ -19,6 +19,7 @@ import Loading from "../components/Loading";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
+const today = new Date()
 
 export default function Demo() {
     const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, setRent, interval, setInterval, bills, setBills, setTotalSpendingBudget, rent, totalSpendingBudget} = useGetDatabase();
@@ -31,7 +32,7 @@ export default function Demo() {
     const [newBills, setNewBills] = useState<Bill[]>([]);
     const [newBillName, setNewBillName] = useState('rent');
     const [newBillAmount, setNewBillAmount] = useState<number | null>(null);
-    const [newBillDayOfMonth, setNewBillDayOfMonth] = useState<string>('');
+    const [newBillOriginalDate, setNewBillOriginalDate] = useState<Date | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [period, setPeriod] = useState<string>('')
     const [showBillAdded, setShowBillAdded] = useState<boolean>(false)
@@ -55,12 +56,18 @@ export default function Demo() {
         }, 2500)
     }, [])
 
-    useEffect(() => {
-        console.log("rent", rent, typeof rent)
-        if (rent === 0 || !rent) {
-            console.log("rent not set")
+    // useEffect(() => {
+    //     console.log("rent", rent, typeof rent)
+    //     if (rent === 0 || !rent) {
+    //         console.log("rent not set")
+    //     }
+    // }, [rent])
+
+    function handleCalendarChange(value: Value) {
+        if (value instanceof Date) {
+            setNewBillOriginalDate(value);
         }
-    }, [rent])
+    }
 
     useEffect(() => {
         if (newInterval) {
@@ -83,7 +90,7 @@ export default function Demo() {
         setRent(newBillAmount)
         setNewBillAmount(null)
         setNewBillName('')
-        setNewBillDayOfMonth('')
+        setNewBillOriginalDate(today)
     }
     async function handleAddNewBill() {
         if (!newBillName || !newBillAmount) return;
@@ -101,16 +108,16 @@ export default function Demo() {
             return
         }
 
-        if (!newBillDayOfMonth) {
+        if (!newBillOriginalDate) {
             return
         }
         
-        await editBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth), paid: false }], user?.uid || '')
-        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInInterval(Number(newBillDayOfMonth), interval, payDate!) ? newBillAmount : 0 })
+        await editBills([...newBills, { name: newBillName, amount: newBillAmount, originalDate: Timestamp.fromDate(newBillOriginalDate), paid: false, interval: "monthly" }], user?.uid || '')
+        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInInterval(interval, newBillOriginalDate) ? newBillAmount : 0 })
         await editTotalSpendingBudget(nextBudget, user?.uid || '')
         setTotalSpendingBudget(nextBudget)
-        setNewBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth), paid: false }])
-        setBills([...newBills, { name: newBillName, amount: newBillAmount, dayOfMonth: Number(newBillDayOfMonth), paid: false }])
+        setNewBills([...newBills, { name: newBillName, amount: newBillAmount, originalDate: Timestamp.fromDate(newBillOriginalDate), paid: false,  interval: "monthly" }])
+        setBills([...newBills, { name: newBillName, amount: newBillAmount, originalDate: Timestamp.fromDate(newBillOriginalDate), paid: false,  interval: "monthly" }])
         setNewBillName('')
         setNewBillAmount(0)
         setShowBillAdded(true)
@@ -215,12 +222,6 @@ export default function Demo() {
         navigate('/nvelopes')
     }
 
-    function handleSetDayOfMonth(dayOfMonth: string) {
-        let day = Number(dayOfMonth)
-        if (day > 28) day = 28
-        setNewBillDayOfMonth(day.toString())
-    }
-
 
     if (isLoading) {
         return <Loading text="Loading Demo..." />
@@ -322,15 +323,12 @@ export default function Demo() {
                                     onChange={(e) => setNewBillAmount(Number(e.target.value))}
                                 />
                                 {newBillName !== 'rent' && (
-                                    <input
-                                    className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
-                                    type="number"
-                                    min="1"
-                                    max="31"
-                                    placeholder="Day of Month"
-                                    value={newBillDayOfMonth || ''}
-                                    onChange={(e) => handleSetDayOfMonth(e.target.value)}
-                                />
+                                    <Calendar
+                                        calendarType='gregory'
+                                        onChange={handleCalendarChange} 
+                                        value={newBillOriginalDate || new Date()} 
+                                        selectRange={false} 
+                                        className="cursor-pointer-calendar"/>
                                 )}
                                 <Button 
                                     onClick={rent === 0 || !rent ? handleAddRent : handleAddNewBill}

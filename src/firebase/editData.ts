@@ -2,7 +2,7 @@ import type { Bill, Envelope, Interval, OneTimeCash, OneTimeExpense, PreviousInt
 import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
-import { calculateCurrentPayPeriodStart, getIntervalDates, isDateInInterval, replenishEnvelopes } from "../util";
+import { getIntervalDateRange, isDateInInterval, replenishEnvelopes } from "../util";
 
 export async function editShouldReset(shouldReset: Timestamp, userId: string) {
     try {
@@ -25,7 +25,7 @@ export async function editEnvelopes(envelopes: Envelope[], userId: string) {
 }
 
 export async function editBills(bills: Bill[], userId: string) {
-    const sortedBills = bills.sort((a, b) => a.dayOfMonth - b.dayOfMonth)
+    const sortedBills = bills.sort((a, b) => a.originalDate.seconds - b.originalDate.seconds)
     try {
         const userDocRef = doc(db, "users", userId);
         await updateDoc(userDocRef, { bills: sortedBills });
@@ -158,26 +158,21 @@ export function toUTCDateString(date: Date): string {
     if (shouldReset && toUTCDateString(shouldReset.toDate()) === todayUTC) return false;
     
     const originalPayDate = payDate.toDate();
-    const currentPayPeriodStart = calculateCurrentPayPeriodStart(originalPayDate, interval);
-    const nextPayPeriodStart = new Date(currentPayPeriodStart);
-    const { intervalDays } = getIntervalDates(interval);
-    
-    const nextPayPeriodEnd = new Date(nextPayPeriodStart);
-    nextPayPeriodEnd.setDate(nextPayPeriodStart.getDate() + intervalDays);
+    const { start, end } = getIntervalDateRange(interval, originalPayDate);
     
     // If we're not already in the current pay period, don't reset again
     if (shouldReset) {
         const lastResetDate = shouldReset.toDate();
         console.log("isResetToday interval check:", {
           lastResetDate,
-          nextPayPeriodStart,
-          nextPayPeriodEnd,
-          isInCurrentPeriod: lastResetDate >= nextPayPeriodStart && lastResetDate < nextPayPeriodEnd
+          start,
+          end,
+          isInCurrentPeriod: lastResetDate >= start && lastResetDate < end
         });
         
         if (
-        lastResetDate >= nextPayPeriodStart &&
-        lastResetDate < nextPayPeriodEnd
+        lastResetDate >= start &&
+        lastResetDate < end
         ) {
         console.warn('Already reset during this pay period.');
         return false;
@@ -205,7 +200,6 @@ export function toUTCDateString(date: Date): string {
     console.log("RESET TODAY: ", resetToday);
     if (!resetToday) return;
 
-    const currentPayPeriodStart = calculateCurrentPayPeriodStart(payDate.toDate(), interval);
     console.log("checkAndResetBudget", {shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash, oneTimeExpenses});
     
     const updatedEnvelopes = replenishEnvelopes(envelopes);
@@ -213,9 +207,8 @@ export function toUTCDateString(date: Date): string {
   
     const totalBillsInInterval = bills.reduce((acc, bill) =>
       isDateInInterval(
-        bill.dayOfMonth,
-        interval,
-        Timestamp.fromDate(currentPayPeriodStart)
+          interval,
+          bill.originalDate.toDate(),
       )
         ? acc + bill.amount
         : acc,
@@ -225,9 +218,8 @@ export function toUTCDateString(date: Date): string {
     const totalOneTimeCash = oneTimeCash
       ? oneTimeCash.reduce((acc, cash) =>
           isDateInInterval(
-            cash.date.toDate().getDate(),
-            interval,
-            Timestamp.fromDate(currentPayPeriodStart)
+              interval,
+              cash.date.toDate(),
           )
             ? acc + cash.amount
             : acc,
@@ -237,9 +229,8 @@ export function toUTCDateString(date: Date): string {
       const totalOneTimeExpenses = oneTimeExpenses
       ? oneTimeExpenses.reduce((acc, expense) =>
           isDateInInterval(
-            expense.date.toDate().getDate(),
-            interval,
-            Timestamp.fromDate(currentPayPeriodStart)
+              interval,
+              expense.date.toDate(),
           )
             ? acc + expense.amount
             : acc,

@@ -18,8 +18,14 @@ A personal finance management app built with React, TypeScript, and Firebase.
 
 # TODO
 
-1. I am using the max of 28 calendar days.
-This is going to cause bugs down the road.... anytime at the end of the month if a bill is marked as 28th it is technically in the past, even though it isn't... lol Have to fix this....
+1. Dates handling. Currently using a number for day of bill up to 28
+    - Allow for specific dates
+    - Allow for specific intervals (Every Friday/Last or First day of month/etc..)
+        -ENUMS: WEEKLY | FIRST | SECOND | THIRD | FOURTH | LAST | MONTHLY | YEARLY
+    - Choose date from a calendar, then if it is <= 28 allow selection of number/interval
+        - if interval show number input for amount of days of interval
+    - These dates are stored as timestamps which is utc. When dealing with any dates in our system will first need to translate them back to local time for consistency and accuracy.
+    
 
 2. There's no current method to add a bill by weekday (ie every thursday)
 

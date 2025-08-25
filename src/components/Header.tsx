@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
 import SpotlightOverlay from "./SpotlightOverlay";
 import NavMenu from "./NavMenu";
-import { calculateCurrentPayPeriodStart, getIntervalDates } from "../util";
+import { getIntervalDateRange } from "../util";
 
 export default function Header({ step, links }: { step?: number, links: { label: string, href: string }[] }) {
   const { totalSpendingBudget, interval, payDate } = useGetDatabase();
@@ -45,19 +45,12 @@ export default function Header({ step, links }: { step?: number, links: { label:
         setDaysTillReset(0);
         return;
       }
-      const currentPayPeriodStart = calculateCurrentPayPeriodStart(payDate.toDate(), interval);
-      const { intervalDays } = getIntervalDates(interval);
-      
-      // Create proper end date
-      const endDate = new Date(currentPayPeriodStart);
-      endDate.setDate(currentPayPeriodStart.getDate() + intervalDays);
-      
-      // Calculate remaining days (more accurate than date math)
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Remove time component
-      const diffTime = endDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const { end } = getIntervalDateRange(interval, payDate.toDate());
       
+      const diffTime = end.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
       setDaysTillReset(diffDays > 0 ? diffDays : 0);
   }, [interval, payDate, totalSpendingBudget]);
   

@@ -1,7 +1,7 @@
 import Button from "../components/Button";
 import { billsTotal, recalculateBudget, isDateInInterval } from "../util";
 import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import type { Bill } from "../types";
+import type { Bill, Interval } from "../types";
 import { useEffect, useState } from "react";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { editBills, editTotalSpendingBudget } from "../firebase/editData";
@@ -10,10 +10,14 @@ import Calendar from "react-calendar";
 import type { Value } from "react-calendar/src/shared/types.js";
 import Header from "../components/Header";
 import BillMap from "../components/BillMap";
+import { Timestamp } from "firebase/firestore";
 
 export default function Bills() {
     const {bills, setBills, interval, setTotalSpendingBudget, totalSpendingBudget, payDate} = useGetDatabase();
     const {user} = useAuth();
+    const today = new Date();
+    const todayTimestamp = Timestamp.fromDate(today)
+
 
     const [newBill, setNewBill] = useState<Bill | null>(null);
     const [billToEdit, setBillToEdit] = useState<Bill | null>(null);
@@ -23,14 +27,15 @@ export default function Bills() {
     const [showBillAdded, setShowBillAdded] = useState<boolean>(false);
     const [showBillError, setShowBillError] = useState<boolean>(false);
     const [newBillDate, setNewBillDate] = useState<Value | null>(null);
+    const [newBillInterval, setNewBillInterval] = useState<Interval | null>(null);
     const [currentBills, setCurrentBills] = useState<Bill[]>([]);
     const [futureBills, setFutureBills] = useState<Bill[]>([]);
 
     // UseEffect to sort bills by date and paid/unpaid
     useEffect(() => {
-        const billsWithIntervals = [...bills].map(b => ({...b, isInInterval: isDateInInterval(b.dayOfMonth, interval, payDate!)}));
-        setCurrentBills(billsWithIntervals.filter(b => b.isInInterval).sort((a, b) => a.dayOfMonth - b.dayOfMonth))
-        setFutureBills(billsWithIntervals.filter(b => !b.isInInterval).sort((a, b) => a.dayOfMonth - b.dayOfMonth))
+        const billsWithIntervals = [...bills].map(b => ({...b, isInInterval: isDateInInterval(interval, b.originalDate.toDate())}));
+        setCurrentBills(billsWithIntervals.filter(b => b.isInInterval).sort((a, b) => a.originalDate.seconds - b.originalDate.seconds))
+        setFutureBills(billsWithIntervals.filter(b => !b.isInInterval).sort((a, b) => a.originalDate.seconds - b.originalDate.seconds))
     }, [bills, interval, payDate])
 
     useEffect(() => {
@@ -99,7 +104,7 @@ export default function Bills() {
         setBills(updatedBills);
         setShowBillAdded(true);
         await editBills(updatedBills, user.uid);
-        if (isDateInInterval(newBill.dayOfMonth, interval, payDate!) && !newBill.paid) {
+        if (isDateInInterval(interval, newBill.originalDate.toDate()) && !newBill.paid) {
             await handleUpdateBudget(newBill.amount * -1)
         }
         resetBillState()
@@ -108,7 +113,7 @@ export default function Bills() {
     function resetBillState() {
         setShowBillInputs(false);
         setBillToEdit(null);
-        setNewBill({ name: '', amount: 0, dayOfMonth: 0, paid: false });
+        setNewBill({ name: '', amount: 0, paid: false, interval: null, originalDate: Timestamp.fromDate(today)});
         setIsAddingBill(false);
         setShowBillAdded(false);
         setShowBillError(false);
@@ -118,13 +123,12 @@ export default function Bills() {
     function handleCalendarChange(value: Value) {
         setNewBillDate(value);
         if (value instanceof Date) {
-            let selectedDay = value.getDate();
-            if (selectedDay > 28) selectedDay = 28;
             setNewBill({ 
                 name: newBill?.name || '', 
                 amount: newBill?.amount || 0, 
-                dayOfMonth: selectedDay,
-                paid: false
+                paid: false,
+                interval: newBill?.interval || null,
+                originalDate: newBill?.originalDate || todayTimestamp
             });
         }
     }
@@ -197,7 +201,7 @@ export default function Bills() {
                                 min={0}
                                 className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
                                 value={newBill?.amount || ''}
-                                onChange={(e) => setNewBill({ name: newBill?.name || '', amount: Number(e.target.value), dayOfMonth: newBill?.dayOfMonth || 1, paid: newBill?.paid || false })}
+                                onChange={(e) => setNewBill({ name: newBill?.name || '', amount: Number(e.target.value), paid: newBill?.paid || false, interval: newBill?.interval || "monthly", originalDate: newBill?.originalDate || todayTimestamp })}
                                 placeholder="Enter new bill amount"
                             />
                         </div>
@@ -209,7 +213,7 @@ export default function Bills() {
                                 type="text"
                                 className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
                                 value={newBill?.name.toLowerCase() || ''}
-                                onChange={(e) => setNewBill({ name: e.target.value, amount: newBill?.amount || 0, dayOfMonth: newBill?.dayOfMonth || 1, paid: newBill?.paid || false })}
+                                onChange={(e) => setNewBill({ name: e.target.value, amount: newBill?.amount || 0, paid: newBill?.paid || false, interval: newBill?.interval || "monthly", originalDate: newBill?.originalDate || todayTimestamp })}
                                 placeholder="Enter new bill name"
                                 />
                         </div>
@@ -230,7 +234,7 @@ export default function Bills() {
                                 type="checkbox"
                                 className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
                                 checked={newBill?.paid || false}
-                                onChange={(e) => setNewBill({ name: newBill?.name || '', amount: newBill?.amount || 0, dayOfMonth: newBill?.dayOfMonth || 1, paid: e.target.checked })}
+                                onChange={(e) => setNewBill({ name: newBill?.name || '', amount: newBill?.amount || 0, paid: e.target.checked, interval: newBill?.interval || "monthly", originalDate: newBill?.originalDate || todayTimestamp })}
                                 />
                         </div>
                         </div>

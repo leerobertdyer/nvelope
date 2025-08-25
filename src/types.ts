@@ -14,10 +14,12 @@ export interface Envelope {
 export interface Bill {
     name: string,
     amount: number,
-    dayOfMonth: number,
     paid: boolean,
     isInInterval?: boolean
+    interval: Interval
+    originalDate: Timestamp
 }
+
 
 export interface OneTimeCash {
     id: string,
@@ -43,6 +45,11 @@ export interface PreviousIntervalDetails {
     oneTimeCash: OneTimeCash[] | null
 }
 
-export type Interval = "monthly" | "weekly" | "biweekly" | "fixed" | null;
+export type Interval = "yearly" | "monthly" | "weekly" | "biweekly" | "first" | "second" | "third" | "fourth" | "last" | "fixed" | null;
 
 export type ChangeValue = boolean | string | null | Value | number | Bill[]
+
+export type IntervalDates = {
+    start: Date;
+    end: Date;
+}
