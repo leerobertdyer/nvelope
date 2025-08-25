@@ -286,3 +286,22 @@ export async function storePreviousIntervalDetails(latestIntervalDetails: Previo
     }
     return;
 }
+
+export async function setDefaultBillInterval(userId: string) {
+  try {
+    const userDocRef = doc(db, "users", userId);
+    const docSnap = await getDoc(userDocRef);
+
+    if (!docSnap.exists()) return;
+
+    const bills = docSnap.data().bills || [];
+    const newBills = bills.map((b: Bill) => ({
+      ...b,
+      interval: b.interval ?? "monthly",
+    }));
+
+    await updateDoc(userDocRef, { bills: newBills });
+  } catch (error) {
+    console.error("Firebase, error in setDefaultBillInterval:", error);
+  }
+}
