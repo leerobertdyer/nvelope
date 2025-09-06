@@ -1,35 +1,36 @@
 import Button from "../components/Button";
 import ClosingX from "../components/ClosingX";
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
-import { editBills, editIncome, editInterval, editIsNewUser, editPayDate, editRent, editTotalSpendingBudget } from "../firebase/editData";
+import { useDatabase } from "../Context/DatabaseContext/useDatabase";
+import { editPayments, editIncome, editInterval, editIsNewUser, editPayDate, editRent, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
 import Calendar from 'react-calendar';
 import Header from "../components/Header";
 import 'react-calendar/dist/Calendar.css';
 import DemoStep from "../components/DemoStep";
-import type { Bill, Interval } from "../types";
+import type { Payment, Interval } from "../types";
 import { IoIosSad } from "react-icons/io";
 import Popup from "../components/Popup";
 import { Timestamp } from "firebase/firestore";
 import SpendBtn from "../components/SpendBtn";
-import { getIncomeByInterval, isDateInInterval, recalculateBudget, recalculateRentPayment } from "../util";
+import { getIncomeByInterval, isDateInCurrentPayPeriod, recalculateBudget, recalculateRentPayment } from "../util";
 import { useNavigate } from "react-router-dom";
 import Loading from "../components/Loading";
+import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 const today = new Date()
 
 export default function Demo() {
-    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, setRent, interval, setInterval, bills, setBills, setTotalSpendingBudget, rent, totalSpendingBudget} = useGetDatabase();
+    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, setRent, interval, setInterval, payments, setPayments, setTotalSpendingBudget, rent, totalSpendingBudget} = useDatabase();
     const {user} = useAuth();
 
     const [step, setStep] = useState(0);
     const [newPayDate, setNewPayDate] = useState<Value | null>(null);
     const [newIncome, setNewIncome] = useState<number | null>(null);
     const [newInterval, setNewInterval] = useState<string | null>(null);
-    const [newBills, setNewBills] = useState<Bill[]>([]);
+    const [newBills, setNewBills] = useState<Payment[]>([]);
     const [newBillName, setNewBillName] = useState('rent');
     const [newBillAmount, setNewBillAmount] = useState<number | null>(null);
     const [newBillOriginalDate, setNewBillOriginalDate] = useState<Date | null>(null);
@@ -56,13 +57,6 @@ export default function Demo() {
         }, 2500)
     }, [])
 
-    // useEffect(() => {
-    //     console.log("rent", rent, typeof rent)
-    //     if (rent === 0 || !rent) {
-    //         console.log("rent not set")
-    //     }
-    // }, [rent])
-
     function handleCalendarChange(value: Value) {
         if (value instanceof Date) {
             setNewBillOriginalDate(value);
@@ -72,9 +66,10 @@ export default function Demo() {
     useEffect(() => {
         if (newInterval) {
             let p = ''
-            if (newInterval === 'weekly') p = 'week'
-            if (newInterval === 'biweekly') p = '2 weeks'
-            if (newInterval === 'monthly') p = 'month'
+            if (newInterval === WEEKLY) p = 'week'
+            if (newInterval === BIWEEKLY) p = '2 weeks'
+            if (newInterval === MONTHLY) p = 'month'
+            if (newInterval === YEARLY) p = 'year'
             setPeriod(p)
         }
     }, [newInterval])
@@ -112,12 +107,12 @@ export default function Demo() {
             return
         }
         
-        await editBills([...newBills, { name: newBillName, amount: newBillAmount, originalDate: Timestamp.fromDate(newBillOriginalDate), paid: false, interval: "monthly" }], user?.uid || '')
-        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInInterval(interval, newBillOriginalDate) ? newBillAmount : 0 })
+        await editPayments([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false, interval: MONTHLY } as Payment], user?.uid || '')
+        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInCurrentPayPeriod(interval, newBillOriginalDate) ? newBillAmount : 0 })
         await editTotalSpendingBudget(nextBudget, user?.uid || '')
         setTotalSpendingBudget(nextBudget)
-        setNewBills([...newBills, { name: newBillName, amount: newBillAmount, originalDate: Timestamp.fromDate(newBillOriginalDate), paid: false,  interval: "monthly" }])
-        setBills([...newBills, { name: newBillName, amount: newBillAmount, originalDate: Timestamp.fromDate(newBillOriginalDate), paid: false,  interval: "monthly" }])
+        setNewBills([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false,  interval: MONTHLY } as Payment])
+        setPayments([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false,  interval: MONTHLY } as Payment])
         setNewBillName('')
         setNewBillAmount(0)
         setShowBillAdded(true)
@@ -187,11 +182,11 @@ export default function Demo() {
 
     function handleSixthStep() {
         console.log('handleSixthStep')
-        if (bills && bills.length > 0) {
+        if (payments && payments.length > 0) {
             setStep(8)
         } else {
             if (newBills) {
-                setBills(newBills)
+                setPayments(newBills)
             }
             setStep(7)
         }
@@ -201,11 +196,11 @@ export default function Demo() {
         console.log('handleSeventhStep')
         if (!newBills) return;
         const diffAmount = newBills.reduce((acc, bill) => acc + bill.amount, 0) * -1
-        await editBills(newBills, user!.uid)
+        await editPayments(newBills, user!.uid)
         const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount })
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)
-        setBills(newBills)
+        setPayments(newBills)
         setStep(8)
     }
 
@@ -229,7 +224,7 @@ export default function Demo() {
 
     return (
         <div className="absolute inset-0 z-9990">
-        {user && <Header links={[{label: 'Bills', href: '/bills'}, {label: 'Settings', href: '/settings'}]} step={step}/>}
+        {user && <Header links={[{label: 'Payments', href: '/payments'}, {label: 'Settings', href: '/settings'}]} step={step}/>}
         {showBillAdded && <Popup type="success">Bill added!</Popup>}
         {showBillError && <Popup type="error">Bill name already exists</Popup>}
         {rentNotSet && <Popup type="error">Please set rent/mortage first</Popup>}
@@ -272,9 +267,10 @@ export default function Demo() {
                             value={newInterval || ''}
                         >
                             <option disabled value="">Select</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="biweekly">Biweekly</option>
-                            <option value="monthly">Monthly</option>
+                            <option value={WEEKLY}>Weekly</option>
+                            <option value={BIWEEKLY}>Biweekly</option>
+                            <option value={MONTHLY}>Monthly</option>
+                            <option value={YEARLY}>Yearly</option>
                         </select>
                     </DemoStep>
                     : step === 4

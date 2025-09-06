@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Button from "../components/Button";
 import Header from "../components/Header";
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
+import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import type { Interval } from "../types";
 import { editIncome, editInterval, editPayDate, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
@@ -12,11 +12,12 @@ import { GiMoneyStack } from "react-icons/gi";
 import Calendar from "react-calendar";
 import { Timestamp } from "firebase/firestore";
 import type { Value } from "react-calendar/src/shared/types.js";
+import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
 // import CreateLoginWithEmail from "../components/CreateLoginWithEmail";
 
 export default function Settings() {
     const {user} = useAuth();
-    const { interval, setInterval, setIncome, setTotalSpendingBudget, totalSpendingBudget, income, payDate, setPayDate } = useGetDatabase();
+    const { interval, setInterval, setIncome, setTotalSpendingBudget, totalSpendingBudget, income, payDate, setPayDate } = useDatabase();
 
     const [showIntervalSettings, setShowIntervalSettings] = useState<boolean>(false);
     const [newIncome, setNewIncome] = useState<string>('');
@@ -154,7 +155,7 @@ export default function Settings() {
         <div className="w-full h-screen overflow-y-scroll">
             <Header links={[
                 { label: "Home", href: "/" },
-                { label: "Bills", href: "/bills" },
+                { label: "Payments", href: "/payments" },
             ]} />
             <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md">Settings</h1>   
             <div className="w-full flex justify-center">
@@ -193,14 +194,15 @@ export default function Settings() {
                         onChange={(e) => handleIntervalChange(e.target.value as Interval)}
                         className="w-[80%] max-w-[20rem] border-2 bg-my-white-light p-2 rounded-md my-4">
                         <option value="" disabled>Select Interval</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="biweekly">Biweekly</option>
-                        <option value="monthly">Monthly</option>
+                        <option value={WEEKLY}>Weekly</option>
+                        <option value={BIWEEKLY}>Biweekly</option>
+                        <option value={MONTHLY}>Monthly</option>
+                        <option value={YEARLY}>Yearly</option>
                     </select>
                 </div>
 
-                <div className="bg-my-black-base text-my-white-light  w-[80%] max-w-[20rem] border-2 p-2 rounded-md my-4 flex flex-col items-center">
-                    <p className="text-my-white-dark text-center w-full">
+                <div className="bg-my-black-base text-my-black-light w-[80%] max-w-[20rem] border-2 p-2 rounded-md my-4 flex flex-col items-center">
+                    <p className="text-my-white-dark text-center w-full pb-2">
                         Change Pay Date
                     </p>
                     <Calendar

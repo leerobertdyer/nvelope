@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Nvelopes from "../components/Nvelopes";
 import type { Envelope } from "../types";
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
+import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { editEnvelopes, editOneTimeCashAndBudget, editOneTimeExpense, editRent, checkAndResetBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
@@ -14,7 +14,7 @@ import Loading from "../components/Loading";
 
 export default function MainEnvelopesView() {
     const {user} = useAuth();
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, rent, setRent, oneTimeCash, setOneTimeCash, income, bills, payDate, interval, shouldReset, oneTimeExpenses, setShouldReset } = useGetDatabase();
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, rent, setRent, oneTimeCash, setOneTimeCash, income, payments, payDate, interval, shouldReset, oneTimeExpenses, setShouldReset } = useDatabase();
 
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
     const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
@@ -39,7 +39,7 @@ export default function MainEnvelopesView() {
         const checkResetShowLoader = async () => {
             setLoadingText("Checking Dates...")
             setShowLoading(true);
-            await checkAndResetBudget(shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash, oneTimeExpenses, setShouldReset);
+            await checkAndResetBudget(shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, payments, oneTimeCash, oneTimeExpenses, setShouldReset);
             resetState();
         }
         checkResetShowLoader();
@@ -382,7 +382,7 @@ export default function MainEnvelopesView() {
         <>
         {showLoading && <Loading text={loadingText} />}
             <Header links={[
-                { label: "Bills", href: "/bills" },
+                { label: "Payments", href: "/payments" },
                 { label: "Settings", href: "/settings" },
             ]} />
             <div className="flex flex-col items-center gap-[3rem] overflow-y-auto overflow-x-hidden">

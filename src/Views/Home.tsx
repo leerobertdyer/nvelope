@@ -3,12 +3,12 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import LoginOptions from "../components/LoginOptions";
 import MainEnvelopesView from "./MainEnvelopesView";
 import Loading from "../components/Loading";
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
+import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import Demo from "./Demo";
 
 export default function Home() {
   const { user } = useAuth();
-  const { isNewUser } = useGetDatabase();
+  const { isNewUser } = useDatabase();
 
   const [isLoading, setIsLoading] = useState(true);
 

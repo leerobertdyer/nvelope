@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Button from "./Button";
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
+import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import Popup from "./Popup";
 import type { Envelope } from "../types";
 import { IoIosSad } from "react-icons/io";
@@ -12,7 +12,7 @@ interface NvelopeCalculatorProps {
     envelope?: Envelope;
 }
 export default function NvelopeCalculator({ handleEnterAmount, handleBack, selectEnvelope, envelope }: NvelopeCalculatorProps) {
-    const {envelopes, totalSpendingBudget} = useGetDatabase();
+    const {envelopes, totalSpendingBudget} = useDatabase();
     
     const [amount, setAmount] = useState('');
     const [showError, setShowError] = useState(false);

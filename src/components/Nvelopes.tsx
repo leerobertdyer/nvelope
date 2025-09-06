@@ -1,6 +1,6 @@
 import Nvelope from "./Nvelope";
 
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
+import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import type { Envelope } from "../types";
 import { editEnvelopes, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
@@ -21,7 +21,7 @@ interface NvelopeProps {
 }
 
 export default function Nvelopes({resetState, handleSetupNewEnvelope, handleSetupEdit, editEnvelope, handleSetShowSpendingPage, handleDeleteEnvelope, handleAddCashToEnvelope }: NvelopeProps) {
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes } = useGetDatabase();
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes } = useDatabase();
     const { user } =  useAuth();
     const [showGiveAndTake, setShowGiveAndTake] = useState(false);
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);

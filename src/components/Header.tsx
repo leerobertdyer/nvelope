@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
+import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import SpotlightOverlay from "./SpotlightOverlay";
 import NavMenu from "./NavMenu";
 import { getIntervalDateRange } from "../util";
+import { intervalToDuration, startOfDay } from "date-fns";
 
 export default function Header({ step, links }: { step?: number, links: { label: string, href: string }[] }) {
-  const { totalSpendingBudget, interval, payDate } = useGetDatabase();
+  const { totalSpendingBudget, interval, payDate } = useDatabase();
   const [daysTillReset, setDaysTillReset] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -45,11 +46,16 @@ export default function Header({ step, links }: { step?: number, links: { label:
         setDaysTillReset(0);
         return;
       }
-      const today = new Date();
-      const { end } = getIntervalDateRange(interval, payDate.toDate());
-      
-      const diffTime = end.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const today = startOfDay(new Date());
+
+      let { end } = getIntervalDateRange(interval, payDate.toDate());
+
+      const beginningOfPayday = startOfDay(payDate.toDate())
+      if (beginningOfPayday > today) {
+        // If setting payday to future set the end to that date instead of the end of that interval
+        end = payDate.toDate()
+      }
+      const diffDays = intervalToDuration({start: today, end}).days || 0
 
       setDaysTillReset(diffDays > 0 ? diffDays : 0);
   }, [interval, payDate, totalSpendingBudget]);

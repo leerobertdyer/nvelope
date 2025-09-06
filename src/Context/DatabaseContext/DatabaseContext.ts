@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import type { Timestamp } from 'firebase/firestore';
-import type { Bill, Envelope, Interval, OneTimeCash, OneTimeExpense } from "../../types";
+import type { Payment, Envelope, Interval, OneTimeCash, OneTimeExpense } from "../../types";
 
 
 interface IDatabaseContext {
@@ -10,8 +10,8 @@ interface IDatabaseContext {
     setInterval: (interval: Interval) => void
     envelopes: Envelope[]
     setEnvelopes: (envelopes: Envelope[]) => void
-    bills: Bill[]
-    setBills: (bills: Bill[]) => void
+    payments: Payment[]
+    setPayments: (payments: Payment[]) => void
     income: number
     setIncome: (income: number) => void
     oneTimeCash: OneTimeCash[] | null
@@ -30,13 +30,13 @@ interface IDatabaseContext {
 
 export const DatabaseContext = createContext<IDatabaseContext>({
     payDate: null,
-    interval: null,
+    interval: "MONTHLY",
     setPayDate: () => {},
     setInterval: () => {},
     envelopes: [],
     setEnvelopes: () => {},
-    bills: [],
-    setBills: () => {},
+    payments: [],
+    setPayments: () => {},
     income: 0,
     setIncome: () => {},
     oneTimeCash: null,

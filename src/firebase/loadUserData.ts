@@ -14,7 +14,7 @@ export default async function loadUserData(user: User) {
         if (userSnapshot.exists()) {
             return userSnapshot.data();
         } else {
-            console.log("it doesn't exist")
+            console.log("User doesn't exist")
             // If this is a new user, create a default document
             const defaultUserData = {
                 id: user.uid,
@@ -22,7 +22,7 @@ export default async function loadUserData(user: User) {
                 envelopes: [],
                 payDate: null,
                 interval: "",
-                bills: [],
+                payments: [],
                 email: user.email,
                 income: 0,
                 totalSpendingBudget: 0,

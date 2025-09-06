@@ -1,8 +1,9 @@
-import type { Bill, Envelope, Interval, OneTimeCash, OneTimeExpense, PreviousIntervalDetails } from "../types";
+import type { Payment, Envelope, Interval, OneTimeCash, OneTimeExpense, PreviousIntervalDetails } from "../types";
 import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
-import { getIntervalDateRange, isDateInInterval, replenishEnvelopes } from "../util";
+import { getIntervalDateRange, isDateInCurrentPayPeriod, replenishEnvelopes } from "../util";
+import { MONTHLY } from "../constants";
 
 export async function editShouldReset(shouldReset: Timestamp, userId: string) {
     try {
@@ -24,11 +25,11 @@ export async function editEnvelopes(envelopes: Envelope[], userId: string) {
     return;
 }
 
-export async function editBills(bills: Bill[], userId: string) {
-    const sortedBills = bills.sort((a, b) => a.originalDate.seconds - b.originalDate.seconds)
+export async function editPayments(p: Payment[], userId: string) {
+    const sortedPayments = p.sort((a, b) => a.dueDate.seconds - b.dueDate.seconds)
     try {
         const userDocRef = doc(db, "users", userId);
-        await updateDoc(userDocRef, { bills: sortedBills });
+        await updateDoc(userDocRef, { payments: sortedPayments });
     } catch (error) {
         console.error("Firebase, editBills Failed", error);
     }
@@ -191,7 +192,7 @@ export function toUTCDateString(date: Date): string {
     setOneTimeCash: (oneTimeCash: OneTimeCash[] | null) => void,
     income: number,
     totalSpendingBudget: number,
-    bills: Bill[],
+    bills: Payment[],
     oneTimeCash: OneTimeCash[] | null,
     oneTimeExpenses: OneTimeExpense[] | null,
     setShouldReset: (shouldReset: Timestamp) => void
@@ -206,9 +207,9 @@ export function toUTCDateString(date: Date): string {
     console.log("updatedEnvelopes", updatedEnvelopes);
   
     const totalBillsInInterval = bills.reduce((acc, bill) =>
-      isDateInInterval(
+      isDateInCurrentPayPeriod(
           interval,
-          bill.originalDate.toDate(),
+          bill.dueDate.toDate(),
       )
         ? acc + bill.amount
         : acc,
@@ -217,7 +218,7 @@ export function toUTCDateString(date: Date): string {
   
     const totalOneTimeCash = oneTimeCash
       ? oneTimeCash.reduce((acc, cash) =>
-          isDateInInterval(
+          isDateInCurrentPayPeriod(
               interval,
               cash.date.toDate(),
           )
@@ -228,7 +229,7 @@ export function toUTCDateString(date: Date): string {
 
       const totalOneTimeExpenses = oneTimeExpenses
       ? oneTimeExpenses.reduce((acc, expense) =>
-          isDateInInterval(
+          isDateInCurrentPayPeriod(
               interval,
               expense.date.toDate(),
           )
@@ -295,9 +296,9 @@ export async function setDefaultBillInterval(userId: string) {
     if (!docSnap.exists()) return;
 
     const bills = docSnap.data().bills || [];
-    const newBills = bills.map((b: Bill) => ({
+    const newBills = bills.map((b: Payment) => ({
       ...b,
-      interval: b.interval ?? "monthly",
+      interval: b.interval ?? MONTHLY,
     }));
 
     await updateDoc(userDocRef, { bills: newBills });

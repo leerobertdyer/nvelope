@@ -1,9 +1,7 @@
-export const FIRST = "first";
-export const SECOND = "second";
-export const THIRD = "third";
-export const FOURTH = "fourth";
-export const WEEKLY = "weekly";
-export const BIWEEKLY = "biweekly";
-export const MONTHLY = "monthly";
-export const YEARLY = "yearly";
-export const FIXED = "fixed";
+export const WEEKLY = "WEEKLY";
+export const BIWEEKLY = "BIWEEKLY";
+export const MONTHLY = "MONTHLY";
+export const YEARLY = "YEARLY";
+export const FIXED = "FIXED";
+export const BILL = "BILL";
+export const DEBT = "DEBT";

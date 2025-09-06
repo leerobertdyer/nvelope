@@ -11,7 +11,7 @@ import type { Envelope } from "../types";
 import { IoIosRepeat, IoIosStar, IoIosTrash } from "react-icons/io";
 import { IoAddCircle, IoStar } from "react-icons/io5";
 import NvelopeCalculator from "./NvelopeCalculator";
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
+import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { capitalizeFirstLetter } from "../util";
 
 interface NvelopeProps {
@@ -44,7 +44,7 @@ export default function Nvelope({
   editRent
 }: NvelopeProps) {
 
-  const { interval } = useGetDatabase();
+  const { interval } = useDatabase();
 
   const [newEnvelopeName, setNewEnvelopeName] = useState<string>("");
   const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>("");

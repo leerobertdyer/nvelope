@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Button from "../components/Button";
 import type { Envelope } from "../types";
-import { useGetDatabase } from "../Context/DatabaseContext/useGetDatabase";
+import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 
 interface GiveAndTakeProps {
     envelope: Envelope;
@@ -14,7 +14,7 @@ export default function GiveAndTake({ envelope, handleBack, takeAndGive, takeFro
     const [amountToGiveOrTake, setAmountToGiveOrTake] = useState('');
     const [isGiving, setIsGiving] = useState(false);
     const [envelopeToGiveTo, setEnvelopeToGiveTo] = useState<Envelope | null>(null);
-    const { envelopes } = useGetDatabase();
+    const { envelopes } = useDatabase();
 
     return (
         <div className="absolute inset-0 w-full h-screen flex flex-col items-center justify-center bg-my-black-base text-my-white-dark">
