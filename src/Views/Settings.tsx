@@ -13,6 +13,7 @@ import Calendar from "react-calendar";
 import { Timestamp } from "firebase/firestore";
 import type { Value } from "react-calendar/src/shared/types.js";
 import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
+import EditSpendingBudget from "../components/EditSpendingBudget";
 // import CreateLoginWithEmail from "../components/CreateLoginWithEmail";
 
 export default function Settings() {
@@ -23,7 +24,6 @@ export default function Settings() {
     const [newIncome, setNewIncome] = useState<string>('');
     const [newInterval, setNewInterval] = useState<Interval | null>(null);
     const [isEditingCash, setIsEditingCash] = useState(false);
-    const [cashAmount, setCashAmount] = useState('');
     const [showEditIncome, setShowEditIncome] = useState(false);
 
     useEffect(() => {
@@ -36,7 +36,6 @@ export default function Settings() {
         setNewInterval(null);
         setIsEditingCash(false);
         setShowEditIncome(false);
-        setCashAmount('');
     }
 
     function handleIntervalChange(interval: Interval) {
@@ -54,13 +53,6 @@ export default function Settings() {
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)
         setShowIntervalSettings(false);
-    }
-
-    async function manuallySetBudgetInDB() {
-        if (!cashAmount || !user) return;
-        await editTotalSpendingBudget(Number(cashAmount), user.uid);
-        setTotalSpendingBudget(Number(cashAmount));
-        resetState();
     }
 
     function handleEditCash() {
@@ -90,32 +82,7 @@ export default function Settings() {
     }
     
        if (isEditingCash) {
-        return (
-            <div className="absolute inset-0 bg-my-white-dark text-mywhite-dark w-full h-screen flex flex-col items-center justify-center">
-                <p className="text-lg mb-4 text-my-red-dark">Manually Adjusts Your Remaining Budget</p>
-                <input 
-                    value={cashAmount}
-                    onChange={(e) => setCashAmount(e.target.value)}
-                    type="number" 
-                    placeholder="Amount" 
-                    className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative" />
-               
-               <div className="flex flex-col w-full gap-2 justify-center items-center">
-                    <Button 
-                        onClick={manuallySetBudgetInDB}
-                        color="green"
-                    >
-                        Save    
-                    </Button>
-                    <Button
-                        onClick={resetState}
-                        color="red"
-                    >
-                        Back    
-                    </Button>
-                </div>
-            </div>
-            )
+        return <EditSpendingBudget handleBack={resetState} />
        }
     
 

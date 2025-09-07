@@ -22,6 +22,7 @@ export default function EditSpendingBudget({handleBack}: IProps) {
         if (!cashAmount || !user) return;
         await editTotalSpendingBudget(Number(cashAmount), user.uid);
         setTotalSpendingBudget(Number(cashAmount));
+        handleBack()
     }
 
     return (

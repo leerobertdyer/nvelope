@@ -47,6 +47,8 @@ export default function Payments() {
         setShowPaymentInputs(true);
         setPaymentToEdit(p);
         setNewPayment(p);
+        setNewPaymentDate(p.dueDate.toDate())
+        setNewPaymentInterval(p.interval)
     }
     async function editPayment() {
         if (!user || !newPayment || !paymentToEdit) return;
@@ -181,12 +183,20 @@ export default function Payments() {
         </div>
     }
 
-    function handleSelectInterval(e: string) {
+    function handleSetNewInterval(i: Interval) {
+        setNewPaymentInterval(i)
+        setNewPayment({
+            ...newPayment,
+            interval: i
+        }) 
+    }
+
+    function handleSelectType(e: string) {
         setNewPayment({
             ...newPayment,
             type: e.toUpperCase() as BillOrDebt
         })
-        setShowButtons(true);
+        setShowButtons(true)
     }
 
 if (showPaymentInputs) {
@@ -231,7 +241,8 @@ if (showPaymentInputs) {
                 <div className="flex flex-col items-center w-full mb-4">
                     <label className="text-my-white-light" htmlFor="amount">Interval Of Bill</label>
                     <select
-                        onChange={(e) => setNewPaymentInterval(e.target.value.toUpperCase() as Interval)}
+                        value={newPayment.interval}
+                        onChange={(e) => handleSetNewInterval(e.target.value.toUpperCase() as Interval)}
                         className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark mb-4">
                         <option id="xxx" className="text-center">--Select An Interval--</option>
                         <option id="newMonthly" className="text-center">{MONTHLY}</option>
@@ -257,6 +268,7 @@ if (showPaymentInputs) {
                             <input
                                 id="paid"
                                 type="checkbox"
+                                value={newPayment.paid.toString() || "false"}
                                 className="cursor-pointer max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
                                 checked={newPayment?.paid || false}
                                 onChange={(e) => setNewPayment({
@@ -269,16 +281,16 @@ if (showPaymentInputs) {
                         <div className="w-full flex flex-col justify-center items-center gap-2 mt-2">
                             <label className="text-my-white-light" htmlFor="paid">Debt Or Bill?</label>
                             <select
-                                onChange={(e) => handleSelectInterval(e.target.value)}
+                                onChange={(e) => handleSelectType(e.target.value)}
                                 className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark">
                                 <option id="xxx" className="text-center">--Select Payment Type--</option>
-                                <option id="xxx" className="text-center">Bill</option>
-                                <option id="xxx" className="text-center">Debt</option>
+                                <option id="xxx" value="BILL" className="text-center">Bill</option>
+                                <option id="xxx" value="DEBT" className="text-center">Debt</option>
                             </select>
                         </div>
                     </div>
                     </div>}
-                {showButtons &&
+                {showButtons ?
                 <div className="text-my-white-base pb-8">
                     <p className="text-center mb-2">
                         <span className="text-my-green-light">{newPayment?.name || paymentToEdit?.name}</span> is a {newPayment.type.toLowerCase()} for <span className="text-my-red-light mr-2">${newPayment?.amount.toFixed(2) || paymentToEdit?.amount.toFixed(2)}</span>
@@ -309,6 +321,12 @@ if (showPaymentInputs) {
                         </Button>
                     </div>
                 </div>
+                : <Button
+                    color="red"
+                    onClick={() => resetPaymentState()}
+                    >
+                    back
+                  </Button>
                 }
             </div>
         </div>

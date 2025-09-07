@@ -57,7 +57,7 @@ function RenderPayments({ p }: { p: Payment }) {
         </> )
     }
 
-    return (<div className="h-[30rem] max-w-[95vw] border-2 border-my-white-light rounded-md mb-[5rem] bg-red-400 overflow-auto">
+    return (<div className="h-fit max-w-[95vw] border-2 border-my-white-light rounded-md mb-[5rem] overflow-auto">
     {
         currentPayments.length > 0 && 
         <div className="bg-my-white-dark p-2 flex flex-col justify-center align-center md:w-[40rem] max-w-[95vw]">

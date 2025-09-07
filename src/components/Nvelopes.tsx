@@ -136,9 +136,9 @@ export default function Nvelopes({resetState, handleSetupNewEnvelope, handleSetu
             <div className="w-full flex justify-center items-center ">
                 <Nvelope kind="dash" envelope={{...emptyEnvelope, name: 'New Envelope'}} onClick={handleSetupNewEnvelope} handleBack={resetState} />
             </div>
-            <div className="flex flex-col justify-center items-center gap-2 mt-4 pb-[20rem]">
+            <div className="flex flex-col justify-center items-center mt-4 pb-[20rem]">
                 {/* Grid Header Row */}
-                <div className="w-screen max-w-[40rem]  h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-black-dark text-my-white-light font-bold">
+                <div className="w-screen max-w-[40rem]  h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-white-dark text-my-black-light font-bold">
                     <div className="col-span-3 flex justify-center items-center">
                         <p className="text-sm">Nvelope</p>
                     </div>

@@ -381,36 +381,39 @@ export default function MainEnvelopesView() {
     return (
         <>
         {showLoading && <Loading text={loadingText} />}
+
             <Header links={[
                 { label: "Payments", href: "/payments" },
                 { label: "Settings", href: "/settings" },
             ]} />
-            <div className="flex flex-col items-center gap-[3rem] overflow-y-auto overflow-x-hidden">
 
-            <div className="flex w-full justify-center gap-4 items-center mt-[2rem]">
-                <div className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark animate-glow shadow-lg text-my-red-dark shadow-my-red-light"
-                    onClick={handleAddOneTimeBill}>
-                    <GiMoneyStack 
-                        className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base"  />
-                    <p className="text-sm">Expense</p>
+            <div className="flex flex-col items-center gap-[3rem] overflow-y-auto overflow-x-hidden bg-my-black-base">
+
+                <div className="flex w-full justify-center gap-4 items-center mt-[2rem]">
+                    <div className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark animate-glow shadow-lg text-my-red-dark shadow-my-red-light"
+                        onClick={handleAddOneTimeBill}>
+                        <GiMoneyStack 
+                            className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base"  />
+                        <p className="text-sm">Expense</p>
+                    </div>
+                    <div className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark animate-glow shadow-lg text-my-green-dark shadow-my-green-light"
+                        onClick={handleAddCash}>
+                        <GiMoneyStack 
+                            className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-base "  />
+                        <p className="text-sm">Add Cash</p>
+                    </div>
                 </div>
-                <div className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark animate-glow shadow-lg text-my-green-dark shadow-my-green-light"
-                    onClick={handleAddCash}>
-                    <GiMoneyStack 
-                        className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-base "  />
-                    <p className="text-sm">Add Cash</p>
-                </div>
-            </div>
-            <Nvelopes 
-                resetState={resetState}
-                handleSetupNewEnvelope={handleSetupNewEnvelope}
-                handleSetupEdit={handleSetupEdit}
-                editEnvelope={editEnvelope}
-                handleSetShowSpendingPage={handleSetShowSpendingPage}
-                handleDeleteEnvelope={handleSetupDelete}
-                handleEditRent={handleEditRent}
-                handleAddCashToEnvelope={handleAddCashToEnvelope}
-            />
+
+                <Nvelopes 
+                    resetState={resetState}
+                    handleSetupNewEnvelope={handleSetupNewEnvelope}
+                    handleSetupEdit={handleSetupEdit}
+                    editEnvelope={editEnvelope}
+                    handleSetShowSpendingPage={handleSetShowSpendingPage}
+                    handleDeleteEnvelope={handleSetupDelete}
+                    handleEditRent={handleEditRent}
+                    handleAddCashToEnvelope={handleAddCashToEnvelope}
+                />
             </div>
 
         </>
