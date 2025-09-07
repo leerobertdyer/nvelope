@@ -1,11 +1,15 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
+import { importAndTransformLegacyBills } from "./editData";
 
 export default async function loadUserData(user: User) {
     try {
         // Get reference to the specific user document
         const userDocRef = doc(db, "users", user.uid);
+
+        // @TODO: legacy transformer for old "Bills" array moving into Payments
+        await importAndTransformLegacyBills(user.uid)
         
         // Try to get the document
         const userSnapshot = await getDoc(userDocRef);

@@ -235,3 +235,4 @@ export function calculatePayoffDate(debt: Payment): Date | null {
   payoffDate.setFullYear(payoffDate.getFullYear() + years)
   return payoffDate
 }
+

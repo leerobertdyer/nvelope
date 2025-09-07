@@ -15,13 +15,12 @@ import { BILL, BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
 import { format } from "date-fns";
 import PaymentMap from "../components/PaymentMap";
 
+const generateFreshPayment = () => { return { id: crypto.randomUUID(), name: "", type: BILL, amount: 0, paid: false, interval: MONTHLY, dueDate: Timestamp.fromDate(new Date) } as Payment }
+
 export default function Payments() {
     const { payments, setPayments, payPeriodInterval, setTotalSpendingBudget, totalSpendingBudget } = useDatabase();
     const { user } = useAuth();
-    const today = new Date();
-    const todayTimestamp = Timestamp.fromDate(today)
 
-    const generateFreshPayment = () => { return { id: crypto.randomUUID(), name: "", type: BILL, amount: 0, paid: false, interval: MONTHLY, dueDate: todayTimestamp } as Payment }
 
     const [newPayment, setNewPayment] = useState<Payment>(generateFreshPayment());
     const [paymentToEdit, setPaymentToEdit] = useState<Payment>();
@@ -48,7 +47,7 @@ export default function Payments() {
             setShowPaymentAdded(false)
             setShowPaymentError(false)
         }, 2500)
-    }, [showPaymentAdded, showPaymentError, generateFreshPayment])
+    }, [showPaymentAdded, showPaymentError])
 
     async function handleEditPayment(p: Payment) {
         setShowPaymentInputs(true);

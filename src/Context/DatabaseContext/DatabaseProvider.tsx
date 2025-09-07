@@ -21,6 +21,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     
     useEffect(() => {
         if (user) {
+            console.log("HOWELFKJSEFO")
             loadUserData(user).then((data) => {
                 setEnvelopes(data.envelopes || []);
                 setPayDate(data.payDate);
