@@ -14,8 +14,7 @@ import { Timestamp } from "firebase/firestore";
 import { BILL, BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
 import { format } from "date-fns";
 import PaymentMap from "../components/PaymentMap";
-import { FaGripLines } from "react-icons/fa";
-import { IoIosArrowDown, IoIosArrowUp, IoIosClose } from "react-icons/io";
+import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 
 const generateFreshPayment = () => { return { id: crypto.randomUUID(), name: "", type: BILL, amount: 0, paid: false, interval: MONTHLY, dueDate: Timestamp.fromDate(new Date) } as Payment }
 
