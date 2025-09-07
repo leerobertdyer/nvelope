@@ -1,6 +1,6 @@
 import { IoIosCheckmarkCircle, IoIosCheckmarkCircleOutline, IoIosClipboard, IoIosTrash } from "react-icons/io";
 import type { Payment } from "../types";
-import { isDateInCurrentPayPeriod } from "../util";
+import { getPaymentCurrentDueDate, isDateInCurrentPayPeriod } from "../util";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
@@ -12,22 +12,24 @@ interface PaymentMapProps {
     handleDeleteBill: (payment: Payment) => void;
 }
 export default function PaymentMap({ payments, handleUpdatePaid, handleEditBill, handleDeleteBill }: PaymentMapProps) {
-    const { payPeriodInterval } = useDatabase();
+    const { payPeriodInterval, payDate } = useDatabase();
 
     const [currentPayments, setCurrentPayments] = useState<Payment[]>([])
     const [futurePayments, setFuturePayments] = useState<Payment[]>([])
 
+    // Calculate which payments are in current pay period and which are outside of it
     useEffect(() => {
+        if (!payDate) return
         const nextCurrentPayments: Payment[] = []
         const nextFuturePayments: Payment[] = []
         payments.forEach(p => {
-            if (isDateInCurrentPayPeriod(payPeriodInterval, p.dueDate.toDate()))
+            if (isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), getPaymentCurrentDueDate(p)))
                 nextCurrentPayments.push(p)
             else nextFuturePayments.push(p)
         })
         setCurrentPayments(nextCurrentPayments);
         setFuturePayments(nextFuturePayments);
-    }, [payments, payPeriodInterval])
+    }, [payments, payPeriodInterval, payDate])
 
 function RenderPayments({ p }: { p: Payment }) {
         return (

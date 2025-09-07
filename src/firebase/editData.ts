@@ -209,6 +209,7 @@ export async function checkAndResetBudget(
     const totalBillsInInterval = bills.reduce((acc, bill) =>
         isDateInCurrentPayPeriod(
             interval,
+            payDate.toDate(),
             bill.dueDate.toDate(),
         )
             ? acc + bill.amount
@@ -220,6 +221,7 @@ export async function checkAndResetBudget(
         ? oneTimeCash.reduce((acc, cash) =>
             isDateInCurrentPayPeriod(
                 interval,
+                payDate.toDate(),
                 cash.date.toDate(),
             )
                 ? acc + cash.amount
@@ -231,6 +233,7 @@ export async function checkAndResetBudget(
         ? oneTimeExpenses.reduce((acc, expense) =>
             isDateInCurrentPayPeriod(
                 interval,
+                payDate.toDate(),
                 expense.date.toDate(),
             )
                 ? acc + expense.amount

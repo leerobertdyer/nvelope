@@ -19,7 +19,7 @@ import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 const generateFreshPayment = () => { return { id: crypto.randomUUID(), name: "", type: BILL, amount: 0, paid: false, interval: MONTHLY, dueDate: Timestamp.fromDate(new Date) } as Payment }
 
 export default function Payments() {
-    const { payments, setPayments, payPeriodInterval, setTotalSpendingBudget, totalSpendingBudget } = useDatabase();
+    const { payments, setPayments, payDate, payPeriodInterval, setTotalSpendingBudget, totalSpendingBudget } = useDatabase();
     const { user } = useAuth();
 
     const [showPaymentsMenu, setShowPaymentsMenu] = useState(true);
@@ -32,16 +32,9 @@ export default function Payments() {
     const [showPaymentError, setShowPaymentError] = useState<boolean>(false);
     const [newPaymentDate, setNewPaymentDate] = useState<Value | null>(null);
     const [newPaymentInterval, setNewPaymentInterval] = useState<Interval | null>();
-    const [paymentsWithIntervals, setPaymentsWithIntervals] = useState<Payment[]>([])
     const [showButtons, setShowButtons] = useState(false);
 
-    // UseEffect to sort bills by date and paid/unpaid
-    useEffect(() => {
-        const paymentsWithIntervals = [...payments]
-            .map(p => ({ ...p, isInInterval: isDateInCurrentPayPeriod(payPeriodInterval, p.dueDate.toDate()) }));
-        setPaymentsWithIntervals(paymentsWithIntervals);
-    }, [payPeriodInterval, payments])
-
+    // Reset payment form and hide popups after 2.5s
     useEffect(() => {
         if (showPaymentAdded) setNewPayment(generateFreshPayment())
         setTimeout(() => {
@@ -106,7 +99,7 @@ export default function Payments() {
         setPayments(updatedPayments);
         setShowPaymentAdded(true);
         await editPayments(updatedPayments, user.uid);
-        if (isDateInCurrentPayPeriod(payPeriodInterval, newPayment.dueDate.toDate()) && !newPayment.paid) {
+        if (payDate && isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), newPayment.dueDate.toDate()) && !newPayment.paid) {
             await handleUpdateBudget(newPayment.amount * -1)
         }
         resetPaymentState()
@@ -352,14 +345,14 @@ return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-m
             >
                 New Payment+
             </button>
-            <p className="bg-my-red-base text-my-white-light p-2 border rounded-md" onClick={() => setShowPaymentsMenu(false)}><IoIosArrowUp /></p>
+            <p className="bg-my-white-dark text-my-black-dark px-[2px] border border-my-white-light rounded-md" onClick={() => setShowPaymentsMenu(false)}><IoIosArrowUp size={15}/></p>
         </div>) 
-        : <p className="mt-4 bg-my-green-base text-my-white-light p-2 border rounded-md" onClick={() => setShowPaymentsMenu(true)}><IoIosArrowDown /></p>
+        : <p className="mt-4 bg-my-green-base text-my-white-light px-[2px] border rounded-md" onClick={() => setShowPaymentsMenu(true)}><IoIosArrowDown size={15} /></p>
 }
-        {paymentsWithIntervals.length === 0 && <p className="text-my-white-light text-center text-xl md:text-2xl mb-4">No payments due this pay period</p>}
-        {paymentsWithIntervals.length > 0
+        {payments.length === 0 && <p className="text-my-white-light text-center text-xl md:text-2xl mb-4">No payments due this pay period</p>}
+        {payments.length > 0
             && <PaymentMap
-                    payments={paymentsWithIntervals}
+                    payments={payments}
                     handleUpdatePaid={handleUpdatePaid}
                     handleEditBill={handleEditPayment}
                     handleDeleteBill={handleDeleteBill} />}

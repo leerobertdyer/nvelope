@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import SpotlightOverlay from "./SpotlightOverlay";
 import NavMenu from "./NavMenu";
-import { getIntervalDateRange } from "../util";
+import { calculateCurrentIntervalStart, getIntervalDateRange } from "../util";
 import { intervalToDuration, startOfDay } from "date-fns";
+import EditSpendingBudget from "./EditSpendingBudget";
 
 export default function Header({ step, links }: { step?: number, links: { label: string, href: string }[] }) {
   const { totalSpendingBudget, payPeriodInterval, payDate } = useDatabase();
   const [daysTillReset, setDaysTillReset] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+  const [showEditSpendingBudget, setShowEditSpendingBudget] = useState(false);
 
   const stepRef = useRef<HTMLDivElement>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -48,7 +50,9 @@ export default function Header({ step, links }: { step?: number, links: { label:
       }
       const today = startOfDay(new Date());
 
-      let { end } = getIntervalDateRange(payPeriodInterval, payDate.toDate());
+      const currentPayPeriodStart = calculateCurrentIntervalStart(payDate.toDate(), payPeriodInterval)
+
+      let { end } = getIntervalDateRange(payPeriodInterval, currentPayPeriodStart);
 
       const beginningOfPayday = startOfDay(payDate.toDate())
       if (beginningOfPayday > today) {
@@ -57,9 +61,10 @@ export default function Header({ step, links }: { step?: number, links: { label:
       }
       const diffDays = intervalToDuration({start: today, end}).days || 0
 
-      setDaysTillReset(diffDays > 0 ? diffDays : 0);
+      setDaysTillReset(diffDays > 0 ? diffDays + 1 : 0);
   }, [payPeriodInterval, payDate, totalSpendingBudget]);
   
+  if (showEditSpendingBudget) return <EditSpendingBudget handleBack={() => setShowEditSpendingBudget(false)}/>
 
   return (
     <>
@@ -73,6 +78,7 @@ export default function Header({ step, links }: { step?: number, links: { label:
               {daysTillReset} days
             </p>
             <p ref={step && step > 3 && step < 9? stepRef : null}
+              onClick={() => setShowEditSpendingBudget(true)}
               className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
                         ${totalSpendingBudget <= 0 ? "bg-my-red-dark" : "bg-my-green-dark"}`}>
               ${totalSpendingBudget.toFixed(2)}

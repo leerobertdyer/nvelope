@@ -2,7 +2,7 @@ import type { User } from "firebase/auth";
 import type { Payment, Envelope, Interval, IntervalDates } from "./types";
 import { editTotalSpendingBudget } from "./firebase/editData";
 import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "./constants";
-import { addMonths, addWeeks, addYears, eachDayOfInterval, getDay, isAfter, isBefore, isWithinInterval, lastDayOfMonth, startOfDay, subMonths, subWeeks, subYears } from "date-fns";
+import { addMonths, addWeeks, addYears, eachDayOfInterval, getDay, isAfter, isBefore, isWithinInterval, lastDayOfMonth, startOfDay, subDays, subMonths, subWeeks, subYears } from "date-fns";
 
 export function recalculateBudget(params: {
     currentAvailableBudget: number;
@@ -50,10 +50,10 @@ export function getOccurrencesOfWeekday(year: number, month: number, weekday: nu
   }
 }
 
+// Get the start date for the most recently occuring range of dates for a given interval
 export function calculateCurrentIntervalStart(d: Date, i: Interval): Date {
   const start = startOfDay(d);
   const today = startOfDay(new Date());
-
   if (start > today) 
     return  calculateIntervalsFromFutureDate(i, start, today)
   else return calculateIntervalsFromPastDate(i, start, today);
@@ -127,28 +127,25 @@ export function calculateIntervalsFromFutureDate(i: Interval, start: Date, today
 }
 
 
-// Helper to return the start and end dates of a given interval
-export function getIntervalDateRange(i: Interval, d: Date): IntervalDates {
-  const start = calculateCurrentIntervalStart(d, i);
-  let end;
-
+// Helper to return the start and end dates of a given interval based on a given date 
+export function getIntervalDateRange(i: Interval, start: Date): IntervalDates {
+  let end = startOfDay(new Date(start));
 
   switch (i) {
     case WEEKLY: end = addWeeks(start, 1); break;
     case BIWEEKLY: end = addWeeks(start, 2); break;
     case MONTHLY: end = addMonths(start, 1);
-      if (end.getDate() !== start.getDate()) end = lastDayOfMonth(end);
+      // Check month to ensure day exists (eg feb 30th...)
+      if (end.getDate() !== start.getDate()) {
+        end = lastDayOfMonth(subMonths(end, 1));
+      }
       break;
     case YEARLY: end = addYears(start, 1); break;
     default:
       console.error(`Unsupported interval: ${i}`);
-      end = addWeeks(start, 1);
   }
-
-  // For monthly, clamp end to last day if necessary
-  if (i === MONTHLY && end.getDate() !== start.getDate()) {
-    end = lastDayOfMonth(end);
-  }
+  // Remove a day to prevent overlap
+  end = subDays(end, 1);
 
   return {
     start, end
@@ -156,12 +153,18 @@ export function getIntervalDateRange(i: Interval, d: Date): IntervalDates {
 } 
 
 export function getPaymentCurrentDueDate(p: Payment): Date {
-  return calculateCurrentIntervalStart(p.dueDate.toDate(), p.interval);
+  const originalDate = p.dueDate.toDate()
+  const startOfCurrentPaymentInterval = calculateCurrentIntervalStart(originalDate, p.interval)
+  const { end } = getIntervalDateRange(p.interval, startOfCurrentPaymentInterval)
+  // console.log(`[getPaymentCurrentDueDate] checking ${p.name} to get current date. OriginalDueDate: ${originalDate}, startOfCurrentPaymentInterval: ${startOfCurrentPaymentInterval}, end: ${end}`)
+  return end
 }
 
-export function isDateInCurrentPayPeriod(payPeriod: Interval, d: Date): boolean {
-  const { start, end } = getIntervalDateRange(payPeriod, d);
-  return isWithinInterval(d, { start, end });
+export function isDateInCurrentPayPeriod(payPeriod: Interval, payDate: Date, d: Date): boolean {
+  const startOfCurrentPaymentInterval = calculateCurrentIntervalStart(payDate, payPeriod)
+  const { start, end } = getIntervalDateRange(payPeriod, startOfCurrentPaymentInterval); // Current Pay Period Date Range
+  // console.log(`[isDateInCurrentPayPeriod] payPeriodInterval: ${payPeriod}, payDate: ${payDate}, dateToCheck: ${d} PayPeriodRange: START=${start} end=${end}`)
+  return isWithinInterval(d, { start, end }); // Is the date within the current pay period
 }
 
 export function getIncomeByInterval(oldInterval: Interval, newInterval: Interval, income: number): number {

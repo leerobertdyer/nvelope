@@ -103,12 +103,12 @@ export default function Demo() {
             return
         }
 
-        if (!newBillOriginalDate) {
+        if (!newBillOriginalDate|| !payDate) {
             return
         }
         
         await editPayments([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false, interval: MONTHLY } as Payment], user?.uid || '')
-        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInCurrentPayPeriod(payPeriodInterval, newBillOriginalDate) ? newBillAmount : 0 })
+        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInCurrentPayPeriod(payPeriodInterval, payDate?.toDate(), newBillOriginalDate) ? newBillAmount : 0 })
         await editTotalSpendingBudget(nextBudget, user?.uid || '')
         setTotalSpendingBudget(nextBudget)
         setNewBills([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false,  interval: MONTHLY } as Payment])
