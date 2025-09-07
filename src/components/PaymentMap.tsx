@@ -37,7 +37,7 @@ function RenderPayments({ p }: { p: Payment }) {
             </p>
             <p className="flex items-center justify-center text-xs">{p.name}</p>
             <p className="flex items-center justify-center">${p.amount.toFixed(2)}</p>
-            <div className="flex gap-[2px] items-center justify-center">
+            <div className="flex gap-[2px] items-start justify-center mr-2">
                 <IoIosClipboard
                     className="text-my-red-light bg-my-white-dark cursor-pointer hover:text-my-white-dark hover:bg-my-red-light rounded-lg p-[2px] border-2 border-my-black-dark"
                     size={20} onClick={() => handleEditBill(p)} />
@@ -55,13 +55,13 @@ function RenderPayments({ p }: { p: Payment }) {
         </> )
     }
 
-    return (<>
+    return (<div className="h-[30rem] max-w-[95vw] border-2 border-my-white-light rounded-md mb-[5rem] bg-red-400 overflow-auto">
     {
         currentPayments.length > 0 && 
-        <div className="bg-my-white-dark p-2 flex flex-col justify-center align-center md:w-[40rem] max-w-[95vw] border-my-white-light border-2">
+        <div className="bg-my-white-dark p-2 flex flex-col justify-center align-center md:w-[40rem] max-w-[95vw]">
             <h2 className="text-my-black-dark w-full text-center mb-2">Current Payments</h2>
             {currentPayments.map((p) => (
-                <div key={p.id} className='grid grid-cols-4 py-2 bg-my-black-base text-my-white-base border-2 border-my-white-light text-center'>
+                <div key={p.id} className='grid grid-cols-4 py-2 bg-my-black-base text-my-white-base text-center border-2 border-my-white-light text-center'>
                     <RenderPayments p={p}/>
                 </div>
             ))}
@@ -70,7 +70,7 @@ function RenderPayments({ p }: { p: Payment }) {
 
     {
         futurePayments.length > 0 && 
-        <div className="bg-my-black-light p-2 flex flex-col justify-center align-center md:w-[40rem] max-w-[95vw] border-my-white-light border-2">
+        <div className="bg-my-black-light p-2 flex flex-col justify-center align-center md:w-[40rem] max-w-[95vw]">
             <h2 className="text-my-white-light w-full text-center mb-2">Outside Pay Period</h2>
             {futurePayments.map((p) => (
                 <div key={p.id} className='grid grid-cols-4 py-2 bg-my-black-base text-my-white-base border-2 border-my-white-light text-center'>
@@ -79,6 +79,6 @@ function RenderPayments({ p }: { p: Payment }) {
             ))}
         </div>
     }
-    </>
+    </div>
     )
 }

@@ -14,6 +14,8 @@ import { Timestamp } from "firebase/firestore";
 import { BILL, BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
 import { format } from "date-fns";
 import PaymentMap from "../components/PaymentMap";
+import { FaGripLines } from "react-icons/fa";
+import { IoIosArrowDown, IoIosArrowUp, IoIosClose } from "react-icons/io";
 
 const generateFreshPayment = () => { return { id: crypto.randomUUID(), name: "", type: BILL, amount: 0, paid: false, interval: MONTHLY, dueDate: Timestamp.fromDate(new Date) } as Payment }
 
@@ -21,7 +23,7 @@ export default function Payments() {
     const { payments, setPayments, payPeriodInterval, setTotalSpendingBudget, totalSpendingBudget } = useDatabase();
     const { user } = useAuth();
 
-
+    const [showPaymentsMenu, setShowPaymentsMenu] = useState(true);
     const [newPayment, setNewPayment] = useState<Payment>(generateFreshPayment());
     const [paymentToEdit, setPaymentToEdit] = useState<Payment>();
     const [showPaymentInputs, setShowPaymentInputs] = useState<boolean>(false);
@@ -328,7 +330,8 @@ return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-m
         { label: "Settings", href: "/settings" },
     ]} />
     <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden gap-2">
-        <div className="flex flex-col gap-2 mb-2 items-center justify-center w-full">
+        {showPaymentsMenu ?
+        (<div className="flex flex-col gap-2 mb-2 items-center justify-center w-full border-b-2 border-my-white-light pb-2">
             <p className="pt-2 rounded-md text-my-white-dark w-full text-center text-xl md:text-2xl">
                 Payments
             </p>
@@ -350,7 +353,10 @@ return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-m
             >
                 New Payment+
             </button>
-        </div>
+            <p className="bg-my-red-base text-my-white-light p-2 border rounded-md" onClick={() => setShowPaymentsMenu(false)}><IoIosArrowUp /></p>
+        </div>) 
+        : <p className="mt-4 bg-my-green-base text-my-white-light p-2 border rounded-md" onClick={() => setShowPaymentsMenu(true)}><IoIosArrowDown /></p>
+}
         {paymentsWithIntervals.length === 0 && <p className="text-my-white-light text-center text-xl md:text-2xl mb-4">No payments due this pay period</p>}
         {paymentsWithIntervals.length > 0
             && <PaymentMap
