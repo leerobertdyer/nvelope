@@ -1,7 +1,7 @@
 import Button from "../components/Button";
 import ClosingX from "../components/ClosingX";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { editPayments, editIncome, editInterval, editIsNewUser, editPayDate, editRent, editTotalSpendingBudget } from "../firebase/editData";
+import { editPayments, editIncome, editPayPeriodInterval, editIsNewUser, editPayDate, editRent, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
 import Calendar from 'react-calendar';
@@ -23,7 +23,7 @@ type Value = ValuePiece | [ValuePiece, ValuePiece];
 const today = new Date()
 
 export default function Demo() {
-    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, setRent, interval, setInterval, payments, setPayments, setTotalSpendingBudget, rent, totalSpendingBudget} = useDatabase();
+    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, setRent, payPeriodInterval, payments, setPayments, setTotalSpendingBudget, rent, totalSpendingBudget} = useDatabase();
     const {user} = useAuth();
 
     const [step, setStep] = useState(0);
@@ -78,7 +78,7 @@ export default function Demo() {
         console.log('handleAddRent')
         if (!newBillName || !newBillAmount) return;
         await editRent(newBillAmount, user!.uid)
-        const rentPaymentByInterval = recalculateRentPayment(newBillAmount, interval)
+        const rentPaymentByInterval = recalculateRentPayment(newBillAmount, payPeriodInterval)
         const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: (-rentPaymentByInterval) })
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)
@@ -108,7 +108,7 @@ export default function Demo() {
         }
         
         await editPayments([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false, interval: MONTHLY } as Payment], user?.uid || '')
-        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInCurrentPayPeriod(interval, newBillOriginalDate) ? newBillAmount : 0 })
+        const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInCurrentPayPeriod(payPeriodInterval, newBillOriginalDate) ? newBillAmount : 0 })
         await editTotalSpendingBudget(nextBudget, user?.uid || '')
         setTotalSpendingBudget(nextBudget)
         setNewBills([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false,  interval: MONTHLY } as Payment])
@@ -122,8 +122,8 @@ export default function Demo() {
         console.log('handleFirstStep')
         if (payDate) {
             setNewPayDate(payDate.toDate())
-            if (interval) {
-                setNewInterval(interval)
+            if (payPeriodInterval) {
+                setNewInterval(payPeriodInterval)
                 setStep(4)
             } else {
                 console.log('Paydate found, No interval found')
@@ -147,9 +147,9 @@ export default function Demo() {
 
     async function handleThirdStep() {
         console.log('handleThirdStep')
-        if (!newInterval && !interval) return;
-        const newIncomeAmount = getIncomeByInterval(interval, newInterval as Interval, income)
-        await editInterval(newInterval as Interval, user!.uid)
+        if (!newInterval && !payPeriodInterval) return;
+        const newIncomeAmount = getIncomeByInterval(payPeriodInterval, newInterval as Interval, income)
+        await editPayPeriodInterval(newInterval as Interval, user!.uid)
         const nextBudget = recalculateBudget({ currentAvailableBudget: newIncomeAmount, diffAmount: 0 })
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)

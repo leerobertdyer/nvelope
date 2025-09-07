@@ -6,8 +6,8 @@ import type { Payment, Envelope, Interval, OneTimeCash, OneTimeExpense } from ".
 interface IDatabaseContext {
     payDate: Timestamp | null
     setPayDate: (payDate: Timestamp | null) => void
-    interval: Interval
-    setInterval: (interval: Interval) => void
+    payPeriodInterval: Interval
+    setPayPeriodInterval: (i: Interval) => void
     envelopes: Envelope[]
     setEnvelopes: (envelopes: Envelope[]) => void
     payments: Payment[]
@@ -30,9 +30,9 @@ interface IDatabaseContext {
 
 export const DatabaseContext = createContext<IDatabaseContext>({
     payDate: null,
-    interval: "MONTHLY",
     setPayDate: () => {},
-    setInterval: () => {},
+    payPeriodInterval: "MONTHLY",
+    setPayPeriodInterval: () => {},
     envelopes: [],
     setEnvelopes: () => {},
     payments: [],

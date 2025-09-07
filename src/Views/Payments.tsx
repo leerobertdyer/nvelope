@@ -16,7 +16,7 @@ import { format } from "date-fns";
 import PaymentMap from "../components/PaymentMap";
 
 export default function Payments() {
-    const { payments, setPayments, interval, setTotalSpendingBudget, totalSpendingBudget } = useDatabase();
+    const { payments, setPayments, payPeriodInterval, setTotalSpendingBudget, totalSpendingBudget } = useDatabase();
     const { user } = useAuth();
     const today = new Date();
     const todayTimestamp = Timestamp.fromDate(today)
@@ -38,9 +38,9 @@ export default function Payments() {
     // UseEffect to sort bills by date and paid/unpaid
     useEffect(() => {
         const paymentsWithIntervals = [...payments]
-            .map(p => ({ ...p, isInInterval: isDateInCurrentPayPeriod(interval, p.dueDate.toDate()) }));
+            .map(p => ({ ...p, isInInterval: isDateInCurrentPayPeriod(payPeriodInterval, p.dueDate.toDate()) }));
         setPaymentsWithIntervals(paymentsWithIntervals);
-    }, [interval, payments])
+    }, [payPeriodInterval, payments])
 
     useEffect(() => {
         if (showPaymentAdded) setNewPayment(generateFreshPayment())
@@ -48,7 +48,7 @@ export default function Payments() {
             setShowPaymentAdded(false)
             setShowPaymentError(false)
         }, 2500)
-    }, [showPaymentAdded, showPaymentError])
+    }, [showPaymentAdded, showPaymentError, generateFreshPayment])
 
     async function handleEditPayment(p: Payment) {
         setShowPaymentInputs(true);
@@ -106,7 +106,7 @@ export default function Payments() {
         setPayments(updatedPayments);
         setShowPaymentAdded(true);
         await editPayments(updatedPayments, user.uid);
-        if (isDateInCurrentPayPeriod(interval, newPayment.dueDate.toDate()) && !newPayment.paid) {
+        if (isDateInCurrentPayPeriod(payPeriodInterval, newPayment.dueDate.toDate()) && !newPayment.paid) {
             await handleUpdateBudget(newPayment.amount * -1)
         }
         resetPaymentState()

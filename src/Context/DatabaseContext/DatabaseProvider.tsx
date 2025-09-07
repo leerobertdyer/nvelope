@@ -8,7 +8,7 @@ import { useAuth } from "../AuthContext/useAuth";
 export default function DatabaseProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [payDate, setPayDate] = useState<Timestamp | null>(null);
-    const [interval, setInterval] = useState<Interval>("MONTHLY");
+    const [payPeriodInterval, setPayPeriodInterval] = useState<Interval>("MONTHLY");
     const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
     const [payments, setPayments] = useState<Payment[]>([]);
     const [income, setIncome] = useState<number>(0);
@@ -24,7 +24,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
             loadUserData(user).then((data) => {
                 setEnvelopes(data.envelopes || []);
                 setPayDate(data.payDate);
-                setInterval(data.interval || "MONTHLY");
+                setPayPeriodInterval(data.payPeriodInterval || "MONTHLY");
                 setPayments(data.payments || []);
                 setIncome(data.income || 0);
                 setIsNewUser(data.isNewUser);
@@ -40,8 +40,8 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const value = {
         payDate,
         setPayDate,
-        interval,
-        setInterval,
+        payPeriodInterval,
+        setPayPeriodInterval,
         envelopes,
         setEnvelopes,
         payments,

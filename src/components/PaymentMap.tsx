@@ -1,7 +1,6 @@
 import { IoIosCheckmarkCircle, IoIosCheckmarkCircleOutline, IoIosClipboard, IoIosTrash } from "react-icons/io";
 import type { Payment } from "../types";
-import { getPaymentCurrentDueDate, isDateInCurrentPayPeriod } from "../util";
-import { useAuth } from "../Context/AuthContext/useAuth";
+import { isDateInCurrentPayPeriod } from "../util";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
@@ -13,8 +12,7 @@ interface PaymentMapProps {
     handleDeleteBill: (payment: Payment) => void;
 }
 export default function PaymentMap({ payments, handleUpdatePaid, handleEditBill, handleDeleteBill }: PaymentMapProps) {
-    const { user } = useAuth();
-    const { interval } = useDatabase();
+    const { payPeriodInterval } = useDatabase();
 
     const [currentPayments, setCurrentPayments] = useState<Payment[]>([])
     const [futurePayments, setFuturePayments] = useState<Payment[]>([])
@@ -23,40 +21,64 @@ export default function PaymentMap({ payments, handleUpdatePaid, handleEditBill,
         const nextCurrentPayments: Payment[] = []
         const nextFuturePayments: Payment[] = []
         payments.forEach(p => {
-            if (isDateInCurrentPayPeriod(interval, getPaymentCurrentDueDate(p, user!))) 
+            if (isDateInCurrentPayPeriod(payPeriodInterval, p.dueDate.toDate()))
                 nextCurrentPayments.push(p)
             else nextFuturePayments.push(p)
         })
         setCurrentPayments(nextCurrentPayments);
         setFuturePayments(nextFuturePayments);
-    })
+    }, [payments, payPeriodInterval])
+
+function RenderPayments({ p }: { p: Payment }) {
+        return (
+        <>
+            <p className="flex items-center justify-center">
+                {format(p.dueDate.toDate(), "do")}
+            </p>
+            <p className="flex items-center justify-center text-xs">{p.name}</p>
+            <p className="flex items-center justify-center">${p.amount.toFixed(2)}</p>
+            <div className="flex gap-[2px] items-center justify-center">
+                <IoIosClipboard
+                    className="text-my-red-light bg-my-white-dark cursor-pointer hover:text-my-white-dark hover:bg-my-red-light rounded-lg p-[2px] border-2 border-my-black-dark"
+                    size={20} onClick={() => handleEditBill(p)} />
+                <IoIosTrash
+                    className="text-my-white-dark bg-my-red-dark cursor-pointer hover:text-my-red-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+                    size={20} onClick={() => handleDeleteBill(p)} />
+                {p.paid
+                    ? <IoIosCheckmarkCircle
+                    onClick={() => handleUpdatePaid(p)}
+                    className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark" size={20} />
+                    : <IoIosCheckmarkCircleOutline
+                    onClick={() => handleUpdatePaid(p)}
+                    className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark" size={20} />}
+            </div>
+        </> )
+    }
 
     return (<>
-        {currentPayments.map((p) => (
-            <div key={p.name}
-                className={`grid grid-cols-4 w-full py-2 text-my-black-base border-2 border-my-white-light text-center
-                    ${p.name.length > 20 && 'w-fit px-2'}`}>
-                <p className="flex items-center justify-center">
-                    {format(new Date(), "M")}-{getPaymentCurrentDueDate(p, user!).getDate()}</p>
-                <p className="flex items-center justify-center">{p.name}</p>
-                <p className="flex items-center justify-center">${p.amount.toFixed(2)}</p>
-                <div className="flex gap-2 items-center justify-center">
-                    <IoIosClipboard
-                        className="text-2xl text-my-red-light bg-my-white-dark cursor-pointer hover:text-my-white-dark hover:bg-my-red-light rounded-lg p-[2px] border-2 border-my-black-dark"
-                        size={27} onClick={() => handleEditBill(p)} />
-                    <IoIosTrash
-                        className="text-2xl text-my-white-dark bg-my-red-dark cursor-pointer hover:text-my-red-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
-                        size={27} onClick={() => handleDeleteBill(p)} />
-                    {p.paid
-                        ? <IoIosCheckmarkCircle
-                            onClick={() => handleUpdatePaid(p)}
-                            className="text-2xl text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark" size={27} />
-                        : <IoIosCheckmarkCircleOutline
-                            onClick={() => handleUpdatePaid(p)}
-                            className="text-2xl text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark" size={27} />}
+    {
+        currentPayments.length > 0 && 
+        <div className="bg-my-white-dark p-2 flex flex-col justify-center align-center md:w-[40rem] max-w-[95vw] border-my-white-light border-2">
+            <h2 className="text-my-black-dark w-full text-center mb-2">Current Payments</h2>
+            {currentPayments.map((p) => (
+                <div key={p.id} className='grid grid-cols-4 py-2 bg-my-black-base text-my-white-base border-2 border-my-white-light text-center'>
+                    <RenderPayments p={p}/>
                 </div>
-            </div>
-        ))}
+            ))}
+        </div>
+    }
+
+    {
+        futurePayments.length > 0 && 
+        <div className="bg-my-black-light p-2 flex flex-col justify-center align-center md:w-[40rem] max-w-[95vw] border-my-white-light border-2">
+            <h2 className="text-my-white-light w-full text-center mb-2">Outside Pay Period</h2>
+            {futurePayments.map((p) => (
+                <div key={p.id} className='grid grid-cols-4 py-2 bg-my-black-base text-my-white-base border-2 border-my-white-light text-center'>
+                    <RenderPayments p={p}/>
+                </div>
+            ))}
+        </div>
+    }
     </>
     )
 }

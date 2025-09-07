@@ -56,10 +56,10 @@ export async function editIncome(income: number, userId: string) {
     return;
 }
     
-export async function editInterval(interval: Interval, userId: string) {
+export async function editPayPeriodInterval(i: Interval, userId: string) {
     try {
         const userDocRef = doc(db, "users", userId);
-        await updateDoc(userDocRef, { interval });
+        await updateDoc(userDocRef, { payPeriodInterval: i });
     } catch (error) {
         console.error("Firebase, editInterval Failed", error);
     }
@@ -288,21 +288,21 @@ export async function storePreviousIntervalDetails(latestIntervalDetails: Previo
     return;
 }
 
-export async function setDefaultBillInterval(userId: string) {
+export async function setDefaultPaymentInterval(userId: string) {
   try {
     const userDocRef = doc(db, "users", userId);
     const docSnap = await getDoc(userDocRef);
 
     if (!docSnap.exists()) return;
 
-    const bills = docSnap.data().bills || [];
-    const newBills = bills.map((b: Payment) => ({
-      ...b,
-      interval: b.interval ?? MONTHLY,
+    const payments = docSnap.data().payments || [];
+    const newPayments = payments.map((p: Payment) => ({
+      ...p,
+      interval: p.interval ?? MONTHLY,
     }));
 
-    await updateDoc(userDocRef, { bills: newBills });
+    await updateDoc(userDocRef, { payments: newPayments });
   } catch (error) {
-    console.error("Firebase, error in setDefaultBillInterval:", error);
+    console.error("Firebase, error in setDefaultPaymentInterval:", error);
   }
 }

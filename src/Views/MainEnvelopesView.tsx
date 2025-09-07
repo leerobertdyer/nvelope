@@ -14,7 +14,7 @@ import Loading from "../components/Loading";
 
 export default function MainEnvelopesView() {
     const {user} = useAuth();
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, rent, setRent, oneTimeCash, setOneTimeCash, income, payments, payDate, interval, shouldReset, oneTimeExpenses, setShouldReset } = useDatabase();
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, rent, setRent, oneTimeCash, setOneTimeCash, income, payments, payDate, payPeriodInterval, shouldReset, oneTimeExpenses, setShouldReset } = useDatabase();
 
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
     const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
@@ -35,16 +35,16 @@ export default function MainEnvelopesView() {
 
     // This useEffect checks if we need to reset the budget based on interval and date
     useEffect(() => {
-        if (!payDate || !interval || !user) return;
+        if (!payDate || !payPeriodInterval || !user) return;
         const checkResetShowLoader = async () => {
             setLoadingText("Checking Dates...")
             setShowLoading(true);
-            await checkAndResetBudget(shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, payments, oneTimeCash, oneTimeExpenses, setShouldReset);
+            await checkAndResetBudget(shouldReset, payDate, payPeriodInterval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, payments, oneTimeCash, oneTimeExpenses, setShouldReset);
             resetState();
         }
         checkResetShowLoader();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [payDate, interval, user]);
+    }, [payDate, payPeriodInterval, user]);
 
 
 

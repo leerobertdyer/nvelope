@@ -1,8 +1,8 @@
 import type { User } from "firebase/auth";
 import type { Payment, Envelope, Interval, IntervalDates } from "./types";
-import { editTotalSpendingBudget, setDefaultBillInterval } from "./firebase/editData";
+import { editTotalSpendingBudget } from "./firebase/editData";
 import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "./constants";
-import { addMonths, addWeeks, addYears, differenceInWeeks, eachDayOfInterval, getDay, isWithinInterval, lastDayOfMonth, startOfDay } from "date-fns";
+import { addMonths, addWeeks, addYears, eachDayOfInterval, getDay, isAfter, isBefore, isWithinInterval, lastDayOfMonth, startOfDay, subMonths, subWeeks, subYears } from "date-fns";
 
 export function recalculateBudget(params: {
     currentAvailableBudget: number;
@@ -50,47 +50,99 @@ export function getOccurrencesOfWeekday(year: number, month: number, weekday: nu
   }
 }
 
-export function calculateCurrentIntervalStart(original: Date, i: Interval): Date {
-    const today = startOfDay(new Date())
-    const start = startOfDay(new Date(original))
+export function calculateCurrentIntervalStart(d: Date, i: Interval): Date {
+  const start = startOfDay(d);
+  const today = startOfDay(new Date());
 
+  if (start > today) 
+    return  calculateIntervalsFromFutureDate(i, start, today)
+  else return calculateIntervalsFromPastDate(i, start, today);
+}
+
+export function calculateIntervalsFromPastDate(i: Interval, start: Date, today: Date) {
     switch (i) {
-      case WEEKLY: {
-        const weeksPassed = differenceInWeeks(today, start);
-        return addWeeks(start, weeksPassed);
+    case WEEKLY: {
+      // Walk forward by weeks until start <= today
+      while (isBefore(start, today)) {
+        start = addWeeks(start, 1);
       }
-      case BIWEEKLY: {
-        const biweeksPassed = differenceInWeeks(today, start) / 2
-        return addWeeks(start, biweeksPassed * 2);
-      }
-      case MONTHLY: {
-        const monthsPassed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
-        let startDate = addMonths(start, monthsPassed);
-        if (startDate.getDate() !== start.getDate()) {
-          startDate = lastDayOfMonth(startDate);
-        }
-        return startDate;
-      }
-      default:
-        if (i === null) {
-          return start;
-        }
-        console.error(`Unsupported interval: ${i}`);
-        return new Date()
+      return subWeeks(start, 1);
     }
+    case BIWEEKLY: {
+      while (isBefore(start, today)) {
+        start = addWeeks(start, 2);
+      }
+      return subWeeks(start, 2);
+    }
+    case MONTHLY: {
+      while (isBefore(start, today)) {
+        start = addMonths(start, 1);
+      }
+      return subMonths(start, 1);
+    }
+    case YEARLY: {
+      while (isBefore(start, today)) {
+        start = addYears(start, 1)
+      }
+      return start
+    }
+    default:
+      console.error(`Unsupported interval: ${i}`);
+      return today;
+  }
+
+}
+
+export function calculateIntervalsFromFutureDate(i: Interval, start: Date, today: Date): Date {
+  switch (i) {
+    case WEEKLY: {
+      // Walk backwards by weeks until start <= today
+      while (isAfter(start, today)) {
+        start = subWeeks(start, 1);
+      }
+      return start;
+    }
+    case BIWEEKLY: {
+      while (isAfter(start, today)) {
+        start = subWeeks(start, 2);
+      }
+      return start;
+    }
+    case MONTHLY: {
+      while (isAfter(start, today)) {
+        start = subMonths(start, 1);
+      }
+      return start;
+    }
+    case YEARLY: {
+      while (isAfter(start, today)) {
+        start = subYears(start, 1)
+      } 
+      return start
+    }
+    default:
+      console.error(`Unsupported interval: ${i}`);
+      return today;
+  }
 }
 
 
 // Helper to return the start and end dates of a given interval
-export function getIntervalDateRange(i: Interval, originalDate: Date): IntervalDates {
-  let start = calculateCurrentIntervalStart(originalDate, i);
-  let end = new Date(start);
+export function getIntervalDateRange(i: Interval, d: Date): IntervalDates {
+  const start = calculateCurrentIntervalStart(d, i);
+  let end;
+
 
   switch (i) {
     case WEEKLY: end = addWeeks(start, 1); break;
     case BIWEEKLY: end = addWeeks(start, 2); break;
-    case MONTHLY: end = addMonths(start, 1); break;
+    case MONTHLY: end = addMonths(start, 1);
+      if (end.getDate() !== start.getDate()) end = lastDayOfMonth(end);
+      break;
     case YEARLY: end = addYears(start, 1); break;
+    default:
+      console.error(`Unsupported interval: ${i}`);
+      end = addWeeks(start, 1);
   }
 
   // For monthly, clamp end to last day if necessary
@@ -103,17 +155,13 @@ export function getIntervalDateRange(i: Interval, originalDate: Date): IntervalD
   }
 } 
 
-export function getPaymentCurrentDueDate(p: Payment, user: User): Date {
-  if (!p.interval) {
-    setDefaultBillInterval(user.uid)
-  }
+export function getPaymentCurrentDueDate(p: Payment): Date {
   return calculateCurrentIntervalStart(p.dueDate.toDate(), p.interval);
 }
 
-export function isDateInCurrentPayPeriod(i: Interval, d: Date): boolean {
-  const today = startOfDay(new Date());
-  const { start, end } = getIntervalDateRange(i, d);
-  return isWithinInterval(today, { start, end });
+export function isDateInCurrentPayPeriod(payPeriod: Interval, d: Date): boolean {
+  const { start, end } = getIntervalDateRange(payPeriod, d);
+  return isWithinInterval(d, { start, end });
 }
 
 export function getIncomeByInterval(oldInterval: Interval, newInterval: Interval, income: number): number {

@@ -6,7 +6,7 @@ import { getIntervalDateRange } from "../util";
 import { intervalToDuration, startOfDay } from "date-fns";
 
 export default function Header({ step, links }: { step?: number, links: { label: string, href: string }[] }) {
-  const { totalSpendingBudget, interval, payDate } = useDatabase();
+  const { totalSpendingBudget, payPeriodInterval, payDate } = useDatabase();
   const [daysTillReset, setDaysTillReset] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -42,13 +42,13 @@ export default function Header({ step, links }: { step?: number, links: { label:
 
   useEffect(() => {
       // Handle Display for payPeriod and remaining Budget
-      if (!payDate || !interval) {
+      if (!payDate || !payPeriodInterval) {
         setDaysTillReset(0);
         return;
       }
       const today = startOfDay(new Date());
 
-      let { end } = getIntervalDateRange(interval, payDate.toDate());
+      let { end } = getIntervalDateRange(payPeriodInterval, payDate.toDate());
 
       const beginningOfPayday = startOfDay(payDate.toDate())
       if (beginningOfPayday > today) {
@@ -58,7 +58,7 @@ export default function Header({ step, links }: { step?: number, links: { label:
       const diffDays = intervalToDuration({start: today, end}).days || 0
 
       setDaysTillReset(diffDays > 0 ? diffDays : 0);
-  }, [interval, payDate, totalSpendingBudget]);
+  }, [payPeriodInterval, payDate, totalSpendingBudget]);
   
 
   return (

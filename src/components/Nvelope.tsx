@@ -44,7 +44,7 @@ export default function Nvelope({
   editRent
 }: NvelopeProps) {
 
-  const { interval } = useDatabase();
+  const { payPeriodInterval } = useDatabase();
 
   const [newEnvelopeName, setNewEnvelopeName] = useState<string>("");
   const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>("");
@@ -288,7 +288,7 @@ export default function Nvelope({
               onChange={(e) => setNewEnvelopeTotal(e.target.value)}
               placeholder="Envelope total"
             />
-            <label htmlFor="newEnvelopeResetTotal">{capitalizeFirstLetter(interval)} Reset Amount</label>
+            <label htmlFor="newEnvelopeResetTotal">{capitalizeFirstLetter(payPeriodInterval)} Reset Amount</label>
             <input
               id="newEnvelopeResetTotal"
               type="number"

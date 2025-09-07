@@ -3,7 +3,7 @@ import Button from "../components/Button";
 import Header from "../components/Header";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import type { Interval } from "../types";
-import { editIncome, editInterval, editPayDate, editTotalSpendingBudget } from "../firebase/editData";
+import { editIncome, editPayPeriodInterval, editPayDate, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
 import {  getIncomeByInterval, recalculateBudget } from "../util";
@@ -17,7 +17,7 @@ import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
 
 export default function Settings() {
     const {user} = useAuth();
-    const { interval, setInterval, setIncome, setTotalSpendingBudget, totalSpendingBudget, income, payDate, setPayDate } = useDatabase();
+    const { payPeriodInterval, setIncome, setTotalSpendingBudget, setPayPeriodInterval, totalSpendingBudget, income, payDate, setPayDate } = useDatabase();
 
     const [showIntervalSettings, setShowIntervalSettings] = useState<boolean>(false);
     const [newIncome, setNewIncome] = useState<string>('');
@@ -46,10 +46,10 @@ export default function Settings() {
     
     async function handleUpdateInterval() {
         if (!newIncome || !newInterval) return;
-        const diffAmount = getIncomeByInterval(interval, newInterval, Number(newIncome));
+        const diffAmount = getIncomeByInterval(payPeriodInterval, newInterval, Number(newIncome));
         setIncome(Number(newIncome));
-        setInterval(newInterval);
-        await editInterval(newInterval, user!.uid);
+        setPayPeriodInterval(newInterval);
+        await editPayPeriodInterval(newInterval, user!.uid);
         const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount })
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)
@@ -190,8 +190,8 @@ export default function Settings() {
                         Change Budget Interval
                     </p>
                     <select 
-                        value={interval ?? ''}
-                        onChange={(e) => handleIntervalChange(e.target.value as Interval)}
+                        value={payPeriodInterval ?? ''}
+                        onChange={(e) => handleIntervalChange(e.target.value.toUpperCase() as Interval)}
                         className="w-[80%] max-w-[20rem] border-2 bg-my-white-light p-2 rounded-md my-4">
                         <option value="" disabled>Select Interval</option>
                         <option value={WEEKLY}>Weekly</option>

@@ -21,7 +21,7 @@ export default async function loadUserData(user: User) {
                 isNewUser: true,
                 envelopes: [],
                 payDate: null,
-                interval: "",
+                payPeriodInterval: "MONTHLY",
                 payments: [],
                 email: user.email,
                 income: 0,
