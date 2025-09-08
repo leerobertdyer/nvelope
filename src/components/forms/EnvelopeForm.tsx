@@ -69,6 +69,20 @@ export default function EnvelopeForm(props: IProps) {
                     onChange={(e) => setNewEnvelopeTotal(e.target.value)}
                     placeholder="Envelope Amount"
                   />
+                  {setNewEnvelopeSpent && <>
+                  <label className="text-[.75rem] sm:text-[1rem] text-my-white-light" htmlFor="newSpent">
+                    How much is already spent
+                  </label>
+                  <input
+                    id="newSpent"
+                    type="number"
+                    className="w-[85%] border p-2 rounded-md"
+                    value={newEnvelopeSpent}
+                    onChange={(e) => setNewEnvelopeSpent(e.target.value)}
+                    placeholder="Spent"
+                  />
+                  </>
+                  }
                   {newEnvelopeTotal && <>
                     <div className="w-full flex justify-center items-center gap-2 text-[.75rem] text-my-white-light">
                       <IoStar className="text-my-white-dark" size={20} />
@@ -119,8 +133,9 @@ export default function EnvelopeForm(props: IProps) {
                   </>}
                 </>}
                 <Button
-                  onClick={() => {
-                    isEditing && envelope?
+                  onClick={
+                    isEditing && envelope
+                    ? () => {
                     editEnvelope?.({
                         id: envelope!.id,
                         name: newEnvelopeName || "",
@@ -129,8 +144,8 @@ export default function EnvelopeForm(props: IProps) {
                         saving: newEnvelopeSaving || envelope.saving,
                         resetTotal: Number(newEnvelopeResetTotal || envelope.resetTotal),
                         order: envelope.order || 1000
-                    })
-                    :
+                    })}
+                    : () => {
                     handleSaveEnvelope?.({
                       id: crypto.randomUUID(),
                       name: newEnvelopeName || "",

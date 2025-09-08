@@ -8,7 +8,7 @@ import {
 } from "react-icons/bs";
 import Button from "./Button";
 import type { Envelope } from "../types";
-import { IoIosRepeat, IoIosStar, IoIosTrash } from "react-icons/io";
+import { IoIosRepeat} from "react-icons/io";
 import { IoAddCircle, IoStar } from "react-icons/io5";
 import NvelopeCalculator from "./NvelopeCalculator";
 import EnvelopeForm from "./forms/EnvelopeForm";
@@ -43,11 +43,11 @@ export default function Nvelope({
   editRent
 }: NvelopeProps) {
 
-  const [newEnvelopeName, setNewEnvelopeName] = useState<string>("");
-  const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>("");
-  const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<string>("");
-  const [newEnvelopeSaving, setNewEnvelopeSaving] = useState<boolean>(true);
-  const [newEnvelopeResetTotal, setNewEnvelopeResetTotal] = useState<string>("");
+  const [newEnvelopeName, setNewEnvelopeName] = useState<string>(envelope.name || "");
+  const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>(envelope.total.toString() || "");
+  const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<string>(envelope.spent.toString() || "");
+  const [newEnvelopeSaving, setNewEnvelopeSaving] = useState<boolean>(envelope.saving || true);
+  const [newEnvelopeResetTotal, setNewEnvelopeResetTotal] = useState<string>(envelope.resetTotal?.toString() || "");
 
   useEffect(() => {
     setNewEnvelopeName(envelope.name || "");
@@ -172,7 +172,7 @@ export default function Nvelope({
         <NvelopeCalculator envelope={envelope} selectEnvelope={envelope.id === ''} handleEnterAmount={handleEnterAmount} handleBack={handleBack} />
       )
     case "editEnvelope":
-      return <EnvelopeForm isEditing={true} handleBack={handleBack} editEnvelope={editEnvelope} envelope={envelope} newEnvelopeName={newEnvelopeName} newEnvelopeResetTotal={newEnvelopeResetTotal} newEnvelopeSaving={newEnvelopeSaving} 
+      return <EnvelopeForm isEditing={true} handleBack={handleBack} editEnvelope={editEnvelope} newEnvelopeSpent={newEnvelopeSpent} setNewEnvelopeSpent={setNewEnvelopeSpent} envelope={envelope} newEnvelopeName={newEnvelopeName} newEnvelopeResetTotal={newEnvelopeResetTotal} newEnvelopeSaving={newEnvelopeSaving} 
                 newEnvelopeTotal={newEnvelopeTotal} setNewEnvelopeName={setNewEnvelopeName} setNewEnvelopeResetTotal={setNewEnvelopeResetTotal} setNewEnvelopeSaving={setNewEnvelopeSaving} setNewEnvelopeTotal={setNewEnvelopeTotal} />
     case "addEnvelope":
       return <EnvelopeForm isEditing={false} handleBack={handleBack} handleSaveEnvelope={handleSaveEnvelope} newEnvelopeName={newEnvelopeName} newEnvelopeResetTotal={newEnvelopeResetTotal} newEnvelopeSaving={newEnvelopeSaving} 
