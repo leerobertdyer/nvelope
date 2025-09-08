@@ -11,20 +11,19 @@ import type { Envelope } from "../types";
 import { IoIosRepeat, IoIosStar, IoIosTrash } from "react-icons/io";
 import { IoAddCircle, IoStar } from "react-icons/io5";
 import NvelopeCalculator from "./NvelopeCalculator";
-import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { capitalizeFirstLetter } from "../util";
+import EnvelopeForm from "./forms/EnvelopeForm";
 
 interface NvelopeProps {
   kind:
-    | "envelope"
-    | "deleteEnvelope"
-    | "addEnvelope"
-    | "sub"
-    | "dash"
-    | "replenish"
-    | "heart"
-    | "editEnvelope"
-    | "spendingEnvelope";
+  | "envelope"
+  | "deleteEnvelope"
+  | "addEnvelope"
+  | "sub"
+  | "dash"
+  | "replenish"
+  | "heart"
+  | "editEnvelope"
+  | "spendingEnvelope";
   envelope: Envelope;
   onClick?: () => void;
   handleBack?: () => void;
@@ -44,12 +43,10 @@ export default function Nvelope({
   editRent
 }: NvelopeProps) {
 
-  const { payPeriodInterval } = useDatabase();
-
   const [newEnvelopeName, setNewEnvelopeName] = useState<string>("");
   const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>("");
   const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<string>("");
-  const [newEnvelopeSaving, setNewEnvelopeSaving] = useState<boolean>(false);
+  const [newEnvelopeSaving, setNewEnvelopeSaving] = useState<boolean>(true);
   const [newEnvelopeResetTotal, setNewEnvelopeResetTotal] = useState<string>("");
 
   useEffect(() => {
@@ -84,15 +81,14 @@ export default function Nvelope({
         <div className="w-[10rem] h-[10rem] relative group flex justify-center items-center" onClick={() => onClick?.()}>
           <div className="z-12 flex flex-col gap-[.15rem] absolute w-full h-full items-center pt-6">
             <p
-              className={`w-fit text-center text-[.8rem] ${
-                envelope.total && (envelope.spent || envelope.spent === 0)
-                  ? envelope.total - envelope.spent <= 0
-                    ? "text-my-white-dark"
-                    : envelope.total - envelope.spent < envelope.total / 2
+              className={`w-fit text-center text-[.8rem] ${envelope.total && (envelope.spent || envelope.spent === 0)
+                ? envelope.total - envelope.spent <= 0
+                  ? "text-my-white-dark"
+                  : envelope.total - envelope.spent < envelope.total / 2
                     ? "text-my-black-dark"
                     : "text-my-white-light"
-                  : "text-my-black-dark"
-              }`}
+                : "text-my-black-dark"
+                }`}
             >
               {envelope.name}
             </p>
@@ -111,15 +107,14 @@ export default function Nvelope({
             strokeWidth={0.4}
           />
           <BsEnvelopePaperFill
-            className={`w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute ${
-              envelope.total && (envelope.spent || envelope.spent === 0)
-                ? envelope.total - envelope.spent <= 0
-                  ? "text-my-red-dark"
-                  : envelope.total - envelope.spent < envelope.total / 2
+            className={`w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute ${envelope.total && (envelope.spent || envelope.spent === 0)
+              ? envelope.total - envelope.spent <= 0
+                ? "text-my-red-dark"
+                : envelope.total - envelope.spent < envelope.total / 2
                   ? "text-my-white-dark"
                   : "text-my-green-dark"
-                : "text-my-green-dark"
-            }`}
+              : "text-my-green-dark"
+              }`}
           />
           {!envelope.saving && (
             <IoStar
@@ -132,24 +127,23 @@ export default function Nvelope({
     case "replenish":
       return (
         <div className="relative w-[8rem] h-[8rem] flex items-center justify-center cursor-pointer"
-          onClick={() => onClick?.()}>  
+          onClick={() => onClick?.()}>
           <div className="w-fit h-fit p-6 rounded-full bg-my-black-dark border-2 border-my-white-light top-10 left-1/2 -translate-x-1/2 absolute z-200">
             <IoIosRepeat className="w-[100%] h-[100%] text-my-white-dark absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2" />
           </div>
           <BsEnvelope
-          className="w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute z-10"
-          strokeWidth={0.4}
+            className="w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute z-10"
+            strokeWidth={0.4}
           />
           <BsEnvelopeFill
-            className={`w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute ${
-              envelope.total && (envelope.spent || envelope.spent === 0)
-                ? envelope.total - envelope.spent <= 0
-                  ? "text-my-green-dark"
-                  : envelope.total - envelope.spent < envelope.total / 2
+            className={`w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute ${envelope.total && (envelope.spent || envelope.spent === 0)
+              ? envelope.total - envelope.spent <= 0
+                ? "text-my-green-dark"
+                : envelope.total - envelope.spent < envelope.total / 2
                   ? "text-my-white-dark"
                   : "text-my-green-dark"
-                : "text-my-green-dark"
-            }`}
+              : "text-my-green-dark"
+              }`}
           />
         </div>
       );
@@ -178,167 +172,11 @@ export default function Nvelope({
         <NvelopeCalculator envelope={envelope} selectEnvelope={envelope.id === ''} handleEnterAmount={handleEnterAmount} handleBack={handleBack} />
       )
     case "editEnvelope":
-      return (
-        <div className=" min-h-screen w-full absolute inset-0 bg-my-blue-dark text-white">
-            <div className="flex flex-col items-center justify-center gap-2 max-w-[40rem] mx-auto my-20">
-              <h2 className="text-2xl">Edit Envelope</h2>
-              <label htmlFor="newEnvelopeName">Envelope Name</label>
-              <input
-                type="text"
-                maxLength={16}
-                className="w-[85%] border p-2 rounded-l"
-                value={newEnvelopeName}
-                onChange={(e) =>
-                  setNewEnvelopeName(e.target.value.trim().toLowerCase())
-                }
-                placeholder="Envelope name"
-              />
-              <label htmlFor="newEnvelopeResetTotal">Envelope Reset Amount {newEnvelopeName}</label>
-              <input
-                type="number"
-                className="w-[85%] border p-2 rounded-md"
-                value={newEnvelopeResetTotal}
-                onChange={(e) => setNewEnvelopeResetTotal(e.target.value)}
-                placeholder="Amount To Reset To"
-              />
-              <label htmlFor="newEnvelopeTotal">Total Budget for {newEnvelopeName}</label>
-              <input
-                type="number"
-                className="w-[85%] border p-2 rounded-md"
-                value={newEnvelopeTotal}
-                onChange={(e) => setNewEnvelopeTotal(e.target.value)}
-                placeholder="Available Funds"
-              />
-              <label htmlFor="newEnvelopeSpent">Amount Spent</label>
-              <input
-                type="number"
-                className="w-[85%] border p-2 rounded-md mb-8"
-                value={newEnvelopeSpent}
-                onChange={(e) => setNewEnvelopeSpent(e.target.value)}
-                placeholder="Enter amount spent"
-              />
-              <div className="w-[85%] flex justify-center items-center gap-2 p-2 rounded-md ">
-                <IoIosStar className="text-my-white-dark animate-pulse" size={20} />
-                <label htmlFor="newEnvelopeSaving">Saving Envelope</label>
-                <input
-                  type="checkbox"
-                  id="newEnvelopeSaving"
-                  checked={newEnvelopeSaving}
-                  onChange={(e) => setNewEnvelopeSaving(e.target.checked)}
-                />
-              </div>
-              <Button
-                onClick={() => {
-                  editEnvelope?.({
-                    id: envelope.id,
-                    name: newEnvelopeName || "",
-                    total: Number(newEnvelopeTotal || envelope.total),
-                    spent: Number(newEnvelopeSpent || envelope.spent),
-                    saving: newEnvelopeSaving || envelope.saving,
-                    resetTotal: Number(newEnvelopeResetTotal || envelope.resetTotal),
-                    order: envelope.order || 1000
-                  });
-                }}
-                color="green"
-              >
-                Save
-              </Button>
-              <Button
-                onClick={() => {
-                  setNewEnvelopeName("");
-                  setNewEnvelopeTotal("");
-                  setNewEnvelopeSpent("");
-                  handleBack?.();
-                }}
-                color="red"
-              >
-                Cancel
-              </Button>
-              <IoIosTrash
-                className="mt-8 text-my-white-light bg-my-red-dark cursor-pointer p-1 border rounded-lg hover:bg-my-white-light hover:text-my-red-dark"
-                size={40}
-                onClick={() => handleDeleteEnvelope?.()}
-              />
-            </div>
-        </div>
-      );
+      return <EnvelopeForm isEditing={true} handleBack={handleBack} editEnvelope={editEnvelope} envelope={envelope} newEnvelopeName={newEnvelopeName} newEnvelopeResetTotal={newEnvelopeResetTotal} newEnvelopeSaving={newEnvelopeSaving} 
+                newEnvelopeTotal={newEnvelopeTotal} setNewEnvelopeName={setNewEnvelopeName} setNewEnvelopeResetTotal={setNewEnvelopeResetTotal} setNewEnvelopeSaving={setNewEnvelopeSaving} setNewEnvelopeTotal={setNewEnvelopeTotal} />
     case "addEnvelope":
-      return (
-        <div className=" min-h-screen w-full absolute inset-0 bg-my-blue-dark text-white">
-          <div className="flex flex-col items-center justify-center gap-2 max-w-[40rem] mx-auto my-20">
-            <h2 className="text-2xl">Add New Envelope</h2>
-            <input
-              type="text"
-              maxLength={16}
-              className="w-[85%] border p-2 rounded-l"
-              value={newEnvelopeName ?? ""}
-              onChange={(e) =>
-                setNewEnvelopeName(e.target.value.toLowerCase())
-              }
-              placeholder="Envelope name"
-            />
-            <label className="text-[.75rem] sm:text-[1rem]" htmlFor="newTotal">
-              Envelope total
-            </label>
-            <input
-              id="newTotal"
-              type="number"
-              className="w-[85%] border p-2 rounded-md"
-              value={newEnvelopeTotal}
-              onChange={(e) => setNewEnvelopeTotal(e.target.value)}
-              placeholder="Envelope total"
-            />
-            <label htmlFor="newEnvelopeResetTotal">{capitalizeFirstLetter(payPeriodInterval)} Reset Amount</label>
-            <input
-              id="newEnvelopeResetTotal"
-              type="number"
-              className="w-[85%] border p-2 rounded-md"
-              value={newEnvelopeResetTotal}
-              onChange={(e) => setNewEnvelopeResetTotal(e.target.value)}
-              placeholder="Amount To Reset To"
-            />
-            <div className="flex items-center gap-2 justify-between w-[12rem]">
-              <IoStar className="text-my-white-dark" size={20} />
-              <label htmlFor="newEnvelopeSaving">Saving Envelope</label>
-              <input
-                type="checkbox"
-                checked={newEnvelopeSaving}
-                id="newEnvelopeSaving"
-                onChange={(e) =>
-                  setNewEnvelopeSaving(e.target.checked)
-                }
-              />
-            </div>
-            <Button
-              onClick={() => {
-                handleSaveEnvelope?.({
-                  id: crypto.randomUUID(),
-                  name: newEnvelopeName || "",
-                  total: Number(newEnvelopeTotal || 0),
-                  resetTotal: Number(newEnvelopeResetTotal || 0),
-                  spent: Number(0), // setting new envelopes to 0 automatically
-                  saving: newEnvelopeSaving,
-                  order: 0
-                });
-              }}
-              color="green"
-            >
-              Save
-            </Button>
-            <Button
-              onClick={() => {
-                handleBack?.();
-                setNewEnvelopeName("");
-                setNewEnvelopeTotal("");
-                setNewEnvelopeSpent("");
-              }}
-              color="red"
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      );
+      return <EnvelopeForm isEditing={false} handleBack={handleBack} handleSaveEnvelope={handleSaveEnvelope} newEnvelopeName={newEnvelopeName} newEnvelopeResetTotal={newEnvelopeResetTotal} newEnvelopeSaving={newEnvelopeSaving} 
+                newEnvelopeTotal={newEnvelopeTotal} setNewEnvelopeName={setNewEnvelopeName} setNewEnvelopeResetTotal={setNewEnvelopeResetTotal} setNewEnvelopeSaving={setNewEnvelopeSaving} setNewEnvelopeTotal={setNewEnvelopeTotal} />
     case "dash":
       return (
         <div

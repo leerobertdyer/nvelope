@@ -21,7 +21,7 @@ export function recalculateRentPayment(rent: number, interval: Interval): number
 
 export function capitalizeFirstLetter(str: string | null): string {
   if (!str) return '';
-  return str.slice(0, 1).toUpperCase() + str.slice(1)
+  return str.slice(0, 1).toUpperCase() + str.slice(1).toLowerCase()
 }
 
   export function replenishEnvelopes(envelopes: Envelope[]) {
@@ -239,3 +239,11 @@ export function calculatePayoffDate(debt: Payment): Date | null {
   return payoffDate
 }
 
+export function transformIntervalMidSentence(i: Interval) {
+  switch(i) {
+    case "WEEKLY": return "week";
+    case "BIWEEKLY": return "other week";
+    case "MONTHLY": return "month";
+    case "YEARLY": return "year"
+  }
+}
