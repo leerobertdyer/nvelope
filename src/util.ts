@@ -1,9 +1,9 @@
 import type { User } from "firebase/auth";
 import type { Payment, Envelope, Interval, IntervalDates } from "./types";
 import { editTotalSpendingBudget } from "./firebase/editData";
-import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "./constants";
+import { BILL, BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "./constants";
 import { addMonths, addWeeks, addYears, eachDayOfInterval, getDay, isAfter, isBefore, isWithinInterval, lastDayOfMonth, startOfDay, subDays, subMonths, subWeeks, subYears } from "date-fns";
-import type { Timestamp } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 
 export function recalculateBudget(params: {
   currentAvailableBudget: number;
@@ -263,3 +263,5 @@ export function transformIntervalMidSentence(i: Interval) {
     case "YEARLY": return "year"
   }
 }
+
+export const generateFreshPayment = () => { return { id: crypto.randomUUID(), name: "", type: BILL, amount: 0, paid: false, interval: MONTHLY, dueDate: Timestamp.fromDate(new Date) } as Payment }

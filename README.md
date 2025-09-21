@@ -20,9 +20,6 @@ A personal finance management app built with React, TypeScript, and Firebase.
 
 - Move the edit payments to it's own component form and improve the showButtons. 
     - Currently if you attempt to edit the total of a debt the save button doesn't show because it relies on handleEditType...
-- Display dates in order for payments. 
-    - Especially during end of month where there is potential for dates from next month (1st, 2nd, 3rd, etc) to show up along side dates from end (28th 29th, etc...) Currently they are mixed in, and not sorted at all.
-    - The real trick will involve knowing the dates so we can show later dates first if need be...
 - Weekly bills only show up one week at a time, but I'd like to see all of them for the month
 - Handle Paid checkmark appropriately. Needs to reset at some point but not sure how that will work with different intervals. Perhaps can use actual date? Like if it's a new date we reset to paid...?
 

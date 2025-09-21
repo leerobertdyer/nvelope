@@ -192,7 +192,7 @@ export async function checkAndResetBudget(
     setOneTimeCash: (oneTimeCash: OneTimeCash[] | null) => void,
     income: number,
     totalSpendingBudget: number,
-    bills: Payment[],
+    payments: Payment[],
     oneTimeCash: OneTimeCash[] | null,
     oneTimeExpenses: OneTimeExpense[] | null,
     setShouldReset: (shouldReset: Timestamp) => void
@@ -201,21 +201,21 @@ export async function checkAndResetBudget(
     console.log("RESET TODAY: ", resetToday);
     if (!resetToday) return;
 
-    console.log("checkAndResetBudget", { shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, bills, oneTimeCash, oneTimeExpenses });
+    console.log("checkAndResetBudget", { shouldReset, payDate, interval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, payments, oneTimeCash, oneTimeExpenses });
 
     const updatedEnvelopes = replenishEnvelopes(envelopes);
     console.log("updatedEnvelopes", updatedEnvelopes);
 
-    const totalBillsInInterval = bills.reduce((acc, bill) =>
-        isDateInCurrentPayPeriod(
+    let totalPaymentsInInterval = 0
+    for (const p of payments) {
+        if (isDateInCurrentPayPeriod(
             interval,
             payDate.toDate(),
-            bill.dueDate.toDate(),
-        )
-            ? acc + bill.amount
-            : acc,
-        0
-    );
+            p.dueDate.toDate(),
+        )) {
+            totalPaymentsInInterval += p.amount
+        } p.paid = false
+    }
 
     const totalOneTimeCash = oneTimeCash
         ? oneTimeCash.reduce((acc, cash) =>
@@ -249,13 +249,13 @@ export async function checkAndResetBudget(
         }
     }, 0);
 
-    const remainingBudget = income - totalBillsInInterval + totalOneTimeCash - totalOneTimeExpenses - totalEnvelopes;
+    const remainingBudget = income - totalPaymentsInInterval + totalOneTimeCash - totalOneTimeExpenses - totalEnvelopes;
 
     const previousIntervalDetails = {
         payDate,
         interval,
         envelopes,
-        bills,
+        payments,
         income,
         totalSpendingBudget,
         oneTimeCash,
@@ -336,7 +336,7 @@ function transformBillsToPayments(bills: Bill[]): Payment[] {
     bills.forEach((b) => {
         const i = validIntervals.includes(b.interval.toUpperCase() as Interval)
             ? (b.interval.toUpperCase() as Interval)
-            : "MONTHLY"; 
+            : "MONTHLY";
         paymentsMap.push({
             id: crypto.randomUUID(),
             interval: i,

@@ -44,7 +44,7 @@ export interface PreviousIntervalDetails {
     payDate: Timestamp
     interval: Interval
     envelopes: Envelope[]
-    bills: Payment[]
+    payments: Payment[]
     income: number
     totalSpendingBudget: number
     oneTimeCash: OneTimeCash[] | null

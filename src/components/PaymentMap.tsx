@@ -6,13 +6,12 @@ import { useEffect, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 
 interface PaymentMapProps {
-    payments: Payment[];
     handleUpdatePaid: (payment: Payment) => void;
     handleEditBill: (payment: Payment) => void;
     handleDeleteBill: (payment: Payment) => void;
 }
-export default function PaymentMap({ payments, handleUpdatePaid, handleEditBill, handleDeleteBill }: PaymentMapProps) {
-    const { payPeriodInterval, payDate } = useDatabase();
+export default function PaymentMap({ handleUpdatePaid, handleEditBill, handleDeleteBill }: PaymentMapProps) {
+    const { payDate, payments, payPeriodInterval } = useDatabase();
 
     const [currentPayments, setCurrentPayments] = useState<Payment[]>([])
     const [futurePayments, setFuturePayments] = useState<Payment[]>([])
@@ -27,26 +26,26 @@ export default function PaymentMap({ payments, handleUpdatePaid, handleEditBill,
                 nextCurrentPayments.push(p)
             else nextFuturePayments.push(p)
         })
-        setCurrentPayments(nextCurrentPayments);
-        setFuturePayments(nextFuturePayments);
+        setCurrentPayments(nextCurrentPayments.sort((a, b) => a.dueDate.seconds - b.dueDate.seconds));
+        setFuturePayments(nextFuturePayments.sort((a, b) => a.dueDate.seconds - b.dueDate.seconds));
     }, [payments, payPeriodInterval, payDate])
 
     function RenderPayments({ p }: { p: Payment }) {
         return (
             <>
-                <p className="flex items-center justify-center col-span-1">
+                <p className="flex items-center justify-center bg-my-white-base rounded-lg text-my-black-dark p-2 text-xs w-[1rem] m-auto">
                     {format(p.dueDate.toDate(), "do")}
                 </p>
-                <p className="flex items-center justify-center text-xs col-span-2">{p.name}</p>
+                <p className="flex items-center justify-center text-xs col-span-3">{p.name}</p>
                 {p.total
                     ? <p className="flex items-center justify-center col-span-2 gap-[2px]">
-                        <span className="text-my-blue-dark">
+                        <span className="text-sm text-my-blue-light">
                             ${p.amount}
                         </span>/
-                        <span className="text-my-blue-light">
-                            {p.total}
+                        <span className="text-sm text-my-blue-dark">
+                            {Math.ceil(p.total)}
                         </span></p>
-                    : <p className="flex items-center justify-center col-span-2">${p.amount.toFixed(2)}</p>
+                    : <p className="text-sm flex items-center justify-center col-span-2">${p.amount.toFixed(2)}</p>
                 }
 
                 <div className="flex gap-[2px] items-start justify-center mr-2 col-span-2">
@@ -74,7 +73,7 @@ export default function PaymentMap({ payments, handleUpdatePaid, handleEditBill,
                 <h2 className="text-my-black-dark w-full text-center mb-2">Current Payments</h2>
                 {currentPayments.map((p) => (
                     <div key={p.id}
-                        className={`grid grid-cols-7 py-2 bg-my-black-base text-my-white-base border-2 text-center
+                        className={`grid grid-cols-8 py-2 bg-my-black-base text-my-white-base border-2 text-center
                         ${p.type === "BILL" ? 'border-my-red-light' : 'border-my-blue-light'} `}>
                         <RenderPayments p={p} />
                     </div>
@@ -88,7 +87,7 @@ export default function PaymentMap({ payments, handleUpdatePaid, handleEditBill,
                 <h2 className="text-my-white-light w-full text-center mb-2">Outside Pay Period</h2>
                 {futurePayments.map((p) => (
                     <div key={p.id}
-                        className={`grid grid-cols-7 py-2 bg-my-black-base text-my-white-base border-2 text-center
+                        className={`grid grid-cols-8 py-2 bg-my-black-base text-my-white-base border-2 text-center
                         ${p.type === "BILL" ? 'border-my-red-light' : 'border-my-blue-light'} `}>
                         <RenderPayments p={p} />
                     </div>
