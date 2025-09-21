@@ -1,4 +1,4 @@
-import type { Timestamp } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 import { DatabaseContext } from "./DatabaseContext";
 import { useEffect, useState } from "react";
 import type { Envelope, Interval, OneTimeCash, OneTimeExpense, Payment } from "../../types";
@@ -7,7 +7,7 @@ import { useAuth } from "../AuthContext/useAuth";
 
 export default function DatabaseProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const [payDate, setPayDate] = useState<Timestamp | null>(null);
+    const [payDate, setPayDate] = useState<Timestamp>(Timestamp.now());
     const [payPeriodInterval, setPayPeriodInterval] = useState<Interval>("MONTHLY");
     const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
     const [payments, setPayments] = useState<Payment[]>([]);
@@ -23,7 +23,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         if (user) {
             loadUserData(user).then((data) => {
                 setEnvelopes(data.envelopes || []);
-                setPayDate(data.payDate);
+                setPayDate(data.payDate ?? Timestamp.now());
                 setPayPeriodInterval(data.payPeriodInterval || "MONTHLY");
                 setPayments(data.payments || []);
                 setIncome(data.income || 0);

@@ -3,6 +3,7 @@ import type { Payment, Envelope, Interval, IntervalDates } from "./types";
 import { editTotalSpendingBudget } from "./firebase/editData";
 import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "./constants";
 import { addMonths, addWeeks, addYears, eachDayOfInterval, getDay, isAfter, isBefore, isWithinInterval, lastDayOfMonth, startOfDay, subDays, subMonths, subWeeks, subYears } from "date-fns";
+import type { Timestamp } from "firebase/firestore";
 
 export function recalculateBudget(params: {
     currentAvailableBudget: number;
@@ -198,18 +199,23 @@ export async function addSubFromBudgetStateAndDB(amount: number, type: 'add' | '
     setTotalSpendingBudget(newBudget);
 }
 
-export function paymentsTotal(payments: Payment[]) {
+export function paymentsTotal(payments: Payment[], payPeriodInterval: Interval, payDate: Timestamp) {
+  const currentBills = payments.reduce((acc, p: Payment) => {
+    return p.type === "BILL" && isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), getPaymentCurrentDueDate(p)) ? acc + p.amount : acc
+  }, 0)
   const totalBills = payments.reduce((acc, p: Payment) => {
-    if (p.type === "BILL") return acc + p.amount
-    else return 0
+    return p.type === "BILL" ? acc + p.amount : acc
+  }, 0)
+  const currentDebts = payments.reduce((acc, p: Payment) => {
+    return p.type === "DEBT" ? p.amount + acc : acc
   }, 0)
   const totalDebts = payments.reduce((acc, p: Payment) => {
-    if (p.type === "DEBT") return acc + p.amount
-    else return 0
-    }, 0)
-  
+    return p.type === "DEBT" && p.total ? acc + p.total : acc
+  }, 0) 
   return {
+    currentBills,
     totalBills,
+    currentDebts,
     totalDebts
   }
 }

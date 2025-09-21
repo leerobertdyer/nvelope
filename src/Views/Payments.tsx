@@ -33,6 +33,7 @@ export default function Payments() {
     const [newPaymentDate, setNewPaymentDate] = useState<Value | null>(null);
     const [newPaymentInterval, setNewPaymentInterval] = useState<Interval | null>();
     const [showButtons, setShowButtons] = useState(false);
+    const [isDebt, setIsDebt] = useState(false);
 
     // Reset payment form and hide popups after 2.5s
     useEffect(() => {
@@ -188,202 +189,233 @@ export default function Payments() {
         setNewPayment({
             ...newPayment,
             interval: i
-        }) 
+        })
     }
 
     function handleSelectType(e: string) {
+        const newType = e.toUpperCase()
         setNewPayment({
             ...newPayment,
-            type: e.toUpperCase() as BillOrDebt
+            type: newType as BillOrDebt
         })
+        setIsDebt(newType === "DEBT")
         setShowButtons(true)
     }
 
-if (showPaymentInputs) {
-    return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-dark overflow-y-auto">
-        {showPaymentAdded && <Popup type="success">Payment added!</Popup>}
-        {showPaymentError && <Popup type="error">Payment name already exists</Popup>}
-        <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden max-w-[95vw]">
-            <div className="flex flex-col gap-2 mb-2 items-center justify-center w-full">
-                <p className="p-2 rounded-md text-my-white-dark w-full text-center text-2xl">{newPayment ? `${newPayment.name}` : "Add Bill"}</p>
-                <div className="flex flex-col items-center w-full my-2">
-                    <label className="text-my-white-light" htmlFor="name">Payment Name</label>
-                    <input
-                        id="name"
-                        maxLength={25}
-                        type="text"
-                        className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                        value={newPayment?.name.toLowerCase() || ''}
-                        placeholder="Enter new payment name"
-                        onChange={(e) => setNewPayment({
-                            ...newPayment,
-                            name: e.target.value.toLowerCase(),
-                        })}
-                    />
-                </div>
-                {newPayment.name &&
-                <div className="flex flex-col items-center w-full mb-4">
-                    <label className="text-my-white-light" htmlFor="amount">Bill Amount</label>
-                    <input
-                        id="amount"
-                        type="number"
-                        min={0}
-                        className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                        value={newPayment?.amount || ''}
-                        onChange={(e) => setNewPayment({
-                            ...newPayment,
-                            amount: Number(e.target.value)
-                        })}
-                        placeholder="Enter new bill amount"
+    if (showPaymentInputs) {
+        return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-dark overflow-y-auto">
+            {showPaymentAdded && <Popup type="success">Payment added!</Popup>}
+            {showPaymentError && <Popup type="error">Payment name already exists</Popup>}
+            <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden max-w-[95vw]">
+                <div className="flex flex-col gap-2 mb-2 items-center justify-center w-full">
+                    <p className="p-2 rounded-md text-my-white-dark w-full text-center text-2xl">{newPayment ? `${newPayment.name}` : "Add Bill"}</p>
+                    <div className="flex flex-col items-center w-full my-2">
+                        <label className="text-my-white-light" htmlFor="name">Payment Name</label>
+                        <input
+                            id="name"
+                            maxLength={25}
+                            type="text"
+                            className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                            value={newPayment?.name.toLowerCase() || ''}
+                            placeholder="Enter new payment name"
+                            onChange={(e) => setNewPayment({
+                                ...newPayment,
+                                name: e.target.value.toLowerCase(),
+                            })}
                         />
-                </div>}
-                {newPayment.amount &&
-                <div className="flex flex-col items-center w-full mb-4">
-                    <label className="text-my-white-light" htmlFor="amount">Interval Of Bill</label>
-                    <select
-                        value={newPayment.interval}
-                        onChange={(e) => handleSetNewInterval(e.target.value.toUpperCase() as Interval)}
-                        className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark mb-4">
-                        <option id="xxx" className="text-center">--Select An Interval--</option>
-                        <option id="newMonthly" className="text-center">{MONTHLY}</option>
-                        <option id="newWeekly" className="text-center">{WEEKLY}</option>
-                        <option id="newBiWeekly" className="text-center">{BIWEEKLY}</option>
-                        <option id="newYearly" className="text-center">{YEARLY}</option>
-                    </select>
-                </div>}
-
-                {newPaymentInterval && <div className="flex flex-col items-center w-full text-my-white-light">
-                    <label className="text-my-white-light" htmlFor="dayOfMonth">Starting Date</label>
-                    <div className='text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2'>
-                        <Calendar
-                            calendarType='gregory'
-                            onChange={handleCalendarChange}
-                            value={newPaymentDate || new Date()}
-                            selectRange={false}
-                            className="cursor-pointer-calendar" />
                     </div>
-                    <div className="flex flex-col items-center w-full mb-4">
-                        <div className="w-full flex justify-center gap-2 mt-2">
-                            <label className="text-my-white-light inline" htmlFor="paid">Already paid?</label>
+                    {newPayment.name &&
+                        <div className="flex flex-col items-center w-full mb-4">
+                            <label className="text-my-white-light" htmlFor="amount">Bill Amount</label>
                             <input
-                                id="paid"
-                                type="checkbox"
-                                value={newPayment.paid.toString() || "false"}
-                                className="cursor-pointer max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                                checked={newPayment?.paid || false}
+                                id="amount"
+                                type="number"
+                                min={0}
+                                className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                                value={newPayment?.amount || ''}
                                 onChange={(e) => setNewPayment({
                                     ...newPayment,
-                                    paid: e.target.checked
+                                    amount: Number(e.target.value)
                                 })}
-                                />
-                        </div>
-                        <hr className="border-2 border border-my-white-base w-[80%] mt-2"/>
-                        <div className="w-full flex flex-col justify-center items-center gap-2 mt-2">
-                            <label className="text-my-white-light" htmlFor="paid">Debt Or Bill?</label>
+                                placeholder="Enter new bill amount"
+                            />
+                        </div>}
+                    {newPayment.amount &&
+                        <div className="flex flex-col items-center w-full mb-4">
+                            <label className="text-my-white-light" htmlFor="amount">Interval Of Bill</label>
                             <select
-                                onChange={(e) => handleSelectType(e.target.value)}
-                                className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark">
-                                <option id="xxx" className="text-center">--Select Payment Type--</option>
-                                <option id="xxx" value="BILL" className="text-center">Bill</option>
-                                <option id="xxx" value="DEBT" className="text-center">Debt</option>
+                                value={newPayment.interval}
+                                onChange={(e) => handleSetNewInterval(e.target.value.toUpperCase() as Interval)}
+                                className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark mb-4">
+                                <option id="xxx" className="text-center">--Select An Interval--</option>
+                                <option id="newMonthly" className="text-center">{MONTHLY}</option>
+                                <option id="newWeekly" className="text-center">{WEEKLY}</option>
+                                <option id="newBiWeekly" className="text-center">{BIWEEKLY}</option>
+                                <option id="newYearly" className="text-center">{YEARLY}</option>
                             </select>
+                        </div>}
+
+                    {newPaymentInterval && <div className="flex flex-col items-center w-full text-my-white-light">
+                        <label className="text-my-white-light" htmlFor="dayOfMonth">Starting Date</label>
+                        <div className='text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2'>
+                            <Calendar
+                                calendarType='gregory'
+                                onChange={handleCalendarChange}
+                                value={newPaymentDate || new Date()}
+                                selectRange={false}
+                                className="cursor-pointer-calendar" />
                         </div>
-                    </div>
+                        <div className="flex flex-col items-center w-full mb-4">
+                            <div className="w-full flex justify-center gap-2 mt-2">
+                                <label className="text-my-white-light inline" htmlFor="paid">Already paid?</label>
+                                <input
+                                    id="paid"
+                                    type="checkbox"
+                                    value={newPayment.paid.toString() || "false"}
+                                    className="cursor-pointer max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                                    checked={newPayment?.paid || false}
+                                    onChange={(e) => setNewPayment({
+                                        ...newPayment,
+                                        paid: e.target.checked
+                                    })}
+                                />
+                            </div>
+                            <hr className="border-2 border border-my-white-base w-[80%] mt-2" />
+                            <div className="w-full flex flex-col justify-center items-center gap-2 mt-2">
+                                <label className="text-my-white-light" htmlFor="paid">Debt Or Bill?</label>
+                                <select
+                                    value={newPayment.type}
+                                    onChange={(e) => handleSelectType(e.target.value)}
+                                    className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark">
+                                    <option id="xxx" className="text-center">--Select Payment Type--</option>
+                                    <option id="xxx" value="BILL" className="text-center">Bill</option>
+                                    <option id="xxx" value="DEBT" className="text-center">Debt</option>
+                                </select>
+                            </div>
+                            {isDebt && <div className="w-full flex flex-col justify-center items-center gap-2 mt-2">
+                                <label className="text-my-white-light" htmlFor="total">Total</label>
+                                <input
+                                    id="total"
+                                    type="number"
+                                    min={0}
+                                    className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                                    value={newPayment?.total || ''}
+                                    onChange={(e) => setNewPayment({
+                                        ...newPayment,
+                                        total: Number(e.target.value)
+                                    })}
+                                    placeholder="Enter remainder owed on debt"
+                                />
+                            </div>}
+                        </div>
                     </div>}
-                {showButtons ?
-                <div className="text-my-white-base pb-8">
-                    <p className="text-center mb-2">
-                        <span className="text-my-green-light">{newPayment?.name || paymentToEdit?.name}</span> is a {newPayment.type.toLowerCase()} for <span className="text-my-red-light mr-2">${newPayment?.amount.toFixed(2) || paymentToEdit?.amount.toFixed(2)}</span>
-                        {newPayment
-                            ? <div>
-                                due <span className="text-blue-400 mr-2">{newPayment.interval.toLowerCase()}</span>
-                                on the {format(newPayment.dueDate.toDate(), "do")}.
+                    {showButtons ?
+                        <div className="text-my-white-base pb-8">
+                            <div className="text-center mb-2">
+                                <span className="text-my-green-light">{newPayment?.name || paymentToEdit?.name}</span> is a {newPayment.type.toLowerCase()} for <span className="text-my-red-light mr-2">${newPayment?.amount.toFixed(2) || paymentToEdit?.amount.toFixed(2)}</span>
+                                {newPayment
+                                    ? <div>
+                                        due <span className="text-blue-400 mr-2">{newPayment.interval.toLowerCase()}</span>
+                                        on the {format(newPayment.dueDate.toDate(), "do")}.
+                                    </div>
+                                    : paymentToEdit
+                                    && <div>
+                                        due <span className="text-blue-400 mr-2">{paymentToEdit.interval.toLowerCase()}</span>
+                                        on the {format(paymentToEdit.dueDate.toDate(), "do")}.
+                                    </div>
+                                }
                             </div>
-                            : paymentToEdit
-                            && <div>
-                                due <span className="text-blue-400 mr-2">{paymentToEdit.interval.toLowerCase()}</span>
-                                on the {format(paymentToEdit.dueDate.toDate(), "do")}.
+                            <div className="flex gap-4 items-center justify-center w-full">
+                                <Button
+                                    color="red"
+                                    onClick={() => resetPaymentState()}
+                                >
+                                    back
+                                </Button>
+                                <Button
+                                    color="green"
+                                    onClick={isAddingPayment ? () => addPayment() : () => editPayment()}
+                                >
+                                    Save
+                                </Button>
                             </div>
-                        }
-                    </p>
-                    <div className="flex gap-4 items-center justify-center w-full">
-                        <Button
+                        </div>
+                        : <Button
                             color="red"
                             onClick={() => resetPaymentState()}
-                            >
+                        >
                             back
                         </Button>
-                        <Button
-                            color="green"
-                            onClick={isAddingPayment ? () => addPayment() : () => editPayment()}
-                            >
-                            Save
-                        </Button>
-                    </div>
+                    }
                 </div>
-                : <Button
-                    color="red"
-                    onClick={() => resetPaymentState()}
-                    >
-                    back
-                  </Button>
-                }
             </div>
         </div>
-        </div>
-}
+    }
 
-
-return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-base overflow-y-auto">
-    <Header links={[
-        { label: "Home", href: "/" },
-        { label: "Settings", href: "/settings" },
-    ]} />
-    <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden gap-2">
-        {showPaymentsMenu ?
-        (<div className="flex flex-col gap-2 mb-2 items-center justify-center w-full border-b-2 border-my-white-light pb-2">
-            <p className="pt-2 rounded-md text-my-white-dark w-full text-center text-xl md:text-2xl">
-                Payments
-            </p>
-            <p className="text-lg md:text-xl w-full text-center text-my-white-light">
-                Current bills =
-                <span className="text-my-red-base ml-2">
-                    ${paymentsTotal(payments).totalBills.toFixed(2)}
-                </span>
-            </p>
-            <p className="text-lg md:text-xl w-full text-center text-my-white-light">
-                Current debt =
-                <span className="text-my-red-base ml-2">
-                    ${paymentsTotal(payments).totalDebts.toFixed(2)}
-                </span>
-            </p>
-            <button
-                className="h-[2.5rem] w-[8rem] bg-my-red-dark text-my-white-light hover:bg-my-black-light  rounded-md p-2 border-2 border-my-white-light cursor-pointer"
-                onClick={() => handleAddPayment()}
-            >
-                New Payment+
-            </button>
-            <p className="bg-my-white-dark text-my-black-dark px-[2px] border border-my-white-light rounded-md" onClick={() => setShowPaymentsMenu(false)}><IoIosArrowUp size={15}/></p>
-        </div>) 
-        : <p className="mt-4 bg-my-green-base text-my-white-light px-[2px] border rounded-md" onClick={() => setShowPaymentsMenu(true)}><IoIosArrowDown size={15} /></p>
-}
-        {payments.length === 0 && <p className="text-my-white-light text-center text-xl md:text-2xl mb-4">No payments due this pay period</p>}
-        {payments.length > 0
-            && <PaymentMap
+    return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-base overflow-y-auto">
+        <Header links={[
+            { label: "Home", href: "/" },
+            { label: "Settings", href: "/settings" },
+        ]} />
+        <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden gap-2">
+            {showPaymentsMenu ?
+                (<div className="flex flex-col gap-2 mb-2 items-center justify-center w-full border-b-2 border-my-white-light pb-2">
+                    <h3 className="pt-2 rounded-md text-my-white-dark w-full text-center text-xl md:text-2xl">
+                        Payments
+                    </h3>
+                    <div className="bg-my-black-dark border-my-black-light border-2 rounded-md p-2">
+                        <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
+                            Due this period =
+                            <span className="text-my-white-dark ml-2">
+                                ${(paymentsTotal(payments, payPeriodInterval, payDate).currentBills + paymentsTotal(payments, payPeriodInterval, payDate).currentDebts).toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
+                            Total monthly =
+                            <span className="text-my-red-base ml-2">
+                                ${(paymentsTotal(payments, payPeriodInterval, payDate).totalBills + paymentsTotal(payments, payPeriodInterval, payDate).currentDebts).toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
+                            Total Bills =
+                            <span className="text-my-red-light ml-2">
+                                ${paymentsTotal(payments, payPeriodInterval, payDate).totalBills.toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
+                            Total Debt =
+                            <span className="text-my-blue-light ml-2">
+                                ${paymentsTotal(payments, payPeriodInterval, payDate).totalDebts.toFixed(2)}
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        className="h-[2.5rem] w-[8rem] bg-my-red-dark text-my-white-light hover:bg-my-black-light  rounded-md p-2 border-2 border-my-white-light cursor-pointer"
+                        onClick={() => handleAddPayment()}
+                    >
+                        New Payment+
+                    </button>
+                    <p className="bg-my-white-dark text-my-black-dark px-[2px] border border-my-white-light rounded-md" onClick={() => setShowPaymentsMenu(false)}><IoIosArrowUp size={15} /></p>
+                </div>)
+                : <p className="mt-4 bg-my-green-base text-my-white-light px-[2px] border rounded-md" onClick={() => setShowPaymentsMenu(true)}><IoIosArrowDown size={15} /></p>
+            }
+            {payments.length === 0 && <p className="text-my-white-light text-center text-xl md:text-2xl mb-4">No payments due this pay period</p>}
+            {payments.length > 0
+                && <PaymentMap
                     payments={payments}
                     handleUpdatePaid={handleUpdatePaid}
                     handleEditBill={handleEditPayment}
                     handleDeleteBill={handleDeleteBill} />}
-        <div className="fixed bottom-0 flex flex-wrap gap-2 items-center justify-center w-screen mt-6 text-my-white-light bg-my-black-dark p-4 border-t-2 border-my-white-light">
-            <div className="flex items-center justify-start gap-2">
-                <p>Past Due</p>
-                <div className="rounded-sm w-[1rem] h-[1rem] bg-my-red-light border-2 border-my-white-dark mr-4"></div>
-            </div>
-            <div className="flex items-center justify-start gap-2">
-                <p>Paid</p>
-                <div className="rounded-sm w-[1rem] h-[1rem] bg-my-green-dark border-2 border-my-white-dark mr-4"></div>
+            <div className="fixed bottom-0 flex flex-wrap gap-2 items-center justify-center w-screen mt-6 text-my-white-light bg-my-black-dark p-4 border-t-2 border-my-white-light">
+                <div className="flex items-center justify-start gap-2">
+                    <p>Bill</p>
+                    <div className="rounded-sm w-[1rem] h-[1rem] bg-my-red-light border-2 border-my-white-dark mr-4"></div>
+                </div>
+                <div className="flex items-center justify-start gap-2">
+                    <p>Debt</p>
+                    <div className="rounded-sm w-[1rem] h-[1rem] bg-my-blue-light border-2 border-my-white-dark mr-4"></div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 }
