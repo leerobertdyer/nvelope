@@ -6,18 +6,18 @@ import { addMonths, addWeeks, addYears, eachDayOfInterval, getDay, isAfter, isBe
 import type { Timestamp } from "firebase/firestore";
 
 export function recalculateBudget(params: {
-    currentAvailableBudget: number;
-    diffAmount: number;
-  }): number {
-    const { currentAvailableBudget, diffAmount } = params;
-    return currentAvailableBudget + diffAmount
-  }
+  currentAvailableBudget: number;
+  diffAmount: number;
+}): number {
+  const { currentAvailableBudget, diffAmount } = params;
+  return currentAvailableBudget + diffAmount
+}
 
 export function recalculateRentPayment(rent: number, interval: Interval): number {
-    if (interval === MONTHLY) return rent;
-    if (interval === BIWEEKLY) return rent / 2;
-    if (interval === WEEKLY) return rent / 4;
-    return rent;
+  if (interval === MONTHLY) return rent;
+  if (interval === BIWEEKLY) return rent / 2;
+  if (interval === WEEKLY) return rent / 4;
+  return rent;
 }
 
 export function capitalizeFirstLetter(str: string | null): string {
@@ -25,18 +25,18 @@ export function capitalizeFirstLetter(str: string | null): string {
   return str.slice(0, 1).toUpperCase() + str.slice(1).toLowerCase()
 }
 
-  export function replenishEnvelopes(envelopes: Envelope[]) {
-    const updatedEnvelopes = [...envelopes]
-      .map(e => {
-        if (e.saving) {
-          // For envelopes that aren't reset, set total to leftover amount
-          const leftoverAmount = e.total - e.spent;
-          return { ...e, spent: 0, total: leftoverAmount };
-        }
-        // otherwise clear spent to 0 and reset the total to the original amount
-        return { ...e, total: e.resetTotal || 0, spent: 0 };
-      });
-    return updatedEnvelopes;
+export function replenishEnvelopes(envelopes: Envelope[]) {
+  const updatedEnvelopes = [...envelopes]
+    .map(e => {
+      if (e.saving) {
+        // For envelopes that aren't reset, set total to leftover amount
+        const leftoverAmount = e.total - e.spent;
+        return { ...e, spent: 0, total: leftoverAmount };
+      }
+      // otherwise clear spent to 0 and reset the total to the original amount
+      return { ...e, total: e.resetTotal || 0, spent: 0 };
+    });
+  return updatedEnvelopes;
 }
 
 export function getOccurrencesOfWeekday(year: number, month: number, weekday: number) {
@@ -55,13 +55,13 @@ export function getOccurrencesOfWeekday(year: number, month: number, weekday: nu
 export function calculateCurrentIntervalStart(d: Date, i: Interval): Date {
   const start = startOfDay(d);
   const today = startOfDay(new Date());
-  if (start > today) 
-    return  calculateIntervalsFromFutureDate(i, start, today)
+  if (start > today)
+    return calculateIntervalsFromFutureDate(i, start, today)
   else return calculateIntervalsFromPastDate(i, start, today);
 }
 
 export function calculateIntervalsFromPastDate(i: Interval, start: Date, today: Date) {
-    switch (i) {
+  switch (i) {
     case WEEKLY: {
       // Walk forward by weeks until start <= today
       while (isBefore(start, today)) {
@@ -118,7 +118,7 @@ export function calculateIntervalsFromFutureDate(i: Interval, start: Date, today
     case YEARLY: {
       while (isAfter(start, today)) {
         start = subYears(start, 1)
-      } 
+      }
       return start
     }
     default:
@@ -151,7 +151,7 @@ export function getIntervalDateRange(i: Interval, start: Date): IntervalDates {
   return {
     start, end
   }
-} 
+}
 
 export function getPaymentCurrentDueDate(p: Payment): Date {
   const originalDate = p.dueDate.toDate()
@@ -180,43 +180,53 @@ export function getIncomeByInterval(oldInterval: Interval, newInterval: Interval
   }
   // Now use the new interval to calculate the new income
   switch (newInterval) {
-      case MONTHLY:
-          return monthlyIncome;
-      case WEEKLY:
-          return monthlyIncome / 4;
-      case BIWEEKLY:
-          return monthlyIncome / 2;
-      default:
-          // If no viable option do nothing...
-          return income;
+    case MONTHLY:
+      return monthlyIncome;
+    case WEEKLY:
+      return monthlyIncome / 4;
+    case BIWEEKLY:
+      return monthlyIncome / 2;
+    default:
+      // If no viable option do nothing...
+      return income;
   }
 }
 
 export async function addSubFromBudgetStateAndDB(amount: number, type: 'add' | 'sub', user: User, totalSpendingBudget: number, setTotalSpendingBudget: (totalSpendingBudget: number) => void) {
-    if (!user) return;
-    const newBudget = type === 'add' ? totalSpendingBudget + amount : totalSpendingBudget - amount;
-    await editTotalSpendingBudget(newBudget, user.uid);
-    setTotalSpendingBudget(newBudget);
+  if (!user) return;
+  const newBudget = type === 'add' ? totalSpendingBudget + amount : totalSpendingBudget - amount;
+  await editTotalSpendingBudget(newBudget, user.uid);
+  setTotalSpendingBudget(newBudget);
 }
 
 export function paymentsTotal(payments: Payment[], payPeriodInterval: Interval, payDate: Timestamp) {
   const currentBills = payments.reduce((acc, p: Payment) => {
-    return p.type === "BILL" && isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), getPaymentCurrentDueDate(p)) ? acc + p.amount : acc
+    return p.type === "BILL"
+      && isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), getPaymentCurrentDueDate(p))
+      ? acc + p.amount
+      : acc
+  }, 0)
+  const currentDebts = payments.reduce((acc, p: Payment) => {
+    return p.type === "DEBT"
+      && isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), getPaymentCurrentDueDate(p))
+      ? acc + p.amount
+      : acc
+  }, 0)
+  const monthlyDebts = payments.reduce((acc, p: Payment) => {
+    return p.type === "DEBT" ? acc + p.amount : acc;
   }, 0)
   const totalBills = payments.reduce((acc, p: Payment) => {
     return p.type === "BILL" ? acc + p.amount : acc
   }, 0)
-  const currentDebts = payments.reduce((acc, p: Payment) => {
-    return p.type === "DEBT" ? p.amount + acc : acc
-  }, 0)
   const totalDebts = payments.reduce((acc, p: Payment) => {
     return p.type === "DEBT" && p.total ? acc + p.total : acc
-  }, 0) 
+  }, 0)
   return {
     currentBills,
     totalBills,
     currentDebts,
-    totalDebts
+    monthlyDebts,
+    totalDebts,
   }
 }
 
@@ -228,7 +238,7 @@ export function calculatePayoffDate(debt: Payment): Date | null {
 
   const periodsPerYear =
     debt.interval === "MONTHLY" ? 12 :
-    debt.interval === "BIWEEKLY" ? 26 : 52
+      debt.interval === "BIWEEKLY" ? 26 : 52
 
   const r = debt.interestRate / periodsPerYear
 
@@ -246,7 +256,7 @@ export function calculatePayoffDate(debt: Payment): Date | null {
 }
 
 export function transformIntervalMidSentence(i: Interval) {
-  switch(i) {
+  switch (i) {
     case "WEEKLY": return "week";
     case "BIWEEKLY": return "other week";
     case "MONTHLY": return "month";

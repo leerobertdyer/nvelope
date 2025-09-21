@@ -379,14 +379,20 @@ export default function Payments() {
                             </span>
                         </div>
                         <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
-                            Total Bills =
+                            Monthly Bills =
                             <span className="text-my-red-light ml-2">
                                 ${paymentsTotal(payments, payPeriodInterval, payDate).totalBills.toFixed(2)}
                             </span>
                         </div>
                         <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
-                            Total Debt =
+                            Monthly Debt =
                             <span className="text-my-blue-light ml-2">
+                                ${paymentsTotal(payments, payPeriodInterval, payDate).monthlyDebts.toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
+                            Total Debt =
+                            <span className="text-my-blue-dark ml-2">
                                 ${paymentsTotal(payments, payPeriodInterval, payDate).totalDebts.toFixed(2)}
                             </span>
                         </div>
