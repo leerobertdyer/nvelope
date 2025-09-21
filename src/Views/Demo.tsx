@@ -20,11 +20,10 @@ import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
-const today = new Date()
 
 export default function Demo() {
-    const {isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, setRent, payPeriodInterval, payments, setPayments, setTotalSpendingBudget, rent, totalSpendingBudget} = useDatabase();
-    const {user} = useAuth();
+    const { isNewUser, setIsNewUser, payDate, setPayDate, income, setIncome, setRent, payPeriodInterval, payments, setPayments, setTotalSpendingBudget, rent, totalSpendingBudget } = useDatabase();
+    const { user } = useAuth();
 
     const [step, setStep] = useState(0);
     const [newPayDate, setNewPayDate] = useState<Value | null>(null);
@@ -85,7 +84,7 @@ export default function Demo() {
         setRent(newBillAmount)
         setNewBillAmount(null)
         setNewBillName('')
-        setNewBillOriginalDate(today)
+        setNewBillOriginalDate(null)
     }
     async function handleAddNewBill() {
         if (!newBillName || !newBillAmount) return;
@@ -95,7 +94,7 @@ export default function Demo() {
         if (newBillName !== 'rent' && (rent === 0 || !rent)) {
             setRentNotSet(true)
             return
-        } 
+        }
 
         // check to see if name is already used
         if (newBills.some(bill => bill.name === newBillName)) {
@@ -103,24 +102,34 @@ export default function Demo() {
             return
         }
 
-        if (!newBillOriginalDate|| !payDate) {
+        if (!newBillOriginalDate || !payDate) {
             return
         }
-        
+
         await editPayments([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false, interval: MONTHLY } as Payment], user?.uid || '')
         const nextBudget = recalculateBudget({ currentAvailableBudget: totalSpendingBudget, diffAmount: isDateInCurrentPayPeriod(payPeriodInterval, payDate?.toDate(), newBillOriginalDate) ? newBillAmount : 0 })
         await editTotalSpendingBudget(nextBudget, user?.uid || '')
         setTotalSpendingBudget(nextBudget)
-        setNewBills([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false,  interval: MONTHLY } as Payment])
-        setPayments([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false,  interval: MONTHLY } as Payment])
+        setNewBills([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false, interval: MONTHLY } as Payment])
+        setPayments([...newBills, { name: newBillName, amount: newBillAmount, dueDate: Timestamp.fromDate(newBillOriginalDate), paid: false, interval: MONTHLY } as Payment])
         setNewBillName('')
         setNewBillAmount(0)
         setShowBillAdded(true)
     }
 
+    async function handleClickAddBill() {
+        if (rent === 0 || !rent) {
+            handleAddRent()
+        }
+        else {
+            handleAddNewBill()
+        }
+    }
+
     async function handleFirstStep() {
         console.log('handleFirstStep')
         if (payDate) {
+            console.log('payDate found: ', payDate)
             setNewPayDate(payDate.toDate())
             if (payPeriodInterval) {
                 setNewInterval(payPeriodInterval)
@@ -129,7 +138,7 @@ export default function Demo() {
                 console.log('Paydate found, No interval found')
                 setStep(3)
             }
-        } else { 
+        } else {
             console.log('No pay date found')
             setStep(2)
         }
@@ -137,7 +146,7 @@ export default function Demo() {
 
     async function handleSecondStep() {
         console.log('handleSecondStep')
-        if (!newPayDate || Array.isArray(newPayDate)) return; 
+        if (!newPayDate || Array.isArray(newPayDate)) return;
         await editPayDate(newPayDate, user!.uid)
         if (newPayDate instanceof Date) {
             setPayDate(Timestamp.fromDate(newPayDate))
@@ -224,141 +233,143 @@ export default function Demo() {
 
     return (
         <div className="absolute inset-0 z-9990">
-        {user && <Header links={[{label: 'Payments', href: '/payments'}, {label: 'Settings', href: '/settings'}]} step={step}/>}
-        {showBillAdded && <Popup type="success">Bill added!</Popup>}
-        {showBillError && <Popup type="error">Bill name already exists</Popup>}
-        {rentNotSet && <Popup type="error">Please set rent/mortage first</Popup>}
-        <div className={`absolute z-9999 left-0 right-0 bottom-0 
+            {user && <Header links={[{ label: 'Payments', href: '/payments' }, { label: 'Settings', href: '/settings' }]} step={step} />}
+            {showBillAdded && <Popup type="success">Bill added!</Popup>}
+            {showBillError && <Popup type="error">Bill name already exists</Popup>}
+            {rentNotSet && <Popup type="error">Please set rent/mortage first</Popup>}
+            <div className={`absolute z-9999 left-0 right-0 bottom-0 
             ${step > 1 ? 'top-[20vh] h-[80vh]' : 'top-0 h-screen'}
             bg-my-black-dark text-center 
             flex flex-col items-center justify-around`}>
 
-            {isNewUser && step === 0
-                ? <SpendBtn onClick={() => setStep(1)} />
-                : step == 1
-                ? <>
-                    <div className="absolute inset-0 bg-my-black-dark opacity-80"></div>
-                        <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center text-white">
-                            <h3>Let's get you set up first...</h3>
-                            <ClosingX text="Start" onClick={handleFirstStep} />
-                        </div>
-                </>
-                : step === 2 
-                ? <DemoStep onClick={handleSecondStep} text="Save Pay Date" changeValue={newPayDate}>
-                        <h3 className='text-sm sm:text-lg p-2'>Here are days remaining til your next paycheck</h3>
-                        <p className='text-sm sm:text-lg'>Speaking of which, when was <span className='text-my-green-base'>your last paycheck?</span></p>
-                        <div className='text-black rounded-md overflow-hidden border-2'>
-                            <Calendar
-                                calendarType='gregory'
-                                onChange={setNewPayDate} 
-                                value={newPayDate || new Date()} 
-                                selectRange={false} 
-                                className="cursor-pointer-calendar"/>
-                        </div>
-                  </DemoStep>
-                    : step === 3
-                    ? <DemoStep onClick={handleThirdStep} text="Save Schedule" changeValue={newInterval}>
-                        <h3 className='text-sm sm:text-lg p-2'>And how often are you <span className="text-my-green-base">paid?</span></h3>
-                        <p className='text-sm'>(Or how often do you want to <span className="text-my-red-light">budget?</span>)</p>
-                        <p className='text-sm'>Note: If you are paid bi-weekly but want to budget weekly, no problem!</p>
-                        <select 
-                            className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
-                            onChange={(e) => setNewInterval(e.target.value as Interval)} 
-                            value={newInterval || ''}
-                        >
-                            <option disabled value="">Select</option>
-                            <option value={WEEKLY}>Weekly</option>
-                            <option value={BIWEEKLY}>Biweekly</option>
-                            <option value={MONTHLY}>Monthly</option>
-                            <option value={YEARLY}>Yearly</option>
-                        </select>
-                    </DemoStep>
-                    : step === 4
-                    ? <DemoStep onClick={handleFourthStep} text="Next" changeValue={true}>
-                            <h3 className='text-sm sm:text-lg p-2'>This is your budget until your next <span className="text-my-green-light">paycheck</span></h3>
-                            <p className='text-sm sm:text-lg'>It includes <span className='text-my-green-light'>$$$</span> from all your <span className="text-my-red-light">Nvelopes</span>, and any unspent cash as well.</p>
-                        </DemoStep>
-                    : step === 5
-                    ? <DemoStep onClick={handleFifthStep} text="Save Income" changeValue={newIncome}>
-                        <h3 className='text-sm sm:text-lg p-2'>Now, how much do you make every {period}?</h3>
-                        <p className='text-sm sm:text-lg italic'>Include all household income <span className="text-my-red-light">before expenses.</span></p>
-                            <input 
-                                className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem]'
-                                type="number" 
-                                placeholder="Estimated Income"
-                                value={newIncome?.toString() || ''} 
-                            onChange={(e) => setNewIncome(Number(e.target.value))} 
-                            />
-                        </DemoStep>
-                    : step === 6
-                    ? <DemoStep onClick={handleSixthStep} text="Next" changeValue={true}>
-                            <h3 className='text-sm sm:text-lg p-2'>Time for the final and most exciting step</h3>
-                            <p className='text-sm sm:text-lg'>Let's add your <span className='text-my-red-light'>bills <IoIosSad className="inline" size={30} /></span></p>
-                        </DemoStep>
-                    : step === 7
-                    ? <DemoStep onClick={handleSeventhStep} text="Save Bills" changeValue={newBills}>
-                            <p className='text-sm sm:text-lg'>Add your fixed <span className='text-my-green-base underline'>monthly</span> expenses.</p>
-                            <p className='text-sm sm:text-lg'>Think <span className='text-my-red-light'>rent</span>, <span className='text-my-white-base'>utilities</span>, <span className='text-my-white-dark'>loans</span>, etc.</p>
-                            <p className='text-sm sm:text-lg'>For everything else we will use <span className='text-my-red-light'>Nvelopes</span></p>
-                            <p className='text-sm sm:text-lg'>Let's start with <span className='text-my-red-light'>rent/mortage</span></p>
-                            <form className="flex flex-col gap-2 w-full items-center" >
-                                <input
-                                    className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
-                                    type="text"
-                                    placeholder="Bill Name"
-                                    value={newBillName === 'rent' ? 'rent' : newBillName || ''}
-                                    onChange={newBillName === 'rent' 
-                                        ? () => () => {} 
-                                        : (e) => setNewBillName(e.target.value.toLowerCase())}
-                                />
-                                <input
-                                    className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
-                                    type="number"
-                                    placeholder="Monthly Amount"
-                                    value={newBillAmount || ''}
-                                    onChange={(e) => setNewBillAmount(Number(e.target.value))}
-                                />
-                                {newBillName !== 'rent' && (
+                {isNewUser && step === 0
+                    ? <SpendBtn onClick={() => setStep(1)} />
+                    : step == 1
+                        ? <>
+                            <div className="absolute inset-0 bg-my-black-dark opacity-80"></div>
+                            <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center text-white">
+                                <h3>Let's get you set up first...</h3>
+                                <ClosingX text="Start" onClick={handleFirstStep} />
+                            </div>
+                        </>
+                        : step === 2
+                            ? <DemoStep onClick={handleSecondStep} text="Save Pay Date" changeValue={newPayDate}>
+                                <h3 className='text-sm sm:text-lg p-2'>Here are days remaining til your next paycheck</h3>
+                                <p className='text-sm sm:text-lg'>Speaking of which, when was <span className='text-my-green-base'>your last paycheck?</span></p>
+                                <div className='text-black rounded-md overflow-hidden border-2'>
                                     <Calendar
                                         calendarType='gregory'
-                                        onChange={handleCalendarChange} 
-                                        value={newBillOriginalDate || new Date()} 
-                                        selectRange={false} 
-                                        className="cursor-pointer-calendar"/>
-                                )}
-                                <Button 
-                                    onClick={rent === 0 || !rent ? handleAddRent : handleAddNewBill}
-                                    color="green"
-                                    children="Add Bill"
-                                />
-                            </form>
-                            {rent > 0 && (
-                                <div className="flex flex-col gap-2">
-                                    <span>Current Rent: ${rent}</span>
-                                    {newBills.map((bill, index) => (
-                                        <div key={index} className="flex items-center justify-between">
-                                            <span>{bill.name}</span>
-                                            <span>${bill.amount}</span>
-                                        </div>
-                                    ))}
+                                        onChange={setNewPayDate}
+                                        value={newPayDate || new Date()}
+                                        maxDate={new Date()}
+                                        selectRange={false}
+                                        className="cursor-pointer-calendar" />
                                 </div>
-                            )}
-                        </DemoStep>
-                    : step === 8
-                    ? <DemoStep onClick={handleEighthStep} text="Next" changeValue={true}>
-                            <h3 className='text-sm sm:text-lg p-2'>Note the balance changed according to your bills</h3>
-                            <p className='text-sm sm:text-lg'>This is the amount you have left until your next <span className="text-my-green-light">paycheck</span></p>
-                            <p className='text-sm sm:text-lg'>And takes into account the <span className="text-my-white-dark">pay period</span> you selected earlier.</p>
-                            <p className='text-sm sm:text-lg'>As well as the <span className="text-my-red-light">rent</span> you need to set aside for this pay period.</p>
-                        </DemoStep>
-                    : step === 9
-                    && <DemoStep onClick={handleNinthStep} text="Let's Go!" changeValue={true}>
-                            <h3 className='text-sm sm:text-lg p-2'>We're all set up!</h3>
-                            <p className='text-sm sm:text-lg'>If you need to make changes later, you can always head to <span className="text-my-green-base">settings</span> in the menu</p>
-                            <p className='text-sm sm:text-lg'>For now, let's stuff some <span className='text-my-red-light'>Nvelopes</span>!</p>
-                       </DemoStep>
+                            </DemoStep>
+                            : step === 3
+                                ? <DemoStep onClick={handleThirdStep} text="Save Schedule" changeValue={newInterval}>
+                                    <h3 className='text-sm sm:text-lg p-2'>And how often are you <span className="text-my-green-base">paid?</span></h3>
+                                    <p className='text-sm'>(Or how often do you want to <span className="text-my-red-light">budget?</span>)</p>
+                                    <p className='text-sm'>Note: If you are paid bi-weekly but want to budget weekly, no problem!</p>
+                                    <select
+                                        className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
+                                        onChange={(e) => setNewInterval(e.target.value as Interval)}
+                                        value={newInterval || ''}
+                                    >
+                                        <option disabled value="">Select</option>
+                                        <option value={"WEEKLY"}>Weekly</option>
+                                        <option value={"BIWEEKLY"}>Biweekly</option>
+                                        <option value={"MONTHLY"}>Monthly</option>
+                                        <option value={"YEARLY"}>Yearly</option>
+                                    </select>
+                                </DemoStep>
+                                : step === 4
+                                    ? <DemoStep onClick={handleFourthStep} text="Next" changeValue={true}>
+                                        <h3 className='text-sm sm:text-lg p-2'>This is your budget until your next <span className="text-my-green-light">paycheck</span></h3>
+                                        <p className='text-sm sm:text-lg'>It includes <span className='text-my-green-light'>$$$</span> from all your <span className="text-my-red-light">Nvelopes</span>, and any unspent cash as well.</p>
+                                    </DemoStep>
+                                    : step === 5
+                                        ? <DemoStep onClick={handleFifthStep} text="Save Income" changeValue={newIncome}>
+                                            <h3 className='text-sm sm:text-lg p-2'>Now, how much do you make every {period}?</h3>
+                                            <p className='text-sm sm:text-lg italic'>Include all household income <span className="text-my-red-light">before expenses.</span></p>
+                                            <input
+                                                className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem]'
+                                                type="number"
+                                                placeholder="Estimated Income"
+                                                value={newIncome?.toString() || ''}
+                                                onChange={(e) => setNewIncome(Number(e.target.value))}
+                                            />
+                                        </DemoStep>
+                                        : step === 6
+                                            ? <DemoStep onClick={handleSixthStep} text="Next" changeValue={true}>
+                                                <h3 className='text-sm sm:text-lg p-2'>Time for the final and most exciting step</h3>
+                                                <p className='text-sm sm:text-lg'>Let's add your <span className='text-my-red-light'>bills <IoIosSad className="inline" size={30} /></span></p>
+                                            </DemoStep>
+                                            : step === 7
+                                                ? <DemoStep onClick={handleSeventhStep} text="Save Bills" changeValue={newBills}>
+                                                    <p className='text-sm sm:text-lg'>Add your fixed <span className='text-my-green-base underline'>monthly</span> expenses.</p>
+                                                    <p className='text-sm sm:text-lg'>Think <span className='text-my-red-light'>rent</span>, <span className='text-my-white-base'>utilities</span>, <span className='text-my-white-dark'>loans</span>, etc.</p>
+                                                    <p className='text-sm sm:text-lg'>For everything else we will use <span className='text-my-red-light'>Nvelopes</span></p>
+                                                    {!rent && <p className='text-sm sm:text-lg'>Let's start with <span className='text-my-red-light'>rent/mortage</span></p>}
+                                                    <form className="flex flex-col gap-2 w-full items-center" >
+                                                        <input
+                                                            className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
+                                                            type="text"
+                                                            placeholder="Bill Name"
+                                                            value={rent ? newBillName : "rent"}
+                                                            onChange={(e) => setNewBillName(e.target.value.toLowerCase())}
+                                                            readOnly={!rent} // locks "rent" until rent is saved
+                                                        />
+                                                        <input
+                                                            className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
+                                                            type="number"
+                                                            placeholder="Monthly Amount"
+                                                            value={newBillAmount || ''}
+                                                            onChange={(e) => setNewBillAmount(Number(e.target.value))}
+                                                        />
+                                                        {newBillName !== 'rent' && (
+                                                            <div className="text-black">
+                                                                <Calendar
+                                                                    calendarType='gregory'
+                                                                    onChange={handleCalendarChange}
+                                                                    value={newBillOriginalDate || new Date()}
+                                                                    selectRange={false}
+                                                                    className="cursor-pointer-calendar" />
+                                                            </div>
+                                                        )}
+                                                        <Button
+                                                            onClick={handleClickAddBill}
+                                                            color="green"
+                                                            children="Add Bill"
+                                                        />
+                                                    </form>
+                                                    {rent > 0 && (
+                                                        <div className="flex flex-col gap-2">
+                                                            <span>Current Rent: ${rent}</span>
+                                                            {newBills.map((bill, index) => (
+                                                                <div key={index} className="flex items-center justify-between">
+                                                                    <span>{bill.name}</span>
+                                                                    <span>${bill.amount}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </DemoStep>
+                                                : step === 8
+                                                    ? <DemoStep onClick={handleEighthStep} text="Next" changeValue={true}>
+                                                        <h3 className='text-sm sm:text-lg p-2'>Note the balance changed according to your bills</h3>
+                                                        <p className='text-sm sm:text-lg'>This is the amount you have left until your next <span className="text-my-green-light">paycheck</span></p>
+                                                        <p className='text-sm sm:text-lg'>And takes into account the <span className="text-my-white-dark">pay period</span> you selected earlier.</p>
+                                                        <p className='text-sm sm:text-lg'>As well as the <span className="text-my-red-light">rent</span> you need to set aside for this pay period.</p>
+                                                    </DemoStep>
+                                                    : step === 9
+                                                    && <DemoStep onClick={handleNinthStep} text="Let's Go!" changeValue={true}>
+                                                        <h3 className='text-sm sm:text-lg p-2'>We're all set up!</h3>
+                                                        <p className='text-sm sm:text-lg'>If you need to make changes later, you can always head to <span className="text-my-green-base">settings</span> in the menu</p>
+                                                        <p className='text-sm sm:text-lg'>For now, let's stuff some <span className='text-my-red-light'>Nvelopes</span>!</p>
+                                                    </DemoStep>
                 }
+            </div>
         </div>
-    </div>
     );
 }

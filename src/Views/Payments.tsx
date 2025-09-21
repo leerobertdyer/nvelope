@@ -202,6 +202,8 @@ export default function Payments() {
         setShowButtons(true)
     }
 
+    if (!payDate) return
+
     if (showPaymentInputs) {
         return <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-dark overflow-y-auto">
             {showPaymentAdded && <Popup type="success">Payment added!</Popup>}
