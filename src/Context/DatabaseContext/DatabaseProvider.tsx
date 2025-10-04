@@ -16,7 +16,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
     const [oneTimeCash, setOneTimeCash] = useState<OneTimeCash[] | null>(null);
     const [rent, setRent] = useState<number>(0);
-    const [shouldReset, setShouldReset] = useState<Timestamp | null>(null);
+    const [resetBudgetTimestamp, setResetBudgetTimestamp] = useState<Timestamp | null>(null);
     const [oneTimeExpenses, setOneTimeExpenses] = useState<OneTimeExpense[] | null>(null);
     
     useEffect(() => {
@@ -31,7 +31,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                 setTotalSpendingBudget(data.totalSpendingBudget || 0);
                 setOneTimeCash(data.oneTimeCash || null);
                 setRent(data.rent || 0);
-                setShouldReset(data.shouldReset || null);
+                setResetBudgetTimestamp(data.resetBudgetTimestamp || null);
                 setOneTimeExpenses(data.oneTimeExpenses || null);
             });
         } 
@@ -56,8 +56,8 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         setOneTimeCash,
         rent,
         setRent,
-        shouldReset,
-        setShouldReset,
+        resetBudgetTimestamp,
+        setResetBudgetTimestamp,
         oneTimeExpenses,
         setOneTimeExpenses
     };

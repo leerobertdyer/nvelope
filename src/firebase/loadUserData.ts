@@ -32,7 +32,7 @@ export default async function loadUserData(user: User) {
                 totalSpendingBudget: 0,
                 oneTimeCash: null,
                 rent: 0,
-                shouldReset: null,
+                resetBudgetTimestamp: null,
                 oneTimeExpenses: null
             };
             

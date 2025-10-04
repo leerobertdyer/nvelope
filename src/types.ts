@@ -42,7 +42,7 @@ export interface OneTimeExpense {
 
 export interface PreviousIntervalDetails {
     payDate: Timestamp
-    interval: Interval
+    payPeriodInterval: Interval
     envelopes: Envelope[]
     payments: Payment[]
     income: number
