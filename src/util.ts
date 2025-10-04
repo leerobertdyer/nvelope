@@ -61,6 +61,7 @@ export function calculateCurrentIntervalStart(d: Date, i: Interval): Date {
 }
 
 export function calculateIntervalsFromPastDate(i: Interval, start: Date, today: Date) {
+  // Note: I've left both of these functions in place intentionally for readability
   switch (i) {
     case WEEKLY: {
       // Walk forward by weeks until start <= today
@@ -91,10 +92,10 @@ export function calculateIntervalsFromPastDate(i: Interval, start: Date, today: 
       console.error(`Unsupported interval: ${i}`);
       return today;
   }
-
 }
 
 export function calculateIntervalsFromFutureDate(i: Interval, start: Date, today: Date): Date {
+  // Note: I've left both of these functions in place intentionally for readability
   switch (i) {
     case WEEKLY: {
       // Walk backwards by weeks until start <= today
@@ -161,11 +162,18 @@ export function getPaymentCurrentDueDate(p: Payment): Date {
   return end
 }
 
-export function isDateInCurrentPayPeriod(payPeriod: Interval, payDate: Date, d: Date): boolean {
-  const startOfCurrentPaymentInterval = calculateCurrentIntervalStart(payDate, payPeriod)
-  const { start, end } = getIntervalDateRange(payPeriod, startOfCurrentPaymentInterval); // Current Pay Period Date Range
+export function isDateInCurrentPayPeriod(payPeriodInterval: Interval, payDate: Date, d: Date): boolean {
+  const startOfCurrentPaymentInterval = calculateCurrentIntervalStart(payDate, payPeriodInterval)
+  const { start, end } = getIntervalDateRange(payPeriodInterval, startOfCurrentPaymentInterval); // Current Pay Period Date Range
   // console.log(`[isDateInCurrentPayPeriod] payPeriodInterval: ${payPeriod}, payDate: ${payDate}, dateToCheck: ${d} PayPeriodRange: START=${start} end=${end}`)
   return isWithinInterval(d, { start, end }); // Is the date within the current pay period
+}
+
+export function getCurrentIntervalDateRange(payPeriodInterval: Interval, payDate: Timestamp) {
+  const originalDate = payDate.toDate();
+  const start = calculateCurrentIntervalStart(originalDate, payPeriodInterval);
+  const { end } = getIntervalDateRange(payPeriodInterval, start);
+  return { start, end }
 }
 
 export function getIncomeByInterval(oldInterval: Interval, newInterval: Interval, income: number): number {

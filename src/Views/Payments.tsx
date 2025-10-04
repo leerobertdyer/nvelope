@@ -8,8 +8,8 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import { editPayments, editTotalSpendingBudget } from "../firebase/editData";
 import Header from "../components/Header";
 import PaymentMap from "../components/PaymentMap";
-import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 import PaymentForm from "../components/forms/PaymentForm";
+import ShowAndHide from "../components/ShowAndHide/ShowAndHide";
 
 export default function Payments() {
     const { payments, setPayments, payDate, payPeriodInterval, setTotalSpendingBudget, totalSpendingBudget } = useDatabase();
@@ -163,10 +163,9 @@ export default function Payments() {
                     >
                         New Payment+
                     </button>
-                    <p className="bg-my-white-dark text-my-black-dark px-[2px] border border-my-white-light rounded-md" onClick={() => setShowPaymentsMenu(false)}><IoIosArrowUp size={15} /></p>
+                    <ShowAndHide onClick={() => setShowPaymentsMenu(false)} label="Hide Summary" up={true} border={false} iconSize={25}/>
                 </div>)
-                : <p className="mt-4 bg-my-green-base text-my-white-light px-[2px] border rounded-md" onClick={() => setShowPaymentsMenu(true)}><IoIosArrowDown size={15} /></p>
-            }
+                : <ShowAndHide onClick={() => setShowPaymentsMenu(true)} label="Show Summary" up={false} border={false} iconSize={25}/>}
             {payments.length === 0 && <p className="text-my-white-light text-center text-xl md:text-2xl mb-4">No payments due this pay period</p>}
             {payments.length > 0
                 && <PaymentMap
@@ -174,7 +173,7 @@ export default function Payments() {
                     handleEditBill={handleEditPayment}
                     handleDeleteBill={handleDeleteBill}
                 />}
-            <div className="fixed bottom-0 flex flex-wrap gap-2 items-center justify-center w-screen mt-6 text-my-white-light bg-my-black-dark p-4 border-t-2 border-my-white-light">
+            <div className="fixed bottom-[-.05rem] flex flex-wrap gap-2 items-center justify-center w-screen mt-4 text-my-white-light bg-my-black-dark p-2 border-t-2 border-my-white-light">
                 <div className="flex items-center justify-start gap-2">
                     <p>Bill</p>
                     <div className="rounded-sm w-[1rem] h-[1rem] bg-my-red-light border-2 border-my-white-dark mr-4"></div>

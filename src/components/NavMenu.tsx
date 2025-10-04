@@ -1,6 +1,6 @@
 import { IoIosMenu } from "react-icons/io";
-import ClosingX from "./ClosingX";
 import { Link } from "react-router-dom";
+import ShowAndHide from "./ShowAndHide/ShowAndHide";
 
 interface NavMenuProps {
     showMenu: boolean;
@@ -21,7 +21,7 @@ export default function NavMenu({ showMenu, setShowMenu, links }: NavMenuProps) 
                         text-my-white-dark bg-my-black-base">
                    {link.label}</Link>
             ))}
-            <ClosingX onClick={() => setShowMenu(false)} />
+            <ShowAndHide onClick={() => setShowMenu(false)} iconSize={55} colorScheme="text-my-black-dark"/>
         </div>
         
         {!showMenu && (
