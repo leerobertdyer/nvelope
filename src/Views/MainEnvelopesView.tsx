@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import Nvelopes from "../components/Nvelopes";
 import type { Envelope } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { editEnvelopes, editOneTimeCashAndBudget, editOneTimeExpense, editRent, resetBudget } from "../firebase/editData";
+import { checkToResetBudget, editEnvelopes, editOneTimeCashAndBudget, editOneTimeExpense, editRent, resetBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
@@ -14,7 +14,7 @@ import Loading from "../components/Loading";
 
 export default function MainEnvelopesView() {
     const {user} = useAuth();
-    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, rent, setRent, oneTimeCash, setOneTimeCash, income, payments, payDate, payPeriodInterval, oneTimeExpenses, setResetBudgetTimestamp } = useDatabase();
+    const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes, rent, setRent, oneTimeCash, setOneTimeCash, income, payments, payDate, payPeriodInterval, oneTimeExpenses, resetBudgetTimestamp, setResetBudgetTimestamp } = useDatabase();
 
     const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
     const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
@@ -39,6 +39,7 @@ export default function MainEnvelopesView() {
         const checkResetShowLoader = async () => {
             setLoadingText("Checking Dates...")
             setShowLoading(true);
+            if (await checkToResetBudget(resetBudgetTimestamp, payDate, payPeriodInterval))
             await resetBudget({payDate, payPeriodInterval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, payments, oneTimeCash, oneTimeExpenses, setResetBudgetTimestamp});
             resetState();
         }

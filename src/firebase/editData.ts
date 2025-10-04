@@ -6,7 +6,7 @@ import type {
   OneTimeExpense,
   PreviousIntervalDetails,
 } from "../types";
-import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
+import { doc, updateDoc, Timestamp, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
 import {
@@ -232,14 +232,14 @@ export async function checkToResetBudget(
   resetBudgetTimestamp: Timestamp | null,
   payDate: Timestamp,
   payPeriodInterval: Interval
-) {
+): Promise<boolean> {
   const resetToday = await isResetToday(
     payDate,
     payPeriodInterval,
     resetBudgetTimestamp
   );
-  console.log("RESET TODAY: ", resetToday);
-  if (!resetToday) return;
+  console.log("Should reset budget today ===> ", resetToday);
+  return resetToday;
 }
 
 type ResetBudgetParams = {
@@ -371,13 +371,18 @@ export async function storePreviousIntervalDetails(
     const userDocRef = doc(db, "users", userId);
     const docSnap = await getDoc(userDocRef);
     if (docSnap.exists()) {
-      const { previousIntervalDetails } = docSnap.data() || [];
-      await updateDoc(userDocRef, {
-        previousIntervalDetails: [
-          ...(previousIntervalDetails || []),
-          latestIntervalDetails,
-        ],
-      });
+      await setDoc(
+        userDocRef,
+        {
+          previousIntervalDetails: [
+            ...(Array.isArray(docSnap.data()?.previousIntervalDetails)
+              ? docSnap.data()!.previousIntervalDetails
+              : []),
+            latestIntervalDetails,
+          ],
+        },
+        { merge: true }
+      );
     } else {
       console.error(
         "Firebase, storePreviousIntervalDetails Failed: Document does not exist"
