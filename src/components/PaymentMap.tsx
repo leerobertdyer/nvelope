@@ -24,7 +24,7 @@ export default function PaymentMap({
   handleEditBill,
   handleDeleteBill,
 }: PaymentMapProps) {
-  const { payments, setPayments, payPeriodInterval, payDate } = useDatabase();
+  const { payments, payPeriodInterval, payDate } = useDatabase();
   const { user } = useAuth();
 
   const today = useMemo(() => startOfDay(new Date()), []);
@@ -55,11 +55,8 @@ export default function PaymentMap({
         }))
         .sort((a, b) => a.dueDate.toMillis() - b.dueDate.toMillis());
       await editPayments(newPayments, user.uid);
-      setPayments(newPayments);
     }
     updatePaymentDatesToCurrentMonth();
-
-
     setPastPayments(payments.filter((p) => p.dueDate.toDate() < today));
     setCurrentPayments(
       payments.filter(
@@ -67,8 +64,7 @@ export default function PaymentMap({
       )
     );
     setFuturePayments(payments.filter((p) =>  isAfter(p.dueDate.toDate(), endOfPayPeriod)));
-    //eslint-disable-next-line
-  }, []);
+  }, [payments, endOfPayPeriod, payDate, user, payPeriodInterval, today]);
 
   function RenderPayments({ p }: { p: Payment }) {
     return (
