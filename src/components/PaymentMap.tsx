@@ -12,7 +12,11 @@ import { Timestamp } from "firebase/firestore";
 import { editPayments } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import ShowAndHide from "./ShowAndHide";
-import { getCurrentIntervalDateRange, isDateInCurrentPayPeriod } from "../util";
+import {
+  getCurrentIntervalDateRange,
+  intervalOnCuspOfMonth,
+  isDateInCurrentPayPeriod,
+} from "../util";
 
 interface PaymentMapProps {
   handleUpdatePaid: (payment: Payment) => void;
@@ -28,7 +32,10 @@ export default function PaymentMap({
   const { user } = useAuth();
 
   const today = useMemo(() => startOfDay(new Date()), []);
-  const { end: endOfPayPeriod } = useMemo(() => getCurrentIntervalDateRange(payPeriodInterval, payDate!), [payPeriodInterval, payDate])
+  const { end: endOfPayPeriod } = useMemo(
+    () => getCurrentIntervalDateRange(payPeriodInterval, payDate!),
+    [payPeriodInterval, payDate]
+  );
 
   const [pastPayments, setPastPayments] = useState<Payment[]>([]);
   const [currentPayments, setCurrentPayments] = useState<Payment[]>([]);
@@ -43,27 +50,36 @@ export default function PaymentMap({
     async function updatePaymentDatesToCurrentMonth() {
       if (!user) return;
       const newPayments = payments
-        .map((p) => ({
-          ...p,
-          dueDate: Timestamp.fromDate(
-            new Date(
-              today.getFullYear(),
-              today.getMonth(),
-              p.dueDate.toDate().getDate()
-            )
-          ),
-        }))
+        .map((p) => {
+          const onCusp = intervalOnCuspOfMonth(today, payPeriodInterval);
+          return {
+            ...p,
+            dueDate: Timestamp.fromDate(
+              new Date(
+                today.getFullYear(),
+                onCusp ? today.getMonth()+ 1 : today.getMonth(),
+                p.dueDate.toDate().getDate()
+              )
+            ),
+          };
+        })
         .sort((a, b) => a.dueDate.toMillis() - b.dueDate.toMillis());
       await editPayments(newPayments, user.uid);
     }
     updatePaymentDatesToCurrentMonth();
     setPastPayments(payments.filter((p) => p.dueDate.toDate() < today));
     setCurrentPayments(
-      payments.filter(
-        (p) => isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), p.dueDate.toDate())
+      payments.filter((p) =>
+        isDateInCurrentPayPeriod(
+          payPeriodInterval,
+          payDate.toDate(),
+          p.dueDate.toDate()
+        )
       )
     );
-    setFuturePayments(payments.filter((p) =>  isAfter(p.dueDate.toDate(), endOfPayPeriod)));
+    setFuturePayments(
+      payments.filter((p) => isAfter(p.dueDate.toDate(), endOfPayPeriod))
+    );
   }, [payments, endOfPayPeriod, payDate, user, payPeriodInterval, today]);
 
   function RenderPayments({ p }: { p: Payment }) {
