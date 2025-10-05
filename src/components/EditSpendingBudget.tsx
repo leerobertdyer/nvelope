@@ -28,7 +28,6 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
 
   return (
     <Modal>
-      <div className="fixed z-9999 inset-0 bg-my-white-dark text-mywhite-dark w-full h-screen flex flex-col items-center justify-center">
         <p className="text-lg mb-4 text-my-red-dark">
           Manually Adjusts Your Remaining Budget
         </p>
@@ -48,7 +47,6 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
             Back
           </Button>
         </div>
-      </div>
     </Modal>
   );
 }
