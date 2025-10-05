@@ -9,7 +9,7 @@ import { editPayments, editTotalSpendingBudget } from "../firebase/editData";
 import Header from "../components/Header";
 import PaymentMap from "../components/PaymentMap";
 import PaymentForm from "../components/forms/PaymentForm";
-import ShowAndHide from "../components/ShowAndHide/ShowAndHide";
+import ShowAndHide from "../components/ShowAndHide";
 
 export default function Payments() {
   const {

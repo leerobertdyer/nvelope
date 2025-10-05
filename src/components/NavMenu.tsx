@@ -1,6 +1,6 @@
 import { IoIosMenu } from "react-icons/io";
 import { Link } from "react-router-dom";
-import ShowAndHide from "./ShowAndHide/ShowAndHide";
+import ShowAndHide from "./ShowAndHide";
 
 interface NavMenuProps {
     showMenu: boolean;

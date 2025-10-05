@@ -11,7 +11,7 @@ import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { Timestamp } from "firebase/firestore";
 import { editPayments } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
-import ShowAndHide from "./ShowAndHide/ShowAndHide";
+import ShowAndHide from "./ShowAndHide";
 import { getCurrentIntervalDateRange, isDateInCurrentPayPeriod } from "../util";
 
 interface PaymentMapProps {
