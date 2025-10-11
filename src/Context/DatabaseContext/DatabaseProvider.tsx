@@ -8,7 +8,8 @@ import { db } from "../../firebase/firebase";
 export default function DatabaseProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
 
-    const [snowball, setSnowball] = useState<Number>(0)
+    const [isLoadingDb, setIsLoadingDb] = useState(true);
+    const [snowball, setSnowball] = useState<number>(0)
     const [payDate, setPayDate] = useState<Timestamp|null>(null);
     const [payPeriodInterval, setPayPeriodInterval] = useState<Interval>("MONTHLY");
     const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
@@ -41,6 +42,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
             (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     const data = docSnapshot.data();
+                    setIsLoadingDb(false);
                     setSnowball(data.snowball || 0);
                     setEnvelopes(data.envelopes || []);
                     setPayDate(data.payDate ?? null);
@@ -77,6 +79,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setDoc(userDocRef, defaultUserData);
                     
                     // Set local state immediately (listener will update when write completes)
+                    setIsLoadingDb(false);
                     setSnowball(0);
                     setEnvelopes([]);
                     setPayDate(null);
@@ -111,6 +114,8 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     }, [user]);
     
     const value = {
+        isLoadingDb,
+        setIsLoadingDb,
         snowball,
         setSnowball,
         payDate,

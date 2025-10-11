@@ -5,11 +5,13 @@ import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { type Payment } from "../types";
 import { useState } from "react";
 import { useAuth } from "../Context/AuthContext/useAuth";
-import { editPayments, editTotalSpendingBudget } from "../firebase/editData";
+import { editPayments, editSnowball, editTotalSpendingBudget } from "../firebase/editData";
 import Header from "../components/Header";
 import PaymentMap from "../components/PaymentMap";
 import PaymentForm from "../components/forms/PaymentForm";
 import ShowAndHide from "../components/ShowAndHide";
+import FullScreen from "../components/FullScreen";
+import TextInput from "../components/TextInput";
 
 export default function Payments() {
   const {
@@ -19,6 +21,7 @@ export default function Payments() {
     payPeriodInterval,
     setTotalSpendingBudget,
     totalSpendingBudget,
+    snowball, setSnowball
   } = useDatabase();
   const { user } = useAuth();
 
@@ -140,8 +143,14 @@ export default function Payments() {
       />
     );
 
+  async function handleEditSnowball() {
+    await editSnowball(user!, snowball)
+  }
+
   if (showEditSnowball) return (
-    <
+    <FullScreen onClose={() => setShowEditSnowball(false)} onSave={handleEditSnowball} showButtons={true}>
+      <TextInput id="newSnowballAmount" placeholder={`$${snowball}`} value={snowball.toString()} label="New Snowball Amount" onChange={(e) => setSnowball(Number(e.target.value))} />
+    </FullScreen>
   )
 
   return (
@@ -180,9 +189,9 @@ export default function Payments() {
                   ).totalDebts)}
                 </span>
               </div>
-              <div className="text-lg md:text-xl w-full flex justify-between text-my-white-light" onClick={setShowEditSnowball}>
-                ❄️Snowball❄️
-                <span className="text-my-blue-light ml-2">$45</span>
+              <div className="text-lg md:text-xl w-full flex justify-between text-my-white-light" onClick={() => setShowEditSnowball(true)}>
+                Snowball ❄️
+                <span className="text-my-blue-light ml-2">${snowball}</span>
               </div>
             </div>
             <ShowAndHide

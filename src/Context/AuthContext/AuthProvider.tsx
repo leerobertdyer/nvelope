@@ -7,12 +7,14 @@ import { auth } from '../../firebase/firebase';
 // Provider component that wraps the app and makes auth object available to any child component that calls useAuth()
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   // Listen for Firebase auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
       console.log('Auth state changed:', authUser);
       setUser(authUser);
+      setIsLoadingUser(false);
     });
 
     // Cleanup subscription on unmount
@@ -22,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     setUser,
+    isLoadingUser,
   };
 
   return (

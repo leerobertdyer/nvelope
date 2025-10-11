@@ -30,9 +30,10 @@ export async function editResetBudgetTimestamp(
 }
 
 export async function editEnvelopes(envelopes: Envelope[], userId: string) {
+  const toFixedEnvelopes = envelopes.map((e: Envelope) => ({...e, total: e.total.toFixed(2)}))
   try {
     const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { envelopes });
+    await updateDoc(userDocRef, { envelopes: toFixedEnvelopes });
   } catch (error) {
     console.error("Firebase, editEnvelopes Failed", error);
   }
@@ -465,8 +466,9 @@ export const validIntervals: Interval[] = [
 export async function editSnowball(user: User, amount: number) {
   if (!user) return;
   const userDocRef = doc(db, "users", user.uid);
+  await updateDoc(userDocRef, { snowball: amount })
   try {
-    await updateDoc(userDocRef, { snowball: amount })
+    console.log('attempting to updateDoc for snowball')
   } catch (e) {
     console.error("There was an error in editSnowball when updating db: ", e)
   }

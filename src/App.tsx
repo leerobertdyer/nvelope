@@ -7,9 +7,9 @@ import Payments from "./Views/Payments";
 
 // Protected route component that redirects to home if no user
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoadingUser} = useAuth();
   
-  if (!user) {
+  if (!user && !isLoadingUser) {
     return <Navigate to="/" replace />;
   }
   

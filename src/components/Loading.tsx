@@ -1,9 +1,9 @@
-import Modal from "./Modal";
+import FullScreen from "./FullScreen";
 import Nvelope from "./Nvelope";
 
 export default function Loading({ text }: { text: string }) {
   return (
-    <Modal>
+    <FullScreen>
         <Nvelope
           envelope={{
             id: "1",
@@ -15,6 +15,6 @@ export default function Loading({ text }: { text: string }) {
           kind="dash"
         />
         <p className="text-my-green-dark animate-pulse">{text}</p>
-    </Modal>
+    </FullScreen>
   );
 }

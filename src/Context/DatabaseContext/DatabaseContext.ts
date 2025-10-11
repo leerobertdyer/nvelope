@@ -4,7 +4,10 @@ import type { Payment, Envelope, Interval, OneTimeCash, OneTimeExpense } from ".
 
 
 interface IDatabaseContext {
-    snowball: Number
+    isLoadingDb: boolean,
+    setIsLoadingDb: (b: boolean) => void;
+    snowball: number,
+    setSnowball: (n: number) => void;
     payDate: Timestamp | null
     setPayDate: (payDate: Timestamp | null) => void
     payPeriodInterval: Interval

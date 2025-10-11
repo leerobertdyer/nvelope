@@ -57,7 +57,7 @@ export default function PaymentMap({
             dueDate: Timestamp.fromDate(
               new Date(
                 today.getFullYear(),
-                onCusp ? today.getMonth()+ 1 : today.getMonth(),
+                onCusp ? today.getMonth() + 1 : today.getMonth(),
                 p.dueDate.toDate().getDate()
               )
             ),
@@ -80,15 +80,17 @@ export default function PaymentMap({
     setFuturePayments(
       payments.filter((p) => isAfter(p.dueDate.toDate(), endOfPayPeriod))
     );
-  }, [payments, endOfPayPeriod, payDate, user, payPeriodInterval, today]);
+  }, [payments, endOfPayPeriod, payDate, user, payPeriodInterval, today, start]);
 
   function RenderPayments({ p }: { p: Payment }) {
     return (
       <div
         key={p.id}
-        className={`grid grid-cols-8 py-2 bg-my-black-base text-my-white-dark border-2 text-center
-          ${
-            p.type === "BILL" ? "border-my-red-light" : "border-my-blue-light"
+        className={`grid grid-cols-8 py-2 text-my-white-dark border-2 text-center
+          ${p.paid
+            ? "bg-gray-500 border-none"
+            : p.type === "BILL" ? "border-my-red-light bg-my-black-base"
+              : "border-my-blue-light bg-my-black-base"
           } `}
       >
         <p className="flex items-center justify-center bg-my-white-base rounded-lg text-my-black-dark p-2 text-xs w-[1rem] m-auto">

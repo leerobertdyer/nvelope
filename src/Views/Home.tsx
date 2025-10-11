@@ -5,38 +5,30 @@ import MainEnvelopesView from "./MainEnvelopesView";
 import Loading from "../components/Loading";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import Demo from "./Demo";
+import FullScreen from "../components/FullScreen";
 
 export default function Home() {
-  const { user } = useAuth();
-  const { isNewUser } = useDatabase();
-
+  const { user, isLoadingUser } = useAuth(); // add loading from context if available
+  const { isNewUser, isLoadingDb } = useDatabase(); // also handle its loading state
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (!isLoadingUser && !isLoadingDb) {
       setIsLoading(false);
     }
-    // Manual timeout to give firebase time to load user
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-  }, [user]);
+  }, [isLoadingUser, isLoadingDb]);
 
+  if (isLoading) return <FullScreen>
+    <Loading text="Welcome to Nvelopes..." />
+  </FullScreen>
 
-  
-  return (
-    <>
-      <div className="">
-        {isLoading 
-          ? <Loading text="Welcome to Nvelopes..." />
-          : user 
-            ? isNewUser 
-              ? <Demo />
-              : <MainEnvelopesView />
-            : <div className="flex justify-center items-center w-full h-screen">
-                  <LoginOptions />
-              </div>}
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center w-full h-screen">
+        <LoginOptions />
       </div>
-    </>
-  );
+    );
+  }
+
+  return isNewUser ? <Demo /> : <MainEnvelopesView />;
 }
