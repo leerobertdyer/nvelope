@@ -290,18 +290,14 @@ export function getIncomeByInterval(
   }
 }
 
-export async function addSubFromBudgetStateAndDB(
+export async function updateBudgetStateAndDBB(
   amount: number,
-  type: "add" | "sub",
   user: User,
   totalSpendingBudget: number,
   setTotalSpendingBudget: (totalSpendingBudget: number) => void
 ) {
   if (!user) return;
-  const newBudget =
-    type === "add"
-      ? totalSpendingBudget + amount
-      : totalSpendingBudget - amount;
+  const newBudget = totalSpendingBudget + amount;
   await editTotalSpendingBudget(newBudget, user.uid);
   setTotalSpendingBudget(newBudget);
 }
@@ -340,12 +336,14 @@ export function paymentsTotal(
   const totalDebts = payments.reduce((acc, p: Payment) => {
     return p.type === "DEBT" && p.total ? acc + p.total : acc;
   }, 0);
+  const totalPayments = payments.reduce((acc, p: Payment) => acc + p.amount, 0)
   return {
     currentBills,
     totalBills,
     currentDebts,
     monthlyDebts,
     totalDebts,
+    totalPayments,
   };
 }
 

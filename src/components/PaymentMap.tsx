@@ -32,7 +32,7 @@ export default function PaymentMap({
   const { user } = useAuth();
 
   const today = useMemo(() => startOfDay(new Date()), []);
-  const { end: endOfPayPeriod } = useMemo(
+  const { start, end: endOfPayPeriod } = useMemo(
     () => getCurrentIntervalDateRange(payPeriodInterval, payDate!),
     [payPeriodInterval, payDate]
   );
@@ -67,7 +67,7 @@ export default function PaymentMap({
       await editPayments(newPayments, user.uid);
     }
     updatePaymentDatesToCurrentMonth();
-    setPastPayments(payments.filter((p) => p.dueDate.toDate() < today));
+    setPastPayments(payments.filter((p) => p.dueDate.toDate() < start));
     setCurrentPayments(
       payments.filter((p) =>
         isDateInCurrentPayPeriod(

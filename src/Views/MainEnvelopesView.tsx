@@ -18,7 +18,7 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
-import { addSubFromBudgetStateAndDB } from "../util";
+import { updateBudgetStateAndDBB } from "../util";
 import { GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
 
@@ -103,9 +103,8 @@ export default function MainEnvelopesView() {
     });
     setEnvelopes(newEnvelopes);
     await editEnvelopes(newEnvelopes, user!.uid);
-    await addSubFromBudgetStateAndDB(
-      Number(e.total),
-      "sub",
+    await updateBudgetStateAndDBB(
+      Number(e.total) * -1,
       user!,
       totalSpendingBudget,
       setTotalSpendingBudget
@@ -126,9 +125,8 @@ export default function MainEnvelopesView() {
         (e) => e.id !== envelopeToEdit?.id
       );
       setEnvelopes(newEnvelopes);
-      await addSubFromBudgetStateAndDB(
+      await updateBudgetStateAndDBB(
         Number(envelopeToEdit?.total || 0),
-        "add",
         user!,
         totalSpendingBudget,
         setTotalSpendingBudget
@@ -148,17 +146,15 @@ export default function MainEnvelopesView() {
       setLoadingText("Editing Envelope...");
       setShowLoading(true);
       if (originalEnvelope.total > n.total) {
-        await addSubFromBudgetStateAndDB(
+        await updateBudgetStateAndDBB(
           Number(originalEnvelope.total - n.total),
-          "add",
           user!,
           totalSpendingBudget,
           setTotalSpendingBudget
         );
       } else if (originalEnvelope.total < n.total) {
-        await addSubFromBudgetStateAndDB(
-          Number(n.total - originalEnvelope.total),
-          "sub",
+        await updateBudgetStateAndDBB(
+          Number(n.total - originalEnvelope.total) * -1,
           user!,
           totalSpendingBudget,
           setTotalSpendingBudget
@@ -247,9 +243,8 @@ export default function MainEnvelopesView() {
       date,
     };
     await editOneTimeExpense(newOneTimeExpense, user.uid);
-    await addSubFromBudgetStateAndDB(
-      Number(cashAmount),
-      "sub",
+    await updateBudgetStateAndDBB(
+      Number(cashAmount) * -1,
       user,
       totalSpendingBudget,
       setTotalSpendingBudget
@@ -274,9 +269,8 @@ export default function MainEnvelopesView() {
     const newEnvelopes = [...envelopes].map((e) =>
       e.id === n.id ? { ...n, total: n.total + Number(cashAmount) } : e
     );
-    await addSubFromBudgetStateAndDB(
-      Number(cashAmount),
-      "sub",
+    await updateBudgetStateAndDBB(
+      Number(cashAmount) * -1,
       user,
       totalSpendingBudget,
       setTotalSpendingBudget
@@ -468,17 +462,20 @@ export default function MainEnvelopesView() {
         ]}
       />
 
-      <div className="flex flex-col items-center gap-[3rem] overflow-y-auto overflow-x-hidden bg-my-black-base">
-        <div className="flex w-full justify-center gap-4 items-center mt-[2rem]">
+      <div className="flex flex-col items-center gap-[1rem] overflow-y-auto overflow-x-hidden bg-my-black-base pt-[1rem]">
+        <div className="flex w-full justify-center gap-[1rem] items-center">
           <div
-            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark animate-glow shadow-lg text-my-red-dark shadow-my-red-light"
+            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"
             onClick={handleAddOneTimeBill}
           >
             <GiMoneyStack className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
             <p className="text-sm">Expense</p>
           </div>
+          <div className="w-fit flex justify-center items-center ">
+            <Nvelope kind="dash" envelope={{ ...emptyEnvelope, name: 'New Envelope' }} onClick={handleSetupNewEnvelope} handleBack={resetState} />
+          </div>
           <div
-            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark animate-glow shadow-lg text-my-green-dark shadow-my-green-light"
+            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark  text-my-green-dark shadow-my-green-light"
             onClick={handleAddCash}
           >
             <GiMoneyStack className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-base " />
@@ -488,7 +485,6 @@ export default function MainEnvelopesView() {
 
         <Nvelopes
           resetState={resetState}
-          handleSetupNewEnvelope={handleSetupNewEnvelope}
           handleSetupEdit={handleSetupEdit}
           editEnvelope={editEnvelope}
           handleSetShowSpendingPage={handleSetShowSpendingPage}

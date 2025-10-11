@@ -1,5 +1,3 @@
-import Nvelope from "./Nvelope";
-
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import type { Envelope } from "../types";
 import { editEnvelopes, editTotalSpendingBudget } from "../firebase/editData";
@@ -11,7 +9,6 @@ import BigEnvelope from "./BigEnvelope";
 
 interface NvelopeProps {
     resetState: () => void;
-    handleSetupNewEnvelope: () => void;
     handleSetupEdit: (envelope: Envelope) => void;
     editEnvelope: (envelope: Envelope) => Promise<void>;
     handleSetShowSpendingPage: (envelope: Envelope) => void;
@@ -20,7 +17,7 @@ interface NvelopeProps {
     handleAddCashToEnvelope: (envelope: Envelope) => void;
 }
 
-export default function Nvelopes({resetState, handleSetupNewEnvelope, handleSetupEdit, editEnvelope, handleSetShowSpendingPage, handleDeleteEnvelope, handleAddCashToEnvelope }: NvelopeProps) {
+export default function Nvelopes({resetState, handleSetupEdit, editEnvelope, handleSetShowSpendingPage, handleDeleteEnvelope, handleAddCashToEnvelope }: NvelopeProps) {
     const { totalSpendingBudget, setTotalSpendingBudget, envelopes, setEnvelopes } = useDatabase();
     const { user } =  useAuth();
     const [showGiveAndTake, setShowGiveAndTake] = useState(false);
@@ -33,8 +30,6 @@ export default function Nvelopes({resetState, handleSetupNewEnvelope, handleSetu
         const sorted = [...envelopes].sort((a, b) => (a.order || stupidLargeNumber) - (b.order || stupidLargeNumber));
         setSortedEnvelopes(sorted);
     }, [envelopes]);
-
-    const emptyEnvelope = { id: '', name: '', total: 0, spent: 0, oneTime: false }
 
     function handleBack() {
         setShowGiveAndTake(false);
@@ -133,9 +128,7 @@ export default function Nvelopes({resetState, handleSetupNewEnvelope, handleSetu
 
     return (
         <div className="w-full text-center flex flex-col items-center h-screen">
-            <div className="w-full flex justify-center items-center ">
-                <Nvelope kind="dash" envelope={{...emptyEnvelope, name: 'New Envelope'}} onClick={handleSetupNewEnvelope} handleBack={resetState} />
-            </div>
+            
             <div className="flex flex-col justify-center items-center mt-4 pb-[20rem]">
                 {/* Grid Header Row */}
                 <div className="w-screen max-w-[40rem]  h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-white-dark text-my-black-light font-bold">

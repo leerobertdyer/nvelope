@@ -26,6 +26,7 @@ export default function Payments() {
   const [paymentToEdit, setPaymentToEdit] = useState<Payment | null>(null);
   const [showPaymentInputs, setShowPaymentInputs] = useState(false);
   const [showDeletePayment, setShowDeletePayment] = useState(false);
+  const [showEditSnowball, setShowEditSnowball] = useState(false);
 
   async function handleEditPayment(p: Payment) {
     setPaymentToEdit(p);
@@ -78,7 +79,6 @@ export default function Payments() {
   }
 
   if (showDeletePayment) {
-    console.log("paymentToEdit", paymentToEdit);
     return (
       <div className="absolute inset-0 w-screen h-screen z-100 select-none">
         <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
@@ -140,12 +140,16 @@ export default function Payments() {
       />
     );
 
+  if (showEditSnowball) return (
+    <
+  )
+
   return (
     <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-base overflow-y-auto">
       <Header
         links={[
-          { label: "Home", href: "/" },
           { label: "Settings", href: "/settings" },
+          { label: "Home", href: "/" },
         ]}
       />
       <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden gap-2">
@@ -155,70 +159,32 @@ export default function Payments() {
               Payments
             </h3>
             <div className="bg-my-black-dark border-my-black-light border-2 rounded-md p-2">
-              <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
-                Due this period =
-                <span className="text-my-white-dark ml-2">
-                  $
-                  {(
-                    paymentsTotal(payments, payPeriodInterval, payDate)
-                      .currentBills +
-                    paymentsTotal(payments, payPeriodInterval, payDate)
-                      .currentDebts
-                  ).toFixed(2)}
-                </span>
-              </div>
-              <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
-                Total monthly =
+              <div className="text-lg md:text-xl w-full flex justify-between text-my-white-light">
+                Due Monthly
                 <span className="text-my-red-base ml-2">
                   $
                   {(
-                    paymentsTotal(payments, payPeriodInterval, payDate)
-                      .totalBills +
-                    paymentsTotal(payments, payPeriodInterval, payDate)
-                      .currentDebts
-                  ).toFixed(2)}
+                    Math.ceil(paymentsTotal(payments, payPeriodInterval, payDate)
+                      .totalPayments
+                    ))}
                 </span>
               </div>
-              <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
-                Monthly Bills =
-                <span className="text-my-red-light ml-2">
-                  $
-                  {paymentsTotal(
-                    payments,
-                    payPeriodInterval,
-                    payDate
-                  ).totalBills.toFixed(2)}
-                </span>
-              </div>
-              <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
-                Monthly Debt =
-                <span className="text-my-blue-light ml-2">
-                  $
-                  {paymentsTotal(
-                    payments,
-                    payPeriodInterval,
-                    payDate
-                  ).monthlyDebts.toFixed(2)}
-                </span>
-              </div>
-              <div className="text-lg md:text-xl w-[16rem] text-start text-my-white-light">
-                Total Debt =
+              <div className="text-lg md:text-xl w-full flex justify-between text-my-white-light">
+                Total Debt
                 <span className="text-my-blue-dark ml-2">
                   $
-                  {paymentsTotal(
+                  {Math.ceil(paymentsTotal(
                     payments,
                     payPeriodInterval,
                     payDate
-                  ).totalDebts.toFixed(2)}
+                  ).totalDebts)}
                 </span>
               </div>
+              <div className="text-lg md:text-xl w-full flex justify-between text-my-white-light" onClick={setShowEditSnowball}>
+                ❄️Snowball❄️
+                <span className="text-my-blue-light ml-2">$45</span>
+              </div>
             </div>
-            <button
-              className="h-[2.5rem] w-[8rem] bg-my-red-dark text-my-white-light hover:bg-my-black-light  rounded-md p-2 border-2 border-my-white-light cursor-pointer"
-              onClick={() => handleAddPayment()}
-            >
-              New Payment+
-            </button>
             <ShowAndHide
               onClick={() => setShowPaymentsMenu(false)}
               label="Hide Summary"
@@ -236,6 +202,12 @@ export default function Payments() {
             iconSize={25}
           />
         )}
+        <button
+          className="h-[2.5rem] w-[8rem] bg-my-red-dark text-my-white-light hover:bg-my-black-light  rounded-md p-2 border-2 border-my-white-light cursor-pointer"
+          onClick={() => handleAddPayment()}
+        >
+          New Payment+
+        </button>
         {payments.length === 0 && (
           <p className="text-my-white-light text-center text-xl md:text-2xl mb-4">
             No payments due this pay period
