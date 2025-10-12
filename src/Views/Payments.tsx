@@ -5,13 +5,19 @@ import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { type Payment } from "../types";
 import { useState } from "react";
 import { useAuth } from "../Context/AuthContext/useAuth";
-import { editPayments, editSnowball, editTotalSpendingBudget } from "../firebase/editData";
+import {
+  editPayments,
+  editSnowball,
+  editTotalSpendingBudget,
+} from "../firebase/editData";
 import Header from "../components/Header";
 import PaymentMap from "../components/PaymentMap";
 import PaymentForm from "../components/forms/PaymentForm";
 import ShowAndHide from "../components/ShowAndHide";
 import FullScreen from "../components/FullScreen";
 import TextInput from "../components/TextInput";
+import { startOfDay } from "date-fns";
+import { Timestamp } from "firebase/firestore";
 
 export default function Payments() {
   const {
@@ -21,7 +27,8 @@ export default function Payments() {
     payPeriodInterval,
     setTotalSpendingBudget,
     totalSpendingBudget,
-    snowball, setSnowball
+    snowball,
+    setSnowball,
   } = useDatabase();
   const { user } = useAuth();
 
@@ -73,9 +80,47 @@ export default function Payments() {
 
   async function handleUpdatePaid(payment: Payment) {
     setPayments((prev) => {
-      const updatedPayments = prev.map((p) =>
-        p.id === payment.id ? { ...p, paid: !p.paid } : p
-      );
+      const originalId = payment.id.includes("-WEEKLY-")
+      ? payment.id.split("-WEEKLY-")[0]
+      : payment.id.includes("-BIWEEKLY-")
+      ? payment.id.split("-BIWEEKLY-")[0]
+      : payment.id;
+      
+      const updatedPayments = prev.map((p) => {
+        if (p.id !== originalId) return p;
+        
+        // For weekly/biweekly, toggle the specific occurrence in paidDates
+        if (p.interval === "WEEKLY" || p.interval === "BIWEEKLY") {
+          const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
+          const paidDates = p.paidDates || [];
+          
+          // Check if this date is already paid
+          const alreadyPaid = paidDates.some(
+            (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
+          );
+          
+          console.log("HEre", occurrenceTime, p.paidDates, alreadyPaid)
+          if (alreadyPaid) {
+            // REMOVE the date (mark unpaid)
+            return {
+              ...p,
+              paidDates: paidDates.filter(
+                (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime
+              )
+            };
+          } else {
+            // ADD the date (mark paid)
+            return {
+              ...p,
+              paidDates: [...paidDates, Timestamp.fromDate(startOfDay(payment.dueDate.toDate()))]
+            };
+          }
+        }
+        
+        // For monthly/yearly, toggle simple paid boolean
+        return { ...p, paid: !p.paid };
+      });
+      
       editPayments(updatedPayments, user!.uid);
       return updatedPayments;
     });
@@ -144,14 +189,25 @@ export default function Payments() {
     );
 
   async function handleEditSnowball() {
-    await editSnowball(user!, snowball)
+    await editSnowball(user!, snowball);
   }
 
-  if (showEditSnowball) return (
-    <FullScreen onClose={() => setShowEditSnowball(false)} onSave={handleEditSnowball} showButtons={true}>
-      <TextInput id="newSnowballAmount" placeholder={`$${snowball}`} value={snowball.toString()} label="New Snowball Amount" onChange={(e) => setSnowball(Number(e.target.value))} />
-    </FullScreen>
-  )
+  if (showEditSnowball)
+    return (
+      <FullScreen
+        onClose={() => setShowEditSnowball(false)}
+        onSave={handleEditSnowball}
+        showButtons={true}
+      >
+        <TextInput
+          id="newSnowballAmount"
+          placeholder={`$${snowball}`}
+          value={snowball.toString()}
+          label="New Snowball Amount"
+          onChange={(e) => setSnowball(Number(e.target.value))}
+        />
+      </FullScreen>
+    );
 
   return (
     <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-base overflow-y-auto">
@@ -172,24 +228,26 @@ export default function Payments() {
                 Due Monthly
                 <span className="text-my-red-base ml-2">
                   $
-                  {(
-                    Math.ceil(paymentsTotal(payments, payPeriodInterval, payDate)
+                  {Math.ceil(
+                    paymentsTotal(payments, payPeriodInterval, payDate)
                       .totalMonthlyPayments
-                    ))}
+                  )}
                 </span>
               </div>
               <div className="text-lg md:text-xl w-full flex justify-between text-my-white-light">
                 Remaining Debt
                 <span className="text-my-blue-dark ml-2">
                   $
-                  {Math.ceil(paymentsTotal(
-                    payments,
-                    payPeriodInterval,
-                    payDate
-                  ).remainingDebt)}
+                  {Math.ceil(
+                    paymentsTotal(payments, payPeriodInterval, payDate)
+                      .remainingDebt
+                  )}
                 </span>
               </div>
-              <div className="text-lg md:text-xl w-full flex justify-between text-my-white-light" onClick={() => setShowEditSnowball(true)}>
+              <div
+                className="text-lg md:text-xl w-full flex justify-between text-my-white-light"
+                onClick={() => setShowEditSnowball(true)}
+              >
                 Snowball ❄️
                 <span className="text-my-blue-light ml-2">${snowball}</span>
               </div>

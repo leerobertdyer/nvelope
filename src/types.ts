@@ -18,6 +18,7 @@ export interface Payment {
     dueDate: Timestamp
     interval: Interval
     paid: boolean
+    paidDates?: Timestamp[] // for tracking payments that span multiple intervals (ie WEEKLY | BIWEEKLY)
     type: "DEBT" | "BILL"
     isInInterval?: boolean
     total?: number

@@ -1,7 +1,6 @@
 import {
   IoIosCheckmarkCircle,
   IoIosCheckmarkCircleOutline,
-  IoIosClipboard,
   IoIosTrash,
 } from "react-icons/io";
 import type { Payment } from "../types";
@@ -15,6 +14,7 @@ import {
   getVirtualPaymentsForPeriod,
   isDateInCurrentPayPeriod,
 } from "../util";
+import { IoPencil } from "react-icons/io5";
 
 interface PaymentMapProps {
   handleUpdatePaid: (payment: Payment) => void;
@@ -82,13 +82,15 @@ export default function PaymentMap({
         className={`grid grid-cols-8 py-2 border-2 text-center
           ${
             p.paid
-              ? "bg-[#969696] border-none text-my-black-dark"
+              ? "bg-my-black-light border-y-[1px] border-white text-white"
               : p.type === "BILL"
               ? "border-my-red-light bg-my-black-base text-my-white-dark"
               : "border-my-blue-light bg-my-black-base text-my-white-dark"
           } `}
       >
-        <p className={`flex items-center justify-center rounded-sm text-my-black-dark p-2 text-xs w-[1rem] m-auto ${p.paid ? "bg-[#969696]" : "bg-my-white-base"}`}>
+        <p
+          className={`flex items-center justify-center text-xs w-[1rem] m-auto  text-my-white-dark`}
+        >
           {format(p.dueDate.toDate(), "do")}
         </p>
         <p className="flex items-center justify-center text-xs col-span-3">
@@ -108,8 +110,8 @@ export default function PaymentMap({
         )}
 
         <div className="flex gap-[2px] items-start justify-center mr-2 col-span-2">
-          <IoIosClipboard
-            className="text-my-red-light bg-my-white-dark cursor-pointer hover:text-my-white-dark hover:bg-my-red-light rounded-lg p-[2px] border-2 border-my-black-dark"
+          <IoPencil
+            className="text-my-black-base bg-my-white-dark cursor-pointer hover:text-my-white-dark hover:bg-my-red-light rounded-lg p-[2px] border-2 border-my-black-dark"
             size={20}
             onClick={() => handleEditBill(p)}
           />
@@ -153,7 +155,6 @@ export default function PaymentMap({
             {pastPayments.map((p) => (
               <RenderPayments p={p} />
             ))}
-            <hr className="w-full h-[.25rem] bg-my-white-light text-my-white-light" />
           </div>
         ) : (
           <>
@@ -165,7 +166,6 @@ export default function PaymentMap({
                 pastPayments.reduce((acc, p) => p.amount + acc, 0)
               )}`}
             />
-            <hr className="w-full h-[.25rem] bg-my-white-light text-my-white-light" />
           </>
         )}
         {showCurrent ? (
@@ -182,7 +182,6 @@ export default function PaymentMap({
             {currentPayments.map((p) => (
               <RenderPayments p={p} />
             ))}
-            <hr className="w-full h-[.25rem] bg-my-white-light text-my-white-light" />
           </>
         ) : (
           <>
@@ -194,7 +193,6 @@ export default function PaymentMap({
                 currentPayments.reduce((acc, p) => p.amount + acc, 0)
               )}`}
             />
-            <hr className="w-full h-[.25rem] bg-my-white-light text-my-white-light" />
           </>
         )}
         {showFuture ? (
@@ -211,7 +209,6 @@ export default function PaymentMap({
             {futurePayments.map((p) => (
               <RenderPayments p={p} />
             ))}
-            <hr className="w-full h-[.25rem] bg-my-white-light text-my-white-light" />
           </div>
         ) : (
           <ShowAndHide
