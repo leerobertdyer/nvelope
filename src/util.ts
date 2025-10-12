@@ -219,8 +219,6 @@ export function intervalOnCuspOfMonth(d: Date, i: Interval): boolean {
   return !isThisMonth(end);
 }
 
-
-
 export function getPaymentCurrentDueDate(p: Payment): Date {
   const originalDate = p.dueDate.toDate();
   const startOfCurrentPaymentInterval = calculateCurrentIntervalStart(
@@ -336,7 +334,7 @@ export function paymentsTotal(
   const totalDebts = payments.reduce((acc, p: Payment) => {
     return p.type === "DEBT" && p.total ? acc + p.total : acc;
   }, 0);
-  const totalPayments = payments.reduce((acc, p: Payment) => acc + p.amount, 0)
+  const totalPayments = payments.reduce((acc, p: Payment) => acc + p.amount, 0);
   return {
     currentBills,
     totalBills,
@@ -395,3 +393,94 @@ export const generateFreshPayment = () => {
     dueDate: Timestamp.fromDate(new Date()),
   } as Payment;
 };
+
+/**
+ * Adjusts a payment's dueDate to the current period, handling month cusp scenarios
+ * Returns a new payment object without mutating the original
+ */
+export function adjustPaymentToCurrentPeriod(
+  payment: Payment,
+  payPeriodInterval: Interval,
+  today: Date = new Date()
+): Payment {
+  const onCusp = intervalOnCuspOfMonth(today, payPeriodInterval);
+  const adjustedDueDate = new Date(
+    today.getFullYear(),
+    onCusp ? today.getMonth() + 1 : today.getMonth(),
+    payment.dueDate.toDate().getDate()
+  );
+
+  return {
+    ...payment,
+    dueDate: Timestamp.fromDate(adjustedDueDate),
+  };
+}
+
+/**
+ * Generates virtual payment instances for weekly/biweekly payments within a given period
+ * Returns an array of payment objects, one for each occurrence
+ * For monthly/yearly payments, returns array with single adjusted payment
+ */
+export function getMonthlyPaymentOccurrences(
+  payment: Payment,
+  payPeriodInterval: Interval
+): Payment[] {
+  // For monthly/yearly, return single adjusted payment
+  if (payment.interval === MONTHLY || payment.interval === YEARLY) {
+    return [adjustPaymentToCurrentPeriod(payment, payPeriodInterval)];
+  }
+
+  // For weekly/biweekly, calculate all occurrences in the period
+  const occurrences: Payment[] = [];
+
+  // Find the first occurrence in or before the period
+  let currentDate = calculateCurrentIntervalStart(
+    payment.dueDate.toDate(),
+    payment.interval
+  );
+
+  const today = startOfDay(new Date())
+  const startOfMonth = startOfDay(new Date(today.getFullYear(), today.getMonth(), 1))
+  const endOfMonth = startOfDay(new Date(today.getFullYear(), today.getMonth() + 1, 0))
+
+  // Walk forward and collect all occurrences in the period
+  while (!isAfter(currentDate, endOfMonth)) {
+    if (isWithinInterval(currentDate, { start: startOfMonth, end: endOfMonth })) {
+      occurrences.push({
+        ...payment,
+        id: `${payment.id}-${currentDate.getTime()}`, // Unique ID for each occurrence
+        dueDate: Timestamp.fromDate(currentDate),
+      });
+    }
+
+    currentDate =
+      payment.interval === WEEKLY
+        ? addWeeks(currentDate, 1)
+        : addWeeks(currentDate, 2);
+  }
+
+  return occurrences;
+}
+
+/**
+ * Helper to get all virtual payment occurrences for display/calculation
+ * Combines all payments with their occurrences expanded
+ */
+export function getVirtualPaymentsForPeriod(
+  payments: Payment[],
+  payPeriodInterval: Interval
+): Payment[] {
+  const virtualPayments: Payment[] = [];
+
+  for (const payment of payments) {
+    const occurrences = getMonthlyPaymentOccurrences(
+      payment,
+      payPeriodInterval,
+    );
+    virtualPayments.push(...occurrences);
+  }
+
+  return virtualPayments.sort(
+    (a, b) => a.dueDate.toMillis() - b.dueDate.toMillis()
+  );
+}

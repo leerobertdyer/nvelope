@@ -8,13 +8,11 @@ import type { Payment } from "../types";
 import { format, isAfter, startOfDay } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { Timestamp } from "firebase/firestore";
-import { editPayments } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import ShowAndHide from "./ShowAndHide";
 import {
   getCurrentIntervalDateRange,
-  intervalOnCuspOfMonth,
+  getVirtualPaymentsForPeriod,
   isDateInCurrentPayPeriod,
 } from "../util";
 
@@ -32,7 +30,7 @@ export default function PaymentMap({
   const { user } = useAuth();
 
   const today = useMemo(() => startOfDay(new Date()), []);
-  const { start, end: endOfPayPeriod } = useMemo(
+  const { start: periodStart, end: periodEnd } = useMemo(
     () => getCurrentIntervalDateRange(payPeriodInterval, payDate!),
     [payPeriodInterval, payDate]
   );
@@ -47,29 +45,16 @@ export default function PaymentMap({
 
   useEffect(() => {
     if (!payments || !payDate) return;
-    async function updatePaymentDatesToCurrentMonth() {
-      if (!user) return;
-      const newPayments = payments
-        .map((p) => {
-          const onCusp = intervalOnCuspOfMonth(today, payPeriodInterval);
-          return {
-            ...p,
-            dueDate: Timestamp.fromDate(
-              new Date(
-                today.getFullYear(),
-                onCusp ? today.getMonth() + 1 : today.getMonth(),
-                p.dueDate.toDate().getDate()
-              )
-            ),
-          };
-        })
-        .sort((a, b) => a.dueDate.toMillis() - b.dueDate.toMillis());
-      await editPayments(newPayments, user.uid);
-    }
-    updatePaymentDatesToCurrentMonth();
-    setPastPayments(payments.filter((p) => p.dueDate.toDate() < start));
+    if (!user) return;
+    const virtualPayments = getVirtualPaymentsForPeriod(
+      payments,
+      payPeriodInterval
+    );
+    setPastPayments(
+      virtualPayments.filter((p) => p.dueDate.toDate() < periodStart)
+    );
     setCurrentPayments(
-      payments.filter((p) =>
+      virtualPayments.filter((p) =>
         isDateInCurrentPayPeriod(
           payPeriodInterval,
           payDate.toDate(),
@@ -78,18 +63,28 @@ export default function PaymentMap({
       )
     );
     setFuturePayments(
-      payments.filter((p) => isAfter(p.dueDate.toDate(), endOfPayPeriod))
+      virtualPayments.filter((p) => isAfter(p.dueDate.toDate(), periodEnd))
     );
-  }, [payments, endOfPayPeriod, payDate, user, payPeriodInterval, today, start]);
+  }, [
+    payments,
+    periodEnd,
+    payDate,
+    user,
+    payPeriodInterval,
+    today,
+    periodStart,
+  ]);
 
   function RenderPayments({ p }: { p: Payment }) {
     return (
       <div
         key={p.id}
         className={`grid grid-cols-8 py-2 text-my-white-dark border-2 text-center
-          ${p.paid
-            ? "bg-gray-500 border-none"
-            : p.type === "BILL" ? "border-my-red-light bg-my-black-base"
+          ${
+            p.paid
+              ? "bg-gray-500 border-none text-my-black-dark"
+              : p.type === "BILL"
+              ? "border-my-red-light bg-my-black-base"
               : "border-my-blue-light bg-my-black-base"
           } `}
       >
