@@ -79,22 +79,22 @@ export default function PaymentMap({
     return (
       <div
         key={p.id}
-        className={`grid grid-cols-8 py-2 text-my-white-dark border-2 text-center
+        className={`grid grid-cols-8 py-2 border-2 text-center
           ${
             p.paid
-              ? "bg-gray-500 border-none text-my-black-dark"
+              ? "bg-[#969696] border-none text-my-black-dark"
               : p.type === "BILL"
-              ? "border-my-red-light bg-my-black-base"
-              : "border-my-blue-light bg-my-black-base"
+              ? "border-my-red-light bg-my-black-base text-my-white-dark"
+              : "border-my-blue-light bg-my-black-base text-my-white-dark"
           } `}
       >
-        <p className="flex items-center justify-center bg-my-white-base rounded-lg text-my-black-dark p-2 text-xs w-[1rem] m-auto">
+        <p className={`flex items-center justify-center rounded-sm text-my-black-dark p-2 text-xs w-[1rem] m-auto ${p.paid ? "bg-[#969696]" : "bg-my-white-base"}`}>
           {format(p.dueDate.toDate(), "do")}
         </p>
         <p className="flex items-center justify-center text-xs col-span-3">
           {p.name}
         </p>
-        {p.total ? (
+        {p.total && !p.paid ? (
           <p className="flex items-center justify-center col-span-2 gap-[2px]">
             <span className="text-sm text-my-blue-light">${p.amount}</span>/
             <span className="text-sm text-my-blue-dark">
@@ -138,7 +138,7 @@ export default function PaymentMap({
 
   return (
     <>
-      <div className="h-fit max-w-[60rem] w-[90vw] border-2 border-my-white-light rounded-md mb-[5rem] overflow-auto">
+      <div className="h-fit max-w-[60rem] w-[95vw] border-2 border-my-white-light rounded-md mb-[5rem] overflow-auto">
         {showPast ? (
           <div className="p-2 bg-my-black-light">
             <ShowAndHide

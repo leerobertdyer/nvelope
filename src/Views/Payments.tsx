@@ -174,19 +174,19 @@ export default function Payments() {
                   $
                   {(
                     Math.ceil(paymentsTotal(payments, payPeriodInterval, payDate)
-                      .totalPayments
+                      .totalMonthlyPayments
                     ))}
                 </span>
               </div>
               <div className="text-lg md:text-xl w-full flex justify-between text-my-white-light">
-                Total Debt
+                Remaining Debt
                 <span className="text-my-blue-dark ml-2">
                   $
                   {Math.ceil(paymentsTotal(
                     payments,
                     payPeriodInterval,
                     payDate
-                  ).totalDebts)}
+                  ).remainingDebt)}
                 </span>
               </div>
               <div className="text-lg md:text-xl w-full flex justify-between text-my-white-light" onClick={() => setShowEditSnowball(true)}>

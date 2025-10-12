@@ -305,7 +305,13 @@ export function paymentsTotal(
   payPeriodInterval: Interval,
   payDate: Timestamp
 ) {
-  const currentBills = payments.reduce((acc, p: Payment) => {
+  // Virtual Payments will map out any weekly/biweekly payments to get all occurances
+  const virtualPayments = getVirtualPaymentsForPeriod(
+    payments,
+    payPeriodInterval
+  );
+  const totalMonthlyPayments = virtualPayments.reduce((acc, p: Payment) => acc + p.amount, 0);
+  const currentBills = virtualPayments.reduce((acc, p: Payment) => {
     return p.type === "BILL" &&
       isDateInCurrentPayPeriod(
         payPeriodInterval,
@@ -315,7 +321,7 @@ export function paymentsTotal(
       ? acc + p.amount
       : acc;
   }, 0);
-  const currentDebts = payments.reduce((acc, p: Payment) => {
+  const currentDebts = virtualPayments.reduce((acc, p: Payment) => {
     return p.type === "DEBT" &&
       isDateInCurrentPayPeriod(
         payPeriodInterval,
@@ -325,23 +331,23 @@ export function paymentsTotal(
       ? acc + p.amount
       : acc;
   }, 0);
-  const monthlyDebts = payments.reduce((acc, p: Payment) => {
+  const monthlyDebts = virtualPayments.reduce((acc, p: Payment) => {
     return p.type === "DEBT" ? acc + p.amount : acc;
   }, 0);
-  const totalBills = payments.reduce((acc, p: Payment) => {
+  const totalBills = virtualPayments.reduce((acc, p: Payment) => {
     return p.type === "BILL" ? acc + p.amount : acc;
   }, 0);
-  const totalDebts = payments.reduce((acc, p: Payment) => {
+  const remainingDebt = payments.reduce((acc, p: Payment) => {
+    // remainingDebt uses payments array instead of virtualPayments because this is the remaining balance not the payment due.
     return p.type === "DEBT" && p.total ? acc + p.total : acc;
   }, 0);
-  const totalPayments = payments.reduce((acc, p: Payment) => acc + p.amount, 0);
   return {
     currentBills,
     totalBills,
     currentDebts,
     monthlyDebts,
-    totalDebts,
-    totalPayments,
+    remainingDebt,
+    totalMonthlyPayments,
   };
 }
 
