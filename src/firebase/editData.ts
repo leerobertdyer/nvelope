@@ -30,7 +30,7 @@ export async function editResetBudgetTimestamp(
 }
 
 export async function editEnvelopes(envelopes: Envelope[], userId: string) {
-  const toFixedEnvelopes = envelopes.map((e: Envelope) => ({...e, total: e.total.toFixed(2)}))
+  const toFixedEnvelopes = envelopes.map((e: Envelope) => ({...e, total: Number(e.total.toFixed(2))}))
   try {
     const userDocRef = doc(db, "users", userId);
     await updateDoc(userDocRef, { envelopes: toFixedEnvelopes });
