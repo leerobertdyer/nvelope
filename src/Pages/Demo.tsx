@@ -162,7 +162,8 @@ export default function Demo() {
         const nextBudget = recalculateBudget({ currentAvailableBudget: newIncomeAmount, diffAmount: 0 })
         await editTotalSpendingBudget(nextBudget, user!.uid)
         setTotalSpendingBudget(nextBudget)
-        setInterval(newInterval as Interval)
+        // TODO: FIX THIS
+        // setInterval(newInterval as Interval)
         setStep(4)
     }
 
@@ -273,8 +274,8 @@ export default function Demo() {
                                     <p className='text-sm'>Note: If you are paid bi-weekly but want to budget weekly, no problem!</p>
                                     <select
                                         className='bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center'
-                                        onChange={(e) => setNewInterval(e.target.value as Interval)}
-                                        value={newInterval || ''}
+                                        onChange={(e) => {setNewInterval("MONTHLY"); console.log(e)}} // TODO: FIX THIS e.target.value as Interval)}
+                                        value={newInterval ?? ''}
                                     >
                                         <option disabled value="">Select</option>
                                         <option value={"WEEKLY"}>Weekly</option>

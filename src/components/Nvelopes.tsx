@@ -3,7 +3,7 @@ import type { Envelope } from "../types";
 import { editEnvelopes, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
-import GiveAndTake from "../Views/GiveAndTake";
+import GiveAndTake from "../Pages/GiveAndTake";
 import ListEnvelope from "./ListEnvelope";
 import BigEnvelope from "./BigEnvelope";
 

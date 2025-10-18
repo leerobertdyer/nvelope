@@ -1,7 +1,7 @@
   import type { User } from "firebase/auth";
   import type { Payment, Envelope, Interval, IntervalDates } from "./types";
   import { editTotalSpendingBudget } from "./firebase/editData";
-  import { BILL, BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "./constants";
+  import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "./constants";
   import {
     addDays,
     addMonths,
@@ -46,15 +46,10 @@
     return str.slice(0, 1).toUpperCase() + str.slice(1).toLowerCase();
   }
 
-  export function replenishEnvelopes(envelopes: Envelope[]) {
+  export function resetEnvelopesSpentToZero(envelopes: Envelope[]) {
     const updatedEnvelopes = [...envelopes].map((e) => {
-      if (e.saving) {
-        // For envelopes that aren't reset, set total to leftover amount
-        const leftoverAmount = e.total - e.spent;
-        return { ...e, spent: 0, total: leftoverAmount };
-      }
-      // otherwise clear spent to 0 and reset the total to the original amount
-      return { ...e, total: e.resetTotal || 0, spent: 0 };
+
+      return { ...e, spent: 0 };
     });
     return updatedEnvelopes;
   }
@@ -392,10 +387,10 @@
     return {
       id: crypto.randomUUID(),
       name: "",
-      type: BILL,
+      type: undefined,
       amount: 0,
       paid: false,
-      interval: MONTHLY,
+      interval: undefined,
       dueDate: Timestamp.fromDate(new Date()),
     } as Payment;
   };
@@ -416,6 +411,7 @@
       payment.dueDate.toDate().getDate()
     );
 
+    console.log("Inside adjustPaymentToCurrentPeriod. Payment: ", {payment: {...payment, date: payment.dueDate.toDate()}, adjustedDueDate})
     return {
       ...payment,
       dueDate: Timestamp.fromDate(adjustedDueDate),
@@ -496,3 +492,11 @@
       (a, b) => a.dueDate.toMillis() - b.dueDate.toMillis()
     );
   }
+
+
+  /*
+  * Helper to remove the added -INTERVAL- from a virtual Payment
+  */
+ export function removeVirtualIdPortion(p: Payment) {
+  return p.id.split(`-${p.interval}`)[0]
+ }

@@ -1,9 +1,9 @@
 import "./App.css";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import Home from "./Views/Home";
-import Settings from "./Views/Settings";
+import Home from "./Pages/Home";
+import Settings from "./Pages/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
-import Payments from "./Views/Payments";
+import Payments from "./Pages/Payments";
 
 // Protected route component that redirects to home if no user
 function ProtectedRoute({ children }: { children: React.ReactNode }) {

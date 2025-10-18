@@ -131,7 +131,7 @@ export default function Settings() {
         <div className="w-full h-screen overflow-y-scroll">
             <Header links={[
                 { label: "Payments", href: "/payments" },
-                { label: "Home", href: "/" },
+                { label: "Nvelopes", href: "/" },
             ]} />
             <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md">Settings</h1>
             <div className="w-full flex justify-center">

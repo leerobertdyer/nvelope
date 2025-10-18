@@ -21,6 +21,8 @@ import { Timestamp } from "firebase/firestore";
 import { updateBudgetStateAndDBB } from "../util";
 import { GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
+import FullScreen from "../components/FullScreen";
+import TextInput from "../components/TextInput";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -96,9 +98,7 @@ export default function MainEnvelopesView() {
       id: e.id,
       name: e.name,
       total: e.total,
-      resetTotal: e.resetTotal || e.total || 0,
       spent: e.spent || 0,
-      saving: e.saving,
       order: e.order || 0,
     });
     setEnvelopes(newEnvelopes);
@@ -358,31 +358,32 @@ export default function MainEnvelopesView() {
     return (
       <>
         {showLoading && <Loading text={loadingText} />}
-        <div className="absolute inset-0 bg-my-white-dark text-mywhite-dark w-full h-screen flex flex-col items-center justify-center">
-          <h3 className="p-2 text-my-green-dark mb-4">Add One Time Expense</h3>
-          <input
-            value={cashAmount}
-            onChange={(e) => setCashAmount(e.target.value)}
-            type="number"
-            placeholder="Amount"
-            className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative"
-          />
-          <input
-            value={cashName}
-            onChange={(e) => setCashName(e.target.value)}
-            type="text"
-            placeholder="Name"
-            className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative"
-          />
-          <div className="flex flex-col w-full items-center gap-2">
-            <Button onClick={addOneTimeExpenseToDb} color="green">
-              Add
-            </Button>
-            <Button onClick={() => resetState()} color="red">
-              Go Back
-            </Button>
+        <FullScreen
+          showButtons
+          onClose={() => resetState()}
+          onSave={addOneTimeExpenseToDb}
+        >
+          <div className="w-full h-fit flex flex-col items-center justify-center">
+            <h3 className="p-2 text-my-green-dark mb-4">
+              Add One Time Expense
+            </h3>
+            <TextInput
+              id="newExpenseAmount"
+              label="Amount To Add"
+              value={cashAmount}
+              onChange={(e) => setCashAmount(e.target.value)}
+              textOrNumber="number"
+              placeholder="Amount"
+            />
+            <TextInput
+              id="newExpenseName"
+              label="Name"
+              value={cashName}
+              onChange={(e) => setCashName(e.target.value)}
+              placeholder="Name"
+            />
           </div>
-        </div>
+        </FullScreen>
       </>
     );
   }
@@ -391,31 +392,30 @@ export default function MainEnvelopesView() {
     return (
       <>
         {showLoading && <Loading text={loadingText} />}
-        <div className="absolute inset-0 bg-my-white-dark text-mywhite-dark w-full h-screen flex flex-col items-center justify-center">
-          <h3 className="p-2 text-my-green-dark mb-4">Add Cash</h3>
-          <input
-            value={cashName}
-            onChange={(e) => setCashName(e.target.value)}
-            type="text"
-            placeholder="Name"
-            className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative"
-          />
-          <input
-            value={cashAmount}
-            onChange={(e) => setCashAmount(e.target.value)}
-            type="number"
-            placeholder="Amount"
-            className="max-w-[35rem] w-[80%] border-2 rounded-md p-2 bg-my-white-base text-my-green-dark mb-4 relative"
-          />
-          <div className="flex flex-col w-full items-center gap-2">
-            <Button onClick={addCashToDb} color="green">
-              Add
-            </Button>
-            <Button onClick={() => setIsAddingCash(false)} color="red">
-              Go Back
-            </Button>
+        <FullScreen
+          showButtons
+          onClose={() => setIsAddingCash(false)}
+          onSave={addCashToDb}
+        >
+          <div className="w-full h-fit flex flex-col items-center justify-center">
+            <h3 className="p-2 text-my-green-dark">Add Cash</h3>
+            <TextInput
+              label="Amount To Add"
+              id="newCashAmount"
+              textOrNumber="number"
+              placeholder="Amount"
+              value={cashAmount}
+              onChange={(e) => setCashAmount(e.target.value)}
+            />
+            <TextInput
+              id="newCashName"
+              label="Name"
+              value={cashName}
+              onChange={(e) => setCashName(e.target.value)}
+              placeholder="Name"
+            />
           </div>
-        </div>
+        </FullScreen>
       </>
     );
   }
@@ -472,7 +472,12 @@ export default function MainEnvelopesView() {
             <p className="text-sm">Expense</p>
           </div>
           <div className="w-fit flex justify-center items-center ">
-            <Nvelope kind="dash" envelope={{ ...emptyEnvelope, name: 'New Envelope' }} onClick={handleSetupNewEnvelope} handleBack={resetState} />
+            <Nvelope
+              kind="dash"
+              envelope={{ ...emptyEnvelope, name: "New Envelope" }}
+              onClick={handleSetupNewEnvelope}
+              handleBack={resetState}
+            />
           </div>
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark  text-my-green-dark shadow-my-green-light"

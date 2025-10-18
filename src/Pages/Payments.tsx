@@ -1,6 +1,6 @@
 // Page to display all bills and debts that are recurring
 import Button from "../components/Button";
-import { paymentsTotal, recalculateBudget } from "../util";
+import { paymentsTotal, recalculateBudget, removeVirtualIdPortion } from "../util";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { type Payment } from "../types";
 import { useState } from "react";
@@ -56,9 +56,13 @@ export default function Payments() {
     setPaymentToEdit(p);
     setShowDeletePayment(true);
   }
+
   async function deleteBill() {
     if (!user || !paymentToEdit) return;
-    const updatedPayments = payments.filter((p) => p.id !== paymentToEdit.id);
+    const updatedPayments = payments.filter((p) => {
+      const originalPaymentToEditId = removeVirtualIdPortion(p);
+      return p.id !== originalPaymentToEditId
+  });
     setPayments(updatedPayments);
     await editPayments(updatedPayments, user.uid);
     // Update the budget in DB only if the bill was unpaid and in interval
@@ -213,8 +217,8 @@ export default function Payments() {
     <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-base overflow-y-auto">
       <Header
         links={[
+          { label: "Nvelopes", href: "/" },
           { label: "Settings", href: "/settings" },
-          { label: "Home", href: "/" },
         ]}
       />
       <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden gap-2">

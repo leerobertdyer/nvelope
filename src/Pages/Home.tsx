@@ -5,7 +5,6 @@ import MainEnvelopesView from "./MainEnvelopesView";
 import Loading from "../components/Loading";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import Demo from "./Demo";
-import FullScreen from "../components/FullScreen";
 
 export default function Home() {
   const { user, isLoadingUser } = useAuth(); // add loading from context if available
@@ -18,9 +17,10 @@ export default function Home() {
     }
   }, [isLoadingUser, isLoadingDb]);
 
-  if (isLoading) return <FullScreen>
-    <Loading text="Welcome to Nvelopes..." />
-  </FullScreen>
+  if (isLoading)
+    return (
+          <Loading text="Welcome to Nvelopes..." />
+    );
 
   if (!user) {
     return (

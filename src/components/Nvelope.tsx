@@ -8,22 +8,22 @@ import {
 } from "react-icons/bs";
 import Button from "./Button";
 import type { Envelope } from "../types";
-import { IoIosRepeat} from "react-icons/io";
-import { IoAddCircle, IoStar } from "react-icons/io5";
+import { IoIosRepeat } from "react-icons/io";
+import { IoAddCircle } from "react-icons/io5";
 import NvelopeCalculator from "./NvelopeCalculator";
 import EnvelopeForm from "./forms/EnvelopeForm";
 
 interface NvelopeProps {
   kind:
-  | "envelope"
-  | "deleteEnvelope"
-  | "addEnvelope"
-  | "sub"
-  | "dash"
-  | "replenish"
-  | "heart"
-  | "editEnvelope"
-  | "spendingEnvelope";
+    | "envelope"
+    | "deleteEnvelope"
+    | "addEnvelope"
+    | "sub"
+    | "dash"
+    | "replenish"
+    | "heart"
+    | "editEnvelope"
+    | "spendingEnvelope";
   envelope: Envelope;
   onClick?: () => void;
   handleBack?: () => void;
@@ -40,14 +40,17 @@ export default function Nvelope({
   handleSaveEnvelope,
   editEnvelope,
   handleDeleteEnvelope,
-  editRent
+  editRent,
 }: NvelopeProps) {
-
-  const [newEnvelopeName, setNewEnvelopeName] = useState<string>(envelope.name || "");
-  const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>(envelope.total.toString() || "");
-  const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<string>(envelope.spent.toString() || "");
-  const [newEnvelopeSaving, setNewEnvelopeSaving] = useState<boolean>(envelope.saving || true);
-  const [newEnvelopeResetTotal, setNewEnvelopeResetTotal] = useState<string>(envelope.resetTotal?.toString() || "");
+  const [newEnvelopeName, setNewEnvelopeName] = useState<string>(
+    envelope.name || ""
+  );
+  const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>(
+    envelope.total.toString() || ""
+  );
+  const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<string>(
+    envelope.spent.toString() || ""
+  );
 
   useEffect(() => {
     setNewEnvelopeName(envelope.name || "");
@@ -65,7 +68,7 @@ export default function Nvelope({
 
   function handleEnterAmount(amount: number, n: Envelope) {
     if (amount <= 0) return;
-    if (n.name === 'rent') {
+    if (n.name === "rent") {
       editRent?.(amount);
       handleBack?.();
       return;
@@ -78,17 +81,21 @@ export default function Nvelope({
   switch (kind) {
     case "envelope":
       return (
-        <div className="w-[10rem] h-[10rem] relative group flex justify-center items-center" onClick={() => onClick?.()}>
+        <div
+          className="w-[10rem] h-[10rem] relative group flex justify-center items-center"
+          onClick={() => onClick?.()}
+        >
           <div className="z-12 flex flex-col gap-[.15rem] absolute w-full h-full items-center pt-6">
             <p
-              className={`w-fit text-center text-[.8rem] ${envelope.total && (envelope.spent || envelope.spent === 0)
-                ? envelope.total - envelope.spent <= 0
-                  ? "text-my-white-dark"
-                  : envelope.total - envelope.spent < envelope.total / 2
+              className={`w-fit text-center text-[.8rem] ${
+                envelope.total && (envelope.spent || envelope.spent === 0)
+                  ? envelope.total - envelope.spent <= 0
+                    ? "text-my-white-dark"
+                    : envelope.total - envelope.spent < envelope.total / 2
                     ? "text-my-black-dark"
                     : "text-my-white-light"
-                : "text-my-black-dark"
-                }`}
+                  : "text-my-black-dark"
+              }`}
             >
               {envelope.name}
             </p>
@@ -107,27 +114,24 @@ export default function Nvelope({
             strokeWidth={0.4}
           />
           <BsEnvelopePaperFill
-            className={`w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute ${envelope.total && (envelope.spent || envelope.spent === 0)
-              ? envelope.total - envelope.spent <= 0
-                ? "text-my-red-dark"
-                : envelope.total - envelope.spent < envelope.total / 2
+            className={`w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute ${
+              envelope.total && (envelope.spent || envelope.spent === 0)
+                ? envelope.total - envelope.spent <= 0
+                  ? "text-my-red-dark"
+                  : envelope.total - envelope.spent < envelope.total / 2
                   ? "text-my-white-dark"
                   : "text-my-green-dark"
-              : "text-my-green-dark"
-              }`}
+                : "text-my-green-dark"
+            }`}
           />
-          {!envelope.saving && (
-            <IoStar
-              className="bottom-[1.75rem] left-1/2 -translate-x-1/2 absolute z-10 text-my-white-dark animate-pulse"
-              size={20}
-            />
-          )}
         </div>
       );
     case "replenish":
       return (
-        <div className="relative w-[8rem] h-[8rem] flex items-center justify-center cursor-pointer"
-          onClick={() => onClick?.()}>
+        <div
+          className="relative w-[8rem] h-[8rem] flex items-center justify-center cursor-pointer"
+          onClick={() => onClick?.()}
+        >
           <div className="w-fit h-fit p-6 rounded-full bg-my-black-dark border-2 border-my-white-light top-10 left-1/2 -translate-x-1/2 absolute z-200">
             <IoIosRepeat className="w-[100%] h-[100%] text-my-white-dark absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2" />
           </div>
@@ -136,14 +140,15 @@ export default function Nvelope({
             strokeWidth={0.4}
           />
           <BsEnvelopeFill
-            className={`w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute ${envelope.total && (envelope.spent || envelope.spent === 0)
-              ? envelope.total - envelope.spent <= 0
-                ? "text-my-green-dark"
-                : envelope.total - envelope.spent < envelope.total / 2
+            className={`w-[100%] h-[100%] top-0 left-1/2 -translate-x-1/2 absolute ${
+              envelope.total && (envelope.spent || envelope.spent === 0)
+                ? envelope.total - envelope.spent <= 0
+                  ? "text-my-green-dark"
+                  : envelope.total - envelope.spent < envelope.total / 2
                   ? "text-my-white-dark"
                   : "text-my-green-dark"
-              : "text-my-green-dark"
-              }`}
+                : "text-my-green-dark"
+            }`}
           />
         </div>
       );
@@ -154,7 +159,9 @@ export default function Nvelope({
             <p className="p-4 rounded-md text-my-white-dark w-full text-center">
               Are you sure you want to delete {envelope.name}?
             </p>
-            <p className="text-xs w-[85%] text-center text-white">This will return all your money to your available budget.</p>
+            <p className="text-xs w-[85%] text-center text-white">
+              This will return all your money to your available budget.
+            </p>
             <div className="w-[30rem] h-[50rem] rounded-md py-[1rem] px-[3.5rem] flex justify-center items-center flex-col gap-8">
               <BsEnvelopeX className="w-[12rem] h-[12rem] text-my-white-light" />
               <Button onClick={() => handleDeleteEnvelope?.()} color="gold">
@@ -169,22 +176,51 @@ export default function Nvelope({
       );
     case "spendingEnvelope":
       return (
-        <NvelopeCalculator envelope={envelope} selectEnvelope={envelope.id === ''} handleEnterAmount={handleEnterAmount} handleBack={handleBack} />
-      )
+        <NvelopeCalculator
+          envelope={envelope}
+          selectEnvelope={envelope.id === ""}
+          handleEnterAmount={handleEnterAmount}
+          handleBack={handleBack}
+        />
+      );
     case "editEnvelope":
-      return <EnvelopeForm isEditing={true} handleBack={handleBack} editEnvelope={editEnvelope} newEnvelopeSpent={newEnvelopeSpent} setNewEnvelopeSpent={setNewEnvelopeSpent} envelope={envelope} newEnvelopeName={newEnvelopeName} newEnvelopeResetTotal={newEnvelopeResetTotal} newEnvelopeSaving={newEnvelopeSaving} 
-                newEnvelopeTotal={newEnvelopeTotal} setNewEnvelopeName={setNewEnvelopeName} setNewEnvelopeResetTotal={setNewEnvelopeResetTotal} setNewEnvelopeSaving={setNewEnvelopeSaving} setNewEnvelopeTotal={setNewEnvelopeTotal} />
+      return (
+        <EnvelopeForm
+          isEditing={true}
+          handleBack={handleBack}
+          editEnvelope={editEnvelope}
+          newEnvelopeSpent={newEnvelopeSpent}
+          setNewEnvelopeSpent={setNewEnvelopeSpent}
+          envelope={envelope}
+          newEnvelopeName={newEnvelopeName}
+          newEnvelopeTotal={newEnvelopeTotal}
+          setNewEnvelopeName={setNewEnvelopeName}
+          setNewEnvelopeTotal={setNewEnvelopeTotal}
+        />
+      );
     case "addEnvelope":
-      return <EnvelopeForm isEditing={false} handleBack={handleBack} handleSaveEnvelope={handleSaveEnvelope} newEnvelopeName={newEnvelopeName} newEnvelopeResetTotal={newEnvelopeResetTotal} newEnvelopeSaving={newEnvelopeSaving} 
-                newEnvelopeTotal={newEnvelopeTotal} setNewEnvelopeName={setNewEnvelopeName} setNewEnvelopeResetTotal={setNewEnvelopeResetTotal} setNewEnvelopeSaving={setNewEnvelopeSaving} setNewEnvelopeTotal={setNewEnvelopeTotal} />
+      return (
+        <EnvelopeForm
+          isEditing={false}
+          handleBack={handleBack}
+          handleSaveEnvelope={handleSaveEnvelope}
+          newEnvelopeName={newEnvelopeName}
+          newEnvelopeTotal={newEnvelopeTotal}
+          setNewEnvelopeName={setNewEnvelopeName}
+          setNewEnvelopeTotal={setNewEnvelopeTotal}
+        />
+      );
     case "dash":
       return (
         <div
-          className="w-fit relative  cursor-pointer bg-white border hover:bg-my-white-dark hover:text-my-green-dark rounded-sm "
+          className={`w-fit relative  cursor-pointer bg-white border hover:bg-my-white-dark hover:text-my-green-dark rounded-sm `}
           onClick={() => onClick?.()}
         >
           <p className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center text-sm">
-            {envelope.name}{envelope.name !== "Loading..." && <IoAddCircle className="inline ml-[2px]" />}
+            {envelope.name}
+            {envelope.name !== "Loading..." && (
+              <IoAddCircle className="inline ml-[2px]" />
+            )}
           </p>
           <svg width={dottedWidth} height={dottedHeight}>
             {/* Bottom Line */}

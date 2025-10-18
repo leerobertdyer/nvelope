@@ -12,7 +12,7 @@ import type { User } from "firebase/auth";
 import {
   getIntervalDateRange,
   isDateInCurrentPayPeriod,
-  replenishEnvelopes,
+  resetEnvelopesSpentToZero,
 } from "../util";
 import { MONTHLY } from "../constants";
 
@@ -42,7 +42,7 @@ export async function editEnvelopes(envelopes: Envelope[], userId: string) {
 
 export async function editPayments(p: Payment[], userId: string) {
   const sortedPayments = p.sort(
-    (a, b) => a.dueDate.seconds - b.dueDate.seconds
+    (a, b) => a.dueDate!.seconds! - b.dueDate!.seconds!
   );
   try {
     const userDocRef = doc(db, "users", userId);
@@ -277,7 +277,7 @@ export async function resetBudget({
 }: ResetBudgetParams) {
   let nextEnvelopes = [...envelopes];
 
-  if (shouldReplenish) nextEnvelopes = replenishEnvelopes(envelopes);
+  if (shouldReplenish) nextEnvelopes = resetEnvelopesSpentToZero(envelopes);
   console.log("nextEnvelopes", nextEnvelopes);
 
   let totalPaymentsInInterval = 0;
@@ -286,7 +286,7 @@ export async function resetBudget({
       isDateInCurrentPayPeriod(
         payPeriodInterval,
         payDate.toDate(),
-        p.dueDate.toDate()
+        p.dueDate?.toDate() || new Date()
       )
     ) {
       totalPaymentsInInterval += p.amount;
@@ -322,13 +322,7 @@ export async function resetBudget({
     )
     : 0;
 
-  const totalEnvelopes = nextEnvelopes.reduce((acc, n) => {
-    if (n.saving) {
-      return acc;
-    } else {
-      return acc + (n.resetTotal || 0);
-    }
-  }, 0);
+  const totalEnvelopes = nextEnvelopes.reduce((acc, n) => acc + n.total, 0);
 
   const remainingBudget =
     income -

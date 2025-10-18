@@ -15,7 +15,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
     const [payments, setPayments] = useState<Payment[]>([]);
     const [income, setIncome] = useState<number>(0);
-    const [isNewUser, setIsNewUser] = useState<boolean>(true);
+    const [isNewUser, setIsNewUser] = useState<boolean>(false);
     const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
     const [oneTimeCash, setOneTimeCash] = useState<OneTimeCash[] | null>(null);
     const [rent, setRent] = useState<number>(0);
@@ -23,7 +23,10 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [oneTimeExpenses, setOneTimeExpenses] = useState<OneTimeExpense[] | null>(null);
     
     useEffect(() => {
-        if (!user) return;
+        if (!user) {
+            setIsLoadingDb(false);
+            return;
+        };
         console.log("🔄 Setting up real-time Firebase listener for user:", user.uid);
         const userDocRef = doc(db, "users", user.uid);
         
@@ -36,6 +39,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
          * 3. Firebase pushes updates whenever the document changes
          * 4. This callback fires automatically on every change
          */
+        console.log('made it here')
 
         const unsubscribe = onSnapshot(
             userDocRef,
@@ -49,7 +53,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setPayPeriodInterval(data.payPeriodInterval || "MONTHLY");
                     setPayments(data.payments || []);
                     setIncome(data.income || 0);
-                    setIsNewUser(data.isNewUser ?? true);
+                    setIsNewUser(data.isNewUser ?? false);
                     setTotalSpendingBudget(data.totalSpendingBudget || 0);
                     setOneTimeCash(data.oneTimeCash || null);
                     setRent(data.rent || 0);

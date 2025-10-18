@@ -180,7 +180,7 @@ export default function PaymentMap({
               )}`}
             />
             {currentPayments.map((p) => (
-              <RenderPayments p={p} />
+              <RenderPayments key={p.id} p={p} />
             ))}
           </>
         ) : (

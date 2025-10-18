@@ -6,8 +6,6 @@ export interface Envelope {
     name: string
     total: number
     spent: number
-    resetTotal?: number
-    saving?: boolean
     order?: number
 }
 
@@ -19,7 +17,7 @@ export interface Payment {
     interval: Interval
     paid: boolean
     paidDates?: Timestamp[] // for tracking payments that span multiple intervals (ie WEEKLY | BIWEEKLY)
-    type: "DEBT" | "BILL"
+    type: "DEBT" | "BILL" | undefined
     isInInterval?: boolean
     total?: number
     interestRate?: number
@@ -51,7 +49,7 @@ export interface PreviousIntervalDetails {
     oneTimeCash: OneTimeCash[] | null
 }
 
-export type Interval = "WEEKLY" | "BIWEEKLY" |"MONTHLY" | "YEARLY";
+export type Interval = "WEEKLY" | "BIWEEKLY" |"MONTHLY" | "YEARLY" | undefined;
 
 export type ChangeValue = boolean | string | null | Value | number | Payment[]
 

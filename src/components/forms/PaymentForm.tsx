@@ -8,9 +8,18 @@ import { Timestamp } from "firebase/firestore";
 import { useState } from "react";
 import type { User } from "firebase/auth";
 import { editPayments } from "../../firebase/editData";
-import { generateFreshPayment, isDateInCurrentPayPeriod } from "../../util";
+import {
+  generateFreshPayment,
+  isDateInCurrentPayPeriod,
+  removeVirtualIdPortion,
+} from "../../util";
 import { format } from "date-fns";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
+import FullScreen from "../FullScreen";
+import TextInput from "../TextInput";
+
+const defaultIntervalOption = "--Select An Interval--";
+const defaultTypeOption = "--Select Payment Type--";
 
 interface IPaymentForm {
   paymentToEdit: Payment | null;
@@ -27,7 +36,6 @@ export default function PaymentForm({
 }: IPaymentForm) {
   const { payDate, payPeriodInterval, payments, setPayments } = useDatabase();
 
-  const [showPaymentAdded, setShowPaymentAdded] = useState(false);
   const [showPaymentError, setShowPaymentError] = useState(false);
 
   const [newPaymentInterval, setNewPaymentInterval] = useState<
@@ -44,7 +52,6 @@ export default function PaymentForm({
   const [showButtons, setShowButtons] = useState(!!paymentToEdit);
 
   function resetForm() {
-    setShowPaymentAdded(false);
     setShowPaymentError(false);
     setNewPaymentInterval(undefined);
     setNewPayment(generateFreshPayment());
@@ -84,9 +91,12 @@ export default function PaymentForm({
     // If payment is in the interval and we change the price, we need to update the budget
     const diffAmount = newPayment.amount - paymentToEdit.amount;
     setPayments((prev) => {
-      const updatedPayments = prev.map((p) =>
-        p.id === paymentToEdit.id ? newPayment : p
-      );
+      const updatedPayments = prev.map((p) => {
+        const originalPaymentToEditId = removeVirtualIdPortion(p);
+        return p.id === originalPaymentToEditId
+          ? { ...newPayment, id: originalPaymentToEditId }
+          : p;
+      });
       editPayments(updatedPayments, user.uid);
       return updatedPayments;
     });
@@ -104,7 +114,6 @@ export default function PaymentForm({
     }
     const updatedPayments = [...payments, newPayment];
     setPayments(updatedPayments);
-    setShowPaymentAdded(true);
     await editPayments(updatedPayments, user.uid);
     if (
       payDate &&
@@ -133,40 +142,30 @@ export default function PaymentForm({
   }
 
   return (
-    <div className="absolute inset-0 w-screen h-screen z-100 select-none bg-my-black-dark overflow-y-auto">
-      {showPaymentAdded && <Popup type="success">Payment added!</Popup>}
+    <FullScreen>
       {showPaymentError && (
         <Popup type="error">Payment name already exists</Popup>
       )}
-      <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden max-w-[95vw]">
-        <div className="flex flex-col gap-2 mb-2 items-center justify-center w-full">
-          <p className="p-2 rounded-md text-my-white-dark w-full text-center text-2xl">
-            {newPayment ? `${newPayment.name}` : "Add Bill"}
-          </p>
-          <div className="flex flex-col items-center w-full my-2">
-            <label className="text-my-white-light" htmlFor="name">
-              Payment Name
-            </label>
-            <input
-              id="name"
-              maxLength={25}
-              type="text"
-              className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-              value={newPayment?.name.toLowerCase()}
-              placeholder="Enter new payment name"
-              onChange={(e) =>
-                setNewPayment({
-                  ...newPayment,
-                  name: e.target.value.toLowerCase(),
-                })
-              }
-            />
-          </div>
+      <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden w-full py-[4rem]">
+        <div className="flex flex-col gap-2 items-center justify-center rounded-md p-4 text-my-black-dark bg-my-white-base w-full max-w-[35rem]">
+          <h1 className="text-2xl">
+            {paymentToEdit ? "Edit Payment Form" : "Add Payment Form"}
+          </h1>
+          <TextInput
+            id="name"
+            label="Payment Name"
+            value={newPayment?.name.toLowerCase()}
+            placeholder="Enter new payment name"
+            onChange={(e) =>
+              setNewPayment({
+                ...newPayment,
+                name: e.target.value.toLowerCase(),
+              })
+            }
+          />
           {newPayment.name && (
             <div className="flex flex-col items-center w-full mb-4">
-              <label className="text-my-white-light" htmlFor="amount">
-                Bill Amount
-              </label>
+              <label htmlFor="amount">Bill Amount</label>
               <input
                 id="amount"
                 type="number"
@@ -184,20 +183,18 @@ export default function PaymentForm({
               />
             </div>
           )}
-          {newPayment.amount && (
+          {newPayment.amount > 0 && (
             <div className="flex flex-col items-center w-full mb-4">
-              <label className="text-my-white-light" htmlFor="amount">
-                Interval Of Bill
-              </label>
+              <label htmlFor="amount">Interval Of Bill</label>
               <select
-                value={newPayment.interval}
+                value={newPayment.interval || defaultIntervalOption}
                 onChange={(e) =>
                   handleSetNewInterval(e.target.value.toUpperCase() as Interval)
                 }
                 className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark mb-4"
               >
-                <option id="xxx" className="text-center">
-                  --Select An Interval--
+                <option id="xxx" className="text-center" disabled>
+                  {defaultIntervalOption}
                 </option>
                 <option id="newMonthly" className="text-center">
                   {MONTHLY}
@@ -216,10 +213,8 @@ export default function PaymentForm({
           )}
 
           {newPaymentInterval && (
-            <div className="flex flex-col items-center w-full text-my-white-light">
-              <label className="text-my-white-light" htmlFor="dayOfMonth">
-                Starting Date
-              </label>
+            <div className="flex flex-col items-center w-full ">
+              <label htmlFor="dayOfMonth">Starting Date</label>
               <div className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2">
                 <Calendar
                   calendarType="gregory"
@@ -231,7 +226,7 @@ export default function PaymentForm({
               </div>
               <div className="flex flex-col items-center w-full mb-4">
                 <div className="w-full flex justify-center gap-2 mt-2">
-                  <label className="text-my-white-light inline" htmlFor="paid">
+                  <label className=" inline" htmlFor="paid">
                     Already paid?
                   </label>
                   <input
@@ -247,18 +242,16 @@ export default function PaymentForm({
                     }
                   />
                 </div>
-                <hr className="border-2 border border-my-white-base w-[80%] mt-2" />
+                <hr className="border-2 border-my-white-base w-[80%] mt-2" />
                 <div className="w-full flex flex-col justify-center items-center gap-2 mt-2">
-                  <label className="text-my-white-light" htmlFor="paid">
-                    Debt Or Bill?
-                  </label>
+                  <label htmlFor="paid">Debt Or Bill?</label>
                   <select
-                    value={newPayment.type}
+                    value={newPayment.type || defaultTypeOption}
                     onChange={(e) => handleSelectType(e.target.value)}
                     className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
                   >
-                    <option id="xxx" className="text-center">
-                      --Select Payment Type--
+                    <option id="xxx" className="text-center" disabled>
+                      {defaultTypeOption}
                     </option>
                     <option id="xxx" value="BILL" className="text-center">
                       Bill
@@ -270,9 +263,7 @@ export default function PaymentForm({
                 </div>
                 {isDebt && (
                   <div className="w-full flex flex-col justify-center items-center gap-2 mt-2">
-                    <label className="text-my-white-light" htmlFor="total">
-                      Total
-                    </label>
+                    <label htmlFor="total">Total</label>
                     <input
                       id="total"
                       type="number"
@@ -293,13 +284,13 @@ export default function PaymentForm({
             </div>
           )}
           {showButtons ? (
-            <div className="text-my-white-base pb-8">
+            <div className="text-my-black-base pb-8 w-full">
               <div className="text-center mb-2">
-                <span className="text-my-green-light">
+                <span className="text-my-green-dark">
                   {newPayment?.name || paymentToEdit?.name}
                 </span>{" "}
-                is a {newPayment.type.toLowerCase()} for{" "}
-                <span className="text-my-red-light mr-2">
+                is a {newPayment.type?.toLowerCase()} for{" "}
+                <span className="text-my-red-dark mr-2">
                   $
                   {newPayment?.amount.toFixed(2) ||
                     paymentToEdit?.amount.toFixed(2)}
@@ -307,8 +298,8 @@ export default function PaymentForm({
                 {newPayment ? (
                   <div>
                     due{" "}
-                    <span className="text-blue-400 mr-2">
-                      {newPayment.interval.toLowerCase()}
+                    <span className="text-my-blue-dark mr-2">
+                      {newPayment.interval?.toLowerCase()}
                     </span>
                     on the {format(newPayment.dueDate.toDate(), "do")}.
                   </div>
@@ -317,14 +308,14 @@ export default function PaymentForm({
                     <div>
                       due{" "}
                       <span className="text-blue-400 mr-2">
-                        {paymentToEdit.interval.toLowerCase()}
+                        {paymentToEdit.interval?.toLowerCase()}
                       </span>
                       on the {format(paymentToEdit.dueDate.toDate(), "do")}.
                     </div>
                   )
                 )}
               </div>
-              <div className="flex gap-4 items-center justify-center w-full">
+              <div className="flex gap-4 items-center justify-center w-[95%] m-auto">
                 <Button color="red" onClick={() => handleClickBack()}>
                   back
                 </Button>
@@ -340,6 +331,6 @@ export default function PaymentForm({
           )}
         </div>
       </div>
-    </div>
+    </FullScreen>
   );
 }
