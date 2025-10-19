@@ -41,7 +41,7 @@ export default function PaymentMap({
 
   const [showPast, setShowPast] = useState(false);
   const [showCurrent, setShowCurrent] = useState(true);
-  const [showFuture, setShowFuture] = useState(false);
+  const [showFuture, setShowFuture] = useState(true);
 
   useEffect(() => {
     if (!payments || !payDate) return;
