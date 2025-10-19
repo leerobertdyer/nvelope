@@ -143,7 +143,7 @@ export default function PaymentForm({
   }
 
   return (
-    <FullScreen>
+    <FullScreen theme="DARK">
       {showPaymentError && (
         <Popup type="error">Payment name already exists</Popup>
       )}
