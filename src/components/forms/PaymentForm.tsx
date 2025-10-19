@@ -90,10 +90,11 @@ export default function PaymentForm({
     if (!user || !newPayment || !paymentToEdit) return;
     // If payment is in the interval and we change the price, we need to update the budget
     const diffAmount = newPayment.amount - paymentToEdit.amount;
+    const originalPaymentToEditId = removeVirtualIdPortion(paymentToEdit);
     setPayments((prev) => {
       const updatedPayments = prev.map((p) => {
-        const originalPaymentToEditId = removeVirtualIdPortion(p);
-        return p.id === originalPaymentToEditId
+        const currentPaymentOriginalId = removeVirtualIdPortion(p);  
+        return currentPaymentOriginalId === originalPaymentToEditId 
           ? { ...newPayment, id: originalPaymentToEditId }
           : p;
       });
