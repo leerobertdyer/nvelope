@@ -39,8 +39,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
          * 3. Firebase pushes updates whenever the document changes
          * 4. This callback fires automatically on every change
          */
-        console.log('made it here')
-
         const unsubscribe = onSnapshot(
             userDocRef,
             (docSnapshot) => {

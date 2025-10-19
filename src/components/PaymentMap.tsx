@@ -48,23 +48,24 @@ export default function PaymentMap({
     if (!user) return;
     const virtualPayments = getVirtualPaymentsForPeriod(
       payments,
-      payPeriodInterval
+      payPeriodInterval,
+      payDate
     );
-    setPastPayments(
-      virtualPayments.filter((p) => p.dueDate.toDate() < periodStart)
-    );
-    setCurrentPayments(
-      virtualPayments.filter((p) =>
+    const pastPayments = virtualPayments.filter((p) => p.dueDate.toDate() < periodStart);
+    const currentPayments = virtualPayments.filter((p) =>
         isDateInCurrentPayPeriod(
           payPeriodInterval,
           payDate.toDate(),
           p.dueDate.toDate()
         )
       )
-    );
-    setFuturePayments(
-      virtualPayments.filter((p) => isAfter(p.dueDate.toDate(), periodEnd))
-    );
+    const futurePayments = virtualPayments.filter((p) => isAfter(p.dueDate.toDate(), periodEnd))
+    console.log("pastPayments", pastPayments.map(p => {return {...p, dueDate: p.dueDate.toDate()}}))
+    console.log("currentPayments", currentPayments.map(p => {return {...p, dueDate: p.dueDate.toDate()}}))
+    console.log("futurePayments", futurePayments.map(p => {return {...p, dueDate: p.dueDate.toDate()}}))
+    setPastPayments(pastPayments);
+    setCurrentPayments(currentPayments);
+    setFuturePayments(futurePayments);
   }, [
     payments,
     periodEnd,

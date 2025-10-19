@@ -204,16 +204,6 @@
     }
   }
 
-  export function intervalOnCuspOfMonth(d: Date, i: Interval): boolean {
-    if (!i || i === "MONTHLY" || i === "YEARLY") return false;
-
-    const days = getNumberOfDaysFromInterval(i);
-    const end = addDays(d, days);
-
-    // if end date is not in this month: we are on a cusp (ie end = Feb 2nd and today is Jan 28th)
-    return !isThisMonth(end);
-  }
-
   export function getPaymentCurrentDueDate(p: Payment): Date {
     const originalDate = p.dueDate.toDate();
     const startOfCurrentPaymentInterval = calculateCurrentIntervalStart(
@@ -303,7 +293,8 @@
     // Virtual Payments will map out any weekly/biweekly payments to get all occurances
     const virtualPayments = getVirtualPaymentsForPeriod(
       payments,
-      payPeriodInterval
+      payPeriodInterval,
+      payDate
     );
     const totalMonthlyPayments = virtualPayments.reduce((acc, p: Payment) => acc + p.amount, 0);
     const currentBills = virtualPayments.reduce((acc, p: Payment) => {
@@ -402,16 +393,21 @@
   export function adjustPaymentToCurrentPeriod(
     payment: Payment,
     payPeriodInterval: Interval,
-    today: Date = new Date()
+    payDate: Timestamp
   ): Payment {
-    const onCusp = intervalOnCuspOfMonth(today, payPeriodInterval);
+    const today = startOfDay(new Date());
+    const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(payPeriodInterval, payDate);
+    const payPeriodCrossesMonths = periodStart.getMonth() !== periodEnd.getMonth();
+    const paymentDayNumber = payment.dueDate.toDate().getDate(); 
+    const periodEndDayNumber = periodEnd.getDate(); 
+    const shouldMoveToNextMonth = payPeriodCrossesMonths && paymentDayNumber <= periodEndDayNumber;
+
     const adjustedDueDate = new Date(
       today.getFullYear(),
-      onCusp ? today.getMonth() + 1 : today.getMonth(),
+      shouldMoveToNextMonth ? today.getMonth() + 1 : today.getMonth(),
       payment.dueDate.toDate().getDate()
     );
 
-    console.log("Inside adjustPaymentToCurrentPeriod. Payment: ", {payment: {...payment, date: payment.dueDate.toDate()}, adjustedDueDate})
     return {
       ...payment,
       dueDate: Timestamp.fromDate(adjustedDueDate),
@@ -425,11 +421,12 @@
    */
   export function getMonthlyPaymentOccurrences(
     payment: Payment,
-    payPeriodInterval: Interval
+    payPeriodInterval: Interval,
+    payDate: Timestamp
   ): Payment[] {
     // For monthly/yearly, return single adjusted payment
     if (payment.interval === MONTHLY || payment.interval === YEARLY) {
-      return [adjustPaymentToCurrentPeriod(payment, payPeriodInterval)];
+      return [adjustPaymentToCurrentPeriod(payment, payPeriodInterval, payDate)];
     }
 
     // For weekly/biweekly, calculate all occurrences in the period
@@ -476,7 +473,8 @@
    */
   export function getVirtualPaymentsForPeriod(
     payments: Payment[],
-    payPeriodInterval: Interval
+    payPeriodInterval: Interval,
+    payDate: Timestamp
   ): Payment[] {
     const virtualPayments: Payment[] = [];
 
@@ -484,6 +482,7 @@
       const occurrences = getMonthlyPaymentOccurrences(
         payment,
         payPeriodInterval,
+        payDate
       );
       virtualPayments.push(...occurrences);
     }
