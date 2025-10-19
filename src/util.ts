@@ -3,7 +3,6 @@
   import { editTotalSpendingBudget } from "./firebase/editData";
   import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "./constants";
   import {
-    addDays,
     addMonths,
     addWeeks,
     addYears,
@@ -12,7 +11,6 @@
     getDaysInMonth,
     isAfter,
     isBefore,
-    isThisMonth,
     isWithinInterval,
     lastDayOfMonth,
     startOfDay,
