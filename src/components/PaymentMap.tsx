@@ -8,13 +8,13 @@ import { format, isAfter, startOfDay } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { useAuth } from "../Context/AuthContext/useAuth";
-import ShowAndHide from "./ShowAndHide";
 import {
   getCurrentIntervalDateRange,
   getVirtualPaymentsForPeriod,
   isDateInCurrentPayPeriod,
 } from "../util";
 import { IoPencil } from "react-icons/io5";
+import Divider from "./Divider";
 
 interface PaymentMapProps {
   handleUpdatePaid: (payment: Payment) => void;
@@ -51,18 +51,37 @@ export default function PaymentMap({
       payPeriodInterval,
       payDate
     );
-    const pastPayments = virtualPayments.filter((p) => p.dueDate.toDate() < periodStart);
+    const pastPayments = virtualPayments.filter(
+      (p) => p.dueDate.toDate() < periodStart
+    );
     const currentPayments = virtualPayments.filter((p) =>
-        isDateInCurrentPayPeriod(
-          payPeriodInterval,
-          payDate.toDate(),
-          p.dueDate.toDate()
-        )
+      isDateInCurrentPayPeriod(
+        payPeriodInterval,
+        payDate.toDate(),
+        p.dueDate.toDate()
       )
-    const futurePayments = virtualPayments.filter((p) => isAfter(p.dueDate.toDate(), periodEnd))
-    console.log("pastPayments", pastPayments.map(p => {return {...p, dueDate: p.dueDate.toDate()}}))
-    console.log("currentPayments", currentPayments.map(p => {return {...p, dueDate: p.dueDate.toDate()}}))
-    console.log("futurePayments", futurePayments.map(p => {return {...p, dueDate: p.dueDate.toDate()}}))
+    );
+    const futurePayments = virtualPayments.filter((p) =>
+      isAfter(p.dueDate.toDate(), periodEnd)
+    );
+    console.log(
+      "pastPayments",
+      pastPayments.map((p) => {
+        return { ...p, dueDate: p.dueDate.toDate() };
+      })
+    );
+    console.log(
+      "currentPayments",
+      currentPayments.map((p) => {
+        return { ...p, dueDate: p.dueDate.toDate() };
+      })
+    );
+    console.log(
+      "futurePayments",
+      futurePayments.map((p) => {
+        return { ...p, dueDate: p.dueDate.toDate() };
+      })
+    );
     setPastPayments(pastPayments);
     setCurrentPayments(currentPayments);
     setFuturePayments(futurePayments);
@@ -76,17 +95,21 @@ export default function PaymentMap({
     periodStart,
   ]);
 
-  function RenderPayments({ p }: { p: Payment }) {
+  function RenderPayments({ p, time }: { p: Payment, time: string}) {
+    let t;
+    if (time === "PAST" || time === "FUTURE") t = "bg-my-black-light text-white border-none";
+    else t = "bg-my-black-base text-my-white-dark";
+
     return (
       <div
         key={p.id}
-        className={`grid grid-cols-8 py-2 border-2 text-center
+        className={`grid grid-cols-8 py-2 text-center 
           ${
             p.paid
-              ? "bg-my-black-light border-y-[1px] border-white text-white"
-              : p.type === "BILL"
-              ? "border-my-red-light bg-my-black-base text-my-white-dark"
-              : "border-my-blue-light bg-my-black-base text-my-white-dark"
+              ? "bg-my-black-light border-y-[1px] text-white"
+              : p.type === "DEBT"
+              ? "text-my-blue-light bg-my-black-base"
+              : t
           } `}
       >
         <p
@@ -139,87 +162,75 @@ export default function PaymentMap({
     );
   }
 
+  const pastPaymentsTotal = `$${Math.ceil(
+    pastPayments.reduce((acc, p) => p.amount + acc, 0)
+  ).toFixed(2)}`;
+
+  const currentPaymentsTotal = `$${Math.ceil(
+    currentPayments.reduce((acc, p) => p.amount + acc, 0)
+  ).toFixed(2)}`;
+
+    const futurePaymentsTotal = `$${Math.ceil(
+    futurePayments.reduce((acc, p) => p.amount + acc, 0)
+  ).toFixed(2)}`;
+
+
   return (
     <>
-      <div className="h-fit max-w-[60rem] w-[95vw] border-2 border-my-white-light rounded-md mb-[5rem] overflow-auto">
+      <div className="h-fit max-w-[60rem] w-[95vw] border-2 border-my-white-light rounded-md mb-[5rem] overflow-auto pb-4">
         {showPast ? (
-          <div className="p-2 bg-my-black-light">
-            <ShowAndHide
-              onClick={() => setShowPast(false)}
-              border={false}
-              up={true}
-              label="Hide Past Payments"
-              additionalDetails={`$${Math.ceil(
-                pastPayments.reduce((acc, p) => p.amount + acc, 0)
-              )}`}
-            />
+          <div className="px-2 bg-my-black-dark">
+            <div className="cursor-pointer" onClick={() => setShowPast(false)}>
+              <Divider label1="Hide Past Payments" label2={pastPaymentsTotal} />
+            </div>
             {pastPayments.map((p) => (
-              <RenderPayments p={p} />
+              <RenderPayments p={p} time="PAST"/>
             ))}
           </div>
         ) : (
-          <>
-            <ShowAndHide
-              onClick={() => setShowPast(true)}
-              up={false}
-              label="Show Past Payments"
-              additionalDetails={`$${Math.ceil(
-                pastPayments.reduce((acc, p) => p.amount + acc, 0)
-              )}`}
-            />
-          </>
+          <div className="px-2 bg-my-black-dark">
+            <div className="cursor-pointer text-my-white-light text-center" onClick={() => setShowPast(true)}>
+              <Divider label1="Show Past Payments" label2={pastPaymentsTotal} />
+            </div>
+          </div>
         )}
         {showCurrent ? (
-          <>
-            <ShowAndHide
-              onClick={() => setShowCurrent(false)}
-              up={true}
-              border={false}
-              label="Hide Current Payments"
-              additionalDetails={`$${Math.ceil(
-                currentPayments.reduce((acc, p) => p.amount + acc, 0)
-              )}`}
-            />
+          <div className="px-2 bg-my-black-dark">
+            <div className="cursor-pointer" onClick={() => setShowCurrent(false)}>
+              <Divider
+                label1="Hide Current Payments"
+                label2={currentPaymentsTotal}
+              />
+            </div>
             {currentPayments.map((p) => (
-              <RenderPayments key={p.id} p={p} />
-            ))}
-          </>
-        ) : (
-          <>
-            <ShowAndHide
-              onClick={() => setShowCurrent(true)}
-              up={false}
-              label="Show Current Payments"
-              additionalDetails={`$${Math.ceil(
-                currentPayments.reduce((acc, p) => p.amount + acc, 0)
-              )}`}
-            />
-          </>
-        )}
-        {showFuture ? (
-          <div className="p-2 bg-my-black-light">
-            <ShowAndHide
-              onClick={() => setShowFuture(false)}
-              border={false}
-              up={true}
-              label="Hide Future Payments"
-              additionalDetails={`$${Math.ceil(
-                futurePayments.reduce((acc, p) => p.amount + acc, 0)
-              )}`}
-            />
-            {futurePayments.map((p) => (
-              <RenderPayments p={p} />
+              <RenderPayments p={p} time="PRESENT" />
             ))}
           </div>
         ) : (
-          <ShowAndHide
-            onClick={() => setShowFuture(true)}
-            up={false}
-            label="Show Future Payments"
-            additionalDetails={`$${Math.ceil(
-              futurePayments.reduce((acc, p) => p.amount + acc, 0)
-            )}`}
-          />
+          <div className="px-2 bg-my-black-dark">
+            <div className="cursor-pointer" onClick={() => setShowCurrent(true)}>
+              <Divider label1="Show Current Payments" label2={currentPaymentsTotal} />
+            </div>
+          </div>
+        )}
+        {showFuture ? (
+          <div className="px-2 bg-my-black-dark">
+            <div className="cursor-pointer" onClick={() => setShowFuture(false)}>
+              <Divider
+                label1="Hide Future Payments"
+                label2={futurePaymentsTotal}
+              />
+            </div>
+            {futurePayments.map((p) => (
+              <RenderPayments p={p} time="FUTURE" />
+            ))}
+          </div>
+        ) : (
+          <div className="px-2 bg-my-black-dark ">
+            <div className="cursor-pointer" onClick={() => setShowFuture(true)}>
+              <Divider label1="Show Future Payments" label2={futurePaymentsTotal} />
+            </div>
+          </div>
         )}
       </div>
     </>
