@@ -292,9 +292,9 @@ export default function Payments() {
           />
         )}
         <div className="fixed bottom-[-.05rem] flex flex-wrap gap-2 items-center justify-center w-screen mt-4 text-my-white-light bg-my-black-dark p-2 border-t-2 border-my-white-light">
-          <div className="flex items-center justify-start gap-2 text-my-white-dark">
+          <div className="flex items-center justify-start gap-2 text-my-red-light">
             <p>Bill</p>
-            <div className="rounded-sm w-[1rem] h-[1rem] bg-my-white-dark border-2 border-my-white-light mr-4"></div>
+            <div className="rounded-sm w-[1rem] h-[1rem] bg-my-red-light border-2 border-my-white-light mr-4"></div>
           </div>
           <div className="flex items-center justify-start gap-2 text-my-blue-light">
             <p>Debt</p>

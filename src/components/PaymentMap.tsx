@@ -95,25 +95,25 @@ export default function PaymentMap({
     periodStart,
   ]);
 
-  function RenderPayments({ p, time }: { p: Payment, time: string}) {
+  function RenderPayments({ p, time }: { p: Payment, time: string }) {
     let t;
-    if (time === "PAST" || time === "FUTURE") t = "bg-my-black-light text-white border-none";
+    if (time === "PAST" || time === "FUTURE") t = "bg-my-black-light text-white";
+    else if (p.type === "BILL") t = "bg-my-black-base text-my-red-light"
     else t = "bg-my-black-base text-my-white-dark";
 
     return (
       <div
         key={p.id}
-        className={`grid grid-cols-8 py-2 text-center 
-          ${
-            p.paid
-              ? "bg-my-black-light border-y-[1px] text-white"
-              : p.type === "DEBT"
+        className={`grid grid-cols-7 py-2 text-center border-y-1 border-my-black-dark rounded-xs
+          ${p.paid
+            ? "bg-my-black-light text-white"
+            : p.type === "DEBT"
               ? "text-my-blue-light bg-my-black-base"
               : t
           } `}
       >
         <p
-          className={`flex items-center justify-center text-xs w-[1rem] m-auto  text-my-white-dark`}
+          className={`flex items-center justify-center text-xs w-[1rem] m-auto col-span-1 text-my-white-dark`}
         >
           {format(p.dueDate.toDate(), "do")}
         </p>
@@ -133,7 +133,7 @@ export default function PaymentMap({
           </p>
         )}
 
-        <div className="flex gap-[2px] items-start justify-center mr-2 col-span-2">
+        <div className="flex gap-[2px] items-start justify-end mr-2 col-span-1">
           <IoPencil
             className="text-my-black-base bg-my-white-dark cursor-pointer hover:text-my-white-dark hover:bg-my-red-light rounded-lg p-[2px] border-2 border-my-black-dark"
             size={20}
@@ -170,7 +170,7 @@ export default function PaymentMap({
     currentPayments.reduce((acc, p) => p.amount + acc, 0)
   ).toFixed(2)}`;
 
-    const futurePaymentsTotal = `$${Math.ceil(
+  const futurePaymentsTotal = `$${Math.ceil(
     futurePayments.reduce((acc, p) => p.amount + acc, 0)
   ).toFixed(2)}`;
 
@@ -184,7 +184,7 @@ export default function PaymentMap({
               <Divider label1="Hide Past Payments" label2={pastPaymentsTotal} />
             </div>
             {pastPayments.map((p) => (
-              <RenderPayments p={p} time="PAST"/>
+              <RenderPayments p={p} time="PAST" />
             ))}
           </div>
         ) : (
