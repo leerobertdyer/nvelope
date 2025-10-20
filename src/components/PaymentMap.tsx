@@ -104,7 +104,7 @@ export default function PaymentMap({
     return (
       <div
         key={p.id}
-        className={`grid grid-cols-7 py-2 text-center border-y-1 border-my-black-dark rounded-xs
+        className={`grid grid-cols-8 py-2 text-center border-y-1 border-my-black-dark rounded-xs
           ${p.paid
             ? "bg-my-black-light text-white"
             : p.type === "DEBT"
@@ -133,7 +133,7 @@ export default function PaymentMap({
           </p>
         )}
 
-        <div className="flex gap-[2px] items-start justify-end mr-2 col-span-1">
+        <div className="flex gap-[2px] items-start justify-end mr-2 col-span-2">
           <IoPencil
             className="text-my-black-base bg-my-white-dark cursor-pointer hover:text-my-white-dark hover:bg-my-red-light rounded-lg p-[2px] border-2 border-my-black-dark"
             size={20}
