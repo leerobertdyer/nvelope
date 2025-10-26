@@ -4,7 +4,7 @@ import {
 } from "react";
 import Header from "../components/Header";
 import Nvelopes from "../components/Nvelopes";
-import type { Envelope } from "../types";
+import { type OneTimeAmount, type Envelope } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
   editEnvelopes,
@@ -16,7 +16,7 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
-import { updateBudgetStateAndDBB } from "../util";
+import { isDateInCurrentPayPeriod, updateBudgetStateAndDBB } from "../util";
 import { GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
 import FullScreen from "../components/FullScreen";
@@ -33,11 +33,19 @@ export default function MainEnvelopesView() {
     rent,
     setRent,
     oneTimeExpenses,
+    payDate,
+    payPeriodInterval
   } = useDatabase();
 
+  const [expenses, setExpenses] = useState<OneTimeAmount[]>([])
+
   useEffect(() => {
+    if (!payDate) return
     console.log("EXPENSES:", oneTimeExpenses)
-  }, [oneTimeExpenses])
+    const expensesInPayPeriod = oneTimeExpenses?.filter((e) => isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), e.date.toDate()))
+    console.log("expenses in period: ", expensesInPayPeriod)
+    setExpenses(expensesInPayPeriod ?? [])
+  }, [oneTimeExpenses, payDate, payPeriodInterval])
 
   const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
   const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
@@ -344,10 +352,17 @@ export default function MainEnvelopesView() {
           onClose={() => resetState()}
           onSave={addOneTimeExpenseToDb}
         >
-          <div className="w-full h-fit flex flex-col items-center justify-center">
-            <h3 className="p-2 text-my-green-dark mb-4">
+          <div className="w-full max-w-[20rem] m-auto h-fit flex flex-col items-center justify-center gap-2">
+            <h3 className="p-2 text-my-green-dark mb-4 text-lg">
               Add One Time Expense
             </h3>
+            <TextInput
+              id="newExpenseName"
+              label="Name"
+              value={cashName}
+              onChange={(e) => setCashName(e.target.value)}
+              placeholder="Name"
+            />
             <TextInput
               id="newExpenseAmount"
               label="Amount To Add"
@@ -355,13 +370,6 @@ export default function MainEnvelopesView() {
               onChange={(e) => setCashAmount(e.target.value)}
               textOrNumber="number"
               placeholder="Amount"
-            />
-            <TextInput
-              id="newExpenseName"
-              label="Name"
-              value={cashName}
-              onChange={(e) => setCashName(e.target.value)}
-              placeholder="Name"
             />
           </div>
         </FullScreen>
@@ -378,8 +386,8 @@ export default function MainEnvelopesView() {
           onClose={() => setIsAddingCash(false)}
           onSave={addCashToDb}
         >
-          <div className="w-full h-fit flex flex-col items-center justify-center">
-            <h3 className="p-2 text-my-green-dark">Add Cash</h3>
+          <div className="w-full max-w-[20rem] m-auto h-fit flex flex-col items-center justify-center">
+            <h3 className="p-2 text-my-green-dark text-lg mb-4">Add Cash</h3>
             <TextInput
               label="Amount To Add"
               id="newCashAmount"
@@ -477,7 +485,7 @@ export default function MainEnvelopesView() {
           handleEditRent={handleEditRent}
           handleAddCashToEnvelope={handleAddCashToEnvelope}
         />
-        <Expenses expenses={oneTimeExpenses ?? []}/>
+        <Expenses expenses={expenses}/>
       </div>
     </div>
   );

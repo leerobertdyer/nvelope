@@ -6,9 +6,16 @@ import SpendBtn from "./SpendBtn";
 import Button from "./Button";
 
 export default function BigEnvelope({ handleBack, envelope, handleSetShowSpendingPage, handleSetupEdit, setUpShowGiveAndTake, handleDeleteEnvelope, handleAddCashToEnvelope }: { handleBack: () => void, envelope: Envelope, resetState: () => void, editEnvelope: (envelope: Envelope) => Promise<void>, handleSetShowSpendingPage: (envelope: Envelope) => void, handleSetupEdit: (envelope: Envelope) => void, setUpShowGiveAndTake: (envelope: Envelope) => void, handleDeleteEnvelope: (id: string) => void, handleAddCashToEnvelope: (envelope: Envelope) => void }) {
+
     return (
         <div className="absolute top-[2rem] pt-[3rem] bg-my-white-light w-full overflow-y-auto z-999 h-screen">
-            <div className="w-full flex flex-col items-center justify-start ">
+            <div className="w-full flex flex-col items-center justify-start">
+                <div className="flex flex-col justify-center items-start p-2 w-[17rem] text-my-black-light rounded-md mb-4">
+                    <h1 className="text-lg text-my-white-dark mb-4 bg-my-black-light text-center rounded-md w-full">{envelope.name}</h1>
+                    <p className="w-full flex justify-between">Total: <span className="text-my-green-dark">${Number(envelope.total).toFixed(2)}</span></p>
+                    <p className="w-full flex justify-between">Spent: <span className="text-my-green-dark">${Number(envelope.spent).toFixed(2)}</span></p>
+                    <p className="w-full flex justify-between">Remaining: <span className="text-my-green-dark">${(Number(envelope.total) - Number(envelope.spent)).toFixed(2)}</span></p>
+                </div>
                 <SpendBtn onClick={() => handleSetShowSpendingPage(envelope)} />
                 <br />
                 <div className="flex flex-col justify-center items-center gap-2 ">

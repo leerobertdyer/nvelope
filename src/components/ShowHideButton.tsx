@@ -1,4 +1,4 @@
-import { IoIosAdd, IoIosRemove } from "react-icons/io";
+import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 
 export default function ShowHideButton({
   onClick,
@@ -17,7 +17,7 @@ export default function ShowHideButton({
           ${theme==="DARK" ? "bg-my-black-dark text-my-white-dark" : "bg-my-white-base text-my-black-dark"} 
           cursor-pointer  p-[1px] rounded-sm border-[1px] border-my-white-light`}
       >
-        {isShown ? <IoIosRemove className="font-bold" size={18}/> : <IoIosAdd className="font-bold" size={18}/>}
+        {isShown ? <IoIosArrowUp className="font-bold" size={18}/> : <IoIosArrowDown className="font-bold" size={18}/>}
       </button>
     </div>
   );

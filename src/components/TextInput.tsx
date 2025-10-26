@@ -14,10 +14,10 @@ interface ITextInput {
 
 export default function TextInput({ id, textOrNumber="text", placeholder, onChange, value, label }: ITextInput) {
     return <div className="w-full flex flex-col gap-2 items-center justify-center">
-        <label htmlFor={id}>{label}</label>
+        <label className="p-2 w-full" htmlFor={id}>{label}</label>
         <input
             id={id}
-            className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-[80%] max-w-[20rem] text-my-black-dark"
+            className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark"
             placeholder={placeholder}
             type={textOrNumber}
             onWheel={textOrNumber === "number" ? handleWheel : undefined}
