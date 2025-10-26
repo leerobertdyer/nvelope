@@ -163,6 +163,7 @@ export default function Nvelopes({
         <div className="relative col-span-3 flex justify-center items-center">
           <div className="absolute ml-[12px] w-full h-full">
             <ShowHideButton
+              theme="LIGHT"
               onClick={() => setShowEnvelopes(!showEnvelopes)}
               isShown={showEnvelopes}
             />

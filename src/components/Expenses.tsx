@@ -11,6 +11,7 @@ export default function Expenses({ expenses }: { expenses: OneTimeAmount[] }) {
         <div className="relative col-span-3 flex justify-center px-[1rem] items-center">
           <div className="absolute ml-[12px] w-full h-full">
             <ShowHideButton
+              theme="LIGHT"
               onClick={() => setShowExpenses(!showExpenses)}
               isShown={showExpenses}
             />
