@@ -26,10 +26,10 @@ export default function ListEnvelope({ envelope, onClick, onDragStart, onDragOve
             onDragEnd={onDragEnd}>
 
                 <div className="col-span-3 flex justify-start items-center ml-2 gap-10 relative text-xs">
-                    <div className="w-fit h-[85%] flex justify-start items-center bg-white rounded-lg">
-                        <BiEnvelope className="w-[2rem] h-[2rem] text-my-black-dark" />
+                    <div className="w-[1.85rem] h-[70%] flex justify-start items-center bg-white rounded-sm">
+                        <BiEnvelope className="w-[2rem] h-[2rem] text-my-black-dark " />
                     </div>
-                    <p className="absolute left-1/2 -translate-x-1/2">{envelope.name}</p>
+                    <p className="absolute left-[3rem]">{envelope.name}</p>
                 </div>
                 <div className="flex justify-center items-center col-span-2">
                     <p className="text-sm">${(envelope.total - envelope.spent).toFixed(2)}</p>

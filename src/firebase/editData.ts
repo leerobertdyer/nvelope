@@ -2,8 +2,7 @@ import type {
   Payment,
   Envelope,
   Interval,
-  OneTimeCash,
-  OneTimeExpense,
+  OneTimeAmount,
   PreviousIntervalDetails,
 } from "../types";
 import { doc, updateDoc, Timestamp, getDoc, setDoc } from "firebase/firestore";
@@ -105,7 +104,7 @@ export async function editPayDate(payDate: Date, userId: string) {
 }
 
 export async function editOneTimeExpense(
-  newExpense: OneTimeExpense | null,
+  newExpense: OneTimeAmount | null,
   userId: string
 ) {
   try {
@@ -127,7 +126,7 @@ export async function editOneTimeExpense(
 }
 
 export async function editOneTimeCashAndBudget(
-  newCashEntry: OneTimeCash | null,
+  newCashEntry: OneTimeAmount | null,
   userId: string,
   currentBudget: number
 ) {
@@ -249,12 +248,12 @@ type ResetBudgetParams = {
   user: User;
   setEnvelopes: (envelopes: Envelope[]) => void;
   setTotalSpendingBudget: (totalSpendingBudget: number) => void;
-  setOneTimeCash: (oneTimeCash: OneTimeCash[] | null) => void;
+  setOneTimeCash: (oneTimeCash: OneTimeAmount[] | null) => void;
   income: number;
   totalSpendingBudget: number;
   payments: Payment[];
-  oneTimeCash: OneTimeCash[] | null;
-  oneTimeExpenses: OneTimeExpense[] | null;
+  oneTimeCash: OneTimeAmount[] | null;
+  oneTimeExpenses: OneTimeAmount[] | null;
   setResetBudgetTimestamp: (resetBudgetTimestamp: Timestamp) => void;
   shouldReplenish?: boolean;
 };

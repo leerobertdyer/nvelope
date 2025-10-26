@@ -7,7 +7,7 @@ import Button from "./Button";
 
 export default function BigEnvelope({ handleBack, envelope, handleSetShowSpendingPage, handleSetupEdit, setUpShowGiveAndTake, handleDeleteEnvelope, handleAddCashToEnvelope }: { handleBack: () => void, envelope: Envelope, resetState: () => void, editEnvelope: (envelope: Envelope) => Promise<void>, handleSetShowSpendingPage: (envelope: Envelope) => void, handleSetupEdit: (envelope: Envelope) => void, setUpShowGiveAndTake: (envelope: Envelope) => void, handleDeleteEnvelope: (id: string) => void, handleAddCashToEnvelope: (envelope: Envelope) => void }) {
     return (
-        <div className="absolute top-[2rem] pt-[3rem] bg-my-white-light w-full overflow-y-auto">
+        <div className="absolute top-[2rem] pt-[3rem] bg-my-white-light w-full overflow-y-auto z-999 h-screen">
             <div className="w-full flex flex-col items-center justify-start ">
                 <SpendBtn onClick={() => handleSetShowSpendingPage(envelope)} />
                 <br />

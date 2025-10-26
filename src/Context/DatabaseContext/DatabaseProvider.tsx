@@ -1,7 +1,7 @@
 import { Timestamp, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { DatabaseContext } from "./DatabaseContext";
 import { useEffect, useState } from "react";
-import type { Envelope, Interval, OneTimeCash, OneTimeExpense, Payment } from "../../types";
+import type { Envelope, Interval, OneTimeAmount, Payment } from "../../types";
 import { useAuth } from "../AuthContext/useAuth";
 import { db } from "../../firebase/firebase";
 
@@ -17,10 +17,10 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [income, setIncome] = useState<number>(0);
     const [isNewUser, setIsNewUser] = useState<boolean>(false);
     const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
-    const [oneTimeCash, setOneTimeCash] = useState<OneTimeCash[] | null>(null);
+    const [oneTimeExpenses, setOneTimeExpenses] = useState<OneTimeAmount[] | null>(null);
     const [rent, setRent] = useState<number>(0);
     const [resetBudgetTimestamp, setResetBudgetTimestamp] = useState<Timestamp | null>(null);
-    const [oneTimeExpenses, setOneTimeExpenses] = useState<OneTimeExpense[] | null>(null);
+    const [oneTimeCash, setOneTimeCash] = useState<OneTimeAmount[] | null>(null);
     
     useEffect(() => {
         if (!user) {
@@ -56,7 +56,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setOneTimeCash(data.oneTimeCash || null);
                     setRent(data.rent || 0);
                     setResetBudgetTimestamp(data.resetBudgetTimestamp || null);
-                    setOneTimeExpenses(data.oneTimeExpenses || null);
+                    setOneTimeExpenses(data.oneTimeExpense || null);
                 } else {
                     // Document doesn't exist - this is a new user
                     console.log("👤 New user detected, creating default document");

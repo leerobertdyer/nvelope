@@ -14,7 +14,7 @@ import {
   isDateInCurrentPayPeriod,
 } from "../util";
 import { IoPencil } from "react-icons/io5";
-import Divider from "./Divider";
+import ShowHideButton from "./ShowHideButton";
 
 interface PaymentMapProps {
   handleUpdatePaid: (payment: Payment) => void;
@@ -95,19 +95,21 @@ export default function PaymentMap({
     periodStart,
   ]);
 
-  function RenderPayments({ p, time }: { p: Payment, time: string }) {
+  function RenderPayment({ p, time }: { p: Payment; time: string }) {
     let t;
-    if (time === "PAST" || time === "FUTURE") t = "bg-my-black-light text-white";
-    else if (p.type === "BILL") t = "bg-my-black-base text-my-red-light"
+    if (time === "PAST" || time === "FUTURE")
+      t = "bg-my-black-light text-white";
+    else if (p.type === "BILL") t = "bg-my-black-base text-my-red-light";
     else t = "bg-my-black-base text-my-white-dark";
 
     return (
       <div
         key={p.id}
-        className={`grid grid-cols-8 py-2 text-center border-y-1 border-my-black-dark rounded-xs
-          ${p.paid
-            ? "bg-my-black-light text-white"
-            : p.type === "DEBT"
+        className={`grid grid-cols-8 py-2 text-center border-y-1 border-my-black-dark rounded-xs w-full
+          ${
+            p.paid
+              ? "bg-my-black-light text-white"
+              : p.type === "DEBT"
               ? "text-my-blue-light bg-my-black-base"
               : t
           } `}
@@ -174,62 +176,68 @@ export default function PaymentMap({
     futurePayments.reduce((acc, p) => p.amount + acc, 0)
   ).toFixed(2)}`;
 
+  function PaymentBox({
+    name,
+    total,
+    isShown,
+    setter,
+  }: {
+    isShown: boolean;
+    setter: () => void;
+    total: string;
+    name: string;
+  }) {
+    return (
+      <div className="relative grid grid-cols-3 py-2 text-center rounded-xs border-[1px] border-my-white-light bg-my-black-dark text-my-white-base">
+        <div className="absolute ml-2 w-fit h-full">
+          <ShowHideButton isShown={isShown} onClick={setter} />
+        </div>
+        <p className="col-span-2">{name}</p>
+        <p className="col-span-1 text-my-blue-light">{total}</p>
+      </div>
+    );
+  }
 
   return (
     <>
-      <div className="h-fit max-w-[60rem] w-[95vw] border-2 border-my-white-light rounded-md mb-[5rem] overflow-auto pb-4">
-        {showPast ? (
-          <div className="px-2 bg-my-black-dark">
-            <div className="cursor-pointer" onClick={() => setShowPast(false)}>
-              <Divider label1="Hide Past Payments" label2={pastPaymentsTotal} />
-            </div>
+      <div className="h-fit max-w-[60rem] w-[95vw] border-2 border-my-white-light rounded-md mb-[5rem] overflow-auto ">
+        <PaymentBox
+          isShown={showPast}
+          setter={() => setShowPast(!showPast)}
+          name="Past Payments"
+          total={pastPaymentsTotal}
+        />
+        {showPast && (
+          <div className=" bg-my-black-dark">
             {pastPayments.map((p) => (
-              <RenderPayments p={p} time="PAST" />
+              <RenderPayment p={p} time="PAST" />
             ))}
           </div>
-        ) : (
-          <div className="px-2 bg-my-black-dark">
-            <div className="cursor-pointer text-my-white-light text-center" onClick={() => setShowPast(true)}>
-              <Divider label1="Show Past Payments" label2={pastPaymentsTotal} />
-            </div>
-          </div>
         )}
-        {showCurrent ? (
-          <div className="px-2 bg-my-black-dark">
-            <div className="cursor-pointer" onClick={() => setShowCurrent(false)}>
-              <Divider
-                label1="Hide Current Payments"
-                label2={currentPaymentsTotal}
-              />
-            </div>
+        <PaymentBox
+          name="Current Payments"
+          total={currentPaymentsTotal}
+          isShown={showCurrent}
+          setter={() => setShowCurrent(!showCurrent)}
+        />
+        {showCurrent && (
+          <div className=" bg-my-black-dark">
             {currentPayments.map((p) => (
-              <RenderPayments p={p} time="PRESENT" />
+              <RenderPayment p={p} time="PRESENT" />
             ))}
-          </div>
-        ) : (
-          <div className="px-2 bg-my-black-dark">
-            <div className="cursor-pointer" onClick={() => setShowCurrent(true)}>
-              <Divider label1="Show Current Payments" label2={currentPaymentsTotal} />
-            </div>
           </div>
         )}
-        {showFuture ? (
-          <div className="px-2 bg-my-black-dark">
-            <div className="cursor-pointer" onClick={() => setShowFuture(false)}>
-              <Divider
-                label1="Hide Future Payments"
-                label2={futurePaymentsTotal}
-              />
-            </div>
+        <PaymentBox
+          name="Future Payments"
+          total={futurePaymentsTotal}
+          isShown={showFuture}
+          setter={() => setShowFuture(!showFuture)}
+        />
+        {showFuture && (
+          <div className=" bg-my-black-dark">
             {futurePayments.map((p) => (
-              <RenderPayments p={p} time="FUTURE" />
+              <RenderPayment p={p} time="FUTURE" />
             ))}
-          </div>
-        ) : (
-          <div className="px-2 bg-my-black-dark ">
-            <div className="cursor-pointer" onClick={() => setShowFuture(true)}>
-              <Divider label1="Show Future Payments" label2={futurePaymentsTotal} />
-            </div>
           </div>
         )}
       </div>

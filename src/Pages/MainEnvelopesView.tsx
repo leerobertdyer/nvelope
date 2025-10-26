@@ -1,5 +1,5 @@
 import {
-  //  useEffect,
+  useEffect,
   useState,
 } from "react";
 import Header from "../components/Header";
@@ -11,8 +11,6 @@ import {
   editOneTimeCashAndBudget,
   editOneTimeExpense,
   editRent,
-  // resetBudget,
-  // checkToResetBudget,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
@@ -23,6 +21,7 @@ import { GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
 import FullScreen from "../components/FullScreen";
 import TextInput from "../components/TextInput";
+import Expenses from "../components/Expenses";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -33,16 +32,12 @@ export default function MainEnvelopesView() {
     setEnvelopes,
     rent,
     setRent,
-    // oneTimeCash,
-    // setOneTimeCash,
-    // income,
-    // payments,
-    // payDate,
-    // payPeriodInterval,
-    // oneTimeExpenses,
-    // resetBudgetTimestamp,
-    // setResetBudgetTimestamp,
+    oneTimeExpenses,
   } = useDatabase();
+
+  useEffect(() => {
+    console.log("EXPENSES:", oneTimeExpenses)
+  }, [oneTimeExpenses])
 
   const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
   const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
@@ -65,20 +60,6 @@ export default function MainEnvelopesView() {
     spent: 0,
     oneTime: false,
   };
-
-  // This useEffect checks if we need to reset the budget based on interval and date
-  // useEffect(() => {
-  //     if (!payDate || !payPeriodInterval || !user) return;
-  //     const checkResetShowLoader = async () => {
-  //         setLoadingText("Checking Dates...")
-  //         setShowLoading(true);
-  //         if (await checkToResetBudget(resetBudgetTimestamp, payDate, payPeriodInterval))
-  //         await resetBudget({payDate, payPeriodInterval, envelopes, user, setEnvelopes, setTotalSpendingBudget, setOneTimeCash, income, totalSpendingBudget, payments, oneTimeCash, oneTimeExpenses, setResetBudgetTimestamp});
-  //         resetState();
-  //     }
-  //     checkResetShowLoader();
-  //     // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [payDate, payPeriodInterval, user]);
 
   async function handleEditRent(newRentAmount: number) {
     if (!rent) return;
@@ -452,7 +433,7 @@ export default function MainEnvelopesView() {
   }
 
   return (
-    <>
+    <div className="w-full text-center flex flex-col items-center h-screen">
       {showLoading && <Loading text={loadingText} />}
 
       <Header
@@ -462,7 +443,7 @@ export default function MainEnvelopesView() {
         ]}
       />
 
-      <div className="flex flex-col items-center gap-[1rem] overflow-y-auto overflow-x-hidden bg-my-black-base pt-[1rem]">
+      <div className="flex flex-col items-center gap-[1rem] overflow-y-auto overflow-x-hidden bg-my-black-base pt-[1rem] w-full h-screen">
         <div className="flex w-full justify-center gap-[1rem] items-center">
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"
@@ -487,7 +468,6 @@ export default function MainEnvelopesView() {
             <p className="text-sm">Add Cash</p>
           </div>
         </div>
-
         <Nvelopes
           resetState={resetState}
           handleSetupEdit={handleSetupEdit}
@@ -497,7 +477,8 @@ export default function MainEnvelopesView() {
           handleEditRent={handleEditRent}
           handleAddCashToEnvelope={handleAddCashToEnvelope}
         />
+        <Expenses expenses={oneTimeExpenses ?? []}/>
       </div>
-    </>
+    </div>
   );
 }

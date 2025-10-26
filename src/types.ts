@@ -25,14 +25,7 @@ export interface Payment {
 
 export type BillOrDebt = "BILL" | "DEBT"
 
-export interface OneTimeCash {
-    id: string
-    name: string
-    amount: number
-    date: Timestamp
-}
-
-export interface OneTimeExpense {
+export interface OneTimeAmount {
     id: string
     name: string
     amount: number
@@ -46,7 +39,7 @@ export interface PreviousIntervalDetails {
     payments: Payment[]
     income: number
     totalSpendingBudget: number
-    oneTimeCash: OneTimeCash[] | null
+    oneTimeCash: OneTimeAmount[] | null
 }
 
 export type Interval = "WEEKLY" | "BIWEEKLY" |"MONTHLY" | "YEARLY" | undefined;
