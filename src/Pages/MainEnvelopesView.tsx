@@ -7,10 +7,12 @@ import Nvelopes from "../components/Nvelopes";
 import { type OneTimeAmount, type Envelope } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
+  backupUserData,
   editEnvelopes,
   editOneTimeCashAndBudget,
   editOneTimeExpense,
   editRent,
+  shouldBackupUserData,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
@@ -22,6 +24,7 @@ import Loading from "../components/Loading";
 import FullScreen from "../components/FullScreen";
 import TextInput from "../components/TextInput";
 import Expenses from "../components/Expenses";
+import type { User } from "firebase/auth";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -41,11 +44,22 @@ export default function MainEnvelopesView() {
 
   useEffect(() => {
     if (!payDate) return
-    console.log("EXPENSES:", oneTimeExpenses)
     const expensesInPayPeriod = oneTimeExpenses?.filter((e) => isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), e.date.toDate()))
-    console.log("expenses in period: ", expensesInPayPeriod)
     setExpenses(expensesInPayPeriod ?? [])
   }, [oneTimeExpenses, payDate, payPeriodInterval])
+
+  // On load check to make backup
+  useEffect(() => {
+    if (!user) return;
+    async function backupUser(user: User) {
+      const shouldBackup = await shouldBackupUserData(user);
+      if (shouldBackup) {
+        console.log(`Backup initiated... `)
+        await backupUserData(user)
+      }
+    }
+    backupUser(user);
+  }, [user])
 
   const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
   const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);

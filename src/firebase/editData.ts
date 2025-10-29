@@ -14,6 +14,7 @@ import {
   resetEnvelopesSpentToZero,
 } from "../util";
 import { MONTHLY } from "../constants";
+import { millisecondsInDay } from "date-fns/constants";
 
 export async function editResetBudgetTimestamp(
   resetBudgetTimestamp: Timestamp,
@@ -29,7 +30,10 @@ export async function editResetBudgetTimestamp(
 }
 
 export async function editEnvelopes(envelopes: Envelope[], userId: string) {
-  const toFixedEnvelopes = envelopes.map((e: Envelope) => ({...e, total: Number(e.total.toFixed(2))}))
+  const toFixedEnvelopes = envelopes.map((e: Envelope) => ({
+    ...e,
+    total: Number(e.total.toFixed(2)),
+  }));
   try {
     const userDocRef = doc(db, "users", userId);
     await updateDoc(userDocRef, { envelopes: toFixedEnvelopes });
@@ -172,8 +176,9 @@ export async function editTotalSpendingBudget(
 }
 
 export function toUTCDateString(date: Date): string {
-  return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1
-    }-${date.getUTCDate()}`;
+  return `${date.getUTCFullYear()}-${
+    date.getUTCMonth() + 1
+  }-${date.getUTCDate()}`;
 }
 
 async function isResetToday(
@@ -189,10 +194,10 @@ async function isResetToday(
     todayUTC,
     resetBudgetTimestamp: resetBudgetTimestamp
       ? {
-        timestamp: resetBudgetTimestamp,
-        date: resetBudgetTimestamp.toDate(),
-        utcString: toUTCDateString(resetBudgetTimestamp.toDate()),
-      }
+          timestamp: resetBudgetTimestamp,
+          date: resetBudgetTimestamp.toDate(),
+          utcString: toUTCDateString(resetBudgetTimestamp.toDate()),
+        }
       : null,
     isSameDay:
       resetBudgetTimestamp &&
@@ -295,30 +300,30 @@ export async function resetBudget({
 
   const totalOneTimeCash = oneTimeCash
     ? oneTimeCash.reduce(
-      (acc, cash) =>
-        isDateInCurrentPayPeriod(
-          payPeriodInterval,
-          payDate.toDate(),
-          cash.date.toDate()
-        )
-          ? acc + cash.amount
-          : acc,
-      0
-    )
+        (acc, cash) =>
+          isDateInCurrentPayPeriod(
+            payPeriodInterval,
+            payDate.toDate(),
+            cash.date.toDate()
+          )
+            ? acc + cash.amount
+            : acc,
+        0
+      )
     : 0;
 
   const totalOneTimeExpenses = oneTimeExpenses
     ? oneTimeExpenses.reduce(
-      (acc, expense) =>
-        isDateInCurrentPayPeriod(
-          payPeriodInterval,
-          payDate.toDate(),
-          expense.date.toDate()
-        )
-          ? acc + expense.amount
-          : acc,
-      0
-    )
+        (acc, expense) =>
+          isDateInCurrentPayPeriod(
+            payPeriodInterval,
+            payDate.toDate(),
+            expense.date.toDate()
+          )
+            ? acc + expense.amount
+            : acc,
+        0
+      )
     : 0;
 
   const totalEnvelopes = nextEnvelopes.reduce((acc, n) => acc + n.total, 0);
@@ -459,10 +464,66 @@ export const validIntervals: Interval[] = [
 export async function editSnowball(user: User, amount: number) {
   if (!user) return;
   const userDocRef = doc(db, "users", user.uid);
-  await updateDoc(userDocRef, { snowball: amount })
+  await updateDoc(userDocRef, { snowball: amount });
   try {
-    console.log('attempting to updateDoc for snowball')
+    console.log("attempting to updateDoc for snowball");
   } catch (e) {
-    console.error("There was an error in editSnowball when updating db: ", e)
+    console.error("There was an error in editSnowball when updating db: ", e);
+  }
+}
+
+export async function shouldBackupUserData(user: User) {
+  if (!user) return;
+  try {
+    const now = Timestamp.fromDate(new Date());
+    const userDocRef = doc(db, "users", user.uid);
+    const docSnap = await getDoc(userDocRef);
+    if (docSnap.exists()) {
+      if (!docSnap.data().backups) return true;
+      if (!docSnap.data().backups.backupTimeStamp) return true;
+      const backupTimeStamp = docSnap.data().backups.backupTimeStamp;
+      if (now.toMillis() - backupTimeStamp.toMillis() > millisecondsInDay) return true;
+      return false;
+    }
+  } catch (error) {
+    console.error("Error running shouldBackupUserData in editData: ", error)
+  }
+}
+
+export async function backupUserData(user: User) {
+  if (!user) return;
+  try {
+    const userDocRef = doc(db, "users", user.uid);
+    const docSnap = await getDoc(userDocRef);
+    if (docSnap.exists()) {
+      const nvelopes = docSnap.data().envelopes ?? [];
+      const payments = docSnap.data().payments ?? [];
+      const expenses = docSnap.data().oneTimeExpense ?? [];
+      const cash = docSnap.data().oneTimeCash ?? [];
+      const payDate = docSnap.data().payDate ?? Timestamp.fromDate(new Date());
+      const payPeriodInterval = docSnap.data().payPeriodInterval ?? "MONTHLY";
+      const income = docSnap.data().income ?? 0;
+      const shouldReset = docSnap.data().shouldReset ?? false;
+      const snowball = docSnap.data().snowball ?? 0;
+      const totalSpendingBudget = docSnap.data().totalSpendingBudget ?? 0;
+
+      await updateDoc(userDocRef, {
+        backups: {
+          backupTimeStamp: Timestamp.fromDate(new Date()),
+          nvelopes,
+          payments,
+          expenses,
+          cash,
+          payDate,
+          payPeriodInterval,
+          income,
+          shouldReset,
+          snowball,
+          totalSpendingBudget,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Error attempting backupUserData in editData: ", error)
   }
 }
