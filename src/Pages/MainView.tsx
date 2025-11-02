@@ -4,27 +4,33 @@ import {
 } from "react";
 import Header from "../components/Header";
 import Nvelopes from "../components/Nvelopes";
-import { type OneTimeAmount, type Envelope } from "../types";
+import { type OneTimeAmount, type Envelope, type Payment } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
   backupUserData,
   editEnvelopes,
   editOneTimeCashAndBudget,
   editOneTimeExpense,
+  editPayments,
   editRent,
+  editSnowball,
+  editTotalSpendingBudget,
   shouldBackupUserData,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
-import { isDateInCurrentPayPeriod, updateBudgetStateAndDBB } from "../util";
-import { GiMoneyStack } from "react-icons/gi";
+import { isDateInCurrentPayPeriod, recalculateBudget, removeVirtualIdPortion, updateBudgetStateAndDBB } from "../util";
+import { GiEnvelope, GiEvilBook, GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
 import FullScreen from "../components/FullScreen";
 import TextInput from "../components/TextInput";
 import Expenses from "../components/Expenses";
 import type { User } from "firebase/auth";
+import { startOfDay } from "date-fns";
+import PaymentForm from "../components/forms/PaymentForm";
+import PaymentMap from "../components/PaymentMap";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -37,10 +43,33 @@ export default function MainEnvelopesView() {
     setRent,
     oneTimeExpenses,
     payDate,
-    payPeriodInterval
+    payPeriodInterval,
+    snowball,
+    setSnowball,
+    payments,
+    setPayments
   } = useDatabase();
 
   const [expenses, setExpenses] = useState<OneTimeAmount[]>([])
+  const [showPaymentsMenu, setShowPaymentsMenu] = useState(true);
+  const [paymentToEdit, setPaymentToEdit] = useState<Payment | null>(null);
+  const [showPaymentInputs, setShowPaymentInputs] = useState(false);
+  const [showDeletePayment, setShowDeletePayment] = useState(false);
+  const [showEditSnowball, setShowEditSnowball] = useState(false);
+
+  const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
+  const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isAddingCash, setIsAddingCash] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showBudgetWarning, setShowBudgetWarning] = useState(false);
+  const [cashName, setCashName] = useState("");
+  const [cashAmount, setCashAmount] = useState("");
+  const [showSpendPage, setShowSpendPage] = useState(false);
+  const [loadingText, setLoadingText] = useState("");
+  const [showLoading, setShowLoading] = useState(false);
+  const [isAddingOneTimeBill, setIsAddingOneTimeBill] = useState(false);
+  const [isAddingCashToEnvelope, setIsAddingCashToEnvelope] = useState(false);
 
   useEffect(() => {
     if (!payDate) return
@@ -61,19 +90,99 @@ export default function MainEnvelopesView() {
     backupUser(user);
   }, [user])
 
-  const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
-  const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
-  const [isAddingCash, setIsAddingCash] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showBudgetWarning, setShowBudgetWarning] = useState(false);
-  const [cashName, setCashName] = useState("");
-  const [cashAmount, setCashAmount] = useState("");
-  const [showSpendPage, setShowSpendPage] = useState(false);
-  const [loadingText, setLoadingText] = useState("");
-  const [showLoading, setShowLoading] = useState(false);
-  const [isAddingOneTimeBill, setIsAddingOneTimeBill] = useState(false);
-  const [isAddingCashToEnvelope, setIsAddingCashToEnvelope] = useState(false);
+
+
+  async function handleEditPayment(p: Payment) {
+    setPaymentToEdit(p);
+    setShowPaymentInputs(true);
+  }
+
+  async function handleUpdateBudget(diffAmount: number) {
+    const nextBudget = recalculateBudget({
+      currentAvailableBudget: totalSpendingBudget,
+      diffAmount,
+    });
+    await editTotalSpendingBudget(nextBudget, user!.uid);
+    setTotalSpendingBudget(nextBudget);
+  }
+
+  function handleDeleteBill(p: Payment) {
+    setPaymentToEdit(p);
+    setShowDeletePayment(true);
+  }
+
+  async function deleteBill() {
+    if (!user || !paymentToEdit) return;
+    const updatedPayments = payments.filter((p) => {
+      const originalPaymentToEditId = removeVirtualIdPortion(p);
+      return p.id !== originalPaymentToEditId
+    });
+    setPayments(updatedPayments);
+    await editPayments(updatedPayments, user.uid);
+    // Update the budget in DB only if the bill was unpaid and in interval
+    if (paymentToEdit.isInInterval && !paymentToEdit.paid) {
+      await handleUpdateBudget(paymentToEdit.amount);
+    }
+    resetPaymentState();
+  }
+
+  function handleAddPayment() {
+    setPaymentToEdit(null);
+    setShowPaymentInputs(true);
+  }
+
+  function resetPaymentState() {
+    setShowPaymentInputs(false);
+    setPaymentToEdit(null);
+  }
+
+  async function handleUpdatePaid(payment: Payment) {
+    setPayments((prev) => {
+      const originalId = payment.id.includes("-WEEKLY-")
+        ? payment.id.split("-WEEKLY-")[0]
+        : payment.id.includes("-BIWEEKLY-")
+          ? payment.id.split("-BIWEEKLY-")[0]
+          : payment.id;
+
+      const updatedPayments = prev.map((p) => {
+        if (p.id !== originalId) return p;
+
+        // For weekly/biweekly, toggle the specific occurrence in paidDates
+        if (p.interval === "WEEKLY" || p.interval === "BIWEEKLY") {
+          const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
+          const paidDates = p.paidDates || [];
+
+          // Check if this date is already paid
+          const alreadyPaid = paidDates.some(
+            (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
+          );
+
+          if (alreadyPaid) {
+            // REMOVE the date (mark unpaid)
+            return {
+              ...p,
+              paidDates: paidDates.filter(
+                (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime
+              )
+            };
+          } else {
+            // ADD the date (mark paid)
+            return {
+              ...p,
+              paidDates: [...paidDates, Timestamp.fromDate(startOfDay(payment.dueDate.toDate()))]
+            };
+          }
+        }
+
+        // For monthly/yearly, toggle simple paid boolean
+        return { ...p, paid: !p.paid };
+      });
+
+      editPayments(updatedPayments, user!.uid);
+      return updatedPayments;
+    });
+  }
+
 
   const emptyEnvelope = {
     id: "",
@@ -283,6 +392,91 @@ export default function MainEnvelopesView() {
     resetState();
   }
 
+
+  if (showDeletePayment) {
+    return (
+      <div className="absolute inset-0 w-screen h-screen z-100 select-none">
+        <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
+          {!paymentToEdit?.paid && paymentToEdit?.isInInterval ? (
+            <p className="text-my-white-light text-center">
+              Removing this bill will add
+              <span className="text-my-green-base px-[3px]">
+                ${paymentToEdit.amount.toFixed(2)}
+              </span>
+              to your available budget
+            </p>
+          ) : (
+            <p className="text-my-white-light text-center px-2">
+              Removing this bill will not change your available balance of
+              <span className="text-my-green-base px-[3px]">
+                ${totalSpendingBudget.toFixed(2)}
+              </span>
+              because it's either paid already, or not in the current interval.
+            </p>
+          )}
+          <p className="p-4 rounded-md text-my-white-dark w-full text-center">
+            Are you sure you want to delete {paymentToEdit?.name}?
+          </p>
+          <div className="flex gap-2 items-center justify-center w-[95%]">
+            <Button
+              color="red"
+              onClick={() => {
+                setShowDeletePayment(false);
+                resetPaymentState();
+              }}
+            >
+              No
+            </Button>
+            <Button
+              color="green"
+              onClick={() => {
+                deleteBill();
+                setShowDeletePayment(false);
+                resetPaymentState();
+              }}
+            >
+              Yes
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!payDate) return;
+
+  if (showPaymentInputs && user)
+    return (
+      <PaymentForm
+        handleBack={resetPaymentState}
+        paymentToEdit={paymentToEdit}
+        user={user}
+        handleUpdateBudget={handleUpdateBudget}
+      />
+    );
+
+  async function handleEditSnowball() {
+    await editSnowball(user!, snowball);
+  }
+
+  if (showEditSnowball)
+    return (
+      <FullScreen
+        onClose={() => setShowEditSnowball(false)}
+        onSave={handleEditSnowball}
+        showButtons={true}
+      >
+        <TextInput
+          id="newSnowballAmount"
+          placeholder={`$${snowball}`}
+          value={snowball.toString()}
+          label="New Snowball Amount"
+          onChange={(e) => setSnowball(Number(e.target.value))}
+        />
+      </FullScreen>
+    );
+
+
   if (showSpendPage && envelopes.length > 0) {
     const envelopeSent = envelopeToEdit || emptyEnvelope;
     return (
@@ -455,7 +649,7 @@ export default function MainEnvelopesView() {
   }
 
   return (
-    <div className="w-full text-center flex flex-col items-center h-screen">
+    <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-black-base overflow-y-auto">
       {showLoading && <Loading text={loadingText} />}
 
       <Header
@@ -465,8 +659,8 @@ export default function MainEnvelopesView() {
         ]}
       />
 
-      <div className="flex flex-col items-center gap-[1rem] overflow-y-auto overflow-x-hidden bg-my-black-base pt-[1rem] w-full h-screen">
-        <div className="flex w-full justify-center gap-[1rem] items-center">
+<main className="flex flex-col items-center gap-[1rem] pt-[1rem] w-full">
+<div className="flex w-full justify-center gap-4 items-center">
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"
             onClick={handleAddOneTimeBill}
@@ -474,13 +668,19 @@ export default function MainEnvelopesView() {
             <GiMoneyStack className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
             <p className="text-sm">Expense</p>
           </div>
-          <div className="w-fit flex justify-center items-center ">
-            <Nvelope
-              kind="dash"
-              envelope={{ ...emptyEnvelope, name: "New Envelope" }}
-              onClick={handleSetupNewEnvelope}
-              handleBack={resetState}
-            />
+          <div
+            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark  text-my-black-dark shadow-my-red-light"
+            onClick={handleAddPayment}
+          >
+            <GiEvilBook className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+            <p className="text-sm">Payment</p>
+          </div>
+          <div
+            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark shadow-my-black-dark"
+            onClick={handleSetupNewEnvelope}
+          >
+            <GiEnvelope className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+            <p className="text-sm">Nvelope</p>
           </div>
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark  text-my-green-dark shadow-my-green-light"
@@ -499,8 +699,14 @@ export default function MainEnvelopesView() {
           handleEditRent={handleEditRent}
           handleAddCashToEnvelope={handleAddCashToEnvelope}
         />
-        <Expenses expenses={expenses}/>
-      </div>
+        <PaymentMap
+          handleUpdatePaid={handleUpdatePaid}
+          handleEditBill={handleEditPayment}
+          handleDeleteBill={handleDeleteBill}
+        />
+
+        <Expenses expenses={expenses} />
+      </main>
     </div>
   );
 }

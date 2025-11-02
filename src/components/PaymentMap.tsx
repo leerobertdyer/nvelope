@@ -105,11 +105,11 @@ export default function PaymentMap({
     return (
       <div
         key={p.id}
-        className={`grid grid-cols-8 py-2 text-center border-y-1 border-my-black-dark rounded-xs w-full
-          ${
-            p.paid
-              ? "bg-my-black-light text-white"
-              : p.type === "DEBT"
+        onClick={() => handleEditBill(p)}
+        className={`grid grid-cols-8 py-2 text-center border-y-1 border-my-black-dark rounded-xs w-full cursor-pointer
+          ${p.paid
+            ? "bg-my-black-light text-white"
+            : p.type === "DEBT"
               ? "text-my-blue-light bg-my-black-base"
               : t
           } `}
@@ -119,7 +119,7 @@ export default function PaymentMap({
         >
           {format(p.dueDate.toDate(), "do")}
         </p>
-        <p className="flex items-center justify-center text-xs col-span-3">
+        <p className="flex items-center justify-center text-xs col-span-4">
           {p.name}
         </p>
         {p.total && !p.paid ? (
@@ -135,12 +135,7 @@ export default function PaymentMap({
           </p>
         )}
 
-        <div className="flex gap-[2px] items-start justify-end mr-2 col-span-2">
-          <IoPencil
-            className="text-my-black-base bg-my-white-dark cursor-pointer hover:text-my-white-dark hover:bg-my-red-light rounded-lg p-[2px] border-2 border-my-black-dark"
-            size={20}
-            onClick={() => handleEditBill(p)}
-          />
+        <div className="flex gap-[2px] items-start justify-end mr-2 col-span-1">
           <IoIosTrash
             className="text-my-white-dark bg-my-red-dark cursor-pointer hover:text-my-red-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
             size={20}
@@ -188,11 +183,11 @@ export default function PaymentMap({
     name: string;
   }) {
     return (
-      <div className="relative grid grid-cols-3 py-2 text-center rounded-xs border-[1px] border-my-white-light bg-my-black-dark text-my-white-base">
+      <div className="relative grid grid-cols-4 py-2 text-center rounded-xs border-[1px] border-my-white-light bg-my-black-dark text-my-white-base">
         <div className="absolute ml-2 w-fit h-full">
           <ShowHideButton isShown={isShown} onClick={setter} />
         </div>
-        <p className="col-span-2">{name}</p>
+        <p className="col-span-3">{name}</p>
         <p className="col-span-1 text-my-blue-light">{total}</p>
       </div>
     );
@@ -200,20 +195,23 @@ export default function PaymentMap({
 
   return (
     <>
-      <div className="h-fit max-w-[60rem] w-[95vw] border-2 border-my-white-light rounded-md mb-[5rem] overflow-auto ">
-        <PaymentBox
-          isShown={showPast}
-          setter={() => setShowPast(!showPast)}
-          name="Past Payments"
-          total={pastPaymentsTotal}
-        />
-        {showPast && (
-          <div className=" bg-my-black-dark">
-            {pastPayments.map((p) => (
-              <RenderPayment p={p} time="PAST" />
-            ))}
-          </div>
-        )}
+      <div className="h-fit w-screen max-w-[40.25rem] border-2 border-my-white-light rounded-md overflow-auto ">
+        {pastPayments && pastPayments.length > 0 && <>
+          <PaymentBox
+            isShown={showPast}
+            setter={() => setShowPast(!showPast)}
+            name="Past Payments"
+            total={pastPaymentsTotal}
+          />
+          {showPast && (
+            <div className=" bg-my-black-dark">
+              {pastPayments.map((p) => (
+                <RenderPayment p={p} time="PAST" />
+              ))}
+            </div>
+          )}
+        </>
+        }
         <PaymentBox
           name="Current Payments"
           total={currentPaymentsTotal}
@@ -227,19 +225,21 @@ export default function PaymentMap({
             ))}
           </div>
         )}
-        <PaymentBox
-          name="Future Payments"
-          total={futurePaymentsTotal}
-          isShown={showFuture}
-          setter={() => setShowFuture(!showFuture)}
-        />
-        {showFuture && (
-          <div className=" bg-my-black-dark">
-            {futurePayments.map((p) => (
-              <RenderPayment p={p} time="FUTURE" />
-            ))}
-          </div>
-        )}
+        {futurePayments && futurePayments.length > 0 && <>
+          <PaymentBox
+            name="Future Payments"
+            total={futurePaymentsTotal}
+            isShown={showFuture}
+            setter={() => setShowFuture(!showFuture)}
+          />
+          {showFuture && (
+            <div className=" bg-my-black-dark">
+              {futurePayments.map((p) => (
+                <RenderPayment p={p} time="FUTURE" />
+              ))}
+            </div>
+          )}
+        </>}
       </div>
     </>
   );

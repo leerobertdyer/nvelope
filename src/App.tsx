@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 import Home from "./Pages/Home";
 import Settings from "./Pages/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
-import Payments from "./Pages/Payments";
+import Payments from "./Pages/OldPayments";
 
 // Protected route component that redirects to home if no user
 function ProtectedRoute({ children }: { children: React.ReactNode }) {

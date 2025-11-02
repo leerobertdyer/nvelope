@@ -157,39 +157,41 @@ export default function Nvelopes({
   }
 
   return (
-    <div className="flex flex-col justify-center items-center mt-4 w-full">
-      {/* Grid Header Row */}
-      <div className="w-screen max-w-[40rem]  h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-white-dark text-my-black-light font-bold">
-        <div className="relative col-span-3 flex justify-center items-center">
-          <div className="absolute ml-[12px] w-full h-full">
-            <ShowHideButton
-              theme="LIGHT"
-              onClick={() => setShowEnvelopes(!showEnvelopes)}
-              isShown={showEnvelopes}
-            />
+    <div className="flex flex-col justify-center items-center mt-4 w-full h-fit overflow-auto">
+      <div className="border-2 border-my-white-light rounded-md">
+        <div className="rounded-xs w-screen max-w-[40rem]  h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-white-dark text-my-black-light font-bold">
+          <div className="relative col-span-3 flex justify-center items-center">
+            <div className="absolute ml-[12px] w-full h-full">
+              <ShowHideButton
+                theme="LIGHT"
+                onClick={() => setShowEnvelopes(!showEnvelopes)}
+                isShown={showEnvelopes}
+              />
+            </div>
+            <p className="text-sm">Nvelope</p>
           </div>
-          <p className="text-sm">Nvelope</p>
+          <div className="flex justify-center items-center col-span-2">
+            <p className="text-sm">Remaining</p>
+          </div>
+          <div className="flex justify-center items-center col-span-2">
+            <p className="text-sm">Total</p>
+          </div>
         </div>
-        <div className="flex justify-center items-center col-span-2">
-          <p className="text-sm">Remaining</p>
+        {showEnvelopes &&
+          sortedEnvelopes.map((e) => (
+        <div key={e.id}>
+          <ListEnvelope
+            envelope={e}
+            onClick={() => handleSelectListEnvelope(e)}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragEnd={handleDragEnd}
+          />
         </div>
-        <div className="flex justify-center items-center col-span-2">
-          <p className="text-sm">Total</p>
-        </div>
+          ))}
+
       </div>
-      {showEnvelopes &&
-        sortedEnvelopes.map((e) => (
-          <div key={e.id}>
-            <ListEnvelope
-              envelope={e}
-              onClick={() => handleSelectListEnvelope(e)}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onDragEnd={handleDragEnd}
-            />
-          </div>
-        ))}
     </div>
   );
 }
