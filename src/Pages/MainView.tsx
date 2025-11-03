@@ -558,12 +558,13 @@ export default function MainEnvelopesView() {
       <>
         {showLoading && <Loading text={loadingText} />}
         <FullScreen
+          theme="DARK"
           showButtons
           onClose={() => resetState()}
           onSave={addOneTimeExpenseToDb}
         >
           <div className="w-full max-w-[20rem] m-auto h-fit flex flex-col items-center justify-center gap-2">
-            <h3 className="p-2 text-my-green-dark mb-4 text-lg">
+            <h3 className="p-2 text-my-white-dark mb-4 text-lg">
               Add One Time Expense
             </h3>
             <TextInput
@@ -597,7 +598,7 @@ export default function MainEnvelopesView() {
           onSave={addCashToDb}
         >
           <div className="w-full max-w-[20rem] m-auto h-fit flex flex-col items-center justify-center">
-            <h3 className="p-2 text-my-green-dark text-lg mb-4">Add Cash</h3>
+            <h3 className="p-2 text-white text-lg mb-4">Add Cash</h3>
             <TextInput
               label="Amount To Add"
               id="newCashAmount"
@@ -693,11 +694,11 @@ export default function MainEnvelopesView() {
         </div>
 
         {showSummary ? (
-          <div className="w-full max-w-[40.25rem] rounded-sm border-2 border-my-white-light mt-[3rem] ">
+          <div className="w-full max-w-[40.25rem] rounded-sm border-2 border-my-white-light mt-[1.5rem] ">
             <Summary setShowEditSnowball={setShowEditSnowball} setShowPaymentsMenu={setShowSummary} payments={getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate)} />
           </div>
         ) : (
-          <div className="w-full max-w-[40.25rem] rounded-sm border-2 border-my-white-light mt-[3rem] ">
+          <div className="w-full max-w-[40.25rem] rounded-sm border-2 border-my-white-light mt-[1.5rem] ">
             <ShowAndHide
               onClick={() => setShowSummary(true)}
               label="Show Summary"

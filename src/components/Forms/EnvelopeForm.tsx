@@ -32,7 +32,7 @@ export default function EnvelopeForm(props: IProps) {
 
   return (
     <div className="min-h-screen w-full absolute inset-0 bg-my-blue-dark text-white">
-      <div className="flex flex-col items-center justify-center gap-2 max-w-[40rem] my-20 mx-auto">
+      <div className="flex flex-col items-center justify-startgap-2 h-full max-w-[40rem] pt-[10rem] my-20 mx-auto gap-4">
         <h2 className="text-2xl">
           {isEditing ? "Edit Envelope" : "Add New Envelope"}
         </h2>
