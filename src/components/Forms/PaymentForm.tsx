@@ -154,7 +154,7 @@ export default function PaymentForm({
       )}
       <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll min-h-screen w-full overflow-x-hidden">
         <div className="flex flex-col gap-2 items-center justify-center py-[2rem] text-my-black-dark bg-my-white-base w-full max-w-[35rem] text-center">
-          <div className="flex  gap-[2px] items-start justify-around w-full ">
+          {paymentToEdit && <div className="flex  gap-[2px] items-start justify-around w-full ">
             <div className="flex items-center justify-start  gap-2">
               <IoIosTrash
                 className="text-my-white-dark bg-my-red-dark cursor-pointer hover:text-my-red-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
@@ -179,7 +179,7 @@ export default function PaymentForm({
               )}
               <p className="text-center  text-my-green-dark">{paymentToEdit?.paid ? "PAID" : "NOT PAID"}</p>
             </div>
-          </div>
+          </div>}
           <h1 className="text-2xl">
             {paymentToEdit ? "Edit Payment Form" : "Add Payment Form"}
           </h1>
