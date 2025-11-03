@@ -143,11 +143,11 @@ export default function PaymentForm({
   }
 
   return (
-    <FullScreen theme="DARK">
+    <FullScreen>
       {showPaymentError && (
         <Popup type="error">Payment name already exists</Popup>
       )}
-      <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden w-full pb-[4rem] bg-my-white-base">
+      <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll h-screen w-full pb-[4rem] bg-my-white-base">
         <div className="flex flex-col gap-2 items-center justify-center rounded-md p-4 text-my-black-dark bg-my-white-base w-full max-w-[35rem] text-center">
           <h1 className="text-2xl">
             {paymentToEdit ? "Edit Payment Form" : "Add Payment Form"}
@@ -166,7 +166,7 @@ export default function PaymentForm({
           />
           {newPayment.name && (
             <div className="flex flex-col items-center w-full mb-4">
-              <label htmlFor="amount">Bill Amount</label>
+              <label htmlFor="amount">Payment Amount</label>
               <input
                 id="amount"
                 type="number"
@@ -180,13 +180,13 @@ export default function PaymentForm({
                   })
                 }
                 onWheel={(e) => e.currentTarget.blur()} // disables scroll change
-                placeholder="Enter new bill amount"
+                placeholder="Enter new payment amount"
               />
             </div>
           )}
           {newPayment.amount > 0 && (
             <div className="flex flex-col items-center w-full mb-4">
-              <label htmlFor="amount">Interval Of Bill</label>
+              <label htmlFor="amount">Interval Of Payment</label>
               <select
                 value={newPayment.interval || defaultIntervalOption}
                 onChange={(e) =>
