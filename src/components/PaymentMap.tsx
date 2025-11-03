@@ -1,8 +1,3 @@
-import {
-  IoIosCheckmarkCircle,
-  IoIosCheckmarkCircleOutline,
-  IoIosTrash,
-} from "react-icons/io";
 import type { Payment } from "../types";
 import { format, isAfter, startOfDay } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
@@ -21,9 +16,7 @@ interface PaymentMapProps {
   handleDeleteBill: (payment: Payment) => void;
 }
 export default function PaymentMap({
-  handleUpdatePaid,
   handleEditBill,
-  handleDeleteBill,
 }: PaymentMapProps) {
   const { payments, payPeriodInterval, payDate } = useDatabase();
   const { user } = useAuth();
