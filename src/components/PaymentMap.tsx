@@ -194,7 +194,7 @@ export default function PaymentMap({
 
   return (
     <>
-      <div className="h-fit w-screen max-w-[40.25rem] border-2 border-my-white-light rounded-md overflow-auto ">
+      <div className="h-fit w-screen max-w-[40.25rem] overflow-auto ">
         {pastPayments && pastPayments.length > 0 && <>
           <PaymentBox
             isShown={showPast}

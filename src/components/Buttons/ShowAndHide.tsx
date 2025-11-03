@@ -25,7 +25,7 @@ export default function ShowAndHide({
       onClick={onClick}
     >
       {label && (
-        <p className="text-my-white-light text-xs">
+        <p className="text-my-white-light text-lg">
           {label}{" "}
           {additionalDetails && (
             <span className="text-my-blue-base">{additionalDetails}</span>
