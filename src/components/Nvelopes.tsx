@@ -158,10 +158,10 @@ export default function Nvelopes({
 
   return (
     <div className="flex flex-col justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">
-      <div className="border-2 border-my-white-light rounded-md">
-        <div className="rounded-xs w-screen max-w-[40rem]  h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-white-dark text-my-black-light font-bold">
+      <div className="border-2 border-my-white-light ">
+        <div className="rounded-xs w-screen max-w-[40rem]  h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-x-2 border-my-black-dark bg-my-white-dark text-my-black-light font-bold">
           <div className="relative col-span-3 flex justify-center items-center">
-            <div className="absolute ml-[12px] w-full h-full">
+            <div className="absolute ml-[17px] w-full h-full">
               <ShowHideButton
                 theme="LIGHT"
                 onClick={() => setShowEnvelopes(!showEnvelopes)}

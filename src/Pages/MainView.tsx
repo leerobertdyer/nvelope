@@ -590,7 +590,7 @@ export default function MainEnvelopesView() {
         ]}
       />
 
-      <main className="flex flex-col items-center pt-[1rem] w-full ">
+      <main className="flex flex-col items-center pt-[1rem] w-full">
         <div className="flex w-full justify-center gap-4 items-center">
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"
@@ -615,36 +615,38 @@ export default function MainEnvelopesView() {
           </div>
         </div>
 
-        {showSummary ? (
-          <div className="w-full max-w-[40.25rem] rounded-sm border-2 border-my-white-light mt-[1.5rem] ">
-            <Summary setShowEditSnowball={setShowEditSnowball} setShowPaymentsMenu={setShowSummary} payments={getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate)} />
-          </div>
-        ) : (
-          <div className="w-full max-w-[40.25rem] border-b-2 border-t-4 border-my-white-light mt-[1.5rem] ">
-            <ShowAndHide
-              onClick={() => setShowSummary(true)}
-              label="Show Summary"
-              colorScheme="bg-my-black-dark w-full p-0 text-my-white-dark"
-              up={false}
-              border={false}
-              iconSize={25}
-            />
-          </div>
-        )}
-        <Nvelopes
-          resetState={resetState}
-          handleSetupEdit={handleSetupEdit}
-          editEnvelope={editEnvelope}
-          handleSetShowSpendingPage={handleSetShowSpendingPage}
-          handleDeleteEnvelope={handleSetupDelete}
-          handleEditRent={handleEditRent}
-          handleAddCashToEnvelope={handleAddCashToEnvelope}
-        />
-        <PaymentMap
-          handleUpdatePaid={handleUpdatePaid}
-          handleEditBill={handleEditPayment}
-          handleDeleteBill={handleDeleteBill}
-        />
+        <div className="w-full max-w-[40rem] rounded-md border-2 border-my-white-light mt-[1.5rem] overflow-hidden">
+          {showSummary ? (
+            <div className="w-full  rounded-md ">
+              <Summary setShowEditSnowball={setShowEditSnowball} setShowPaymentsMenu={setShowSummary} payments={getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate)} />
+            </div>
+          ) : (
+            <div className="w-full rounded-md">
+              <ShowAndHide
+                onClick={() => setShowSummary(true)}
+                label="Show Summary"
+                colorScheme="bg-my-black-dark w-full p-0 text-my-white-dark"
+                up={false}
+                border={false}
+                iconSize={25}
+              />
+            </div>
+          )}
+          <Nvelopes
+            resetState={resetState}
+            handleSetupEdit={handleSetupEdit}
+            editEnvelope={editEnvelope}
+            handleSetShowSpendingPage={handleSetShowSpendingPage}
+            handleDeleteEnvelope={handleSetupDelete}
+            handleEditRent={handleEditRent}
+            handleAddCashToEnvelope={handleAddCashToEnvelope}
+          />
+          <PaymentMap
+            handleUpdatePaid={handleUpdatePaid}
+            handleEditBill={handleEditPayment}
+            handleDeleteBill={handleDeleteBill}
+          />
+        </div>
         {/* <Expenses expenses={expenses} /> */}
       </main>
     </div>
