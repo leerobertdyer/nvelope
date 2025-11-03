@@ -154,7 +154,7 @@ export default function PaymentMap({
     name: string;
   }) {
     return (
-      <div className="relative grid grid-cols-4 py-2 text-center rounded-xs border-[1px] border-my-white-light bg-my-black-dark text-my-white-base">
+      <div className="relative grid grid-cols-4 py-2 text-center rounded-xs  bg-my-black-dark text-my-white-base">
         <div className="absolute ml-2 w-fit h-full">
           <ShowHideButton isShown={isShown} onClick={setter} />
         </div>
