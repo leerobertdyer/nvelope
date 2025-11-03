@@ -31,13 +31,15 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
       showButtons
       onSave={manuallySetBudgetInDB}
       onClose={resetState}>
-      <TextInput
-        label="Manually Adjust Your Remaining Budget"
-        id="newBudgetAmount"
-        value={cashAmount}
-        onChange={(e) => setCashAmount(e.target.value)}
-        textOrNumber="number"
-        placeholder="Amount" />
+      <div className="flex flex-col items-center justify-center gap-2 max-w-[20rem] m-auto">
+        <TextInput
+          label="Manually Adjust Your Remaining Budget"
+          id="newBudgetAmount"
+          value={cashAmount}
+          onChange={(e) => setCashAmount(e.target.value)}
+          textOrNumber="number"
+          placeholder="Amount" />
+      </div>
     </FullScreen>
   );
 }

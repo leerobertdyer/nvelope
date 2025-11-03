@@ -118,42 +118,21 @@ export default function PaymentMap({
         >
           {format(p.dueDate.toDate(), "do")}
         </p>
-        <p className="flex items-center justify-center text-xs col-span-3">
+        <p className="flex items-center justify-start text-xs col-span-4">
           {p.name}
         </p>
         {p.total && !p.paid ? (
-          <p className="flex items-center justify-center col-span-2 gap-[2px]">
+          <p className="flex items-center justify-end col-span-3 gap-[2px] mr-2">
             <span className="text-sm text-my-blue-light">${p.amount}</span>/
             <span className="text-sm text-my-blue-dark">
               {Math.ceil(p.total)}
             </span>
           </p>
         ) : (
-          <p className="text-sm flex items-center justify-center col-span-2">
+          <p className="text-sm flex items-center justify-end col-span-3 mr-2">
             ${p.amount.toFixed(2)}
           </p>
         )}
-
-        <div className="flex gap-[2px] items-start justify-end mr-2 col-span-2">
-          <IoIosTrash
-            className="text-my-white-dark bg-my-red-dark cursor-pointer hover:text-my-red-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
-            size={20}
-            onClick={() => handleDeleteBill(p)}
-          />
-          {p.paid ? (
-            <IoIosCheckmarkCircle
-              onClick={() => handleUpdatePaid(p)}
-              className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
-              size={20}
-            />
-          ) : (
-            <IoIosCheckmarkCircleOutline
-              onClick={() => handleUpdatePaid(p)}
-              className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
-              size={20}
-            />
-          )}
-        </div>
       </div>
     );
   }

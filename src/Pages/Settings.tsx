@@ -85,11 +85,15 @@ export default function Settings() {
     }
 
     if (showEditIncome) return <FullScreen showButtons onClose={() => setShowEditIncome(false)} onSave={updateIncome} >
-        <TextInput id="newIncome" label="Paycheck Amount" value={newIncome} onChange={(e) => setNewIncome(e.target.value)} textOrNumber="number" placeholder="Enter new income" />
+        <div className="flex flex-col items-center justify-center gap-2 max-w-[20rem] m-auto text-center">
+            <TextInput id="newIncome" label="Paycheck Amount" value={newIncome} onChange={(e) => setNewIncome(e.target.value)} textOrNumber="number" placeholder="Enter new income" />
+        </div>
     </FullScreen>
 
     if (showEditRent) return <FullScreen showButtons onClose={() => setShowEditRent(false)} onSave={handleEditRent} >
-        <TextInput id="changeRent" label="Edit Monthly Rent/Mortage" value={rent.toString()} placeholder="New Rent Amount" onChange={(e) => setRent(Number(e.target.value))} />
+        <div className="flex flex-col items-center justify-center gap-2 max-w-[20rem] m-auto text-center">
+            <TextInput id="changeRent" label="Edit Monthly Rent/Mortage" value={rent.toString()} placeholder="New Rent Amount" onChange={(e) => setRent(Number(e.target.value))} />
+        </div>
     </FullScreen>
 
     async function handleEditRent() {

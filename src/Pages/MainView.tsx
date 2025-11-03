@@ -22,11 +22,10 @@ import Button from "../components/Buttons/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import { getVirtualPaymentsForPeriod, isDateInCurrentPayPeriod, recalculateBudget, removeVirtualIdPortion, updateBudgetStateAndDBB } from "../util";
-import { GiEnvelope, GiEvilBook, GiMoneyStack } from "react-icons/gi";
+import { GiEnvelope, GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
 import FullScreen from "../components/Views/FullScreen";
 import TextInput from "../components/TextInput";
-import Expenses from "../components/Expenses";
 import type { User } from "firebase/auth";
 import { startOfDay } from "date-fns";
 import PaymentForm from "../components/Forms/PaymentForm";
@@ -454,6 +453,8 @@ export default function MainEnvelopesView() {
         paymentToEdit={paymentToEdit}
         user={user}
         handleUpdateBudget={handleUpdateBudget}
+        handleDeleteBill={handleDeleteBill}
+        handleUpdatePaid={handleUpdatePaid}
       />
     );
 
@@ -661,20 +662,13 @@ export default function MainEnvelopesView() {
         ]}
       />
 
-      <main className="flex flex-col items-center pt-[1rem] w-full">
+      <main className="flex flex-col items-center pt-[1rem] w-full ">
         <div className="flex w-full justify-center gap-4 items-center">
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"
-            onClick={handleAddOneTimeBill}
-          >
-            <GiMoneyStack className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-            <p className="text-xs">Expense</p>
-          </div>
-          <div
-            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark  text-my-black-dark shadow-my-red-light"
             onClick={handleAddPayment}
           >
-            <GiEvilBook className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+            <GiMoneyStack className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
             <p className="text-xs">Payment</p>
           </div>
           <div
@@ -698,7 +692,7 @@ export default function MainEnvelopesView() {
             <Summary setShowEditSnowball={setShowEditSnowball} setShowPaymentsMenu={setShowSummary} payments={getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate)} />
           </div>
         ) : (
-          <div className="w-full max-w-[40.25rem] rounded-sm border-2 border-my-white-light mt-[1.5rem] ">
+          <div className="w-full max-w-[40.25rem] border-b-2 border-t-4 border-my-white-light mt-[1.5rem] ">
             <ShowAndHide
               onClick={() => setShowSummary(true)}
               label="Show Summary"
@@ -723,7 +717,7 @@ export default function MainEnvelopesView() {
           handleEditBill={handleEditPayment}
           handleDeleteBill={handleDeleteBill}
         />
-        <Expenses expenses={expenses} />
+        {/* <Expenses expenses={expenses} /> */}
       </main>
     </div>
   );

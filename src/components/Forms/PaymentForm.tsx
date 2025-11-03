@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 import FullScreen from "../Views/FullScreen";
 import TextInput from "../TextInput";
+import { IoIosCheckmarkCircle, IoIosCheckmarkCircleOutline, IoIosTrash } from "react-icons/io";
 
 const defaultIntervalOption = "--Select An Interval--";
 const defaultTypeOption = "--Select Payment Type--";
@@ -26,6 +27,8 @@ interface IPaymentForm {
   user: User;
   handleUpdateBudget: (d: number) => Promise<void>;
   handleBack: () => void;
+  handleDeleteBill: (payment: Payment) => void;
+  handleUpdatePaid: (payment: Payment) => void;
 }
 
 export default function PaymentForm({
@@ -33,6 +36,8 @@ export default function PaymentForm({
   user,
   handleUpdateBudget,
   handleBack,
+  handleDeleteBill,
+  handleUpdatePaid,
 }: IPaymentForm) {
   const { payDate, payPeriodInterval, payments, setPayments } = useDatabase();
 
@@ -93,8 +98,8 @@ export default function PaymentForm({
     const originalPaymentToEditId = removeVirtualIdPortion(paymentToEdit);
     setPayments((prev) => {
       const updatedPayments = prev.map((p) => {
-        const currentPaymentOriginalId = removeVirtualIdPortion(p);  
-        return currentPaymentOriginalId === originalPaymentToEditId 
+        const currentPaymentOriginalId = removeVirtualIdPortion(p);
+        return currentPaymentOriginalId === originalPaymentToEditId
           ? { ...newPayment, id: originalPaymentToEditId }
           : p;
       });
@@ -147,8 +152,34 @@ export default function PaymentForm({
       {showPaymentError && (
         <Popup type="error">Payment name already exists</Popup>
       )}
-      <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll h-screen w-full pb-[4rem] bg-my-white-base">
-        <div className="flex flex-col gap-2 items-center justify-center rounded-md p-4 text-my-black-dark bg-my-white-base w-full max-w-[35rem] text-center">
+      <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll min-h-screen w-full overflow-x-hidden">
+        <div className="flex flex-col gap-2 items-center justify-center py-[2rem] text-my-black-dark bg-my-white-base w-full max-w-[35rem] text-center">
+          <div className="flex  gap-[2px] items-start justify-around w-full ">
+            <div className="flex items-center justify-start  gap-2">
+              <IoIosTrash
+                className="text-my-white-dark bg-my-red-dark cursor-pointer hover:text-my-red-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+                size={30}
+                onClick={() => handleDeleteBill(paymentToEdit ?? generateFreshPayment())}
+              />
+              <p className="text-center  text-my-red-dark">DELETE BILL</p>
+            </div>
+            <div className="flex items-center justify-start  gap-2">
+              {paymentToEdit?.paid ? (
+                <IoIosCheckmarkCircle
+                  onClick={() => handleUpdatePaid(paymentToEdit)}
+                  className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+                  size={30}
+                />
+              ) : (
+                <IoIosCheckmarkCircleOutline
+                  onClick={() => handleUpdatePaid(paymentToEdit ?? generateFreshPayment())}
+                  className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+                  size={30}
+                />
+              )}
+              <p className="text-center  text-my-green-dark">{paymentToEdit?.paid ? "PAID" : "NOT PAID"}</p>
+            </div>
+          </div>
           <h1 className="text-2xl">
             {paymentToEdit ? "Edit Payment Form" : "Add Payment Form"}
           </h1>
