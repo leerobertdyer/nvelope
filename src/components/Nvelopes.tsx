@@ -3,10 +3,10 @@ import type { Envelope } from "../types";
 import { editEnvelopes, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
-import GiveAndTake from "../Pages/GiveAndTake";
+import GiveAndTake from "./Views/GiveAndTake";
 import ListEnvelope from "./ListEnvelope";
-import BigEnvelope from "./BigEnvelope";
-import ShowHideButton from "./ShowHideButton";
+import BigEnvelope from "./Views/BigEnvelope";
+import ShowHideButton from "./Buttons/ShowHideButton";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -157,7 +157,7 @@ export default function Nvelopes({
   }
 
   return (
-    <div className="flex flex-col justify-center items-center mt-4 w-full h-fit overflow-auto">
+    <div className="flex flex-col justify-center items-center w-full h-fit overflow-auto">
       <div className="border-2 border-my-white-light rounded-md">
         <div className="rounded-xs w-screen max-w-[40rem]  h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-2 border-my-black-dark bg-my-white-dark text-my-black-light font-bold">
           <div className="relative col-span-3 flex justify-center items-center">

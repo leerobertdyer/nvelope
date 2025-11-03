@@ -1,5 +1,5 @@
 // Page to display all bills and debts that are recurring
-import Button from "../components/Button";
+import Button from "../components/Buttons/Button";
 import { paymentsTotal, recalculateBudget, removeVirtualIdPortion } from "../util";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { type Payment } from "../types";
@@ -12,9 +12,9 @@ import {
 } from "../firebase/editData";
 import Header from "../components/Header";
 import PaymentMap from "../components/PaymentMap";
-import PaymentForm from "../components/forms/PaymentForm";
-import ShowAndHide from "../components/ShowAndHide";
-import FullScreen from "../components/FullScreen";
+import PaymentForm from "../components/Forms/PaymentForm";
+import ShowAndHide from "../components/Buttons/ShowAndHide";
+import FullScreen from "../components/Views/FullScreen";
 import TextInput from "../components/TextInput";
 import { startOfDay } from "date-fns";
 import { Timestamp } from "firebase/firestore";

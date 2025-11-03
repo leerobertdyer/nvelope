@@ -1,4 +1,4 @@
-import ClosingX from "./ClosingX";
+import ClosingX from "./Buttons/ClosingX";
 import type { ChangeValue } from "../types";
 
 export default function DemoStep({ children, onClick, changeValue, text }: { children: React.ReactNode, onClick: () => void, changeValue?: ChangeValue, text?: string}) {

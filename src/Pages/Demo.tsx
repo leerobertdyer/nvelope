@@ -1,5 +1,5 @@
-import Button from "../components/Button";
-import ClosingX from "../components/ClosingX";
+import Button from "../components/Buttons/Button";
+import ClosingX from "../components/Buttons/ClosingX";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { editPayments, editIncome, editPayPeriodInterval, editIsNewUser, editPayDate, editRent, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
@@ -12,7 +12,7 @@ import type { Payment, Interval } from "../types";
 import { IoIosSad } from "react-icons/io";
 import Popup from "../components/Popup";
 import { Timestamp } from "firebase/firestore";
-import SpendBtn from "../components/SpendBtn";
+import SpendBtn from "../components/Buttons/SpendBtn";
 import { getIncomeByInterval, isDateInCurrentPayPeriod, recalculateBudget, recalculateRentPayment } from "../util";
 import { useNavigate } from "react-router-dom";
 import Loading from "../components/Loading";

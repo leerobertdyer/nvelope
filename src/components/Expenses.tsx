@@ -1,5 +1,5 @@
 import type { OneTimeAmount } from "../types";
-import ShowHideButton from "./ShowHideButton";
+import ShowHideButton from "./Buttons/ShowHideButton";
 import { useState } from "react";
 
 export default function Expenses({ expenses }: { expenses: OneTimeAmount[] }) {

@@ -13,8 +13,7 @@ import {
   getVirtualPaymentsForPeriod,
   isDateInCurrentPayPeriod,
 } from "../util";
-import { IoPencil } from "react-icons/io5";
-import ShowHideButton from "./ShowHideButton";
+import ShowHideButton from "./Buttons/ShowHideButton";
 
 interface PaymentMapProps {
   handleUpdatePaid: (payment: Payment) => void;
@@ -41,7 +40,7 @@ export default function PaymentMap({
 
   const [showPast, setShowPast] = useState(false);
   const [showCurrent, setShowCurrent] = useState(true);
-  const [showFuture, setShowFuture] = useState(true);
+  const [showFuture, setShowFuture] = useState(false);
 
   useEffect(() => {
     if (!payments || !payDate) return;
@@ -119,7 +118,7 @@ export default function PaymentMap({
         >
           {format(p.dueDate.toDate(), "do")}
         </p>
-        <p className="flex items-center justify-center text-xs col-span-4">
+        <p className="flex items-center justify-center text-xs col-span-3">
           {p.name}
         </p>
         {p.total && !p.paid ? (
@@ -135,7 +134,7 @@ export default function PaymentMap({
           </p>
         )}
 
-        <div className="flex gap-[2px] items-start justify-end mr-2 col-span-1">
+        <div className="flex gap-[2px] items-start justify-end mr-2 col-span-2">
           <IoIosTrash
             className="text-my-white-dark bg-my-red-dark cursor-pointer hover:text-my-red-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
             size={20}

@@ -1,9 +1,9 @@
 import { GiMoneyStack } from "react-icons/gi";
 import { IoPencil, IoTrash } from "react-icons/io5";
 import { IoIosHand } from "react-icons/io";
-import type { Envelope } from "../types";
-import SpendBtn from "./SpendBtn";
-import Button from "./Button";
+import type { Envelope } from "../../types";
+import SpendBtn from "../Buttons/SpendBtn";
+import Button from "../Buttons/Button";
 
 export default function BigEnvelope({ handleBack, envelope, handleSetShowSpendingPage, handleSetupEdit, setUpShowGiveAndTake, handleDeleteEnvelope, handleAddCashToEnvelope }: { handleBack: () => void, envelope: Envelope, resetState: () => void, editEnvelope: (envelope: Envelope) => Promise<void>, handleSetShowSpendingPage: (envelope: Envelope) => void, handleSetupEdit: (envelope: Envelope) => void, setUpShowGiveAndTake: (envelope: Envelope) => void, handleDeleteEnvelope: (id: string) => void, handleAddCashToEnvelope: (envelope: Envelope) => void }) {
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Button from "../components/Button";
+import Button from "../components/Buttons/Button";
 import Header from "../components/Header";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import type { Interval } from "../types";
@@ -13,9 +13,9 @@ import Calendar from "react-calendar";
 import { Timestamp } from "firebase/firestore";
 import type { Value } from "react-calendar/src/shared/types.js";
 import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
-import EditSpendingBudget from "../components/EditSpendingBudget";
+import EditSpendingBudget from "../components/Forms/EditSpendingBudget";
 import TextInput from "../components/TextInput";
-import FullScreen from "../components/FullScreen";
+import FullScreen from "../components/Views/FullScreen";
 // import CreateLoginWithEmail from "../components/CreateLoginWithEmail";
 
 export default function Settings() {
@@ -128,10 +128,9 @@ export default function Settings() {
     }
 
     return (
-        <div className="w-full h-screen overflow-y-scroll">
+        <div className="w-full h-screen overflow-y-scroll bg-my-white-light">
             <Header links={[
-                { label: "Payments", href: "/payments" },
-                { label: "Nvelopes", href: "/" },
+                { label: "Home", href: "/" },
             ]} />
             <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md">Settings</h1>
             <div className="w-full flex justify-center">

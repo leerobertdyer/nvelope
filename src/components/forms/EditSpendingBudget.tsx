@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { editTotalSpendingBudget } from "../firebase/editData";
-import { useAuth } from "../Context/AuthContext/useAuth";
-import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import FullScreen from "./FullScreen";
-import TextInput from "./TextInput";
+import { editTotalSpendingBudget } from "../../firebase/editData";
+import { useAuth } from "../../Context/AuthContext/useAuth";
+import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
+import FullScreen from "../Views/FullScreen";
+import TextInput from "../TextInput";
 
 interface IProps {
   handleBack: () => void;

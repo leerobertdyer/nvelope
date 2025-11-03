@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { createUserEmailPass, loginWithEmailAndPassword } from "../firebase/emailAndPassword";
-import Button from "./Button";
-import { useAuth } from "../Context/AuthContext/useAuth";
+import { createUserEmailPass, loginWithEmailAndPassword } from "../../firebase/emailAndPassword";
+import Button from "../Buttons/Button";
+import { useAuth } from "../../Context/AuthContext/useAuth";
 
 interface LoginError {
     code: string;

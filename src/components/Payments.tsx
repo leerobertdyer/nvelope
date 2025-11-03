@@ -1,5 +1,5 @@
 import type { Payment } from "../types";
-import ShowHideButton from "./ShowHideButton";
+import ShowHideButton from "./Buttons/ShowHideButton";
 import { useState } from "react";
 
 export default function Payment({ payments }: { payments: Payment[] }) {

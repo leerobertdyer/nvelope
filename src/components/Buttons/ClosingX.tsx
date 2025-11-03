@@ -1,4 +1,4 @@
-import type { ChangeValue } from "../types";
+import type { ChangeValue } from "../../types";
 
 export default function ClosingX({ onClick, text, changeValue }: { onClick: () => void, text?: string, changeValue?: ChangeValue}) {
     return <p 

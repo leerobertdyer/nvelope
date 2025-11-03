@@ -4,7 +4,7 @@ import SpotlightOverlay from "./SpotlightOverlay";
 import NavMenu from "./NavMenu";
 import { calculateCurrentIntervalStart, getIntervalDateRange } from "../util";
 import { intervalToDuration, startOfDay } from "date-fns";
-import EditSpendingBudget from "./EditSpendingBudget";
+import EditSpendingBudget from "./Forms/EditSpendingBudget";
 
 export default function Header({ step, links }: { step?: number, links: { label: string, href: string }[] }) {
   const { totalSpendingBudget, payPeriodInterval, payDate } = useDatabase();

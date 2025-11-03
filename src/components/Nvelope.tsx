@@ -6,12 +6,12 @@ import {
   BsEnvelopePaperFill,
   BsEnvelopeX,
 } from "react-icons/bs";
-import Button from "./Button";
+import Button from "./Buttons/Button";
 import type { Envelope } from "../types";
 import { IoIosRepeat } from "react-icons/io";
 import { IoAddCircle } from "react-icons/io5";
-import NvelopeCalculator from "./NvelopeCalculator";
-import EnvelopeForm from "./forms/EnvelopeForm";
+import NvelopeCalculator from "./Views/NvelopeCalculator";
+import EnvelopeForm from "./Forms/EnvelopeForm";
 
 interface NvelopeProps {
   kind:

@@ -1,6 +1,6 @@
 import { IoIosMenu } from "react-icons/io";
 import { Link } from "react-router-dom";
-import ShowAndHide from "./ShowAndHide";
+import ShowAndHide from "./Buttons/ShowAndHide";
 
 interface NavMenuProps {
     showMenu: boolean;
@@ -25,7 +25,7 @@ export default function NavMenu({ showMenu, setShowMenu, links }: NavMenuProps) 
         >
             {links.map((link) => (
                 <Link to={link.href} key={link.label}
-                    className="w-full py-2 text-center hover:bg-my-white-light hover:text-my-black-base cursor-pointer 
+                    className="w-[20rem] m-auto rounded-xs py-2 text-center hover:bg-my-white-light hover:text-my-black-base cursor-pointer 
                         text-my-white-dark bg-my-black-base">
                     {link.label}</Link>
             ))}

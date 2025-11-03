@@ -18,19 +18,21 @@ import {
   shouldBackupUserData,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
-import Button from "../components/Button";
+import Button from "../components/Buttons/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
-import { isDateInCurrentPayPeriod, recalculateBudget, removeVirtualIdPortion, updateBudgetStateAndDBB } from "../util";
+import { getVirtualPaymentsForPeriod, isDateInCurrentPayPeriod, recalculateBudget, removeVirtualIdPortion, updateBudgetStateAndDBB } from "../util";
 import { GiEnvelope, GiEvilBook, GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
-import FullScreen from "../components/FullScreen";
+import FullScreen from "../components/Views/FullScreen";
 import TextInput from "../components/TextInput";
 import Expenses from "../components/Expenses";
 import type { User } from "firebase/auth";
 import { startOfDay } from "date-fns";
-import PaymentForm from "../components/forms/PaymentForm";
+import PaymentForm from "../components/Forms/PaymentForm";
 import PaymentMap from "../components/PaymentMap";
+import ShowAndHide from "../components/Buttons/ShowAndHide";
+import Summary from "../components/Summary";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -51,7 +53,7 @@ export default function MainEnvelopesView() {
   } = useDatabase();
 
   const [expenses, setExpenses] = useState<OneTimeAmount[]>([])
-  const [showPaymentsMenu, setShowPaymentsMenu] = useState(true);
+  const [showSummary, setShowSummary] = useState(false);
   const [paymentToEdit, setPaymentToEdit] = useState<Payment | null>(null);
   const [showPaymentInputs, setShowPaymentInputs] = useState(false);
   const [showDeletePayment, setShowDeletePayment] = useState(false);
@@ -649,47 +651,63 @@ export default function MainEnvelopesView() {
   }
 
   return (
-    <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-black-base overflow-y-auto">
+    <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]">
       {showLoading && <Loading text={loadingText} />}
 
       <Header
         links={[
-          { label: "Payments", href: "/payments" },
           { label: "Settings", href: "/settings" },
         ]}
       />
 
-<main className="flex flex-col items-center gap-[1rem] pt-[1rem] w-full">
-<div className="flex w-full justify-center gap-4 items-center">
+      <main className="flex flex-col items-center pt-[1rem] w-full">
+        <div className="flex w-full justify-center gap-4 items-center">
           <div
-            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"
+            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"
             onClick={handleAddOneTimeBill}
           >
             <GiMoneyStack className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-            <p className="text-sm">Expense</p>
+            <p className="text-xs">Expense</p>
           </div>
           <div
-            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark  text-my-black-dark shadow-my-red-light"
+            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark  text-my-black-dark shadow-my-red-light"
             onClick={handleAddPayment}
           >
             <GiEvilBook className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-            <p className="text-sm">Payment</p>
+            <p className="text-xs">Payment</p>
           </div>
           <div
-            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark shadow-my-black-dark"
+            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark shadow-my-black-dark"
             onClick={handleSetupNewEnvelope}
           >
             <GiEnvelope className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-            <p className="text-sm">Nvelope</p>
+            <p className="text-xs">Nvelope</p>
           </div>
           <div
-            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[4rem] w-[4rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark  text-my-green-dark shadow-my-green-light"
+            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark  text-my-green-dark shadow-my-green-light"
             onClick={handleAddCash}
           >
             <GiMoneyStack className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-base " />
-            <p className="text-sm">Add Cash</p>
+            <p className="text-xs">Add Cash</p>
           </div>
         </div>
+
+        {showSummary ? (
+          <div className="w-full max-w-[40.25rem] rounded-sm border-2 border-my-white-light mt-[3rem] ">
+            <Summary setShowEditSnowball={setShowEditSnowball} setShowPaymentsMenu={setShowSummary} payments={getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate)} />
+          </div>
+        ) : (
+          <div className="w-full max-w-[40.25rem] rounded-sm border-2 border-my-white-light mt-[3rem] ">
+            <ShowAndHide
+              onClick={() => setShowSummary(true)}
+              label="Show Summary"
+              colorScheme="bg-my-black-dark w-full p-0 text-my-white-dark"
+              up={false}
+              border={false}
+              iconSize={25}
+            />
+          </div>
+        )}
         <Nvelopes
           resetState={resetState}
           handleSetupEdit={handleSetupEdit}
@@ -704,7 +722,6 @@ export default function MainEnvelopesView() {
           handleEditBill={handleEditPayment}
           handleDeleteBill={handleDeleteBill}
         />
-
         <Expenses expenses={expenses} />
       </main>
     </div>

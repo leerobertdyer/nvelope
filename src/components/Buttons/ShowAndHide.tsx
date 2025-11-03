@@ -19,7 +19,7 @@ export default function ShowAndHide({
 }) {
   return (
     <div
-      className={`w-[90%] m-auto h-fit flex items-center justify-center p-2
+      className={`w-full m-auto h-fit flex items-center justify-center py-[2px]
         ${border && "border-2 border-my-white-light"}
         ${colorScheme ?? "text-my-white-dark"} cursor-pointer`}
       onClick={onClick}

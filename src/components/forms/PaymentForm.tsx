@@ -1,7 +1,7 @@
 import Calendar from "react-calendar";
 import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../../constants";
 import type { BillOrDebt, Interval, Payment } from "../../types";
-import Button from "../Button";
+import Button from "../Buttons/Button";
 import Popup from "../Popup";
 import type { Value } from "react-calendar/src/shared/types.js";
 import { Timestamp } from "firebase/firestore";
@@ -15,7 +15,7 @@ import {
 } from "../../util";
 import { format } from "date-fns";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
-import FullScreen from "../FullScreen";
+import FullScreen from "../Views/FullScreen";
 import TextInput from "../TextInput";
 
 const defaultIntervalOption = "--Select An Interval--";
@@ -147,8 +147,8 @@ export default function PaymentForm({
       {showPaymentError && (
         <Popup type="error">Payment name already exists</Popup>
       )}
-      <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden w-full py-[4rem]">
-        <div className="flex flex-col gap-2 items-center justify-center rounded-md p-4 text-my-black-dark bg-my-white-base w-full max-w-[35rem]">
+      <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll overflow-x-hidden w-full pb-[4rem] bg-my-white-base">
+        <div className="flex flex-col gap-2 items-center justify-center rounded-md p-4 text-my-black-dark bg-my-white-base w-full max-w-[35rem] text-center">
           <h1 className="text-2xl">
             {paymentToEdit ? "Edit Payment Form" : "Add Payment Form"}
           </h1>

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import Button from "../components/Button";
-import type { Envelope } from "../types";
-import { useDatabase } from "../Context/DatabaseContext/useDatabase";
+import Button from "../Buttons/Button";
+import type { Envelope } from "../../types";
+import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 
 interface GiveAndTakeProps {
     envelope: Envelope;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Button from "./Button";
+import Button from "./Buttons/Button";
 import { createLoginForExistingUser } from "../firebase/createLoginForExistingUser";
 
 export default function CreateLoginWithEmail() {

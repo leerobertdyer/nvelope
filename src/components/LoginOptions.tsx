@@ -1,4 +1,4 @@
-import LoginForm from "./LoginForm";
+import LoginForm from "./Forms/LoginForm";
 import LoginProvider from "./LoginProvider";
 
 export default function LoginOptions() {
