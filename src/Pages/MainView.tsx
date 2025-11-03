@@ -50,7 +50,7 @@ export default function MainEnvelopesView() {
     setSnowball,
     payments,
     setPayments
-  } = useDatabase();
+  } = useDatabase()
 
   const [expenses, setExpenses] = useState<OneTimeAmount[]>([])
   const [showSummary, setShowSummary] = useState(false);
