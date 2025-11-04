@@ -416,8 +416,6 @@ export default function MainEnvelopesView() {
         paymentToEdit={paymentToEdit}
         user={user}
         handleUpdateBudget={handleUpdateBudget}
-        handleDeleteBill={handleDeleteBill}
-        handleUpdatePaid={handleUpdatePaid}
       />
     );
 

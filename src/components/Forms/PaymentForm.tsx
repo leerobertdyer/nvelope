@@ -26,8 +26,6 @@ interface IPaymentForm {
   user: User;
   handleUpdateBudget: (d: number) => Promise<void>;
   handleBack: () => void;
-  handleDeleteBill: (payment: Payment) => void;
-  handleUpdatePaid: (payment: Payment) => void;
 }
 
 export default function PaymentForm({
@@ -35,8 +33,6 @@ export default function PaymentForm({
   user,
   handleUpdateBudget,
   handleBack,
-  handleDeleteBill,
-  handleUpdatePaid,
 }: IPaymentForm) {
   const { payDate, payPeriodInterval, payments, setPayments } = useDatabase();
 
