@@ -9,6 +9,7 @@ import {
   isDateInCurrentPayPeriod,
 } from "../util";
 import ShowHideButton from "./Buttons/ShowHideButton";
+import { IoIosCheckmarkCircle, IoIosCheckmarkCircleOutline, IoIosTrash } from "react-icons/io";
 
 interface PaymentMapProps {
   handleUpdatePaid: (payment: Payment) => void;
@@ -17,6 +18,8 @@ interface PaymentMapProps {
 }
 export default function PaymentMap({
   handleEditBill,
+  handleUpdatePaid,
+  handleDeleteBill,
 }: PaymentMapProps) {
   const { payments, payPeriodInterval, payDate } = useDatabase();
   const { user } = useAuth();
@@ -98,7 +101,7 @@ export default function PaymentMap({
       <div
         key={p.id}
         onClick={() => handleEditBill(p)}
-        className={`grid grid-cols-8 py-2 text-center border-y-1 border-my-black-dark rounded-xs w-full cursor-pointer
+        className={`grid grid-cols-8 py-2 text-center border-y-1 border-my-black-dark rounded-xs w-full cursor-pointer 
           ${p.paid
             ? "bg-my-black-light text-white"
             : p.type === "DEBT"
@@ -111,18 +114,39 @@ export default function PaymentMap({
         >
           {format(p.dueDate.toDate(), "do")}
         </p>
-        <p className="flex items-center justify-start text-xs col-span-4">
+        <div className="flex items-center justify-start col-span-1 gap-4">
+          {p.paid ? (
+            <IoIosCheckmarkCircle
+              onClick={(e) => { e.stopPropagation(); handleUpdatePaid(p) }}
+              className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+              size={20}
+            />
+          ) : (
+            <IoIosCheckmarkCircleOutline
+              onClick={(e) => { e.stopPropagation(); handleUpdatePaid(p) }}
+              className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+              size={20}
+            />
+          )}
+            <IoIosTrash
+              className="text-my-white-dark bg-my-red-dark cursor-pointer hover:text-my-red-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+              size={20}
+              onClick={() => handleDeleteBill(p)}
+            />
+
+        </div>
+        <p className="flex items-center justify-start text-xs col-span-4 ml-4">
           {p.name}
         </p>
         {p.total && !p.paid ? (
-          <p className="flex items-center justify-end col-span-3 gap-[2px] mr-2">
+          <p className="flex items-center justify-end col-span-2 gap-[2px] mr-[2.8rem]">
             <span className="text-sm text-my-blue-light">${p.amount}</span>/
             <span className="text-sm text-my-blue-dark">
               {Math.ceil(p.total)}
             </span>
           </p>
         ) : (
-          <p className="text-sm flex items-center justify-end col-span-3 mr-2">
+          <p className="text-sm flex items-center justify-end col-span-2 mr-[2.8rem]">
             ${p.amount.toFixed(2)}
           </p>
         )}
