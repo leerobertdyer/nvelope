@@ -90,11 +90,19 @@ export function calculateIntervalsFromPastDate(
       while (isBefore(start, today)) {
         start = addWeeks(start, 1);
       }
+      // If today IS the period start, return it directly (don't subtract)
+      if (startOfDay(start).getTime() === startOfDay(today).getTime()) {
+        return start;
+      }
       return subWeeks(start, 1);
     }
     case BIWEEKLY: {
       while (isBefore(start, today)) {
         start = addWeeks(start, 2);
+      }
+      // If today IS the period start, return it directly (don't subtract)
+      if (startOfDay(start).getTime() === startOfDay(today).getTime()) {
+        return start;
       }
       return subWeeks(start, 2);
     }
@@ -102,11 +110,19 @@ export function calculateIntervalsFromPastDate(
       while (isBefore(start, today)) {
         start = addMonths(start, 1);
       }
+      // If today IS the period start, return it directly (don't subtract)
+      if (startOfDay(start).getTime() === startOfDay(today).getTime()) {
+        return start;
+      }
       return subMonths(start, 1);
     }
     case YEARLY: {
       while (isBefore(start, today)) {
         start = addYears(start, 1);
+      }
+      // If today IS the period start, return it directly
+      if (startOfDay(start).getTime() === startOfDay(today).getTime()) {
+        return start;
       }
       return start;
     }
@@ -229,6 +245,7 @@ export function isDateInCurrentPayPeriod(
     payPeriodInterval,
     startOfCurrentPaymentInterval
   ); // Current Pay Period Date Range
+  console.log(`[isDateInCurrentPayPeriod] payPeriodInterval: ${payPeriodInterval}, payDate: ${payDate}, dateToCheck: ${d} PayPeriodRange: START=${start} end=${end}`)
   // console.log(`[isDateInCurrentPayPeriod] payPeriodInterval: ${payPeriodInterval}, payDate: ${payDate}, dateToCheck: ${d} PayPeriodRange: START=${start} end=${end}`)
   return isWithinInterval(d, { start, end }); // Is the date within the current pay period
 }

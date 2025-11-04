@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import SpotlightOverlay from "./SpotlightOverlay";
 import NavMenu from "./NavMenu";
-import { calculateCurrentIntervalStart, getIntervalDateRange } from "../util";
+import { calculateCurrentIntervalStart, getIntervalDateRange, getNumberOfDaysFromInterval } from "../util";
 import { intervalToDuration, startOfDay } from "date-fns";
 import EditSpendingBudget from "./Forms/EditSpendingBudget";
 
@@ -51,6 +51,13 @@ export default function Header({ step, links }: { step?: number, links: { label:
       const today = startOfDay(new Date());
 
       const currentPayPeriodStart = calculateCurrentIntervalStart(payDate.toDate(), payPeriodInterval)
+      console.log({payPeriod: startOfDay(currentPayPeriodStart), today: startOfDay(today), isSame: startOfDay(currentPayPeriodStart).getTime() === today.getTime()})
+      // If today IS the period start, show the full period length
+      if (startOfDay(currentPayPeriodStart).getTime() === today.getTime()) {
+        const periodLength = getNumberOfDaysFromInterval(payPeriodInterval);
+        setDaysTillReset(periodLength);
+        return;
+      } 
 
       let { end } = getIntervalDateRange(payPeriodInterval, currentPayPeriodStart);
 

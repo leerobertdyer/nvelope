@@ -613,7 +613,7 @@ export default function MainEnvelopesView() {
           </div>
         </div>
 
-        <div className="w-full max-w-[40rem] rounded-md border-2 border-my-white-light mt-[1.5rem] overflow-hidden">
+        <div className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-light mt-[1.5rem] overflow-hidden">
           {showSummary ? (
             <div className="w-full  rounded-md ">
               <Summary setShowEditSnowball={setShowEditSnowball} setShowPaymentsMenu={setShowSummary} payments={getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate)} />
