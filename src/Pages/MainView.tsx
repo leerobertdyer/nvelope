@@ -20,17 +20,17 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Buttons/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
-import { getVirtualPaymentsForPeriod, recalculateBudget, removeVirtualIdPortion, updateBudgetStateAndDBB } from "../util";
+import { getVirtualPaymentsForPeriod, isDateInCurrentPayPeriod, recalculateBudget, removeVirtualIdPortion, updateBudgetStateAndDBB } from "../util";
 import { GiEnvelope, GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
 import FullScreen from "../components/Views/FullScreen";
 import TextInput from "../components/TextInput";
 import type { User } from "firebase/auth";
 import { startOfDay } from "date-fns";
-import PaymentForm from "../components/Forms/PaymentForm";
 import PaymentMap from "../components/PaymentMap";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
 import Summary from "../components/Summary";
+import BigPayment from "../components/Views/BigPayment";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -68,6 +68,8 @@ export default function MainEnvelopesView() {
   const [showLoading, setShowLoading] = useState(false);
   const [isAddingCashToEnvelope, setIsAddingCashToEnvelope] = useState(false);
 
+  const [paymentsThisPeriod, setPaymentsThisPeriod] = useState(payments);
+
   // On load check to make backup
   useEffect(() => {
     if (!user) return;
@@ -80,6 +82,11 @@ export default function MainEnvelopesView() {
     }
     backupUser(user);
   }, [user])
+
+  useEffect(() => {
+    if (!payDate || !payments || !payPeriodInterval) return
+    setPaymentsThisPeriod(getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate))
+  }, [payments, payDate, payPeriodInterval])
 
 
 
@@ -357,11 +364,11 @@ export default function MainEnvelopesView() {
   }
 
 
-  if (showDeletePayment) {
+  if (showDeletePayment && payDate && paymentToEdit) {
     return (
       <div className="absolute inset-0 w-screen h-screen z-100 select-none">
         <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
-          {!paymentToEdit?.paid && paymentToEdit?.isInInterval ? (
+          {!paymentToEdit.paid && isDateInCurrentPayPeriod(payPeriodInterval, payDate.toDate(), paymentToEdit.dueDate.toDate()) ? (
             <p className="text-my-white-light text-center">
               Removing this bill will add
               <span className="text-my-green-base px-[3px]">
@@ -379,7 +386,7 @@ export default function MainEnvelopesView() {
             </p>
           )}
           <p className="p-4 rounded-md text-my-white-dark w-full text-center">
-            Are you sure you want to delete {paymentToEdit?.name}?
+            Are you sure you want to delete {paymentToEdit.name}?
           </p>
           <div className="flex gap-2 items-center justify-center w-[95%]">
             <Button
@@ -409,13 +416,15 @@ export default function MainEnvelopesView() {
 
   if (!payDate) return;
 
-  if (showPaymentInputs && user)
+  if (showPaymentInputs)
     return (
-      <PaymentForm
+      <BigPayment
+        handleUpdatePaid={handleUpdatePaid}
+        resetState={resetPaymentState}
         handleBack={resetPaymentState}
         paymentToEdit={paymentToEdit}
-        user={user}
         handleUpdateBudget={handleUpdateBudget}
+        handleDeleteBill={handleDeleteBill}
       />
     );
 
@@ -616,7 +625,7 @@ export default function MainEnvelopesView() {
         <div className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-light mt-[1.5rem] overflow-hidden">
           {showSummary ? (
             <div className="w-full  rounded-md ">
-              <Summary setShowEditSnowball={setShowEditSnowball} setShowPaymentsMenu={setShowSummary} payments={getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate)} />
+              <Summary setShowEditSnowball={setShowEditSnowball} setShowPaymentsMenu={setShowSummary} payments={paymentsThisPeriod} />
             </div>
           ) : (
             <div className="w-full rounded-md">
@@ -640,9 +649,9 @@ export default function MainEnvelopesView() {
             handleAddCashToEnvelope={handleAddCashToEnvelope}
           />
           <PaymentMap
+            paymentsThisPeriod={paymentsThisPeriod}
             handleUpdatePaid={handleUpdatePaid}
             handleEditBill={handleEditPayment}
-            handleDeleteBill={handleDeleteBill}
           />
         </div>
         {/* <Expenses expenses={expenses} /> */}
