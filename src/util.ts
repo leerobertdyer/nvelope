@@ -244,8 +244,7 @@ export function isDateInCurrentPayPeriod(
   const { start, end } = getIntervalDateRange(
     payPeriodInterval,
     startOfCurrentPaymentInterval
-  ); // Current Pay Period Date Range
-  console.log(`[isDateInCurrentPayPeriod] payPeriodInterval: ${payPeriodInterval}, payDate: ${payDate}, dateToCheck: ${d} PayPeriodRange: START=${start} end=${end}`)
+  ); 
   // console.log(`[isDateInCurrentPayPeriod] payPeriodInterval: ${payPeriodInterval}, payDate: ${payDate}, dateToCheck: ${d} PayPeriodRange: START=${start} end=${end}`)
   return isWithinInterval(d, { start, end }); // Is the date within the current pay period
 }

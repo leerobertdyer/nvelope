@@ -16,7 +16,8 @@ import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
 import EditSpendingBudget from "../components/Forms/EditSpendingBudget";
 import TextInput from "../components/TextInput";
 import FullScreen from "../components/Views/FullScreen";
-// import CreateLoginWithEmail from "../components/CreateLoginWithEmail";
+import CreateLoginWithEmail from "../components/Forms/CreateLoginWithEmail";
+import Notification from "../components/Notification";
 
 export default function Settings() {
     const { user } = useAuth();
@@ -28,6 +29,27 @@ export default function Settings() {
     const [isEditingCash, setIsEditingCash] = useState(false);
     const [showEditIncome, setShowEditIncome] = useState(false);
     const [showEditRent, setShowEditRent] = useState(false);
+    const [providerType, setProviderType] = useState('');
+    const [hasPassword, setHasPassword] = useState(false);
+
+    const currentProviderTypes = ["google.com"]
+
+    useEffect(() => {
+        if (user) {
+            // Check what providers are linked to this user
+            user.providerData.forEach((profile) => {
+                setProviderType(profile.providerId)
+                console.log("Sign-in provider:", profile.providerId);
+            });
+            // Check if password exists already
+            user.providerData.some(
+                (provider) => {
+                    setHasPassword(provider.providerId === "password")
+                }
+            );
+
+        }
+    }, [user])
 
     useEffect(() => {
         if (income) setNewIncome(income.toString());
@@ -78,6 +100,10 @@ export default function Settings() {
             // If not paid, and no longer in interval add the amount to budget
             // If paid and no longer in interval - not sure lol
         }
+    }
+
+    function handleAddPassword() {
+        setHasPassword(true);
     }
 
     if (isEditingCash) {
@@ -188,7 +214,11 @@ export default function Settings() {
                         className="cursor-pointer-calendar" />
                 </div>
 
-                {/* <CreateLoginWithEmail /> */}
+                {/* If the user doesn't yet have a password and has signed in with one of current provider */}
+                {currentProviderTypes.includes(providerType) && !hasPassword && <CreateLoginWithEmail onDone={() => handleAddPassword()} />}
+
+                {/* Once account is created simply display email has password */}
+                {hasPassword && <Notification text={`Password has been set for ${user?.email}`} />}
 
             </div>
         </div>
