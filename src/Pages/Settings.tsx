@@ -3,7 +3,7 @@ import Button from "../components/Buttons/Button";
 import Header from "../components/Header";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import type { Interval } from "../types";
-import { editIncome, editPayPeriodInterval, editPayDate, editTotalSpendingBudget, editRent } from "../firebase/editData";
+import { editIncome, editPayPeriodInterval, editPayDate, editTotalSpendingBudget, editRent, restorePaymentsFromBackup } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
 import { getIncomeByInterval, recalculateBudget } from "../util";
@@ -21,7 +21,7 @@ import Notification from "../components/Notification";
 
 export default function Settings() {
     const { user } = useAuth();
-    const { payPeriodInterval, rent, setRent, setIncome, setTotalSpendingBudget, setPayPeriodInterval, totalSpendingBudget, income, payDate, setPayDate } = useDatabase();
+    const { payPeriodInterval, rent, setRent, setIncome, setTotalSpendingBudget, setPayPeriodInterval, totalSpendingBudget, income, payDate, setPayDate, setPayments } = useDatabase();
 
     const [showIntervalSettings, setShowIntervalSettings] = useState<boolean>(false);
     const [newIncome, setNewIncome] = useState<string>('');
@@ -126,6 +126,15 @@ export default function Settings() {
         await editRent(rent, user!.uid)
     }
 
+    async function handleRestorePayments() {
+        if (!user) return;
+        const restoredPayments = await restorePaymentsFromBackup(user);
+        if (restoredPayments) {
+            setPayments(restoredPayments);
+            alert(`Restored ${restoredPayments.length} payments from backup`);
+        }
+    }
+
     if (showIntervalSettings) {
         return <div className="absolute inset-0 w-screen h-screen z-100 select-none">
             <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
@@ -219,6 +228,13 @@ export default function Settings() {
 
                 {/* Once account is created simply display email has password */}
                 {hasPassword && <Notification text={`Password has been set for ${user?.email}`} />}
+
+                {/* TEMPORARY: Restore payments from backup */}
+                <div className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark mb-4"
+                    onClick={handleRestorePayments}>
+                    <p className="text-sm font-bold">⚠️ TEMPORARY: Restore Payments from Backup</p>
+                    <p className="text-xs">Restores payments from latest backup (index 0)</p>
+                </div>
 
             </div>
         </div>

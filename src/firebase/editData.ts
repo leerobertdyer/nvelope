@@ -531,3 +531,44 @@ export async function backupUserData(user: User) {
     console.error("Error attempting backupUserData in editData: ", error)
   }
 }
+
+// TEMPORARY: Restore payments from latest backup (index 0)
+export async function restorePaymentsFromBackup(user: User) {
+  if (!user) {
+    console.error("No user provided to restorePaymentsFromBackup");
+    return;
+  }
+  try {
+    const userDocRef = doc(db, "users", user.uid);
+    const docSnap = await getDoc(userDocRef);
+    
+    if (!docSnap.exists()) {
+      console.error("User document does not exist");
+      return;
+    }
+
+    const backups = docSnap.data().backups?.data ?? [];
+    
+    if (!backups || backups.length === 0) {
+      console.error("No backups found");
+      return;
+    }
+
+    const latestBackup = backups[0]; // Latest backup is at index 0
+    const restoredPayments = latestBackup.payments ?? [];
+
+    if (!restoredPayments || restoredPayments.length === 0) {
+      console.error("No payments found in latest backup");
+      return;
+    }
+
+    console.log(`Restoring ${restoredPayments.length} payments from backup dated: ${latestBackup.backupTimeStamp?.toDate()}`);
+    
+    await editPayments(restoredPayments, user.uid);
+    
+    console.log("Payments restored successfully from backup");
+    return restoredPayments;
+  } catch (error) {
+    console.error("Error restoring payments from backup: ", error);
+  }
+}

@@ -111,9 +111,10 @@ export default function MainEnvelopesView() {
 
   async function deleteBill() {
     if (!user || !paymentToEdit) return;
+    const originalPaymentToEditId = removeVirtualIdPortion(paymentToEdit);
     const updatedPayments = payments.filter((p) => {
-      const originalPaymentToEditId = removeVirtualIdPortion(p);
-      return p.id !== originalPaymentToEditId
+      const originalPId = removeVirtualIdPortion(p);
+      return originalPId !== originalPaymentToEditId;
     });
     setPayments(updatedPayments);
     await editPayments(updatedPayments, user.uid);
