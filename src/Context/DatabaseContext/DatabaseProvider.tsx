@@ -1,7 +1,7 @@
 import { Timestamp, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { DatabaseContext } from "./DatabaseContext";
 import { useEffect, useState } from "react";
-import type { Envelope, Interval, OneTimeAmount, Payment } from "../../types";
+import { type Backup, type Envelope, type Interval, type OneTimeAmount, type Payment } from "../../types";
 import { useAuth } from "../AuthContext/useAuth";
 import { db } from "../../firebase/firebase";
 
@@ -21,6 +21,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [rent, setRent] = useState<number>(0);
     const [resetBudgetTimestamp, setResetBudgetTimestamp] = useState<Timestamp | null>(null);
     const [oneTimeCash, setOneTimeCash] = useState<OneTimeAmount[] | null>(null);
+    const [backups, setBackups] = useState<Backup | null>(null);
     
     useEffect(() => {
         if (!user) {
@@ -57,6 +58,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setRent(data.rent || 0);
                     setResetBudgetTimestamp(data.resetBudgetTimestamp || null);
                     setOneTimeExpenses(data.oneTimeExpense || null);
+                    setBackups(data.backups || null);
                 } else {
                     // Document doesn't exist - this is a new user
                     console.log("👤 New user detected, creating default document");
@@ -74,7 +76,8 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                         oneTimeCash: null,
                         rent: 0,
                         resetBudgetTimestamp: null,
-                        oneTimeExpenses: null
+                        oneTimeExpenses: null,
+                        backups: null
                     };
                     
                     // Create the document - this will trigger the listener again
@@ -94,6 +97,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setRent(0);
                     setResetBudgetTimestamp(null);
                     setOneTimeExpenses(null);
+                    setBackups(null);
                 }
             },
             (error) => {
@@ -141,7 +145,9 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         resetBudgetTimestamp,
         setResetBudgetTimestamp,
         oneTimeExpenses,
-        setOneTimeExpenses
+        setOneTimeExpenses,
+        backups,
+        setBackups
     };
 
     return (

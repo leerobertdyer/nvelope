@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import type { Timestamp } from 'firebase/firestore';
-import type { Payment, Envelope, Interval, OneTimeAmount } from "../../types";
+import type { Payment, Envelope, Interval, OneTimeAmount, Backup } from "../../types";
 
 
 interface IDatabaseContext {
@@ -30,5 +30,6 @@ interface IDatabaseContext {
     setResetBudgetTimestamp: (resetBudgetTimestamp: Timestamp | null) => void
     oneTimeExpenses: OneTimeAmount[] | null
     setOneTimeExpenses: (oneTimeExpenses: OneTimeAmount[] | null) => void
+    backups: Backup | null;
 }
 export const DatabaseContext = createContext<IDatabaseContext | null>(null)

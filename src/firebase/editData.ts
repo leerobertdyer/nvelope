@@ -4,6 +4,7 @@ import type {
   Interval,
   OneTimeAmount,
   PreviousIntervalDetails,
+  Backup,
 } from "../types";
 import { doc, updateDoc, Timestamp, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
@@ -176,8 +177,9 @@ export async function editTotalSpendingBudget(
 }
 
 export function toUTCDateString(date: Date): string {
-  return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1
-    }-${date.getUTCDate()}`;
+  return `${date.getUTCFullYear()}-${
+    date.getUTCMonth() + 1
+  }-${date.getUTCDate()}`;
 }
 
 async function isResetToday(
@@ -193,10 +195,10 @@ async function isResetToday(
     todayUTC,
     resetBudgetTimestamp: resetBudgetTimestamp
       ? {
-        timestamp: resetBudgetTimestamp,
-        date: resetBudgetTimestamp.toDate(),
-        utcString: toUTCDateString(resetBudgetTimestamp.toDate()),
-      }
+          timestamp: resetBudgetTimestamp,
+          date: resetBudgetTimestamp.toDate(),
+          utcString: toUTCDateString(resetBudgetTimestamp.toDate()),
+        }
       : null,
     isSameDay:
       resetBudgetTimestamp &&
@@ -299,30 +301,30 @@ export async function resetBudget({
 
   const totalOneTimeCash = oneTimeCash
     ? oneTimeCash.reduce(
-      (acc, cash) =>
-        isDateInCurrentPayPeriod(
-          payPeriodInterval,
-          payDate.toDate(),
-          cash.date.toDate()
-        )
-          ? acc + cash.amount
-          : acc,
-      0
-    )
+        (acc, cash) =>
+          isDateInCurrentPayPeriod(
+            payPeriodInterval,
+            payDate.toDate(),
+            cash.date.toDate()
+          )
+            ? acc + cash.amount
+            : acc,
+        0
+      )
     : 0;
 
   const totalOneTimeExpenses = oneTimeExpenses
     ? oneTimeExpenses.reduce(
-      (acc, expense) =>
-        isDateInCurrentPayPeriod(
-          payPeriodInterval,
-          payDate.toDate(),
-          expense.date.toDate()
-        )
-          ? acc + expense.amount
-          : acc,
-      0
-    )
+        (acc, expense) =>
+          isDateInCurrentPayPeriod(
+            payPeriodInterval,
+            payDate.toDate(),
+            expense.date.toDate()
+          )
+            ? acc + expense.amount
+            : acc,
+        0
+      )
     : 0;
 
   const totalEnvelopes = nextEnvelopes.reduce((acc, n) => acc + n.total, 0);
@@ -481,11 +483,12 @@ export async function shouldBackupUserData(user: User) {
       if (!docSnap.data().backups) return true;
       if (!docSnap.data().backups.backupTimeStamp) return true;
       const backupTimeStamp = docSnap.data().backups.backupTimeStamp;
-      if (now.toMillis() - backupTimeStamp.toMillis() > millisecondsInDay) return true;
+      if (now.toMillis() - backupTimeStamp.toMillis() > millisecondsInDay)
+        return true;
       return false;
     }
   } catch (error) {
-    console.error("Error running shouldBackupUserData in editData: ", error)
+    console.error("Error running shouldBackupUserData in editData: ", error);
   }
 }
 
@@ -505,8 +508,9 @@ export async function backupUserData(user: User) {
       const shouldReset = docSnap.data().shouldReset ?? false;
       const snowball = docSnap.data().snowball ?? 0;
       const totalSpendingBudget = docSnap.data().totalSpendingBudget ?? 0;
-      const currentBackups = docSnap.data().backups.data ?? [];
-      const newTime = Timestamp.fromDate(new Date())
+      const b = docSnap.data().backups;
+      const currentBackups = b ? b.data : [];
+      const newTime = Timestamp.fromDate(new Date());
 
       await updateDoc(userDocRef, {
         "backups.backupTimeStamp": newTime,
@@ -524,16 +528,19 @@ export async function backupUserData(user: User) {
             snowball,
             totalSpendingBudget,
           },
-          ...currentBackups
-        ]
-      });    }
+          ...currentBackups,
+        ],
+      });
+    }
   } catch (error) {
-    console.error("Error attempting backupUserData in editData: ", error)
+    console.error("Error attempting backupUserData in editData: ", error);
   }
 }
 
-// TEMPORARY: Restore payments from latest backup (index 0)
-export async function restorePaymentsFromBackup(user: User) {
+/*
+ ** Restores payments and envelopes from selected backup
+ */
+export async function restoreDataFromBackup(ts: string, user: User) {
   if (!user) {
     console.error("No user provided to restorePaymentsFromBackup");
     return;
@@ -541,33 +548,40 @@ export async function restorePaymentsFromBackup(user: User) {
   try {
     const userDocRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userDocRef);
-    
+
     if (!docSnap.exists()) {
       console.error("User document does not exist");
       return;
     }
 
-    const backups = docSnap.data().backups?.data ?? [];
-    
-    if (!backups || backups.length === 0) {
+    const backups: Backup = docSnap.data().backups;
+
+    if (!backups) {
       console.error("No backups found");
       return;
     }
 
-    const latestBackup = backups[0]; // Latest backup is at index 0
-    const restoredPayments = latestBackup.payments ?? [];
+    const b = backups.data.find((b) => b.backupTimeStamp.toString() === ts);
 
-    if (!restoredPayments || restoredPayments.length === 0) {
-      console.error("No payments found in latest backup");
+    if (!b) {
+      console.error("No specific backup found for timestamp: ", ts);
       return;
     }
 
-    console.log(`Restoring ${restoredPayments.length} payments from backup dated: ${latestBackup.backupTimeStamp?.toDate()}`);
-    
-    await editPayments(restoredPayments, user.uid);
-    
-    console.log("Payments restored successfully from backup");
-    return restoredPayments;
+    console.log(
+      `⚠️ Restoring from ${b.backupTimeStamp?.toDate()} backup! \n
+      ⚠️ ${b.payments.length} payments \n 
+      ⚠️ ${b.nvelopes.length} envelopes  \n
+      ⚠️ Setting income back to ${b.income}\n
+      ⚠️ Setting Spending Budget back to ${b.totalSpendingBudget}`
+    );
+
+    await editTotalSpendingBudget(Number(b.totalSpendingBudget), user.uid)
+    await editIncome(Number(b.income), user.uid);
+    await editEnvelopes(b.nvelopes, user.uid);
+    await editPayments(b.payments, user.uid);
+
+    return b;
   } catch (error) {
     console.error("Error restoring payments from backup: ", error);
   }

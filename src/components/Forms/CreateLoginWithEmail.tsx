@@ -12,7 +12,7 @@ export default function CreateLoginWithEmail({onDone}: {onDone: () => void}) {
     }
     
     return (
-        <div className="bg-white p-4 rounded-md w-full max-w-[40rem] m-auto p-[2rem] flex flex-col items-center">
+        <div className="bg-white p-4 rounded-md w-full max-w-[40rem] m-auto flex flex-col items-center mb-4">
             <h2 className="text-lg mb-4 text-my-red-dark">Add Email & Password Login</h2>
              <form className="w-full h-full flex flex-col justify-center items-center gap-6">
                     <input 

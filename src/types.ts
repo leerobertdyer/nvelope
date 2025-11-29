@@ -50,3 +50,22 @@ export type IntervalDates = {
     start: Date;
     end: Date;
 }
+
+export type BackupData = {
+    backupTimeStamp: Timestamp;
+    cash?: OneTimeAmount[];
+    expenses?: OneTimeAmount[];
+    income: string;
+    nvelopes: Envelope[];
+    payDate: Timestamp;
+    payPeriodInterval: Interval;
+    payments: Payment[];
+    shouldReset: Timestamp;
+    snowball: number;
+    totalSpendingBudget: number;
+}
+
+export type Backup = {
+    backupTimeStamp: Timestamp;
+    data: BackupData[]
+}

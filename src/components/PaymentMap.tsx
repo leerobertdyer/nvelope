@@ -203,7 +203,7 @@ export default function PaymentMap({
         {showCurrent && (
           <div className=" bg-my-black-dark">
             {currentPayments.map((p) => (
-              <RenderPayment p={p} time="PRESENT" />
+              <RenderPayment key={p.id} p={p} time="PRESENT" />
             ))}
           </div>
         )}
