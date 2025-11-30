@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Button from "../components/Buttons/Button";
 import Header from "../components/Header";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { type Interval } from "../types";
+import { type BackupData, type Interval } from "../types";
 import {
   editIncome,
   editPayPeriodInterval,
@@ -13,7 +13,7 @@ import {
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
-import { getIncomeByInterval, recalculateBudget } from "../util";
+import { getBackupDataFromTimestampString, getIncomeByInterval, recalculateBudget } from "../util";
 import { IoPencil } from "react-icons/io5";
 import { GiMoneyStack } from "react-icons/gi";
 import Calendar from "react-calendar";
@@ -55,6 +55,7 @@ export default function Settings() {
   const [providerType, setProviderType] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
   const [selectedBackupTimestamp, setSelectedBackupTimestamp] = useState("");
+  const [backupData, setBackupData] = useState<BackupData>();
 
   const currentProviderTypes = ["google.com"];
 
@@ -137,6 +138,33 @@ export default function Settings() {
     setHasPassword(true);
   }
 
+  async function handleEditRent() {
+    await editRent(rent, user!.uid);
+  }
+
+  function handleCloseBackup() {
+    setSelectedBackupTimestamp("");
+    setBackupData(undefined);
+  }
+
+  async function handleRestorePayments() {
+    if (!user) return
+    const b = await restoreDataFromBackup(selectedBackupTimestamp, user);
+    if (!b) return;
+      setPayments(b.payments);
+      setEnvelopes(b.nvelopes);
+      setIncome(Number(b.income));
+      setTotalSpendingBudget(Number(b.totalSpendingBudget));
+      handleCloseBackup();
+  }
+
+  async function handleSelectBackup(ts: string) {
+    if (!ts || !backups) return;
+    setSelectedBackupTimestamp(ts);
+    const b = getBackupDataFromTimestampString(ts, backups)
+    setBackupData(b)
+  }
+
   if (isEditingCash) {
     return <EditSpendingBudget handleBack={resetState} />;
   }
@@ -180,25 +208,6 @@ export default function Settings() {
       </FullScreen>
     );
 
-  async function handleEditRent() {
-    await editRent(rent, user!.uid);
-  }
-
-  function handleCloseBackup() {
-    setSelectedBackupTimestamp("");
-  }
-
-  async function handleRestorePayments() {
-    if (!user || !selectedBackupTimestamp) return;
-    const backup = await restoreDataFromBackup(selectedBackupTimestamp, user);
-    if (backup) {
-      setPayments(backup.payments);
-      setEnvelopes(backup.nvelopes);
-      setIncome(Number(backup.income));
-      setTotalSpendingBudget(Number(backup.totalSpendingBudget));
-    }
-  }
-
   if (showIntervalSettings) {
     return (
       <div className="absolute inset-0 w-screen h-screen z-100 select-none">
@@ -229,7 +238,7 @@ export default function Settings() {
   return (
     <div className="w-full h-screen overflow-y-scroll bg-my-white-light">
       <Header links={[{ label: "Home", href: "/" }]} />
-      <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md">
+      <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md ">
         Settings
       </h1>
       <div className="w-full flex flex-col items-center justify-center">
@@ -238,7 +247,7 @@ export default function Settings() {
           Log Out
         </Button>
       </div>
-      <div className="overflow-y-scroll overflow-x-hidden flex flex-col items-center justify-start py-4 h-[70vh] bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
+      <div className="overflow-y-scroll  flex flex-col items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
         <div
           className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark animate-glow shadow-lg shadow-my-black-dark mb-4"
           onClick={() => setIsEditingCash(true)}
@@ -310,7 +319,7 @@ export default function Settings() {
           <div>
             <select
               className="py-2 px-4 bg-white rounded-md text-my-black-dark my-2 cursor-pointer"
-              onChange={(e) => setSelectedBackupTimestamp(e.target.value)}
+              onChange={(e) => handleSelectBackup(e.target.value)}
             >
               <option defaultChecked disabled label="Select A Backup" />
               {backups &&
@@ -329,7 +338,7 @@ export default function Settings() {
             </select>
           </div>
         </div>
-        {selectedBackupTimestamp && (
+        {backupData && (
           <FullScreen
             theme="DARK"
             onClose={handleCloseBackup}
@@ -339,6 +348,10 @@ export default function Settings() {
             <div className="w-full text-center">
               <h1 className="text-xl text-my-red-light">Are you sure?</h1>
               <p>This cannot be undone.</p>
+              <p>Your income will reset to {backupData.income} </p>
+              <p>Your budget will reset to {backupData.totalSpendingBudget} </p>
+              <p>You will have {backupData.payments.length} payments totaling ${backupData.payments.reduce((acc, p) => p.amount + acc, 0).toFixed(2)}</p>
+              <p>You will have {backupData.nvelopes.length} envelolpes totaling ${backupData.nvelopes.reduce((acc, p) => p.total + acc, 0).toFixed(2)}</p>
             </div>
           </FullScreen>
         )}

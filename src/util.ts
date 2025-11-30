@@ -1,6 +1,12 @@
 import type { User } from "firebase/auth";
-import type { Payment, Envelope, Interval, IntervalDates } from "./types";
-import { editTotalSpendingBudget } from "./firebase/editData";
+import type {
+  Payment,
+  Envelope,
+  Interval,
+  IntervalDates,
+  Backup,
+} from "./types";
+import { editTotalSpendingBudget, editEnvelopes } from "./firebase/editData";
 import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "./constants";
 import {
   addMonths,
@@ -44,9 +50,20 @@ export function capitalizeFirstLetter(str: string | null): string {
   return str.slice(0, 1).toUpperCase() + str.slice(1).toLowerCase();
 }
 
+export async function resetAllNvelopes(
+  nvelopes: Envelope[],
+  setEnvelopes: (e: Envelope[]) => void,
+  userId: string
+) {
+  const updatedNvelopes = [...nvelopes].map((n) => {
+    return { ...n, spent: 0, total: 0, paid: false };
+  });
+  await editEnvelopes(updatedNvelopes, userId);
+  setEnvelopes(updatedNvelopes);
+}
+
 export function resetEnvelopesSpentToZero(envelopes: Envelope[]) {
   const updatedEnvelopes = [...envelopes].map((e) => {
-
     return { ...e, spent: 0 };
   });
   return updatedEnvelopes;
@@ -244,7 +261,7 @@ export function isDateInCurrentPayPeriod(
   const { start, end } = getIntervalDateRange(
     payPeriodInterval,
     startOfCurrentPaymentInterval
-  ); 
+  );
   // console.log(`[isDateInCurrentPayPeriod] payPeriodInterval: ${payPeriodInterval}, payDate: ${payDate}, dateToCheck: ${d} PayPeriodRange: START=${start} end=${end}`)
   return isWithinInterval(d, { start, end }); // Is the date within the current pay period
 }
@@ -310,7 +327,10 @@ export function paymentsTotal(
     payPeriodInterval,
     payDate
   );
-  const totalMonthlyPayments = virtualPayments.reduce((acc, p: Payment) => acc + p.amount, 0);
+  const totalMonthlyPayments = virtualPayments.reduce(
+    (acc, p: Payment) => acc + p.amount,
+    0
+  );
   const currentBills = virtualPayments.reduce((acc, p: Payment) => {
     return p.type === "BILL" &&
       isDateInCurrentPayPeriod(
@@ -410,12 +430,19 @@ export function adjustPaymentToCurrentPeriod(
   payDate: Timestamp
 ): Payment {
   const today = startOfDay(new Date());
-  const isOnCusp = isTodayCuspDate(payPeriodInterval, payDate)
-  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(payPeriodInterval, payDate);
-  const payPeriodCrossesMonths = periodStart.getMonth() !== periodEnd.getMonth();
+  const isOnCusp = isTodayCuspDate(payPeriodInterval, payDate);
+  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(
+    payPeriodInterval,
+    payDate
+  );
+  const payPeriodCrossesMonths =
+    periodStart.getMonth() !== periodEnd.getMonth();
   const paymentDayNumber = payment.dueDate.toDate().getDate();
   const periodEndDayNumber = periodEnd.getDate();
-  const shouldMoveToNextMonth = payPeriodCrossesMonths && paymentDayNumber <= periodEndDayNumber && isOnCusp;
+  const shouldMoveToNextMonth =
+    payPeriodCrossesMonths &&
+    paymentDayNumber <= periodEndDayNumber &&
+    isOnCusp;
   // console.log("current payperiod dates: ", { periodStart, periodEnd, payment: { ...payment, dueDate: payment.dueDate.toDate() }, payPeriodCrossesMonths, paymentDayNumber, periodEndDayNumber, shouldMoveToNextMonth, isOnCusp })
 
   const adjustedDueDate = new Date(
@@ -431,10 +458,10 @@ export function adjustPaymentToCurrentPeriod(
 }
 
 export function isTodayCuspDate(payPeriod: Interval, payDate: Timestamp) {
-  const today = startOfDay(new Date())
-  const { end } = getCurrentIntervalDateRange(payPeriod, payDate)
-  return end.getMonth() > today.getMonth()
-  }
+  const today = startOfDay(new Date());
+  const { end } = getCurrentIntervalDateRange(payPeriod, payDate);
+  return end.getMonth() > today.getMonth();
+}
 
 /**
  * Generates virtual payment instances for weekly/biweekly payments within a given period
@@ -460,17 +487,24 @@ export function getMonthlyPaymentOccurrences(
     payment.interval
   );
 
-  const today = startOfDay(new Date())
-  const startOfMonth = startOfDay(new Date(today.getFullYear(), today.getMonth(), 1))
-  const endOfMonth = startOfDay(new Date(today.getFullYear(), today.getMonth() + 1, 0))
+  const today = startOfDay(new Date());
+  const startOfMonth = startOfDay(
+    new Date(today.getFullYear(), today.getMonth(), 1)
+  );
+  const endOfMonth = startOfDay(
+    new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  );
 
   // Walk forward and collect all occurrences in the period
   while (!isAfter(currentDate, endOfMonth)) {
-    if (isWithinInterval(currentDate, { start: startOfMonth, end: endOfMonth })) {
+    if (
+      isWithinInterval(currentDate, { start: startOfMonth, end: endOfMonth })
+    ) {
       const occurrenceTime = startOfDay(currentDate).getTime();
-      const isPaid = payment.paidDates?.some(
-        (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
-      ) ?? false;
+      const isPaid =
+        payment.paidDates?.some(
+          (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
+        ) ?? false;
 
       occurrences.push({
         ...payment,
@@ -514,10 +548,13 @@ export function getVirtualPaymentsForPeriod(
   );
 }
 
-
 /*
-* Helper to remove the added -INTERVAL- from a virtual Payment
-*/
+ * Helper to remove the added -INTERVAL- from a virtual Payment
+ */
 export function removeVirtualIdPortion(p: Payment) {
-  return p.id.split(`-${p.interval}`)[0]
+  return p.id.split(`-${p.interval}`)[0];
+}
+
+export function getBackupDataFromTimestampString(ts: string, backups: Backup) {
+  return backups.data.find((b) => b.backupTimeStamp.toString() === ts);
 }

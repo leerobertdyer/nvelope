@@ -27,7 +27,7 @@ export default function BigPayment({ handleBack, paymentToEdit, handleUpdateBudg
     }
 
     if (showForm && user) return <PaymentForm paymentToEdit={p} user={user} handleBack={() => setShowForm(false)} handleUpdateBudget={handleUpdateBudget}/>
-    if (!p) return;
+    if (!p) return <p>Error: Missing Payment To Edit</p>;
     return (
         <div className="absolute top-[2rem] left-0 pt-[3rem] bg-my-white-light w-full overflow-y-auto z-999 h-screen">
             <div className="w-full flex flex-col items-center justify-start">

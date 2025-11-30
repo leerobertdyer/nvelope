@@ -10,7 +10,6 @@ import { doc, updateDoc, Timestamp, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
 import {
-  getIntervalDateRange,
   isDateInCurrentPayPeriod,
   resetEnvelopesSpentToZero,
 } from "../util";
@@ -180,71 +179,6 @@ export function toUTCDateString(date: Date): string {
   return `${date.getUTCFullYear()}-${
     date.getUTCMonth() + 1
   }-${date.getUTCDate()}`;
-}
-
-async function isResetToday(
-  payDate: Timestamp,
-  interval: Interval,
-  resetBudgetTimestamp: Timestamp | null
-) {
-  if (!payDate || !interval) return false;
-  const now = new Date();
-  const todayUTC = toUTCDateString(now);
-  console.log("isResetToday date check:", {
-    now,
-    todayUTC,
-    resetBudgetTimestamp: resetBudgetTimestamp
-      ? {
-          timestamp: resetBudgetTimestamp,
-          date: resetBudgetTimestamp.toDate(),
-          utcString: toUTCDateString(resetBudgetTimestamp.toDate()),
-        }
-      : null,
-    isSameDay:
-      resetBudgetTimestamp &&
-      toUTCDateString(resetBudgetTimestamp.toDate()) === todayUTC,
-  });
-
-  // Prevent multiple resets on the same UTC day
-  if (
-    resetBudgetTimestamp &&
-    toUTCDateString(resetBudgetTimestamp.toDate()) === todayUTC
-  )
-    return false;
-
-  const originalPayDate = payDate.toDate();
-  const { start, end } = getIntervalDateRange(interval, originalPayDate);
-
-  // If we're not already in the current pay period, don't reset again
-  if (resetBudgetTimestamp) {
-    const lastResetDate = resetBudgetTimestamp.toDate();
-    console.log("isResetToday interval check:", {
-      lastResetDate,
-      start,
-      end,
-      isInCurrentPeriod: lastResetDate >= start && lastResetDate < end,
-    });
-
-    if (lastResetDate >= start && lastResetDate < end) {
-      console.warn("Already reset during this pay period.");
-      return false;
-    }
-  }
-  return true;
-}
-
-export async function checkToResetBudget(
-  resetBudgetTimestamp: Timestamp | null,
-  payDate: Timestamp,
-  payPeriodInterval: Interval
-): Promise<boolean> {
-  const resetToday = await isResetToday(
-    payDate,
-    payPeriodInterval,
-    resetBudgetTimestamp
-  );
-  console.log("Should reset budget today ===> ", resetToday);
-  return resetToday;
 }
 
 type ResetBudgetParams = {
