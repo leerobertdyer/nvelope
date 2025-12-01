@@ -10,11 +10,13 @@ import { doc, updateDoc, Timestamp, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
 import {
+  getIntervalDateRange,
   isDateInCurrentPayPeriod,
   resetEnvelopesSpentToZero,
 } from "../util";
 import { MONTHLY } from "../constants";
 import { millisecondsInDay } from "date-fns/constants";
+import { isSameDay, startOfDay } from "date-fns";
 
 export async function editResetBudgetTimestamp(
   resetBudgetTimestamp: Timestamp,
@@ -175,10 +177,42 @@ export async function editTotalSpendingBudget(
   return;
 }
 
-export function toUTCDateString(date: Date): string {
-  return `${date.getUTCFullYear()}-${
-    date.getUTCMonth() + 1
-  }-${date.getUTCDate()}`;
+export async function isResetToday(
+  payDate: Timestamp,
+  interval: Interval,
+  resetBudgetTimestamp: Timestamp | null // Last Reset Time
+) {
+  if (!payDate || !interval) return false;
+  const today = startOfDay(new Date());
+  
+  // Prevent multiple resets on the same day
+  if (resetBudgetTimestamp) {
+    const lastResetDate = startOfDay(resetBudgetTimestamp.toDate());
+    if (isSameDay(today, lastResetDate)) {
+      console.log("isResetToday: Already reset today");
+      return false;
+    }
+  }
+
+  const originalPayDate = payDate.toDate();
+  const { start, end } = getIntervalDateRange(interval, originalPayDate);
+
+  // If we're already in the current pay period, don't reset again
+  if (resetBudgetTimestamp) {
+    const lastResetDate = resetBudgetTimestamp.toDate();
+    console.log("isResetToday interval check:", {
+      lastResetDate,
+      start,
+      end,
+      isInCurrentPeriod: lastResetDate >= start && lastResetDate < end,
+    });
+
+    if (lastResetDate >= start && lastResetDate < end) {
+      console.warn("Already reset during this pay period.");
+      return false;
+    }
+  }
+  return true;
 }
 
 type ResetBudgetParams = {
