@@ -11,8 +11,6 @@ import {
   editRent,
   editSnowball,
   editTotalSpendingBudget,
-  isResetToday,
-  resetBudget,
   shouldBackupUserData,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
@@ -54,11 +52,6 @@ export default function MainEnvelopesView() {
     setSnowball,
     payments,
     setPayments,
-    resetBudgetTimestamp,
-    setResetBudgetTimestamp,
-    setOneTimeCash,
-    income,
-    oneTimeCash,
   } = useDatabase();
 
   const [showSummary, setShowSummary] = useState(false);
@@ -102,36 +95,6 @@ export default function MainEnvelopesView() {
       getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate)
     );
   }, [payments, payDate, payPeriodInterval]);
-
-  // Check and Reset Budget
-  useEffect(() => {
-    async function checkAndReset() {
-      // Need payDate, user, and payPeriodInterval to check/reset
-      if (!payDate || !user || !payPeriodInterval) return;
-      
-      // resetBudgetTimestamp can be null on first login - that's okay
-      const shouldResetNow = await isResetToday(payDate, payPeriodInterval, resetBudgetTimestamp);
-      if (shouldResetNow) {
-        await resetBudget({ 
-          payDate, 
-          payPeriodInterval, 
-          envelopes, 
-          user, 
-          setEnvelopes, 
-          setTotalSpendingBudget, 
-          setOneTimeCash,
-          setPayments,
-          income, 
-          totalSpendingBudget, 
-          virtualPayments: paymentsThisPeriod,
-          payments,
-          rent, 
-          oneTimeCash, 
-          setResetBudgetTimestamp })
-      }
-    }
-    checkAndReset()
-  }, [payDate, user, payPeriodInterval, resetBudgetTimestamp])
 
   async function handleEditPayment(p: Payment) {
     setPaymentToEdit(p);
