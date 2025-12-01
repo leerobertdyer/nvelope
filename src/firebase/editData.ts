@@ -12,6 +12,8 @@ import type { User } from "firebase/auth";
 import {
   getIntervalDateRange,
   isDateInCurrentPayPeriod,
+  resetAllEnvelopes,
+  resetAllNvelopes,
   resetEnvelopesSpentToZero,
 } from "../util";
 import { MONTHLY } from "../constants";
@@ -248,7 +250,7 @@ export async function resetBudget({
   setResetBudgetTimestamp,
 }: ResetBudgetParams) {
 
-  const nextEnvelopes = resetAllEnvelope(envelopes);
+  await resetAllNvelopes(envelopes, setEnvelopes, user.uid);
 
   let totalPaymentsDueThisPeriod = 0;
   for (const p of virtualPayments) {
@@ -275,9 +277,6 @@ export async function resetBudget({
   await editOneTimeCashAndBudget(null, user.uid, remainingBudget);
   setTotalSpendingBudget(remainingBudget);
   setOneTimeCash([]);
-
-  await editEnvelopes(nextEnvelopes, user.uid);
-  setEnvelopes(nextEnvelopes);
 
   const newResetTime = Timestamp.now();
   await editResetBudgetTimestamp(newResetTime, user.uid);
