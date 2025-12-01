@@ -106,7 +106,10 @@ export default function MainEnvelopesView() {
   // Check and Reset Budget
   useEffect(() => {
     async function checkAndReset() {
-      if (!payDate || !user || !resetBudgetTimestamp || !payDate) return
+      // Need payDate, user, and payPeriodInterval to check/reset
+      if (!payDate || !user || !payPeriodInterval) return;
+      
+      // resetBudgetTimestamp can be null on first login - that's okay
       const shouldResetNow = await isResetToday(payDate, payPeriodInterval, resetBudgetTimestamp);
       if (shouldResetNow) {
         await resetBudget({ 
@@ -116,17 +119,19 @@ export default function MainEnvelopesView() {
           user, 
           setEnvelopes, 
           setTotalSpendingBudget, 
-          setOneTimeCash, 
+          setOneTimeCash,
+          setPayments,
           income, 
           totalSpendingBudget, 
-          virtualPayments: paymentsThisPeriod, 
+          virtualPayments: paymentsThisPeriod,
+          payments,
           rent, 
           oneTimeCash, 
           setResetBudgetTimestamp })
       }
     }
     checkAndReset()
-  }, [payDate, user])
+  }, [payDate, user, payPeriodInterval, resetBudgetTimestamp])
 
   async function handleEditPayment(p: Payment) {
     setPaymentToEdit(p);

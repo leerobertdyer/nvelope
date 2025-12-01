@@ -17,6 +17,7 @@ import {
   getDaysInMonth,
   isAfter,
   isBefore,
+  isSameMonth,
   isWithinInterval,
   lastDayOfMonth,
   startOfDay,
@@ -557,4 +558,22 @@ export function removeVirtualIdPortion(p: Payment) {
 
 export function getBackupDataFromTimestampString(ts: string, backups: Backup) {
   return backups.data.find((b) => b.backupTimeStamp.toString() === ts);
+}
+
+// Calculate a number of paychecks left in current month. Used for rent calculation during reset
+export function getCountOfPaydatesLeftThisMonth(payDate: Timestamp, i: Interval) {
+  const thisMonth = startOfDay(new Date())
+  const {start} = getCurrentIntervalDateRange(i, payDate)
+  let d = start;
+  let c = 0
+  while (isSameMonth(d, thisMonth)) {
+    switch (i) {
+      case "WEEKLY":
+        c++; d = addWeeks(d, 1); break;
+      case "BIWEEKLY":
+        c++; d = addWeeks(d, 2); break;
+      case "MONTHLY": return 1; 
+    }
+  }
+  return c;
 }

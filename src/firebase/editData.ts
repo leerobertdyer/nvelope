@@ -10,11 +10,9 @@ import { doc, updateDoc, Timestamp, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
 import {
-  getIntervalDateRange,
-  isDateInCurrentPayPeriod,
-  resetAllEnvelopes,
+  getCountOfPaydatesLeftThisMonth,
+  getCurrentIntervalDateRange,
   resetAllNvelopes,
-  resetEnvelopesSpentToZero,
 } from "../util";
 import { MONTHLY } from "../constants";
 import { millisecondsInDay } from "date-fns/constants";
@@ -185,35 +183,45 @@ export async function isResetToday(
   resetBudgetTimestamp: Timestamp | null // Last Reset Time
 ) {
   if (!payDate || !interval) return false;
+  
+  // If no previous reset timestamp, we can't determine if we should reset
+  // (new user or first time - they shouldn't reset until next pay period)
+  if (!resetBudgetTimestamp) {
+    console.log("isResetToday: No previous reset timestamp, skipping reset check");
+    return false;
+  }
+
   const today = startOfDay(new Date());
+  const lastResetDate = startOfDay(resetBudgetTimestamp.toDate());
   
   // Prevent multiple resets on the same day
-  if (resetBudgetTimestamp) {
-    const lastResetDate = startOfDay(resetBudgetTimestamp.toDate());
-    if (isSameDay(today, lastResetDate)) {
-      console.log("isResetToday: Already reset today");
-      return false;
-    }
+  if (isSameDay(today, lastResetDate)) {
+    console.log("isResetToday: Already reset today");
+    return false;
   }
 
-  const originalPayDate = payDate.toDate();
-  const { start, end } = getIntervalDateRange(interval, originalPayDate);
+  // Get the CURRENT pay period range (based on today's date)
+  const { start, end } = getCurrentIntervalDateRange(interval, payDate);
+  
+  // Check if the last reset was in the current pay period
+  const lastResetInCurrentPeriod = lastResetDate >= start && lastResetDate <= end;
+  
+  console.log("isResetToday interval check:", {
+    today,
+    lastResetDate,
+    currentPeriodStart: start,
+    currentPeriodEnd: end,
+    isInCurrentPeriod: lastResetInCurrentPeriod,
+  });
 
-  // If we're already in the current pay period, don't reset again
-  if (resetBudgetTimestamp) {
-    const lastResetDate = resetBudgetTimestamp.toDate();
-    console.log("isResetToday interval check:", {
-      lastResetDate,
-      start,
-      end,
-      isInCurrentPeriod: lastResetDate >= start && lastResetDate < end,
-    });
-
-    if (lastResetDate >= start && lastResetDate < end) {
-      console.warn("Already reset during this pay period.");
-      return false;
-    }
+  // If last reset was in the current pay period, don't reset again
+  if (lastResetInCurrentPeriod) {
+    console.log("Already reset during this pay period.");
+    return false;
   }
+  
+  // We've entered a new pay period since last reset
+  console.log("New pay period detected, reset allowed");
   return true;
 }
 
@@ -225,9 +233,11 @@ type ResetBudgetParams = {
   setEnvelopes: (envelopes: Envelope[]) => void;
   setTotalSpendingBudget: (totalSpendingBudget: number) => void;
   setOneTimeCash: (oneTimeCash: OneTimeAmount[] | null) => void;
+  setPayments: (payments: Payment[]) => void;
   income: number;
   totalSpendingBudget: number;
-  virtualPayments: Payment[];
+  virtualPayments: Payment[]; // Used for calculation only
+  payments: Payment[]; // Original payments array - will be reset and saved
   oneTimeCash: OneTimeAmount[] | null;
   setResetBudgetTimestamp: (resetBudgetTimestamp: Timestamp) => void;
   shouldReplenish?: boolean;
@@ -242,24 +252,44 @@ export async function resetBudget({
   setEnvelopes,
   setTotalSpendingBudget,
   setOneTimeCash,
+  setPayments,
   income,
   totalSpendingBudget,
-  virtualPayments, // VIRTUAL PAYMENTS
+  virtualPayments, // VIRTUAL PAYMENTS - used for calculation only
+  payments, // Original payments array - will be reset and saved
   rent,
   oneTimeCash,
   setResetBudgetTimestamp,
 }: ResetBudgetParams) {
 
+  // Reset all envelopes to 0 spent, 0 total, and unpaid
   await resetAllNvelopes(envelopes, setEnvelopes, user.uid);
 
+  // Calculate total payments due this period (using virtualPayments for calculation)
   let totalPaymentsDueThisPeriod = 0;
   for (const p of virtualPayments) {
     totalPaymentsDueThisPeriod += p.amount;
-    p.paid = false;
   }
   
+  // Reset payments: mark all as unpaid in the original payments array
+  // For weekly/biweekly: clear paidDates array (this affects all virtual occurrences)
+  // For monthly/yearly: set paid = false
+  const resetPayments = payments.map((p: Payment) => {
+    if (p.interval === "WEEKLY" || p.interval === "BIWEEKLY") {
+      return { ...p, paidDates: [] };
+    } else {
+      return { ...p, paid: false };
+    }
+  });
+  await editPayments(resetPayments, user.uid);
+  setPayments(resetPayments);
+  // Note: virtualPayments will automatically regenerate from updated payments via useEffect in MainView
+  
+  // Calculate rent portion for this period
   const payDatesThisMonth = getCountOfPaydatesLeftThisMonth(payDate, payPeriodInterval);
-  const rentPaymentThisPeriod = rent / payDatesThisMonth
+  const rentPaymentThisPeriod = rent / payDatesThisMonth;
+  
+  // Calculate remaining budget: income - payments - rent portion
   const remainingBudget = income - totalPaymentsDueThisPeriod - rentPaymentThisPeriod;
   
   const previousIntervalDetails = {
