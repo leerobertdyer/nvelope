@@ -309,11 +309,13 @@ export default function Settings() {
 
         {/* Once account is created simply display email has password */}
         {hasPassword && (
-          <Notification text={`Password has been set for ${user?.email}`} />
+          <div className="w-full flex justify-center items-center p-2">
+            <Notification text={`Password has been set for ${user?.email}`} />
+          </div>
         )}
 
         {/* Restore payments from backup */}
-        <div className="flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark mb-4">
+        <div className=" flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4">
           <p className="text-sm font-bold">⚠️ Revert To A Backup</p>
           <p className="text-xs">Restores payments and envelopes</p>
           <div>
