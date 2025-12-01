@@ -225,11 +225,11 @@ type ResetBudgetParams = {
   setOneTimeCash: (oneTimeCash: OneTimeAmount[] | null) => void;
   income: number;
   totalSpendingBudget: number;
-  payments: Payment[];
+  virtualPayments: Payment[];
   oneTimeCash: OneTimeAmount[] | null;
-  oneTimeExpenses: OneTimeAmount[] | null;
   setResetBudgetTimestamp: (resetBudgetTimestamp: Timestamp) => void;
   shouldReplenish?: boolean;
+  rent: number
 };
 
 export async function resetBudget({
@@ -242,73 +242,29 @@ export async function resetBudget({
   setOneTimeCash,
   income,
   totalSpendingBudget,
-  payments,
+  virtualPayments, // VIRTUAL PAYMENTS
+  rent,
   oneTimeCash,
-  oneTimeExpenses,
   setResetBudgetTimestamp,
-  shouldReplenish,
 }: ResetBudgetParams) {
-  let nextEnvelopes = [...envelopes];
 
-  if (shouldReplenish) nextEnvelopes = resetEnvelopesSpentToZero(envelopes);
-  console.log("nextEnvelopes", nextEnvelopes);
+  const nextEnvelopes = resetAllEnvelope(envelopes);
 
-  let totalPaymentsInInterval = 0;
-  for (const p of payments) {
-    if (
-      isDateInCurrentPayPeriod(
-        payPeriodInterval,
-        payDate.toDate(),
-        p.dueDate?.toDate() || new Date()
-      )
-    ) {
-      totalPaymentsInInterval += p.amount;
-    }
+  let totalPaymentsDueThisPeriod = 0;
+  for (const p of virtualPayments) {
+    totalPaymentsDueThisPeriod += p.amount;
     p.paid = false;
   }
-
-  const totalOneTimeCash = oneTimeCash
-    ? oneTimeCash.reduce(
-        (acc, cash) =>
-          isDateInCurrentPayPeriod(
-            payPeriodInterval,
-            payDate.toDate(),
-            cash.date.toDate()
-          )
-            ? acc + cash.amount
-            : acc,
-        0
-      )
-    : 0;
-
-  const totalOneTimeExpenses = oneTimeExpenses
-    ? oneTimeExpenses.reduce(
-        (acc, expense) =>
-          isDateInCurrentPayPeriod(
-            payPeriodInterval,
-            payDate.toDate(),
-            expense.date.toDate()
-          )
-            ? acc + expense.amount
-            : acc,
-        0
-      )
-    : 0;
-
-  const totalEnvelopes = nextEnvelopes.reduce((acc, n) => acc + n.total, 0);
-
-  const remainingBudget =
-    income -
-    totalPaymentsInInterval +
-    totalOneTimeCash -
-    totalOneTimeExpenses -
-    totalEnvelopes;
-
+  
+  const payDatesThisMonth = getCountOfPaydatesLeftThisMonth(payDate, payPeriodInterval);
+  const rentPaymentThisPeriod = rent / payDatesThisMonth
+  const remainingBudget = income - totalPaymentsDueThisPeriod - rentPaymentThisPeriod;
+  
   const previousIntervalDetails = {
     payDate,
     payPeriodInterval,
     envelopes,
-    payments,
+    payments: virtualPayments,
     income,
     totalSpendingBudget,
     oneTimeCash,
@@ -320,10 +276,8 @@ export async function resetBudget({
   setTotalSpendingBudget(remainingBudget);
   setOneTimeCash([]);
 
-  if (shouldReplenish) {
-    await editEnvelopes(nextEnvelopes, user.uid);
-    setEnvelopes(nextEnvelopes);
-  }
+  await editEnvelopes(nextEnvelopes, user.uid);
+  setEnvelopes(nextEnvelopes);
 
   const newResetTime = Timestamp.now();
   await editResetBudgetTimestamp(newResetTime, user.uid);
