@@ -11,6 +11,8 @@ import {
   editRent,
   editSnowball,
   editTotalSpendingBudget,
+  isResetToday,
+  resetBudget,
   shouldBackupUserData,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
@@ -52,6 +54,11 @@ export default function MainEnvelopesView() {
     setSnowball,
     payments,
     setPayments,
+    resetBudgetTimestamp,
+    setResetBudgetTimestamp,
+    setOneTimeCash,
+    income,
+    oneTimeCash,
   } = useDatabase();
 
   const [showSummary, setShowSummary] = useState(false);
@@ -95,6 +102,31 @@ export default function MainEnvelopesView() {
       getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate)
     );
   }, [payments, payDate, payPeriodInterval]);
+
+  // Check and Reset Budget
+  useEffect(() => {
+    async function checkAndReset() {
+      if (!payDate || !user || !resetBudgetTimestamp || !payDate) return
+      const shouldResetNow = await isResetToday(payDate, payPeriodInterval, resetBudgetTimestamp);
+      if (shouldResetNow) {
+        await resetBudget({ 
+          payDate, 
+          payPeriodInterval, 
+          envelopes, 
+          user, 
+          setEnvelopes, 
+          setTotalSpendingBudget, 
+          setOneTimeCash, 
+          income, 
+          totalSpendingBudget, 
+          virtualPayments: paymentsThisPeriod, 
+          rent, 
+          oneTimeCash, 
+          setResetBudgetTimestamp })
+      }
+    }
+    checkAndReset()
+  }, [payDate, user])
 
   async function handleEditPayment(p: Payment) {
     setPaymentToEdit(p);
