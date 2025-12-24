@@ -36,6 +36,7 @@ import ShowAndHide from "../components/Buttons/ShowAndHide";
 import Summary from "../components/Summary";
 import BigPayment from "../components/Views/BigPayment";
 import PaymentForm from "../components/Forms/PaymentForm";
+import AddIncomeForm from "../components/Forms/AddIncomeForm";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -405,13 +406,11 @@ export default function MainEnvelopesView() {
     return (
       <div className="absolute inset-0 w-screen h-screen z-100 select-none">
         <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
-         
-            <p className="text-my-white-light text-center">
-              Removing this bill will not change your available budget.
-            </p>
-          
           <p className="p-4 rounded-md text-my-white-dark w-full text-center">
             Are you sure you want to delete "{paymentToEdit.name}"?
+          </p>
+          <p className="text-xs text-my-white-light text-center mb-4">
+            Removing this payment will not change your available budget.
           </p>
           <div className="flex gap-2 items-center justify-center w-[95%]">
             <Button
@@ -475,13 +474,15 @@ export default function MainEnvelopesView() {
         onSave={handleEditSnowball}
         showButtons={true}
       >
-        <TextInput
-          id="newSnowballAmount"
-          placeholder={`$${snowball}`}
-          value={snowball.toString()}
-          label="New Snowball Amount"
-          onChange={(e) => setSnowball(Number(e.target.value))}
-        />
+        <div className="flex justify-center items-center text-center w-full">
+          <TextInput
+            id="newSnowballAmount"
+            placeholder={`$${snowball}`}
+            value={snowball.toString()}
+            label="New Snowball Amount"
+            onChange={(e) => setSnowball(Number(e.target.value))}
+          />
+        </div>
       </FullScreen>
     );
 
@@ -560,35 +561,7 @@ export default function MainEnvelopesView() {
   }
 
   if (isAddingCash) {
-    return (
-      <>
-        {showLoading && <Loading text={loadingText} />}
-        <FullScreen
-          showButtons
-          onClose={() => setIsAddingCash(false)}
-          onSave={addCashToDb}
-        >
-          <div className="w-full max-w-[20rem] m-auto h-fit flex flex-col items-center justify-center">
-            <h3 className="p-2 text-white text-lg mb-4">Add Cash</h3>
-            <TextInput
-              label="Amount To Add"
-              id="newCashAmount"
-              textOrNumber="number"
-              placeholder="Amount"
-              value={cashAmount}
-              onChange={(e) => setCashAmount(e.target.value)}
-            />
-            <TextInput
-              id="newCashName"
-              label="Name"
-              value={cashName}
-              onChange={(e) => setCashName(e.target.value)}
-              placeholder="Name"
-            />
-          </div>
-        </FullScreen>
-      </>
-    );
+    return <AddIncomeForm showLoading={showLoading} loadingText={loadingText} setIsAddingCash={setIsAddingCash} addCashToDb={addCashToDb} cashAmount={cashAmount} setCashAmount={setCashAmount} cashName={cashName} setCashName={setCashName} />
   }
 
   if (isAddingCashToEnvelope) {
@@ -596,6 +569,7 @@ export default function MainEnvelopesView() {
       <>
         {showLoading && <Loading text={loadingText} />}
         <div className="absolute inset-0 bg-my-white-dark text-mywhite-dark w-full h-screen flex flex-col items-center justify-center">
+          Remaining Budget: ${totalSpendingBudget - Number(cashAmount)}
           <h3 className="p-2 text-my-green-dark mb-4">
             Add Cash to {envelopeToEdit?.name}
           </h3>
@@ -642,14 +616,14 @@ export default function MainEnvelopesView() {
             onClick={handleAddCash}
           >
             <GiMoneyStack className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-base " />
-            <p className="text-xs">Add Cash</p>
+            <p className="text-xs">Get Paid</p>
           </div>
           <div
-            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark shadow-my-black-dark"
+            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark  text-my-green-dark shadow-my-green-light"
             onClick={handleSetupNewEnvelope}
           >
             <GiEnvelope className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-            <p className="text-xs">Nvelope+</p>
+            <p className="text-xs flex justify-center items-center">New</p>
           </div>
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"

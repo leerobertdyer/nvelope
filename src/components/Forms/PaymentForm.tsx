@@ -148,13 +148,13 @@ export default function PaymentForm({
         <Popup type="error">Payment name already exists</Popup>
       )}
       <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll min-h-screen w-full overflow-x-hidden">
-        <div className="flex flex-col gap-2 items-center justify-center py-[2rem] text-my-black-dark bg-my-white-base w-full max-w-[35rem] text-center">
+        <div className="flex flex-col gap-2 items-center justify-center py-[2rem] text-my-black-dark bg-my-white-base w-full max-w-[35rem] text-center rounded-md">
           <h1 className="text-2xl">
-            {paymentToEdit ? "Edit Payment Form" : "Add Payment Form"}
+            {paymentToEdit ? "Edit Payment" : "Add Payment"}
           </h1>
           <TextInput
             id="name"
-            label="Payment Name"
+            label=""
             value={newPayment?.name.toLowerCase()}
             placeholder="Enter new payment name"
             onChange={(e) =>
@@ -166,7 +166,6 @@ export default function PaymentForm({
           />
           {newPayment.name && (
             <div className="flex flex-col items-center w-full mb-4">
-              <label htmlFor="amount">Payment Amount</label>
               <input
                 id="amount"
                 type="number"
@@ -186,7 +185,6 @@ export default function PaymentForm({
           )}
           {newPayment.amount > 0 && (
             <div className="flex flex-col items-center w-full mb-4">
-              <label htmlFor="amount">Interval Of Payment</label>
               <select
                 value={newPayment.interval || defaultIntervalOption}
                 onChange={(e) =>
@@ -226,23 +224,6 @@ export default function PaymentForm({
                 />
               </div>
               <div className="flex flex-col items-center w-full mb-4">
-                <div className="w-full flex justify-center gap-2 mt-2">
-                  <label className=" inline" htmlFor="paid">
-                    Already paid?
-                  </label>
-                  <input
-                    id="paid"
-                    type="checkbox"
-                    className="cursor-pointer max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                    checked={newPayment?.paid || false}
-                    onChange={(e) =>
-                      setNewPayment({
-                        ...newPayment,
-                        paid: e.target.checked,
-                      })
-                    }
-                  />
-                </div>
                 <hr className="border-2 border-my-white-base w-[80%] mt-2" />
                 <div className="w-full flex flex-col justify-center items-center gap-2 mt-2">
                   <label htmlFor="paid">Debt Or Bill?</label>
