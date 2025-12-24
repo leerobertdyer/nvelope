@@ -10,7 +10,7 @@ import Button from "./Buttons/Button";
 import type { Envelope } from "../types";
 import { IoIosRepeat } from "react-icons/io";
 import { IoAddCircle } from "react-icons/io5";
-import NvelopeCalculator from "./Views/NvelopeCalculator";
+import NvelopeCalculator from "../Views/NvelopeCalculator";
 import EnvelopeForm from "./Forms/EnvelopeForm";
 
 interface NvelopeProps {

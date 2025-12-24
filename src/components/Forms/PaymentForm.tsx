@@ -15,7 +15,7 @@ import {
 } from "../../util";
 import { format } from "date-fns";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
-import FullScreen from "../Views/FullScreen";
+import FullScreen from "../../Views/FullScreen";
 import TextInput from "../TextInput";
 
 const defaultIntervalOption = "--Select An Interval--";

@@ -22,7 +22,7 @@ import type { Value } from "react-calendar/src/shared/types.js";
 import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
 import EditSpendingBudget from "../components/Forms/EditSpendingBudget";
 import TextInput from "../components/TextInput";
-import FullScreen from "../components/Views/FullScreen";
+import FullScreen from "../Views/FullScreen";
 import CreateLoginWithEmail from "../components/Forms/CreateLoginWithEmail";
 import Notification from "../components/Notification";
 import { format } from "date-fns";

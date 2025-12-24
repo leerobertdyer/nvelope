@@ -1,9 +1,9 @@
 import { GiMoneyStack } from "react-icons/gi";
 import { IoPencil, IoTrash } from "react-icons/io5";
 import { IoIosHand } from "react-icons/io";
-import type { Envelope } from "../../types";
-import SpendBtn from "../Buttons/SpendBtn";
-import Button from "../Buttons/Button";
+import type { Envelope } from "../types";
+import SpendBtn from "../components/Buttons/SpendBtn";
+import Button from "../components/Buttons/Button";
 
 interface IBigEnvelope {
     handleBack: () => void,

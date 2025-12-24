@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import Button from "../Buttons/Button";
+import Button from "../components/Buttons/Button";
 
 interface IFullScreen {
   children: React.ReactNode;

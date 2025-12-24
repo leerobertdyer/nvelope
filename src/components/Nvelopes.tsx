@@ -3,9 +3,9 @@ import type { Envelope } from "../types";
 import { editEnvelopes, editTotalSpendingBudget } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
-import GiveAndTake from "./Views/GiveAndTake";
+import GiveAndTake from "../Views/GiveAndTake";
 import ListEnvelope from "./ListEnvelope";
-import BigEnvelope from "./Views/BigEnvelope";
+import BigEnvelope from "../Views/BigEnvelope";
 import ShowHideButton from "./Buttons/ShowHideButton";
 
 interface NvelopeProps {

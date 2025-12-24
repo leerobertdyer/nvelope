@@ -1,10 +1,10 @@
 import { GiMoneyStack } from "react-icons/gi";
 import { IoPencil, IoTrash } from "react-icons/io5";
-import type { Payment } from "../../types";
-import Button from "../Buttons/Button";
+import type { Payment } from "../types";
+import Button from "../components/Buttons/Button";
 import { useState } from "react";
-import PaymentForm from "../Forms/PaymentForm";
-import { useAuth } from "../../Context/AuthContext/useAuth";
+import PaymentForm from "../components/Forms/PaymentForm";
+import { useAuth } from "../Context/AuthContext/useAuth";
 import { format } from "date-fns";
 
 interface IProps {

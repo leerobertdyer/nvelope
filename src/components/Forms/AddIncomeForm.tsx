@@ -1,7 +1,7 @@
 import Button from "../Buttons/Button";
 import Loading from "../Loading";
 import TextInput from "../TextInput";
-import FullScreen from "../Views/FullScreen";
+import FullScreen from "../../Views/FullScreen";
 
 interface IAddIncomeForm {
     showLoading: boolean;

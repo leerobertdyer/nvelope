@@ -1,8 +1,8 @@
 import { useState } from "react";
-import Button from "../Buttons/Button";
-import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
-import type { Envelope } from "../../types";
-import TextInput from "../TextInput";
+import Button from "../components/Buttons/Button";
+import { useDatabase } from "../Context/DatabaseContext/useDatabase";
+import type { Envelope } from "../types";
+import TextInput from "../components/TextInput";
 
 interface NvelopeCalculatorProps {
     handleEnterAmount: (amount: number, envelope: Envelope) => void;
