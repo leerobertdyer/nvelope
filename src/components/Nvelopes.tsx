@@ -115,7 +115,6 @@ export default function Nvelopes({
         handleBack={() => setIsEnvelopeSelected(false)}
         envelope={envelopeToEdit!}
         resetState={resetState}
-        editEnvelope={editEnvelope}
         handleSetShowSpendingPage={handleSetShowSpendingPage}
         handleSetupEdit={handleSetupEdit}
         setUpShowGiveAndTake={setUpShowGiveAndTake}

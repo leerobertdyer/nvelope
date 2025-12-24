@@ -146,8 +146,8 @@ export default function MainEnvelopesView() {
       const originalId = payment.id.includes("-WEEKLY-")
         ? payment.id.split("-WEEKLY-")[0]
         : payment.id.includes("-BIWEEKLY-")
-        ? payment.id.split("-BIWEEKLY-")[0]
-        : payment.id;
+          ? payment.id.split("-BIWEEKLY-")[0]
+          : payment.id;
 
       const updatedPayments = prev.map((p) => {
         if (p.id !== originalId) return p;
@@ -258,7 +258,8 @@ export default function MainEnvelopesView() {
     }
   }
 
-  async function editEnvelope(n: Envelope) {
+  // Edit Envelopes AND budget
+  async function editEnvelopeAndBudget(n: Envelope) {
     try {
       const originalEnvelope = envelopes.find((e) => e.id === n.id);
       if (!originalEnvelope) return;
@@ -287,6 +288,18 @@ export default function MainEnvelopesView() {
       console.error("Error editing envelope:", error);
       setShowLoading(false);
     }
+  }
+
+  // Edit just the envelopes without affecting budget
+  async function editEnvelope(n: Envelope) {
+    const originalEnvelope = envelopes.find((e) => e.id === n.id);
+    if (!originalEnvelope) return;
+    setLoadingText("Editing Envelope...");
+    setShowLoading(true);
+    const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
+    setEnvelopes(newEnvelopes);
+    await editEnvelopes(newEnvelopes, user!.uid);
+    resetState();
   }
 
   function handleSetupEdit(n: Envelope) {
@@ -392,7 +405,7 @@ export default function MainEnvelopesView() {
             <span className="text-my-blue-light">ALL Nvelopes</span>{" "}
             totals/spent to <span className="text-my-green-base">$0.00</span>,
           </p>
-            <p>and set them all to "unpaid" status.</p>
+          <p>and set them all to "unpaid" status.</p>
           <p>Your budget total will be unaffected.</p>
         </div>
       </FullScreen>
@@ -403,11 +416,11 @@ export default function MainEnvelopesView() {
       <div className="absolute inset-0 w-screen h-screen z-100 select-none">
         <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
           {!paymentToEdit.paid &&
-          isDateInCurrentPayPeriod(
-            payPeriodInterval,
-            payDate.toDate(),
-            paymentToEdit.dueDate.toDate()
-          ) ? (
+            isDateInCurrentPayPeriod(
+              payPeriodInterval,
+              payDate.toDate(),
+              paymentToEdit.dueDate.toDate()
+            ) ? (
             <p className="text-my-white-light text-center">
               Removing this bill will add
               <span className="text-my-green-base px-[3px]">
@@ -698,7 +711,7 @@ export default function MainEnvelopesView() {
           <Nvelopes
             resetState={resetState}
             handleSetupEdit={handleSetupEdit}
-            editEnvelope={editEnvelope}
+            editEnvelope={editEnvelopeAndBudget}
             handleSetShowSpendingPage={handleSetShowSpendingPage}
             handleDeleteEnvelope={handleSetupDelete}
             handleEditRent={handleEditRent}

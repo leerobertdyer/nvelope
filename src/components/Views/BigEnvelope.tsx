@@ -5,7 +5,17 @@ import type { Envelope } from "../../types";
 import SpendBtn from "../Buttons/SpendBtn";
 import Button from "../Buttons/Button";
 
-export default function BigEnvelope({ handleBack, envelope, handleSetShowSpendingPage, handleSetupEdit, setUpShowGiveAndTake, handleDeleteEnvelope, handleAddCashToEnvelope }: { handleBack: () => void, envelope: Envelope, resetState: () => void, editEnvelope: (envelope: Envelope) => Promise<void>, handleSetShowSpendingPage: (envelope: Envelope) => void, handleSetupEdit: (envelope: Envelope) => void, setUpShowGiveAndTake: (envelope: Envelope) => void, handleDeleteEnvelope: (id: string) => void, handleAddCashToEnvelope: (envelope: Envelope) => void }) {
+interface IBigEnvelope {
+    handleBack: () => void,
+    envelope: Envelope, resetState: () => void,
+    handleSetShowSpendingPage: (envelope: Envelope) => void,
+    handleSetupEdit: (envelope: Envelope) => void, 
+    setUpShowGiveAndTake: (envelope: Envelope) => void, 
+    handleDeleteEnvelope: (id: string) => void, 
+    handleAddCashToEnvelope: (envelope: Envelope) => void
+}
+
+export default function BigEnvelope({ handleBack, envelope, handleSetShowSpendingPage, handleSetupEdit, setUpShowGiveAndTake, handleDeleteEnvelope, handleAddCashToEnvelope }: IBigEnvelope) {
     const envelopeRemainder = (Number(envelope.total) - Number(envelope.spent)).toFixed(2)
     return (
         <div className="absolute top-[2rem] left-0 pt-[2rem] bg-my-white-light w-full overflow-y-auto z-999 h-screen">
@@ -16,7 +26,7 @@ export default function BigEnvelope({ handleBack, envelope, handleSetShowSpendin
                         ${envelopeRemainder}
                     </span>
                 </div>
-                <hr className="w-full border-[1px] mb-4"/>
+                <hr className="w-full border-[1px] mb-4" />
                 <SpendBtn onClick={() => handleSetShowSpendingPage(envelope)} />
                 <br />
                 <div className="flex flex-col justify-center items-center gap-2 ">
