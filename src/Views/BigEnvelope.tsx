@@ -9,9 +9,9 @@ interface IBigEnvelope {
     handleBack: () => void,
     envelope: Envelope, resetState: () => void,
     handleSetShowSpendingPage: (envelope: Envelope) => void,
-    handleSetupEdit: (envelope: Envelope) => void, 
-    setUpShowGiveAndTake: (envelope: Envelope) => void, 
-    handleDeleteEnvelope: (id: string) => void, 
+    handleSetupEdit: (envelope: Envelope) => void,
+    setUpShowGiveAndTake: (envelope: Envelope) => void,
+    handleDeleteEnvelope: (id: string) => void,
     handleAddCashToEnvelope: (envelope: Envelope) => void
 }
 
@@ -27,7 +27,9 @@ export default function BigEnvelope({ handleBack, envelope, handleSetShowSpendin
                     </span>
                 </div>
                 <hr className="w-full border-[1px] mb-4" />
-                <SpendBtn onClick={() => handleSetShowSpendingPage(envelope)} />
+                <Button onClick={handleBack} color="red">
+                    Go Back
+                </Button>
                 <br />
                 <div className="flex flex-col justify-center items-center gap-2 ">
                     <div className="shadow shadow-black cursor-pointer hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
@@ -54,9 +56,8 @@ export default function BigEnvelope({ handleBack, envelope, handleSetShowSpendin
                             className="p-[2px] border-2 rounded-md bg-my-red-dark text-white border-my-black-dark" size={27} />
                         <p className="text-xs">Delete Envelope</p>
                     </div>
-                    <Button onClick={handleBack} color="red">
-                        Go Back
-                    </Button>
+                    <SpendBtn onClick={() => handleSetShowSpendingPage(envelope)} />
+
                 </div>
             </div>
         </div>
