@@ -43,15 +43,14 @@ export default function NvelopeCalculator({ handleEnterAmount, handleBack, selec
     }
 
     return (
-        <div className="absolute inset-0 bg-my-black-base text-my-white-dark flex items-center justify-center flex-col gap-5">
+        <div className="absolute inset-0 bg-my-black-base text-my-white-light flex items-center justify-center flex-col gap-5">
             <div className="max-w-[20rem] flex flex-col justify-center align-center gap-2">
-                <p className="w-full text-center">
-                    Envelope Remainder:
+                {envelope && <p className="w-full">
+                    <span className="text-my-white-dark">"{envelope.name}"</span> balance:
                     <span className="text-my-green-light ml-2">
                         ${Number(envelope?.total) - Number(envelope?.spent) - Number(amount)}
                     </span>
-                </p>
-                <h2 className="text-2xl mb-4">Enter Amount{envelope?.name ? ` for ${envelope.name}` : ''}</h2>
+                </p>}
                 <TextInput
                     id="newAmountForEnvelope"
                     label="Amount To Spend"

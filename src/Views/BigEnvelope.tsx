@@ -20,9 +20,9 @@ export default function BigEnvelope({ handleBack, envelope, handleSetShowSpendin
     return (
         <div className="absolute top-[2rem] left-0 pt-[2rem] bg-my-white-light w-full overflow-y-auto z-999 h-screen">
             <div className="w-full flex flex-col items-center justify-start">
-                <div className="p-2 w-[80%] max-w-[20rem] m-auto rounded-md text-lg text-my-black-dark text-center rounded-md w-full flex justify-around">
+                <div className="p-2 text-lg text-my-white-dark text-center w-full flex justify-center gap-2 bg-my-black-base">
                     {envelope.name}
-                    <span className="text-my-green-dark">
+                    <span className="text-my-green-base">
                         ${envelopeRemainder}
                     </span>
                 </div>
