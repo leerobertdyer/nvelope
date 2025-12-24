@@ -3,7 +3,7 @@ import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import SpotlightOverlay from "./SpotlightOverlay";
 import NavMenu from "./NavMenu";
 import { calculateCurrentIntervalStart, getIntervalDateRange, getNumberOfDaysFromInterval } from "../util";
-import { intervalToDuration, startOfDay } from "date-fns";
+import { differenceInCalendarDays, startOfDay } from "date-fns";
 import EditSpendingBudget from "./Forms/EditSpendingBudget";
 
 export default function Header({ step, links }: { step?: number, links: { label: string, href: string }[] }) {
@@ -63,12 +63,19 @@ export default function Header({ step, links }: { step?: number, links: { label:
 
       const beginningOfPayday = startOfDay(payDate.toDate())
       if (beginningOfPayday > today) {
-        // If setting payday to future set the end to that date instead of the end of that interval
-        end = payDate.toDate()
+        // If setting payday to future, set end to the day BEFORE payday (last day of current period)
+        // This matches getIntervalDateRange which also subtracts 1 day to get the last day
+        end = startOfDay(payDate.toDate())
+        const diffDays = differenceInCalendarDays(end, today);
+        // Don't add 1 here since end is the reset day, not the last day of period
+        setDaysTillReset(diffDays > 0 ? diffDays : 1);
+        return;
       }
-      const diffDays = intervalToDuration({start: today, end}).days || 0
+      
+      // Use differenceInCalendarDays for accurate day counting (adds 1 to include today)
+      const diffDays = differenceInCalendarDays(end, today);
 
-      setDaysTillReset(diffDays > 0 ? diffDays + 1 : 0);
+      setDaysTillReset(diffDays >= 0 ? diffDays + 1 : 0);
   }, [payPeriodInterval, payDate, totalSpendingBudget]);
   
   if (showEditSpendingBudget) return <EditSpendingBudget handleBack={() => setShowEditSpendingBudget(false)}/>
