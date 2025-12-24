@@ -52,24 +52,6 @@ export default function PaymentMap({
     const futurePayments = paymentsThisPeriod.filter((p) =>
       isAfter(p.dueDate.toDate(), periodEnd)
     );
-    console.log(
-      "pastPayments",
-      pastPayments.map((p) => {
-        return { ...p, dueDate: p.dueDate.toDate() };
-      })
-    );
-    console.log(
-      "currentPayments",
-      currentPayments.map((p) => {
-        return { ...p, dueDate: p.dueDate.toDate() };
-      })
-    );
-    console.log(
-      "futurePayments",
-      futurePayments.map((p) => {
-        return { ...p, dueDate: p.dueDate.toDate() };
-      })
-    );
     setPastPayments(pastPayments);
     setCurrentPayments(currentPayments);
     setFuturePayments(futurePayments);

@@ -6,38 +6,39 @@ import SpendBtn from "../Buttons/SpendBtn";
 import Button from "../Buttons/Button";
 
 export default function BigEnvelope({ handleBack, envelope, handleSetShowSpendingPage, handleSetupEdit, setUpShowGiveAndTake, handleDeleteEnvelope, handleAddCashToEnvelope }: { handleBack: () => void, envelope: Envelope, resetState: () => void, editEnvelope: (envelope: Envelope) => Promise<void>, handleSetShowSpendingPage: (envelope: Envelope) => void, handleSetupEdit: (envelope: Envelope) => void, setUpShowGiveAndTake: (envelope: Envelope) => void, handleDeleteEnvelope: (id: string) => void, handleAddCashToEnvelope: (envelope: Envelope) => void }) {
-
+    const envelopeRemainder = (Number(envelope.total) - Number(envelope.spent)).toFixed(2)
     return (
-        <div className="absolute top-[2rem] left-0 pt-[3rem] bg-my-white-light w-full overflow-y-auto z-999 h-screen">
+        <div className="absolute top-[2rem] left-0 pt-[2rem] bg-my-white-light w-full overflow-y-auto z-999 h-screen">
             <div className="w-full flex flex-col items-center justify-start">
-                <div className="flex flex-col justify-center items-start p-2 w-[17rem] text-my-black-light rounded-md mb-4">
-                    <h1 className="text-lg text-my-white-dark mb-4 bg-my-black-light text-center rounded-md w-full">{envelope.name}</h1>
-                    <p className="w-full flex justify-between">Total: <span className="text-my-green-dark">${Number(envelope.total).toFixed(2)}</span></p>
-                    <p className="w-full flex justify-between">Spent: <span className="text-my-green-dark">${Number(envelope.spent).toFixed(2)}</span></p>
-                    <p className="w-full flex justify-between">Remaining: <span className="text-my-green-dark">${(Number(envelope.total) - Number(envelope.spent)).toFixed(2)}</span></p>
+                <div className="p-2 w-[80%] max-w-[20rem] m-auto rounded-md text-lg text-my-black-dark text-center rounded-md w-full flex justify-around">
+                    {envelope.name}
+                    <span className="text-my-green-dark">
+                        ${envelopeRemainder}
+                    </span>
                 </div>
+                <hr className="w-full border-[1px] mb-4"/>
                 <SpendBtn onClick={() => handleSetShowSpendingPage(envelope)} />
                 <br />
                 <div className="flex flex-col justify-center items-center gap-2 ">
-                    <div className="cursor-pointer hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
+                    <div className="shadow shadow-black cursor-pointer hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
                         onClick={(e) => { e.stopPropagation(); handleAddCashToEnvelope(envelope) }}>
                         <GiMoneyStack
                             className="p-[2px] border-2 rounded-md bg-my-green-dark text-white border-my-black-dark" size={27} />
                         <p className="text-xs">Add Money From Available Budget</p>
                     </div>
-                    <div className="flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px] cursor-pointer  hover:scale-105 shadow-2xl"
+                    <div className="shadow shadow-black flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px] cursor-pointer  hover:scale-105"
                         onClick={(e) => { e.stopPropagation(); setUpShowGiveAndTake(envelope) }}>
                         <IoIosHand
                             className="p-[2px] border-2 rounded-md bg-my-white-dark text-black border-my-black-dark" size={27} />
                         <p className="text-xs">Take from this envelope</p>
                     </div>
-                    <div className="cursor-pointer  hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
+                    <div className="shadow shadow-black cursor-pointer  hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
                         onClick={(e) => { e.stopPropagation(); handleSetupEdit(envelope) }}>
                         <IoPencil
                             className="p-[2px] border-2 rounded-md bg-my-white-dark text-black border-my-black-dark" size={27} />
                         <p className="text-xs">Manually Edit Envelope</p>
                     </div>
-                    <div className="cursor-pointer  hover:scale-105 flex justify-start gap-2 items-center w-full mb-8 border-2 rounded-md p-[5px]"
+                    <div className="cursor-pointer shadow shadow-black hover:scale-105 flex justify-start gap-2 items-center w-full mb-8 border-2 rounded-md p-[5px]"
                         onClick={(e) => { e.stopPropagation(); handleDeleteEnvelope(envelope.id) }}>
                         <IoTrash
                             className="p-[2px] border-2 rounded-md bg-my-red-dark text-white border-my-black-dark" size={27} />

@@ -652,18 +652,18 @@ export default function MainEnvelopesView() {
             <p className="text-xs">Payment</p>
           </div>
           <div
-            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark shadow-my-black-dark"
-            onClick={handleSetupNewEnvelope}
-          >
-            <GiEnvelope className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-            <p className="text-xs">Nvelope+</p>
-          </div>
-          <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark  text-my-green-dark shadow-my-green-light"
             onClick={handleAddCash}
           >
             <GiMoneyStack className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-base " />
             <p className="text-xs">Add Cash</p>
+          </div>
+          <div
+            className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark shadow-my-black-dark"
+            onClick={handleSetupNewEnvelope}
+          >
+            <GiEnvelope className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+            <p className="text-xs">Nvelope+</p>
           </div>
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"
