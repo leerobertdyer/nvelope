@@ -160,7 +160,7 @@ export default function Nvelope({
               Are you sure you want to delete {envelope.name}?
             </p>
             <p className="text-xs w-[85%] text-center text-white">
-              This will return all your money to your available budget.
+              This will not affect your available budget.
             </p>
             <div className="w-[30rem] h-[50rem] rounded-md py-[1rem] px-[3.5rem] flex justify-center items-center flex-col gap-8">
               <BsEnvelopeX className="w-[12rem] h-[12rem] text-my-white-light" />

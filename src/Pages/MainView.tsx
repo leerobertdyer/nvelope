@@ -124,10 +124,6 @@ export default function MainEnvelopesView() {
     });
     setPayments(updatedPayments);
     await editPayments(updatedPayments, user.uid);
-    // Update the budget in DB only if the bill was unpaid and in interval
-    if (paymentToEdit.isInInterval && !paymentToEdit.paid) {
-      await handleUpdateBudget(paymentToEdit.amount);
-    }
     resetPaymentState();
   }
 
@@ -244,12 +240,6 @@ export default function MainEnvelopesView() {
         (e) => e.id !== envelopeToEdit?.id
       );
       setEnvelopes(newEnvelopes);
-      await updateBudgetStateAndDBB(
-        Number(envelopeToEdit?.total || 0),
-        user!,
-        totalSpendingBudget,
-        setTotalSpendingBudget
-      );
       await editEnvelopes(newEnvelopes, user!.uid);
       resetState();
     } catch (error) {
@@ -415,30 +405,13 @@ export default function MainEnvelopesView() {
     return (
       <div className="absolute inset-0 w-screen h-screen z-100 select-none">
         <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
-          {!paymentToEdit.paid &&
-            isDateInCurrentPayPeriod(
-              payPeriodInterval,
-              payDate.toDate(),
-              paymentToEdit.dueDate.toDate()
-            ) ? (
+         
             <p className="text-my-white-light text-center">
-              Removing this bill will add
-              <span className="text-my-green-base px-[3px]">
-                ${paymentToEdit.amount.toFixed(2)}
-              </span>
-              to your available budget
+              Removing this bill will not change your available budget.
             </p>
-          ) : (
-            <p className="text-my-white-light text-center px-2">
-              Removing this bill will not change your available balance of
-              <span className="text-my-green-base px-[3px]">
-                ${totalSpendingBudget.toFixed(2)}
-              </span>
-              because it's either paid already, or not in the current interval.
-            </p>
-          )}
+          
           <p className="p-4 rounded-md text-my-white-dark w-full text-center">
-            Are you sure you want to delete {paymentToEdit.name}?
+            Are you sure you want to delete "{paymentToEdit.name}"?
           </p>
           <div className="flex gap-2 items-center justify-center w-[95%]">
             <Button
