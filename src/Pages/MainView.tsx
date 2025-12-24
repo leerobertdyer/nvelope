@@ -19,7 +19,6 @@ import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
   getVirtualPaymentsForPeriod,
-  isDateInCurrentPayPeriod,
   recalculateBudget,
   removeVirtualIdPortion,
   resetAllNvelopes,
