@@ -458,16 +458,22 @@ export function adjustPaymentToCurrentPeriod(
   };
 }
 
+/**
+ * Checks if today is on a "cusp" where the current pay period extends into a different month.
+ * Used to determine if monthly payments should be adjusted to show in the next month.
+ * Returns true if the period end is in the future AND in a different month than today.
+ */
 export function isTodayCuspDate(payPeriod: Interval, payDate: Timestamp) {
   const today = startOfDay(new Date());
   const { end } = getCurrentIntervalDateRange(payPeriod, payDate);
-  return end.getMonth() > today.getMonth();
+  return isAfter(end, today) && end.getMonth() !== today.getMonth();
 }
 
 /**
- * Generates virtual payment instances for weekly/biweekly payments within a given period
- * Returns an array of payment objects, one for each occurrence
- * For monthly/yearly payments, returns array with single adjusted payment
+ * Generates virtual payment instances for weekly/biweekly payments within the current pay period.
+ * Returns an array of payment objects, one for each occurrence within periodStart to periodEnd.
+ * For monthly/yearly payments, returns array with single adjusted payment.
+ * Note: Correctly handles pay periods that cross month/year boundaries (e.g., Dec 25 → Jan 7).
  */
 export function getMonthlyPaymentOccurrences(
   payment: Payment,
@@ -488,18 +494,17 @@ export function getMonthlyPaymentOccurrences(
     payment.interval
   );
 
-  const today = startOfDay(new Date());
-  const startOfMonth = startOfDay(
-    new Date(today.getFullYear(), today.getMonth(), 1)
-  );
-  const endOfMonth = startOfDay(
-    new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  // Use the actual pay period boundaries, not calendar month boundaries
+  // This ensures payments are correctly shown even when pay periods cross year/month boundaries
+  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(
+    payPeriodInterval,
+    payDate
   );
 
   // Walk forward and collect all occurrences in the period
-  while (!isAfter(currentDate, endOfMonth)) {
+  while (!isAfter(currentDate, periodEnd)) {
     if (
-      isWithinInterval(currentDate, { start: startOfMonth, end: endOfMonth })
+      isWithinInterval(currentDate, { start: periodStart, end: periodEnd })
     ) {
       const occurrenceTime = startOfDay(currentDate).getTime();
       const isPaid =
