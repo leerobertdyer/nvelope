@@ -4,14 +4,12 @@ import Nvelopes from "../components/Nvelopes";
 import { type Envelope, type Payment } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
-  backupUserDataSafe,
   editEnvelopes,
   editOneTimeCashAndBudget,
   editPayments,
   editRent,
   editSnowball,
   editTotalSpendingBudget,
-  shouldBackupUserDataSafe,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Buttons/Button";
@@ -28,7 +26,6 @@ import { GiEnvelope, GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
 import FullScreen from "../Views/FullScreen";
 import TextInput from "../components/TextInput";
-import type { User } from "firebase/auth";
 import { startOfDay } from "date-fns";
 import PaymentMap from "../components/PaymentMap";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
@@ -76,19 +73,6 @@ export default function MainEnvelopesView() {
   const [showClearEnvelopes, setShowClearNvelopes] = useState(false);
 
   const [paymentsThisPeriod, setPaymentsThisPeriod] = useState(payments);
-
-  // On load check to make backup (using safe backup system)
-  useEffect(() => {
-    if (!user) return;
-    async function backupUser(user: User) {
-      const shouldBackup = await shouldBackupUserDataSafe(user);
-      if (shouldBackup) {
-        console.log(`📦 Safe backup initiated...`);
-        await backupUserDataSafe(user);
-      }
-    }
-    backupUser(user);
-  }, [user]);
 
   useEffect(() => {
     if (!payDate || !payments || !payPeriodInterval) return;

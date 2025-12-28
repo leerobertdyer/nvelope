@@ -5,6 +5,7 @@ import MainView from "./MainView";
 import Loading from "../components/Loading";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import Demo from "./Demo";
+import { shouldBackupUserDataSafe, backupUserDataSafe } from "../firebase/editData";
 
 export default function Home() {
   const { user, isLoadingUser } = useAuth();
@@ -16,6 +17,20 @@ export default function Home() {
       setIsLoading(false);
     }
   }, [isLoadingUser, isLoadingDb]);
+  
+  // Run backup check for authenticated users with existing documents
+  useEffect(() => {
+    if (!user || documentExists !== true) return;
+    
+    async function checkAndBackup() {
+      const shouldBackup = await shouldBackupUserDataSafe(user!);
+      if (shouldBackup) {
+        console.log("📦 Safe backup initiated...");
+        await backupUserDataSafe(user!);
+      }
+    }
+    checkAndBackup();
+  }, [user, documentExists]);
 
   if (isLoading)
     return (
