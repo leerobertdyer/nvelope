@@ -4,9 +4,8 @@ import type {
   Interval,
   OneTimeAmount,
   PreviousIntervalDetails,
-  Backup,
 } from "../types";
-import { doc, updateDoc, Timestamp, getDoc, setDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc } from "firebase/firestore";
+import { doc, updateDoc, Timestamp, getDoc, setDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc, getCountFromServer } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
 import {
@@ -491,28 +490,50 @@ export async function shouldBackupUserData(user: User) {
   }
 }
 
+const TEN_MINUTES_MS = 10 * 60 * 1000; // 10 minutes in milliseconds
+const FOUR_HOURS_MS = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+const MAX_BACKUPS = 30;
+
 /**
  * SAFE BACKUP SYSTEM - Stores backups in a SEPARATE collection from user data
  * This prevents backups from being lost if the user document gets corrupted/overwritten
  * 
  * Structure: /userBackups/{userId}/backups/{backupId}
+ * 
+ * Backup strategy:
+ * - If < 30 backups exist: backup frequently (every 10 min) to quickly build up safety net
+ * - If >= 30 backups exist: only backup if > 4 hours since last backup
+ *   This ensures we maintain at least 5 days of backup history (30 × 4 hours = 120 hours)
  */
 export async function shouldBackupUserDataSafe(user: User) {
   if (!user) return false;
   try {
     const now = Timestamp.fromDate(new Date());
-    // Check most recent backup in the separate collection
     const backupsCollectionRef = collection(db, "userBackups", user.uid, "backups");
-    const q = query(backupsCollectionRef, orderBy("backupTimeStamp", "desc"), limit(1));
-    const querySnapshot = await getDocs(q);
     
-    if (querySnapshot.empty) return true; // No backups exist yet
+    // Get count using server-side aggregation (doesn't download documents)
+    const countSnapshot = await getCountFromServer(backupsCollectionRef);
+    const backupCount = countSnapshot.data().count;
     
-    const mostRecentBackup = querySnapshot.docs[0].data();
+    // No backups exist yet - definitely backup
+    if (backupCount === 0) return true;
+    
+    // Get most recent backup (only fetches 1 document)
+    const recentQuery = query(backupsCollectionRef, orderBy("backupTimeStamp", "desc"), limit(1));
+    const recentSnapshot = await getDocs(recentQuery);
+    
+    const mostRecentBackup = recentSnapshot.docs[0].data();
     const backupTimeStamp = mostRecentBackup.backupTimeStamp;
+    const timeSinceLastBackup = now.toMillis() - backupTimeStamp.toMillis();
     
-    if (now.toMillis() - backupTimeStamp.toMillis() > millisecondsInDay) return true;
-    return false;
+    // If we have fewer than MAX_BACKUPS, backup frequently to build up safety net
+    if (backupCount < MAX_BACKUPS) {
+      return timeSinceLastBackup > TEN_MINUTES_MS;
+    }
+    
+    // If we have MAX_BACKUPS or more, only backup if > 4 hours since last
+    // This spaces out backups to maintain historical coverage
+    return timeSinceLastBackup > FOUR_HOURS_MS;
   } catch (error) {
     console.error("Error in shouldBackupUserDataSafe:", error);
     return false; // Don't backup if we can't check - safer than potentially losing data

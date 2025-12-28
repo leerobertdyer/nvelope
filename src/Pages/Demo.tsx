@@ -316,7 +316,7 @@ export default function Demo() {
             <div className="absolute inset-0 bg-my-black-dark opacity-80"></div>
             <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center text-white">
               <h3>Let's get you set up first...</h3>
-              <ClosingX text="Create New Account" onClick={handleFirstStep} />
+              <ClosingX text="New Account" onClick={handleFirstStep} />
             </div>
           </>
         ) : step === 2 ? (
