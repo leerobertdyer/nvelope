@@ -1,4 +1,4 @@
-import { Timestamp, doc, onSnapshot, setDoc } from "firebase/firestore";
+import { Timestamp, doc, onSnapshot } from "firebase/firestore";
 import { DatabaseContext } from "./DatabaseContext";
 import { useEffect, useState } from "react";
 import { type Backup, type Envelope, type Interval, type OneTimeAmount, type Payment } from "../../types";
@@ -22,6 +22,11 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [resetBudgetTimestamp, setResetBudgetTimestamp] = useState<Timestamp | null>(null);
     const [oneTimeCash, setOneTimeCash] = useState<OneTimeAmount[] | null>(null);
     const [backups, setBackups] = useState<Backup | null>(null);
+    const [dbError, setDbError] = useState<string | null>(null);
+    
+    // Tracks whether a Firestore document exists for this user
+    // null = still loading, true = exists, false = no document (new user)
+    const [documentExists, setDocumentExists] = useState<boolean | null>(null);
     
     useEffect(() => {
         if (!user) {
@@ -45,6 +50,8 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
             (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     const data = docSnapshot.data();
+                    setDbError(null);
+                    setDocumentExists(true);
                     setIsLoadingDb(false);
                     setSnowball(data.snowball || 0);
                     setEnvelopes(data.envelopes || []);
@@ -60,48 +67,20 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setOneTimeExpenses(data.oneTimeExpense || null);
                     setBackups(data.backups || null);
                 } else {
-                    // Document doesn't exist - this is a new user
-                    console.log("👤 New user detected, creating default document");
-                    
-                    const defaultUserData = {
-                        id: user.uid,
-                        isNewUser: true,
-                        envelopes: [],
-                        payDate: null,
-                        payPeriodInterval: "MONTHLY",
-                        payments: [],
-                        email: user.email,
-                        income: 0,
-                        totalSpendingBudget: 0,
-                        oneTimeCash: null,
-                        rent: 0,
-                        resetBudgetTimestamp: null,
-                        oneTimeExpenses: null,
-                        backups: null
-                    };
-                    
-                    // Create the document - this will trigger the listener again
-                    setDoc(userDocRef, defaultUserData);
-                    
-                    // Set local state immediately (listener will update when write completes)
+                    // Document doesn't exist - this is either a new user OR a network glitch
+                    // We do NOT auto-create. The UI will handle this state.
+                    // Document creation only happens through intentional user action (Demo flow)
+                    console.log("📭 No document found for user - documentExists = false");
+                    setDocumentExists(false);
                     setIsLoadingDb(false);
-                    setSnowball(0);
-                    setEnvelopes([]);
-                    setPayDate(null);
-                    setPayPeriodInterval("MONTHLY");
-                    setPayments([]);
-                    setIncome(0);
-                    setIsNewUser(true);
-                    setTotalSpendingBudget(0);
-                    setOneTimeCash(null);
-                    setRent(0);
-                    setResetBudgetTimestamp(null);
-                    setOneTimeExpenses(null);
-                    setBackups(null);
+                    // Keep all state at defaults (empty arrays, 0s, nulls)
+                    // The UI layer will detect documentExists === false and show appropriate screen
                 }
             },
             (error) => {
                 console.error("❌ Firebase listener error:", error);
+                setDbError(`Database error: ${error.message}. Please refresh the page.`);
+                setIsLoadingDb(false);
             }
         );
         /**
@@ -147,7 +126,10 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         oneTimeExpenses,
         setOneTimeExpenses,
         backups,
-        setBackups
+        setBackups,
+        dbError,
+        documentExists,
+        setDocumentExists
     };
 
     return (

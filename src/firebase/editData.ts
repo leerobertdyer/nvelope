@@ -6,7 +6,7 @@ import type {
   PreviousIntervalDetails,
   Backup,
 } from "../types";
-import { doc, updateDoc, Timestamp, getDoc, setDoc } from "firebase/firestore";
+import { doc, updateDoc, Timestamp, getDoc, setDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
 import {
@@ -17,6 +17,54 @@ import {
 import { MONTHLY } from "../constants";
 import { millisecondsInDay } from "date-fns/constants";
 import { isSameDay, startOfDay } from "date-fns";
+
+/**
+ * Creates the initial user document in Firestore.
+ * This is called ONLY through intentional user action (Demo onboarding flow).
+ * The document is NEVER auto-created to prevent accidental data overwrites.
+ */
+export async function createUserDocument(user: User) {
+  if (!user) {
+    console.error("createUserDocument: No user provided");
+    return false;
+  }
+  
+  try {
+    const userDocRef = doc(db, "users", user.uid);
+    
+    // Double-check document doesn't already exist (safety check)
+    const existingDoc = await getDoc(userDocRef);
+    if (existingDoc.exists()) {
+      console.warn("createUserDocument: Document already exists, not overwriting");
+      return true; // Document exists, that's fine
+    }
+    
+    const initialUserData = {
+      id: user.uid,
+      email: user.email,
+      isNewUser: true,
+      envelopes: [],
+      payDate: null,
+      payPeriodInterval: "MONTHLY",
+      payments: [],
+      income: 0,
+      totalSpendingBudget: 0,
+      oneTimeCash: null,
+      rent: 0,
+      resetBudgetTimestamp: null,
+      oneTimeExpenses: null,
+      backups: null,
+      createdAt: Timestamp.now(),
+    };
+    
+    await setDoc(userDocRef, initialUserData);
+    console.log("✅ User document created successfully");
+    return true;
+  } catch (error) {
+    console.error("createUserDocument failed:", error);
+    return false;
+  }
+}
 
 export async function editResetBudgetTimestamp(
   resetBudgetTimestamp: Timestamp,
@@ -443,97 +491,173 @@ export async function shouldBackupUserData(user: User) {
   }
 }
 
-export async function backupUserData(user: User) {
+/**
+ * SAFE BACKUP SYSTEM - Stores backups in a SEPARATE collection from user data
+ * This prevents backups from being lost if the user document gets corrupted/overwritten
+ * 
+ * Structure: /userBackups/{userId}/backups/{backupId}
+ */
+export async function shouldBackupUserDataSafe(user: User) {
+  if (!user) return false;
+  try {
+    const now = Timestamp.fromDate(new Date());
+    // Check most recent backup in the separate collection
+    const backupsCollectionRef = collection(db, "userBackups", user.uid, "backups");
+    const q = query(backupsCollectionRef, orderBy("backupTimeStamp", "desc"), limit(1));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) return true; // No backups exist yet
+    
+    const mostRecentBackup = querySnapshot.docs[0].data();
+    const backupTimeStamp = mostRecentBackup.backupTimeStamp;
+    
+    if (now.toMillis() - backupTimeStamp.toMillis() > millisecondsInDay) return true;
+    return false;
+  } catch (error) {
+    console.error("Error in shouldBackupUserDataSafe:", error);
+    return false; // Don't backup if we can't check - safer than potentially losing data
+  }
+}
+
+/**
+ * Creates a backup in a SEPARATE collection that survives user document corruption
+ * Keeps up to 30 backups per user, automatically pruning old ones
+ */
+export async function backupUserDataSafe(user: User) {
   if (!user) return;
   try {
     const userDocRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userDocRef);
-    if (docSnap.exists()) {
-      const nvelopes = docSnap.data().envelopes ?? [];
-      const payments = docSnap.data().payments ?? [];
-      const expenses = docSnap.data().oneTimeExpense ?? [];
-      const cash = docSnap.data().oneTimeCash ?? [];
-      const payDate = docSnap.data().payDate ?? Timestamp.fromDate(new Date());
-      const payPeriodInterval = docSnap.data().payPeriodInterval ?? "MONTHLY";
-      const income = docSnap.data().income ?? 0;
-      const shouldReset = docSnap.data().shouldReset ?? false;
-      const snowball = docSnap.data().snowball ?? 0;
-      const totalSpendingBudget = docSnap.data().totalSpendingBudget ?? 0;
-      const b = docSnap.data().backups;
-      const currentBackups = b ? b.data : [];
-      const newTime = Timestamp.fromDate(new Date());
-
-      await updateDoc(userDocRef, {
-        "backups.backupTimeStamp": newTime,
-        "backups.data": [
-          {
-            backupTimeStamp: newTime,
-            nvelopes,
-            payments,
-            expenses,
-            cash,
-            payDate,
-            payPeriodInterval,
-            income,
-            shouldReset,
-            snowball,
-            totalSpendingBudget,
-          },
-          ...currentBackups,
-        ],
-      });
+    
+    if (!docSnap.exists()) {
+      console.warn("User document doesn't exist, cannot backup");
+      return;
     }
+    
+    const data = docSnap.data();
+    
+    // Don't backup if data looks empty/corrupted (safety check)
+    const hasEnvelopes = Array.isArray(data.envelopes) && data.envelopes.length > 0;
+    const hasPayments = Array.isArray(data.payments) && data.payments.length > 0;
+    const hasIncome = typeof data.income === 'number' && data.income > 0;
+    
+    if (!hasEnvelopes && !hasPayments && !hasIncome) {
+      console.warn("⚠️ Skipping backup - user data appears empty or corrupted");
+      return;
+    }
+    
+    const newTime = Timestamp.fromDate(new Date());
+    const backupData = {
+      backupTimeStamp: newTime,
+      nvelopes: data.envelopes ?? [],
+      payments: data.payments ?? [],
+      expenses: data.oneTimeExpense ?? [],
+      cash: data.oneTimeCash ?? [],
+      payDate: data.payDate ?? null,
+      payPeriodInterval: data.payPeriodInterval ?? "MONTHLY",
+      income: data.income ?? 0,
+      shouldReset: data.shouldReset ?? false,
+      snowball: data.snowball ?? 0,
+      totalSpendingBudget: data.totalSpendingBudget ?? 0,
+      rent: data.rent ?? 0,
+    };
+    
+    // Store in separate collection: /userBackups/{userId}/backups/{auto-id}
+    const backupsCollectionRef = collection(db, "userBackups", user.uid, "backups");
+    await addDoc(backupsCollectionRef, backupData);
+    
+    console.log("✅ Safe backup created at", newTime.toDate());
+    
+    // Also update the user doc backup (for backwards compatibility with existing UI)
+    const b = data.backups;
+    const currentBackups = b ? b.data : [];
+    await updateDoc(userDocRef, {
+      "backups.backupTimeStamp": newTime,
+      "backups.data": [backupData, ...currentBackups].slice(0, 10), // Keep only 10 in user doc
+    });
+    
+    // Prune old backups in separate collection (keep last 30)
+    await pruneOldBackups(user.uid, 30);
+    
   } catch (error) {
-    console.error("Error attempting backupUserData in editData: ", error);
+    console.error("Error in backupUserDataSafe:", error);
   }
 }
 
-/*
- ** Restores payments and envelopes from selected backup
+/**
+ * Get all safe backups for a user (from separate collection)
  */
-export async function restoreDataFromBackup(ts: string, user: User) {
-  if (!user) {
-    console.error("No user provided to restorePaymentsFromBackup");
-    return;
-  }
+export async function getSafeBackups(user: User) {
+  if (!user) return [];
   try {
-    const userDocRef = doc(db, "users", user.uid);
-    const docSnap = await getDoc(userDocRef);
+    const backupsCollectionRef = collection(db, "userBackups", user.uid, "backups");
+    const q = query(backupsCollectionRef, orderBy("backupTimeStamp", "desc"));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error getting safe backups:", error);
+    return [];
+  }
+}
 
-    if (!docSnap.exists()) {
-      console.error("User document does not exist");
-      return;
+/**
+ * Restore from a safe backup (from separate collection)
+ */
+export async function restoreFromSafeBackup(backupId: string, user: User) {
+  if (!user || !backupId) return null;
+  try {
+    const backupDocRef = doc(db, "userBackups", user.uid, "backups", backupId);
+    const backupSnap = await getDoc(backupDocRef);
+    
+    if (!backupSnap.exists()) {
+      console.error("Safe backup not found:", backupId);
+      return null;
     }
-
-    const backups: Backup = docSnap.data().backups;
-
-    if (!backups) {
-      console.error("No backups found");
-      return;
-    }
-
-    const b = backups.data.find((b) => b.backupTimeStamp.toString() === ts);
-
-    if (!b) {
-      console.error("No specific backup found for timestamp: ", ts);
-      return;
-    }
-
-    console.log(
-      `⚠️ Restoring from ${b.backupTimeStamp?.toDate()} backup! \n
-      ⚠️ ${b.payments.length} payments \n 
-      ⚠️ ${b.nvelopes.length} envelopes  \n
-      ⚠️ Setting income back to ${b.income}\n
-      ⚠️ Setting Spending Budget back to ${b.totalSpendingBudget}`
-    );
-
-    await editTotalSpendingBudget(Number(b.totalSpendingBudget), user.uid)
+    
+    const b = backupSnap.data();
+    
+    console.log(`⚠️ Restoring from SAFE backup ${b.backupTimeStamp?.toDate()}!`);
+    console.log(`  - ${b.payments?.length ?? 0} payments`);
+    console.log(`  - ${b.nvelopes?.length ?? 0} envelopes`);
+    console.log(`  - Income: ${b.income}`);
+    console.log(`  - Budget: ${b.totalSpendingBudget}`);
+    
+    await editTotalSpendingBudget(Number(b.totalSpendingBudget), user.uid);
     await editIncome(Number(b.income), user.uid);
-    await editEnvelopes(b.nvelopes, user.uid);
-    await editPayments(b.payments, user.uid);
-
+    await editEnvelopes(b.nvelopes ?? [], user.uid);
+    await editPayments(b.payments ?? [], user.uid);
+    if (b.rent) await editRent(b.rent, user.uid);
+    
     return b;
   } catch (error) {
-    console.error("Error restoring payments from backup: ", error);
+    console.error("Error restoring from safe backup:", error);
+    return null;
+  }
+}
+
+/**
+ * Prune old backups, keeping only the most recent N
+ */
+async function pruneOldBackups(userId: string, keepCount: number) {
+  try {
+    const backupsCollectionRef = collection(db, "userBackups", userId, "backups");
+    const q = query(backupsCollectionRef, orderBy("backupTimeStamp", "desc"));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.size <= keepCount) return;
+    
+    // Delete backups beyond keepCount
+    const docsToDelete = querySnapshot.docs.slice(keepCount);
+    for (const docToDelete of docsToDelete) {
+      await deleteDoc(doc(db, "userBackups", userId, "backups", docToDelete.id));
+    }
+    
+    console.log(`🗑️ Pruned ${docsToDelete.length} old backups`);
+  } catch (error) {
+    console.error("Error pruning old backups:", error);
   }
 }

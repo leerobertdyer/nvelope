@@ -31,5 +31,8 @@ interface IDatabaseContext {
     oneTimeExpenses: OneTimeAmount[] | null
     setOneTimeExpenses: (oneTimeExpenses: OneTimeAmount[] | null) => void
     backups: Backup | null;
+    dbError: string | null;
+    documentExists: boolean | null;
+    setDocumentExists: (exists: boolean | null) => void;
 }
 export const DatabaseContext = createContext<IDatabaseContext | null>(null)

@@ -4,14 +4,14 @@ import Nvelopes from "../components/Nvelopes";
 import { type Envelope, type Payment } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
-  backupUserData,
+  backupUserDataSafe,
   editEnvelopes,
   editOneTimeCashAndBudget,
   editPayments,
   editRent,
   editSnowball,
   editTotalSpendingBudget,
-  shouldBackupUserData,
+  shouldBackupUserDataSafe,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import Button from "../components/Buttons/Button";
@@ -77,14 +77,14 @@ export default function MainEnvelopesView() {
 
   const [paymentsThisPeriod, setPaymentsThisPeriod] = useState(payments);
 
-  // On load check to make backup
+  // On load check to make backup (using safe backup system)
   useEffect(() => {
     if (!user) return;
     async function backupUser(user: User) {
-      const shouldBackup = await shouldBackupUserData(user);
+      const shouldBackup = await shouldBackupUserDataSafe(user);
       if (shouldBackup) {
-        console.log(`Backup initiated... `);
-        await backupUserData(user);
+        console.log(`📦 Safe backup initiated...`);
+        await backupUserDataSafe(user);
       }
     }
     backupUser(user);

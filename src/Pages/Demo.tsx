@@ -8,6 +8,7 @@ import {
   editIsNewUser,
   editPayDate,
   editTotalSpendingBudget,
+  createUserDocument,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
@@ -46,6 +47,8 @@ export default function Demo() {
     setPayments,
     setTotalSpendingBudget,
     totalSpendingBudget,
+    documentExists,
+    setDocumentExists,
   } = useDatabase();
   const { user } = useAuth();
 
@@ -156,6 +159,20 @@ export default function Demo() {
 
   async function handleFirstStep() {
     console.log("[DEMO] handleFirstStep");
+    
+    // If no document exists yet, create it now (user has intentionally started onboarding)
+    if (documentExists === false && user) {
+      console.log("[DEMO] Creating user document...");
+      const created = await createUserDocument(user);
+      if (created) {
+        setDocumentExists(true);
+      } else {
+        console.error("[DEMO] Failed to create user document");
+        // Could show an error to the user here
+        return;
+      }
+    }
+    
     if (payDate) {
       console.log("[DEMO] payDate found: ", payDate);
       setNewPayDate(payDate.toDate());
@@ -299,7 +316,7 @@ export default function Demo() {
             <div className="absolute inset-0 bg-my-black-dark opacity-80"></div>
             <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center text-white">
               <h3>Let's get you set up first...</h3>
-              <ClosingX text="Start" onClick={handleFirstStep} />
+              <ClosingX text="Create New Account" onClick={handleFirstStep} />
             </div>
           </>
         ) : step === 2 ? (

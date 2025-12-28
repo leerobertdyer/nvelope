@@ -9,11 +9,12 @@ import {
   editPayDate,
   editTotalSpendingBudget,
   editRent,
-  restoreDataFromBackup,
+  getSafeBackups,
+  restoreFromSafeBackup,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
-import { getBackupDataFromTimestampString, getIncomeByInterval, recalculateBudget } from "../util";
+import { getIncomeByInterval, recalculateBudget } from "../util";
 import { IoPencil } from "react-icons/io5";
 import { GiMoneyStack } from "react-icons/gi";
 import Calendar from "react-calendar";
@@ -42,7 +43,6 @@ export default function Settings() {
     setPayDate,
     setPayments,
     setEnvelopes,
-    backups,
   } = useDatabase();
 
   const [showIntervalSettings, setShowIntervalSettings] =
@@ -54,10 +54,25 @@ export default function Settings() {
   const [showEditRent, setShowEditRent] = useState(false);
   const [providerType, setProviderType] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
-  const [selectedBackupTimestamp, setSelectedBackupTimestamp] = useState("");
-  const [backupData, setBackupData] = useState<BackupData>();
+  
+  // Safe backups (stored in separate collection - survives user doc corruption)
+  const [safeBackups, setSafeBackups] = useState<Array<BackupData & { id: string }>>([]);
+  const [selectedSafeBackup, setSelectedSafeBackup] = useState<(BackupData & { id: string }) | null>(null);
+  const [isLoadingSafeBackups, setIsLoadingSafeBackups] = useState(false);
 
   const currentProviderTypes = ["google.com"];
+  
+  // Load safe backups on mount
+  useEffect(() => {
+    if (!user) return;
+    async function loadSafeBackups() {
+      setIsLoadingSafeBackups(true);
+      const backups = await getSafeBackups(user!);
+      setSafeBackups(backups as Array<BackupData & { id: string }>);
+      setIsLoadingSafeBackups(false);
+    }
+    loadSafeBackups();
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -141,28 +156,28 @@ export default function Settings() {
   async function handleEditRent() {
     await editRent(rent, user!.uid);
   }
+  
+  function handleSelectBackup(backupId: string) {
+    const backup = safeBackups.find(b => b.id === backupId);
+    if (backup) {
+      setSelectedSafeBackup(backup);
+    }
+  }
 
   function handleCloseBackup() {
-    setSelectedBackupTimestamp("");
-    setBackupData(undefined);
+    setSelectedSafeBackup(null);
   }
-
-  async function handleRestorePayments() {
-    if (!user) return
-    const b = await restoreDataFromBackup(selectedBackupTimestamp, user);
-    if (!b) return;
-      setPayments(b.payments);
-      setEnvelopes(b.nvelopes);
-      setIncome(Number(b.income));
-      setTotalSpendingBudget(Number(b.totalSpendingBudget));
+  
+  async function handleRestoreBackup() {
+    if (!user || !selectedSafeBackup) return;
+    const result = await restoreFromSafeBackup(selectedSafeBackup.id, user);
+    if (result) {
+      setPayments(result.payments ?? []);
+      setEnvelopes(result.nvelopes ?? []);
+      setIncome(Number(result.income));
+      setTotalSpendingBudget(Number(result.totalSpendingBudget));
       handleCloseBackup();
-  }
-
-  async function handleSelectBackup(ts: string) {
-    if (!ts || !backups) return;
-    setSelectedBackupTimestamp(ts);
-    const b = getBackupDataFromTimestampString(ts, backups)
-    setBackupData(b)
+    }
   }
 
   if (isEditingCash) {
@@ -314,46 +329,49 @@ export default function Settings() {
           </div>
         )}
 
-        {/* Restore payments from backup */}
-        <div className=" flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4">
+        {/* Restore from backup */}
+        <div className="flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4">
           <p className="text-sm font-bold">⚠️ Revert To A Backup</p>
           <p className="text-xs">Restores payments and envelopes</p>
           <div>
-            <select
-              className="py-2 px-4 bg-white rounded-md text-my-black-dark my-2 cursor-pointer"
-              onChange={(e) => handleSelectBackup(e.target.value)}
-            >
-              <option defaultChecked disabled label="Select A Backup" />
-              {backups &&
-                backups.data &&
-                backups.data.length > 0 &&
-                backups.data.map((b) => (
+            {isLoadingSafeBackups ? (
+              <p className="text-xs py-2">Loading backups...</p>
+            ) : safeBackups.length === 0 ? (
+              <p className="text-xs py-2">No backups yet</p>
+            ) : (
+              <select
+                className="py-2 px-4 bg-white rounded-md text-my-black-dark my-2 cursor-pointer"
+                onChange={(e) => handleSelectBackup(e.target.value)}
+                defaultValue=""
+              >
+                <option value="" disabled>Select A Backup</option>
+                {safeBackups.map((b) => (
                   <option
-                    key={b.backupTimeStamp.toString()}
-                    label={format(
-                      b.backupTimeStamp.toDate(),
-                      "MMMM dd, yyyy hh:mm"
-                    )}
-                    value={b.backupTimeStamp.toString()}
-                  />
+                    key={b.id}
+                    value={b.id}
+                  >
+                    {format(b.backupTimeStamp.toDate(), "MMMM dd, yyyy hh:mm")}
+                  </option>
                 ))}
-            </select>
+              </select>
+            )}
           </div>
         </div>
-        {backupData && (
+        
+        {selectedSafeBackup && (
           <FullScreen
             theme="DARK"
             onClose={handleCloseBackup}
-            onSave={handleRestorePayments}
+            onSave={handleRestoreBackup}
             showButtons
           >
             <div className="w-full text-center">
               <h1 className="text-xl text-my-red-light">Are you sure?</h1>
               <p>This cannot be undone.</p>
-              <p>Your income will reset to {backupData.income} </p>
-              <p>Your budget will reset to {backupData.totalSpendingBudget} </p>
-              <p>You will have {backupData.payments.length} payments totaling ${backupData.payments.reduce((acc, p) => p.amount + acc, 0).toFixed(2)}</p>
-              <p>You will have {backupData.nvelopes.length} envelolpes totaling ${backupData.nvelopes.reduce((acc, p) => p.total + acc, 0).toFixed(2)}</p>
+              <p>Your income will reset to {selectedSafeBackup.income}</p>
+              <p>Your budget will reset to {selectedSafeBackup.totalSpendingBudget}</p>
+              <p>You will have {selectedSafeBackup.payments?.length ?? 0} payments totaling ${(selectedSafeBackup.payments ?? []).reduce((acc, p) => p.amount + acc, 0).toFixed(2)}</p>
+              <p>You will have {selectedSafeBackup.nvelopes?.length ?? 0} envelopes totaling ${(selectedSafeBackup.nvelopes ?? []).reduce((acc, p) => p.total + acc, 0).toFixed(2)}</p>
             </div>
           </FullScreen>
         )}
