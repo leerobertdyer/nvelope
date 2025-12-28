@@ -24,8 +24,6 @@ interface IDatabaseContext {
     setIsNewUser: (isNewUser: boolean) => void
     totalSpendingBudget: number
     setTotalSpendingBudget: (totalSpendingBudget: number) => void
-    rent: number
-    setRent: (rent: number) => void
     resetBudgetTimestamp: Timestamp | null
     setResetBudgetTimestamp: (resetBudgetTimestamp: Timestamp | null) => void
     oneTimeExpenses: OneTimeAmount[] | null

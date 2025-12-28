@@ -41,7 +41,6 @@ export async function createUserDocument(user: User) {
       income: 0,
       totalSpendingBudget: 0,
       oneTimeCash: null,
-      rent: 0,
       resetBudgetTimestamp: null,
       oneTimeExpenses: null,
       backups: null,
@@ -93,16 +92,6 @@ export async function editPayments(p: Payment[], userId: string) {
     await updateDoc(userDocRef, { payments: sortedPayments });
   } catch (error) {
     console.error("Firebase, editBills Failed", error);
-  }
-  return;
-}
-
-export async function editRent(newRentAmount: number, userId: string) {
-  try {
-    const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { rent: newRentAmount });
-  } catch (error) {
-    console.error("Firebase, editRent Failed", error);
   }
   return;
 }
@@ -299,6 +288,7 @@ export const validIntervals: Interval[] = [
   "BIWEEKLY",
   "MONTHLY",
   "YEARLY",
+  "SPLIT",
 ];
 
 export async function editSnowball(user: User, amount: number) {
@@ -402,7 +392,6 @@ export async function backupUserDataSafe(user: User) {
       shouldReset: data.shouldReset ?? false,
       snowball: data.snowball ?? 0,
       totalSpendingBudget: data.totalSpendingBudget ?? 0,
-      rent: data.rent ?? 0,
     };
     
     // Store in separate collection: /userBackups/{userId}/backups/{auto-id}
@@ -458,7 +447,6 @@ export async function restoreFromSafeBackup(backupId: string, user: User) {
         payments: currentData.payments ?? [],
         income: currentData.income ?? 0,
         totalSpendingBudget: currentData.totalSpendingBudget ?? 0,
-        rent: currentData.rent ?? 0,
         payDate: currentData.payDate ?? null,
         payPeriodInterval: currentData.payPeriodInterval ?? "MONTHLY",
       });
@@ -484,7 +472,6 @@ export async function restoreFromSafeBackup(backupId: string, user: User) {
     await editIncome(Number(b.income), user.uid);
     await editEnvelopes(b.nvelopes ?? [], user.uid);
     await editPayments(b.payments ?? [], user.uid);
-    if (b.rent) await editRent(b.rent, user.uid);
     
     return b;
   } catch (error) {
@@ -531,7 +518,6 @@ export interface LocalStorageBackup {
     payments: Payment[];
     income: number;
     totalSpendingBudget: number;
-    rent: number;
     payDate: unknown;
     payPeriodInterval: string;
   };
@@ -547,7 +533,6 @@ export function saveToLocalStorageBackup(userData: {
   payments: Payment[];
   income: number;
   totalSpendingBudget: number;
-  rent: number;
   payDate: unknown;
   payPeriodInterval: string;
 }): void {
@@ -592,6 +577,20 @@ export function clearLocalStorageBackup(): void {
 }
 
 /**
+ * Convert a plain object with seconds/nanoseconds to a Firestore Timestamp.
+ * This is needed because JSON serialization loses the Timestamp class.
+ */
+function toTimestamp(obj: unknown): Timestamp | null {
+  if (!obj) return null;
+  if (obj instanceof Timestamp) return obj;
+  if (typeof obj === 'object' && obj !== null && 'seconds' in obj) {
+    const tsObj = obj as { seconds: number; nanoseconds?: number };
+    return new Timestamp(tsObj.seconds, tsObj.nanoseconds ?? 0);
+  }
+  return null;
+}
+
+/**
  * Restore from localStorage backup (undo last restore)
  */
 export async function restoreFromLocalStorageBackup(user: User): Promise<boolean> {
@@ -612,11 +611,17 @@ export async function restoreFromLocalStorageBackup(user: User): Promise<boolean
     console.log(`  - Income: ${data.income}`);
     console.log(`  - Budget: ${data.totalSpendingBudget}`);
     
+    // Convert plain date objects back to Timestamps (lost during JSON serialization)
+    const restoredPayments = (data.payments ?? []).map((p) => ({
+      ...p,
+      dueDate: toTimestamp(p.dueDate) ?? Timestamp.now(),
+      paidDates: p.paidDates?.map((pd) => toTimestamp(pd)).filter((t): t is Timestamp => t !== null) ?? [],
+    }));
+    
     await editTotalSpendingBudget(Number(data.totalSpendingBudget), user.uid);
     await editIncome(Number(data.income), user.uid);
     await editEnvelopes(data.envelopes ?? [], user.uid);
-    await editPayments(data.payments ?? [], user.uid);
-    if (data.rent) await editRent(data.rent, user.uid);
+    await editPayments(restoredPayments, user.uid);
     
     // Clear the localStorage backup after successful restore
     clearLocalStorageBackup();

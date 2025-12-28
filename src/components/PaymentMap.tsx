@@ -66,9 +66,14 @@ export default function PaymentMap({
   ]);
 
   function RenderPayment({ p, time }: { p: Payment; time: string }) {
+    // Check if this is a SPLIT payment (ID contains "-SPLIT-")
+    const isSplitPayment = p.id.includes("-SPLIT-");
+    
     let t;
     if (time === "PAST" || time === "FUTURE")
       t = "bg-my-black-light text-white";
+    else if (isSplitPayment)
+      t = "bg-my-black-base text-my-green-light border-l-4 border-l-my-green-dark";
     else if (p.type === "BILL") t = "bg-my-black-base text-my-red-light";
     else t = "bg-my-black-base text-my-white-dark";
 
@@ -104,8 +109,13 @@ export default function PaymentMap({
         >
           {format(p.dueDate.toDate(), "do")}
         </p>
-        <p className="flex items-center justify-start text-xs col-span-5 ">
+        <p className="flex items-center justify-start text-xs col-span-5 gap-1">
           {p.name}
+          {isSplitPayment && (
+            <span className="text-[10px] bg-my-green-dark text-my-white-light px-1 rounded">
+              SPLIT
+            </span>
+          )}
         </p>
         {p.total && !p.paid ? (
           <p className="flex items-center justify-end col-span-2 gap-[2px] mr-[1rem] md:mr-[2.8rem]">

@@ -14,7 +14,6 @@ interface NvelopeProps {
   editEnvelope: (envelope: Envelope) => Promise<void>;
   handleSetShowSpendingPage: (envelope: Envelope) => void;
   handleDeleteEnvelope: (id?: string) => void;
-  handleEditRent: (amount: number) => Promise<void>;
   handleAddCashToEnvelope: (envelope: Envelope) => void;
 }
 

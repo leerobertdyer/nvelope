@@ -30,7 +30,6 @@ interface NvelopeProps {
   handleSaveEnvelope?: (envelope: Envelope) => Promise<void>;
   editEnvelope?: (envelope: Envelope) => Promise<void>;
   handleDeleteEnvelope?: () => void;
-  editRent?: (amount: number) => Promise<void>;
 }
 export default function Nvelope({
   kind,
@@ -40,7 +39,6 @@ export default function Nvelope({
   handleSaveEnvelope,
   editEnvelope,
   handleDeleteEnvelope,
-  editRent,
 }: NvelopeProps) {
   const [newEnvelopeName, setNewEnvelopeName] = useState<string>(
     envelope.name || ""
@@ -68,11 +66,6 @@ export default function Nvelope({
 
   function handleEnterAmount(amount: number, n: Envelope) {
     if (amount <= 0) return;
-    if (n.name === "rent") {
-      editRent?.(amount);
-      handleBack?.();
-      return;
-    }
     n.spent = Number(n.spent) + amount;
     editEnvelope?.(n);
     handleBack?.();

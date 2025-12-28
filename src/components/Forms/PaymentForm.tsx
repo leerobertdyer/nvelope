@@ -1,5 +1,5 @@
 import Calendar from "react-calendar";
-import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../../constants";
+import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../../constants";
 import type { BillOrDebt, Interval, Payment } from "../../types";
 import Button from "../Buttons/Button";
 import Popup from "../Popup";
@@ -13,7 +13,7 @@ import {
   isDateInCurrentPayPeriod,
   removeVirtualIdPortion,
 } from "../../util";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 import FullScreen from "../../Views/FullScreen";
 import TextInput from "../TextInput";
@@ -50,6 +50,9 @@ export default function PaymentForm({
 
   const [isDebt, setIsDebt] = useState(paymentToEdit?.type === "DEBT");
   const [showButtons, setShowButtons] = useState(!!paymentToEdit);
+  const [isSplitRecurring, setIsSplitRecurring] = useState(
+    paymentToEdit?.recurring ?? true // Default to recurring for backwards compat
+  );
 
   function resetForm() {
     setShowPaymentError(false);
@@ -60,10 +63,41 @@ export default function PaymentForm({
 
   function handleSetNewInterval(i: Interval) {
     setNewPaymentInterval(i);
-    setNewPayment({
-      ...newPayment,
-      interval: i,
-    });
+    // For SPLIT, also set the recurring field
+    if (i === SPLIT) {
+      setNewPayment({
+        ...newPayment,
+        interval: i,
+        recurring: isSplitRecurring,
+      });
+    } else {
+      setNewPayment({
+        ...newPayment,
+        interval: i,
+        recurring: undefined, // Clear recurring for non-SPLIT
+      });
+    }
+  }
+
+  function handleToggleSplitRecurring(recurring: boolean) {
+    setIsSplitRecurring(recurring);
+    if (!recurring) {
+      // Save-up mode is always a DEBT (saving toward a future expense)
+      // Set total to the same as amount
+      setNewPayment({
+        ...newPayment,
+        recurring,
+        type: "DEBT",
+        total: newPayment.amount,
+      });
+      setIsDebt(true);
+      setShowButtons(true);
+    } else {
+      setNewPayment({
+        ...newPayment,
+        recurring,
+      });
+    }
   }
 
   function handleCalendarChange(value: Value) {
@@ -170,14 +204,17 @@ export default function PaymentForm({
                 id="amount"
                 type="number"
                 min={0}
-                className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
                 value={newPayment?.amount || ""}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const amount = Number(e.target.value);
                   setNewPayment({
                     ...newPayment,
-                    amount: Number(e.target.value),
-                  })
-                }
+                    amount,
+                    // Sync total for save-up SPLIT payments
+                    ...(newPayment.interval === SPLIT && !isSplitRecurring ? { total: amount } : {}),
+                  });
+                }}
                 onWheel={(e) => e.currentTarget.blur()} // disables scroll change
                 placeholder="Enter new payment amount"
               />
@@ -207,13 +244,53 @@ export default function PaymentForm({
                 <option id="newYearly" className="text-center">
                   {YEARLY}
                 </option>
+                <option id="newSplit" className="text-center">
+                  {SPLIT}
+                </option>
               </select>
+              {newPayment.interval === SPLIT && (
+                <div className="flex flex-col items-center gap-2 max-w-[20rem]">
+                  <div className="flex gap-4 items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSplitRecurring(true)}
+                      className={`px-3 py-1 rounded-md border-2 text-sm ${
+                        isSplitRecurring
+                          ? "bg-my-green-dark text-my-white-light border-my-green-dark"
+                          : "bg-my-white-light text-my-black-dark border-my-white-dark"
+                      }`}
+                    >
+                      Monthly Recurring
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSplitRecurring(false)}
+                      className={`px-3 py-1 rounded-md border-2 text-sm ${
+                        !isSplitRecurring
+                          ? "bg-my-blue-dark text-my-white-light border-my-blue-dark"
+                          : "bg-my-white-light text-my-black-dark border-my-white-dark"
+                      }`}
+                    >
+                      Save-Up Goal
+                    </button>
+                  </div>
+                  <p className="text-xs text-my-blue-dark mb-2">
+                    {isSplitRecurring
+                      ? "Monthly amount split across your pay periods (e.g., rent, mortgage)"
+                      : "Target amount split across pay periods until your goal date"}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
           {newPaymentInterval && (
             <div className="flex flex-col items-center w-full ">
-              <label htmlFor="dayOfMonth">Starting Date</label>
+              <label htmlFor="dayOfMonth">
+                {newPayment.interval === SPLIT && !isSplitRecurring
+                  ? "Target Date (Goal)"
+                  : "Starting Date"}
+              </label>
               <div className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2">
                 <Calendar
                   calendarType="gregory"
@@ -221,29 +298,41 @@ export default function PaymentForm({
                   value={newPaymentDate || new Date()}
                   selectRange={false}
                   className="cursor-pointer-calendar"
+                  minDate={
+                    newPayment.interval === SPLIT && !isSplitRecurring
+                      ? addDays(new Date(), 1) // Save-up mode: only future dates
+                      : undefined
+                  }
                 />
               </div>
               <div className="flex flex-col items-center w-full mb-4">
                 <hr className="border-2 border-my-white-base w-[80%] mt-2" />
-                <div className="w-full flex flex-col justify-center items-center gap-2 mt-2">
-                  <label htmlFor="paid">Debt Or Bill?</label>
-                  <select
-                    value={newPayment.type || defaultTypeOption}
-                    onChange={(e) => handleSelectType(e.target.value)}
-                    className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                  >
-                    <option id="xxx" className="text-center" disabled>
-                      {defaultTypeOption}
-                    </option>
-                    <option id="xxx" value="BILL" className="text-center">
-                      Bill
-                    </option>
-                    <option id="xxx" value="DEBT" className="text-center">
-                      Debt
-                    </option>
-                  </select>
-                </div>
-                {isDebt && (
+                {/* Save-up SPLIT is always DEBT, so skip the selector */}
+                {newPayment.interval === SPLIT && !isSplitRecurring ? (
+                  <p className="text-xs text-my-blue-dark mt-2">
+                    Save-up goals are automatically tracked as debts
+                  </p>
+                ) : (
+                  <div className="w-full flex flex-col justify-center items-center gap-2 mt-2">
+                    <label htmlFor="paid">Debt Or Bill?</label>
+                    <select
+                      value={newPayment.type || defaultTypeOption}
+                      onChange={(e) => handleSelectType(e.target.value)}
+                      className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                    >
+                      <option id="xxx" className="text-center" disabled>
+                        {defaultTypeOption}
+                      </option>
+                      <option id="xxx" value="BILL" className="text-center">
+                        Bill
+                      </option>
+                      <option id="xxx" value="DEBT" className="text-center">
+                        Debt
+                      </option>
+                    </select>
+                  </div>
+                )}
+                {isDebt && !(newPayment.interval === SPLIT && !isSplitRecurring) && (
                   <div className="w-full flex flex-col justify-center items-center gap-2 mt-2">
                     <label htmlFor="total">Total</label>
                     <input
@@ -279,11 +368,26 @@ export default function PaymentForm({
                 </span>
                 {newPayment ? (
                   <div>
-                    due{" "}
-                    <span className="text-my-blue-dark mr-2">
-                      {newPayment.interval?.toLowerCase()}
-                    </span>
-                    on the {format(newPayment.dueDate.toDate(), "do")}.
+                    {newPayment.interval === SPLIT ? (
+                      isSplitRecurring ? (
+                        <>split monthly across your pay periods</>
+                      ) : (
+                        <>
+                          split across pay periods until{" "}
+                          <span className="text-my-blue-dark">
+                            {format(newPayment.dueDate.toDate(), "MMM do, yyyy")}
+                          </span>
+                        </>
+                      )
+                    ) : (
+                      <>
+                        due{" "}
+                        <span className="text-my-blue-dark mr-2">
+                          {newPayment.interval?.toLowerCase()}
+                        </span>
+                        on the {format(newPayment.dueDate.toDate(), "do")}
+                      </>
+                    )}
                   </div>
                 ) : (
                   paymentToEdit && (

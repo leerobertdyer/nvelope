@@ -16,11 +16,12 @@ export interface Payment {
     dueDate: Timestamp
     interval: Interval
     paid: boolean
-    paidDates?: Timestamp[] // for tracking payments that span multiple intervals (ie WEEKLY | BIWEEKLY)
+    paidDates?: Timestamp[] // for tracking payments that span multiple intervals (ie WEEKLY | BIWEEKLY | SPLIT)
     type: "DEBT" | "BILL" | undefined
     isInInterval?: boolean
     total?: number
     interestRate?: number
+    recurring?: boolean // For SPLIT: true = monthly recurring, false = save-up to target date
 }
 
 export type BillOrDebt = "BILL" | "DEBT"
@@ -34,7 +35,7 @@ export interface OneTimeAmount {
 
 // PreviousIntervalDetails removed - see FUTURE FEATURE comment in editData.ts
 
-export type Interval = "WEEKLY" | "BIWEEKLY" |"MONTHLY" | "YEARLY" | undefined;
+export type Interval = "WEEKLY" | "BIWEEKLY" | "MONTHLY" | "YEARLY" | "SPLIT" | undefined;
 
 export type ChangeValue = boolean | string | null | Value | number | Payment[]
 

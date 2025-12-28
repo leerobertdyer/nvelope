@@ -18,7 +18,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [isNewUser, setIsNewUser] = useState<boolean>(false);
     const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
     const [oneTimeExpenses, setOneTimeExpenses] = useState<OneTimeAmount[] | null>(null);
-    const [rent, setRent] = useState<number>(0);
     const [resetBudgetTimestamp, setResetBudgetTimestamp] = useState<Timestamp | null>(null);
     const [oneTimeCash, setOneTimeCash] = useState<OneTimeAmount[] | null>(null);
     const [backups, setBackups] = useState<Backup | null>(null);
@@ -62,7 +61,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setIsNewUser(data.isNewUser ?? false);
                     setTotalSpendingBudget(data.totalSpendingBudget || 0);
                     setOneTimeCash(data.oneTimeCash || null);
-                    setRent(data.rent || 0);
                     setResetBudgetTimestamp(data.resetBudgetTimestamp || null);
                     setOneTimeExpenses(data.oneTimeExpense || null);
                     setBackups(data.backups || null);
@@ -119,8 +117,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         setTotalSpendingBudget,
         oneTimeCash,
         setOneTimeCash,
-        rent,
-        setRent,
         resetBudgetTimestamp,
         setResetBudgetTimestamp,
         oneTimeExpenses,

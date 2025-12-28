@@ -8,7 +8,6 @@ import {
   editPayPeriodInterval,
   editPayDate,
   editTotalSpendingBudget,
-  editRent,
   getSafeBackups,
   restoreFromSafeBackup,
   getLocalStorageBackup,
@@ -36,8 +35,6 @@ export default function Settings() {
   const { showToast } = useToast();
   const {
     payPeriodInterval,
-    rent,
-    setRent,
     setIncome,
     setTotalSpendingBudget,
     setPayPeriodInterval,
@@ -55,7 +52,6 @@ export default function Settings() {
   const [newInterval, setNewInterval] = useState<Interval | null>(null);
   const [isEditingCash, setIsEditingCash] = useState(false);
   const [showEditIncome, setShowEditIncome] = useState(false);
-  const [showEditRent, setShowEditRent] = useState(false);
   const [providerType, setProviderType] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
   
@@ -168,11 +164,6 @@ export default function Settings() {
     setHasPassword(true);
   }
 
-  async function handleEditRent() {
-    await editRent(rent, user!.uid);
-    showToast("Rent updated");
-  }
-  
   function handleSelectBackup(backupId: string) {
     const backup = safeBackups.find(b => b.id === backupId);
     if (backup) {
@@ -212,7 +203,6 @@ export default function Settings() {
       setEnvelopes(data.envelopes ?? []);
       setIncome(Number(data.income));
       setTotalSpendingBudget(Number(data.totalSpendingBudget));
-      setRent(Number(data.rent));
       // Clear the localStorage backup state
       setLocalStorageBackup(null);
       setShowUndoConfirm(false);
@@ -246,25 +236,6 @@ export default function Settings() {
             onChange={(e) => setNewIncome(e.target.value)}
             textOrNumber="number"
             placeholder="Enter new income"
-          />
-        </div>
-      </FullScreen>
-    );
-
-  if (showEditRent)
-    return (
-      <FullScreen
-        showButtons
-        onClose={() => setShowEditRent(false)}
-        onSave={handleEditRent}
-      >
-        <div className="flex flex-col items-center justify-center gap-2 max-w-[20rem] m-auto text-center">
-          <TextInput
-            id="changeRent"
-            label="Edit Monthly Rent/Mortage"
-            value={rent.toString()}
-            placeholder="New Rent Amount"
-            onChange={(e) => setRent(Number(e.target.value))}
           />
         </div>
       </FullScreen>
@@ -316,13 +287,6 @@ export default function Settings() {
         >
           <IoPencil className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-dark text-my-black-dark p-[2px] border-my-black-dark" />
           <p className="text-sm">Edit Remaining Balance</p>
-        </div>
-        <div
-          className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark animate-glow shadow-lg shadow-my-black-dark mb-4"
-          onClick={() => setShowEditRent(true)}
-        >
-          <IoPencil className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-dark text-my-black-dark p-[2px] border-my-black-dark" />
-          <p className="text-sm">Edit Rent</p>
         </div>
         <div
           className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark animate-glow shadow-lg shadow-my-black-dark mb-4"

@@ -7,7 +7,6 @@ import {
   editEnvelopes,
   editOneTimeCashAndBudget,
   editPayments,
-  editRent,
   editSnowball,
   editTotalSpendingBudget,
 } from "../firebase/editData";
@@ -27,7 +26,7 @@ import { GiEnvelope, GiMoneyStack } from "react-icons/gi";
 import Loading from "../components/Loading";
 import FullScreen from "../Views/FullScreen";
 import TextInput from "../components/TextInput";
-import { startOfDay } from "date-fns";
+import { startOfDay, addMonths } from "date-fns";
 import PaymentMap from "../components/PaymentMap";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
 import Summary from "../components/Summary";
@@ -35,6 +34,7 @@ import BigPayment from "../Views/BigPayment";
 import PaymentForm from "../components/Forms/PaymentForm";
 import AddIncomeForm from "../components/Forms/AddIncomeForm";
 import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
+import SplitPaymentDueModal from "../components/SplitPaymentDueModal";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -44,8 +44,6 @@ export default function MainEnvelopesView() {
     setTotalSpendingBudget,
     envelopes,
     setEnvelopes,
-    rent,
-    setRent,
     payDate,
     payPeriodInterval,
     snowball,
@@ -73,8 +71,28 @@ export default function MainEnvelopesView() {
   const [showLoading, setShowLoading] = useState(false);
   const [isAddingCashToEnvelope, setIsAddingCashToEnvelope] = useState(false);
   const [showClearEnvelopes, setShowClearNvelopes] = useState(false);
+  const [dueSaveUpPayment, setDueSaveUpPayment] = useState<Payment | null>(null);
+  const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(new Set());
 
   const [paymentsThisPeriod, setPaymentsThisPeriod] = useState(payments);
+
+  // Check for due save-up SPLIT payments
+  useEffect(() => {
+    if (!payments) return;
+    const today = startOfDay(new Date());
+    
+    // Find non-recurring SPLIT payments that are due (dueDate <= today) and not fully paid
+    const duePayment = payments.find((p) => {
+      if (p.interval !== "SPLIT" || p.recurring !== false) return false;
+      if (dismissedDuePayments.has(p.id)) return false;
+      const dueDate = startOfDay(p.dueDate.toDate());
+      return dueDate <= today && !p.paid;
+    });
+    
+    if (duePayment && !dueSaveUpPayment) {
+      setDueSaveUpPayment(duePayment);
+    }
+  }, [payments, dismissedDuePayments, dueSaveUpPayment]);
 
   useEffect(() => {
     if (!payDate || !payments || !payPeriodInterval) return;
@@ -86,6 +104,42 @@ export default function MainEnvelopesView() {
   async function handleEditPayment(p: Payment) {
     setPaymentToEdit(p);
     setShowPaymentInputs(true);
+  }
+
+  // Handler for marking a save-up payment as fully paid
+  async function handleMarkSaveUpPaid(payment: Payment) {
+    if (!user) return;
+    const updatedPayments = payments.map((p) =>
+      p.id === payment.id ? { ...p, paid: true } : p
+    );
+    setPayments(updatedPayments);
+    await editPayments(updatedPayments, user.uid);
+    setDueSaveUpPayment(null);
+    showToast(`${payment.name} marked as paid!`);
+  }
+
+  // Handler for extending a save-up payment's target date
+  async function handleExtendSaveUpDate(payment: Payment) {
+    if (!user) return;
+    // Extend by 1 month by default
+    const newDueDate = addMonths(payment.dueDate.toDate(), 1);
+    const updatedPayments = payments.map((p) =>
+      p.id === payment.id
+        ? { ...p, dueDate: Timestamp.fromDate(newDueDate) }
+        : p
+    );
+    setPayments(updatedPayments);
+    await editPayments(updatedPayments, user.uid);
+    setDueSaveUpPayment(null);
+    showToast(`${payment.name} extended by 1 month`);
+  }
+
+  // Handler for dismissing the save-up due modal (remind later)
+  function handleDismissSaveUpModal() {
+    if (dueSaveUpPayment) {
+      setDismissedDuePayments((prev) => new Set(prev).add(dueSaveUpPayment.id));
+    }
+    setDueSaveUpPayment(null);
   }
 
   async function handleUpdateBudget(diffAmount: number) {
@@ -131,13 +185,15 @@ export default function MainEnvelopesView() {
         ? payment.id.split("-WEEKLY-")[0]
         : payment.id.includes("-BIWEEKLY-")
           ? payment.id.split("-BIWEEKLY-")[0]
-          : payment.id;
+          : payment.id.includes("-SPLIT-")
+            ? payment.id.split("-SPLIT-")[0]
+            : payment.id;
 
       const updatedPayments = prev.map((p) => {
         if (p.id !== originalId) return p;
 
-        // For weekly/biweekly, toggle the specific occurrence in paidDates
-        if (p.interval === "WEEKLY" || p.interval === "BIWEEKLY") {
+        // For weekly/biweekly/split, toggle the specific occurrence in paidDates
+        if (p.interval === "WEEKLY" || p.interval === "BIWEEKLY" || p.interval === "SPLIT") {
           const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
           const paidDates = p.paidDates || [];
 
@@ -182,16 +238,6 @@ export default function MainEnvelopesView() {
     spent: 0,
     oneTime: false,
   };
-
-  async function handleEditRent(newRentAmount: number) {
-    if (!rent) return;
-    setLoadingText("Editing Rent...");
-    setShowLoading(true);
-    await editRent(newRentAmount, user!.uid);
-    setRent(newRentAmount);
-    resetState();
-    showToast("Rent updated");
-  }
 
   async function saveNewEnvelope(e: Envelope) {
     if (!e.name.trim()) return;
@@ -433,6 +479,18 @@ export default function MainEnvelopesView() {
 
   if (!payDate) return;
 
+  // Show modal for due save-up payments
+  if (dueSaveUpPayment) {
+    return (
+      <SplitPaymentDueModal
+        payment={dueSaveUpPayment}
+        onMarkPaid={handleMarkSaveUpPaid}
+        onExtendDate={handleExtendSaveUpDate}
+        onDismiss={handleDismissSaveUpModal}
+      />
+    );
+  }
+
   if (showPaymentInputs) {
     if (paymentToEdit) {
       return (
@@ -489,7 +547,6 @@ export default function MainEnvelopesView() {
           envelope={envelopeSent}
           editEnvelope={editEnvelope}
           handleBack={resetState}
-          editRent={handleEditRent}
         />
       </>
     );
@@ -626,7 +683,6 @@ export default function MainEnvelopesView() {
             editEnvelope={editEnvelopeAndBudget}
             handleSetShowSpendingPage={handleSetShowSpendingPage}
             handleDeleteEnvelope={handleSetupDelete}
-            handleEditRent={handleEditRent}
             handleAddCashToEnvelope={handleAddCashToEnvelope}
           />
           <PaymentMap
