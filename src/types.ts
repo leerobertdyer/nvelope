@@ -32,15 +32,7 @@ export interface OneTimeAmount {
     date: Timestamp
 }
 
-export interface PreviousIntervalDetails {
-    payDate: Timestamp
-    payPeriodInterval: Interval
-    envelopes: Envelope[]
-    payments: Payment[]
-    income: number
-    totalSpendingBudget: number
-    oneTimeCash: OneTimeAmount[] | null
-}
+// PreviousIntervalDetails removed - see FUTURE FEATURE comment in editData.ts
 
 export type Interval = "WEEKLY" | "BIWEEKLY" |"MONTHLY" | "YEARLY" | undefined;
 

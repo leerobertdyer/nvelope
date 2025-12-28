@@ -3,19 +3,11 @@ import type {
   Envelope,
   Interval,
   OneTimeAmount,
-  PreviousIntervalDetails,
 } from "../types";
 import { doc, updateDoc, Timestamp, getDoc, setDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc, getCountFromServer } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
-import {
-  getCountOfPaydatesLeftThisMonth,
-  getCurrentIntervalDateRange,
-  resetAllNvelopes,
-} from "../util";
 import { MONTHLY } from "../constants";
-import { millisecondsInDay } from "date-fns/constants";
-import { isSameDay, startOfDay } from "date-fns";
 
 /**
  * Creates the initial user document in Firestore.
@@ -224,172 +216,21 @@ export async function editTotalSpendingBudget(
   return;
 }
 
-export async function isResetToday(
-  payDate: Timestamp,
-  interval: Interval,
-  resetBudgetTimestamp: Timestamp | null // Last Reset Time
-) {
-  if (!payDate || !interval) return false;
-  
-  // If no previous reset timestamp, we can't determine if we should reset
-  // (new user or first time - they shouldn't reset until next pay period)
-  if (!resetBudgetTimestamp) {
-    console.log("isResetToday: No previous reset timestamp, skipping reset check");
-    return false;
-  }
-
-  const today = startOfDay(new Date());
-  const lastResetDate = startOfDay(resetBudgetTimestamp.toDate());
-  
-  // Prevent multiple resets on the same day
-  if (isSameDay(today, lastResetDate)) {
-    console.log("isResetToday: Already reset today");
-    return false;
-  }
-
-  // Get the CURRENT pay period range (based on today's date)
-  const { start, end } = getCurrentIntervalDateRange(interval, payDate);
-  
-  // Check if the last reset was in the current pay period
-  const lastResetInCurrentPeriod = lastResetDate >= start && lastResetDate <= end;
-  
-  console.log("isResetToday interval check:", {
-    today,
-    lastResetDate,
-    currentPeriodStart: start,
-    currentPeriodEnd: end,
-    isInCurrentPeriod: lastResetInCurrentPeriod,
-  });
-
-  // If last reset was in the current pay period, don't reset again
-  if (lastResetInCurrentPeriod) {
-    console.log("Already reset during this pay period.");
-    return false;
-  }
-  
-  // We've entered a new pay period since last reset
-  console.log("New pay period detected, reset allowed");
-  return true;
-}
-
-type ResetBudgetParams = {
-  payDate: Timestamp;
-  payPeriodInterval: Interval;
-  envelopes: Envelope[];
-  user: User;
-  setEnvelopes: (envelopes: Envelope[]) => void;
-  setTotalSpendingBudget: (totalSpendingBudget: number) => void;
-  setOneTimeCash: (oneTimeCash: OneTimeAmount[] | null) => void;
-  setPayments: (payments: Payment[]) => void;
-  income: number;
-  totalSpendingBudget: number;
-  virtualPayments: Payment[]; // Used for calculation only
-  payments: Payment[]; // Original payments array - will be reset and saved
-  oneTimeCash: OneTimeAmount[] | null;
-  setResetBudgetTimestamp: (resetBudgetTimestamp: Timestamp) => void;
-  shouldReplenish?: boolean;
-  rent: number
-};
-
-export async function resetBudget({
-  payDate,
-  payPeriodInterval,
-  envelopes,
-  user,
-  setEnvelopes,
-  setTotalSpendingBudget,
-  setOneTimeCash,
-  setPayments,
-  income,
-  totalSpendingBudget,
-  virtualPayments, // VIRTUAL PAYMENTS - used for calculation only
-  payments, // Original payments array - will be reset and saved
-  rent,
-  oneTimeCash,
-  setResetBudgetTimestamp,
-}: ResetBudgetParams) {
-
-  // Reset all envelopes to 0 spent, 0 total, and unpaid
-  await resetAllNvelopes(envelopes, setEnvelopes, user.uid);
-
-  // Calculate total payments due this period (using virtualPayments for calculation)
-  let totalPaymentsDueThisPeriod = 0;
-  for (const p of virtualPayments) {
-    totalPaymentsDueThisPeriod += p.amount;
-  }
-  
-  // Reset payments: mark all as unpaid in the original payments array
-  // For weekly/biweekly: clear paidDates array (this affects all virtual occurrences)
-  // For monthly/yearly: set paid = false
-  const resetPayments = payments.map((p: Payment) => {
-    if (p.interval === "WEEKLY" || p.interval === "BIWEEKLY") {
-      return { ...p, paidDates: [] };
-    } else {
-      return { ...p, paid: false };
-    }
-  });
-  await editPayments(resetPayments, user.uid);
-  setPayments(resetPayments);
-  // Note: virtualPayments will automatically regenerate from updated payments via useEffect in MainView
-  
-  // Calculate rent portion for this period
-  const payDatesThisMonth = getCountOfPaydatesLeftThisMonth(payDate, payPeriodInterval);
-  const rentPaymentThisPeriod = rent / payDatesThisMonth;
-  
-  // Calculate remaining budget: income - payments - rent portion
-  const remainingBudget = income - totalPaymentsDueThisPeriod - rentPaymentThisPeriod;
-  
-  const previousIntervalDetails = {
-    payDate,
-    payPeriodInterval,
-    envelopes,
-    payments: virtualPayments,
-    income,
-    totalSpendingBudget,
-    oneTimeCash,
-  };
-
-  await storePreviousIntervalDetails(previousIntervalDetails, user.uid);
-
-  await editOneTimeCashAndBudget(null, user.uid, remainingBudget);
-  setTotalSpendingBudget(remainingBudget);
-  setOneTimeCash([]);
-
-  const newResetTime = Timestamp.now();
-  await editResetBudgetTimestamp(newResetTime, user.uid);
-  setResetBudgetTimestamp(newResetTime);
-}
-
-export async function storePreviousIntervalDetails(
-  latestIntervalDetails: PreviousIntervalDetails,
-  userId: string
-) {
-  try {
-    const userDocRef = doc(db, "users", userId);
-    const docSnap = await getDoc(userDocRef);
-    if (docSnap.exists()) {
-      await setDoc(
-        userDocRef,
-        {
-          previousIntervalDetails: [
-            ...(Array.isArray(docSnap.data()?.previousIntervalDetails)
-              ? docSnap.data()!.previousIntervalDetails
-              : []),
-            latestIntervalDetails,
-          ],
-        },
-        { merge: true }
-      );
-    } else {
-      console.error(
-        "Firebase, storePreviousIntervalDetails Failed: Document does not exist"
-      );
-    }
-  } catch (error) {
-    console.error("Firebase, storePreviousIntervalDetails Failed", error);
-  }
-  return;
-}
+/**
+ * FUTURE FEATURE: Analytics & Period Tracking
+ * 
+ * The previous snapshot-based approach (previousIntervalDetails, resetBudget, 
+ * isResetToday, storePreviousIntervalDetails) was removed as it had limited value.
+ * 
+ * For meaningful analytics ("last month you spent X on groceries"), consider:
+ * 
+ * 1. Event-based tracking: Log each spend/income event with timestamp, 
+ *    category, amount, envelope
+ * 2. Aggregation queries: Sum events by time period and category
+ * 3. Separate analytics collection: /userAnalytics/{userId}/events/{eventId}
+ * 
+ * This would enable pie charts, spending trends, and period comparisons.
+ */
 
 export async function setDefaultPaymentInterval(userId: string) {
   try {
@@ -468,25 +309,6 @@ export async function editSnowball(user: User, amount: number) {
     console.log("attempting to updateDoc for snowball");
   } catch (e) {
     console.error("There was an error in editSnowball when updating db: ", e);
-  }
-}
-
-export async function shouldBackupUserData(user: User) {
-  if (!user) return;
-  try {
-    const now = Timestamp.fromDate(new Date());
-    const userDocRef = doc(db, "users", user.uid);
-    const docSnap = await getDoc(userDocRef);
-    if (docSnap.exists()) {
-      if (!docSnap.data().backups) return true;
-      if (!docSnap.data().backups.backupTimeStamp) return true;
-      const backupTimeStamp = docSnap.data().backups.backupTimeStamp;
-      if (now.toMillis() - backupTimeStamp.toMillis() > millisecondsInDay)
-        return true;
-      return false;
-    }
-  } catch (error) {
-    console.error("Error running shouldBackupUserData in editData: ", error);
   }
 }
 
@@ -589,14 +411,6 @@ export async function backupUserDataSafe(user: User) {
     
     console.log("✅ Safe backup created at", newTime.toDate());
     
-    // Also update the user doc backup (for backwards compatibility with existing UI)
-    const b = data.backups;
-    const currentBackups = b ? b.data : [];
-    await updateDoc(userDocRef, {
-      "backups.backupTimeStamp": newTime,
-      "backups.data": [backupData, ...currentBackups].slice(0, 10), // Keep only 10 in user doc
-    });
-    
     // Prune old backups in separate collection (keep last 30)
     await pruneOldBackups(user.uid, 30);
     
@@ -627,10 +441,29 @@ export async function getSafeBackups(user: User) {
 
 /**
  * Restore from a safe backup (from separate collection)
+ * Saves current state to localStorage before restoring (for undo capability)
  */
 export async function restoreFromSafeBackup(backupId: string, user: User) {
   if (!user || !backupId) return null;
   try {
+    // First, fetch current user data to save to localStorage before restore
+    const userDocRef = doc(db, "users", user.uid);
+    const currentDataSnap = await getDoc(userDocRef);
+    
+    if (currentDataSnap.exists()) {
+      const currentData = currentDataSnap.data();
+      // Save current state to localStorage for undo capability
+      saveToLocalStorageBackup({
+        envelopes: currentData.envelopes ?? [],
+        payments: currentData.payments ?? [],
+        income: currentData.income ?? 0,
+        totalSpendingBudget: currentData.totalSpendingBudget ?? 0,
+        rent: currentData.rent ?? 0,
+        payDate: currentData.payDate ?? null,
+        payPeriodInterval: currentData.payPeriodInterval ?? "MONTHLY",
+      });
+    }
+    
     const backupDocRef = doc(db, "userBackups", user.uid, "backups", backupId);
     const backupSnap = await getDoc(backupDocRef);
     
@@ -680,5 +513,117 @@ async function pruneOldBackups(userId: string, keepCount: number) {
     console.log(`🗑️ Pruned ${docsToDelete.length} old backups`);
   } catch (error) {
     console.error("Error pruning old backups:", error);
+  }
+}
+
+/**
+ * LOCAL STORAGE BACKUP SYSTEM
+ * 
+ * Saves the current user data to localStorage before a restore operation.
+ * This provides an "undo last restore" feature without consuming Firestore backups.
+ * Only the most recent pre-restore state is kept (auto-overwrites).
+ */
+const LOCALSTORAGE_BACKUP_KEY = 'nvelope_pre_restore_backup';
+
+export interface LocalStorageBackup {
+  data: {
+    envelopes: Envelope[];
+    payments: Payment[];
+    income: number;
+    totalSpendingBudget: number;
+    rent: number;
+    payDate: unknown;
+    payPeriodInterval: string;
+  };
+  timestamp: string;
+  reason: string;
+}
+
+/**
+ * Save current user data to localStorage before restore
+ */
+export function saveToLocalStorageBackup(userData: {
+  envelopes: Envelope[];
+  payments: Payment[];
+  income: number;
+  totalSpendingBudget: number;
+  rent: number;
+  payDate: unknown;
+  payPeriodInterval: string;
+}): void {
+  try {
+    const backup: LocalStorageBackup = {
+      data: userData,
+      timestamp: new Date().toISOString(),
+      reason: 'pre-restore-backup'
+    };
+    // Overwrite any existing backup (only keep most recent)
+    localStorage.setItem(LOCALSTORAGE_BACKUP_KEY, JSON.stringify(backup));
+    console.log("💾 Saved current state to localStorage before restore");
+  } catch (error) {
+    console.error("Error saving to localStorage:", error);
+  }
+}
+
+/**
+ * Get the localStorage backup if it exists
+ */
+export function getLocalStorageBackup(): LocalStorageBackup | null {
+  try {
+    const stored = localStorage.getItem(LOCALSTORAGE_BACKUP_KEY);
+    if (!stored) return null;
+    return JSON.parse(stored) as LocalStorageBackup;
+  } catch (error) {
+    console.error("Error reading localStorage backup:", error);
+    return null;
+  }
+}
+
+/**
+ * Clear the localStorage backup after successful undo
+ */
+export function clearLocalStorageBackup(): void {
+  try {
+    localStorage.removeItem(LOCALSTORAGE_BACKUP_KEY);
+    console.log("🗑️ Cleared localStorage backup");
+  } catch (error) {
+    console.error("Error clearing localStorage backup:", error);
+  }
+}
+
+/**
+ * Restore from localStorage backup (undo last restore)
+ */
+export async function restoreFromLocalStorageBackup(user: User): Promise<boolean> {
+  if (!user) return false;
+  
+  const backup = getLocalStorageBackup();
+  if (!backup) {
+    console.error("No localStorage backup found");
+    return false;
+  }
+  
+  try {
+    const { data } = backup;
+    
+    console.log(`⏪ Undoing restore - reverting to state from ${backup.timestamp}`);
+    console.log(`  - ${data.payments?.length ?? 0} payments`);
+    console.log(`  - ${data.envelopes?.length ?? 0} envelopes`);
+    console.log(`  - Income: ${data.income}`);
+    console.log(`  - Budget: ${data.totalSpendingBudget}`);
+    
+    await editTotalSpendingBudget(Number(data.totalSpendingBudget), user.uid);
+    await editIncome(Number(data.income), user.uid);
+    await editEnvelopes(data.envelopes ?? [], user.uid);
+    await editPayments(data.payments ?? [], user.uid);
+    if (data.rent) await editRent(data.rent, user.uid);
+    
+    // Clear the localStorage backup after successful restore
+    clearLocalStorageBackup();
+    
+    return true;
+  } catch (error) {
+    console.error("Error restoring from localStorage backup:", error);
+    return false;
   }
 }

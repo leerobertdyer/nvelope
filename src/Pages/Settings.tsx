@@ -11,6 +11,9 @@ import {
   editRent,
   getSafeBackups,
   restoreFromSafeBackup,
+  getLocalStorageBackup,
+  restoreFromLocalStorageBackup,
+  type LocalStorageBackup,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
@@ -25,11 +28,12 @@ import EditSpendingBudget from "../components/Forms/EditSpendingBudget";
 import TextInput from "../components/TextInput";
 import FullScreen from "../Views/FullScreen";
 import CreateLoginWithEmail from "../components/Forms/CreateLoginWithEmail";
-import Notification from "../components/Notification";
 import { format } from "date-fns";
+import { useToast } from "../Context/ToastContext/useToast";
 
 export default function Settings() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const {
     payPeriodInterval,
     rent,
@@ -59,10 +63,14 @@ export default function Settings() {
   const [safeBackups, setSafeBackups] = useState<Array<BackupData & { id: string }>>([]);
   const [selectedSafeBackup, setSelectedSafeBackup] = useState<(BackupData & { id: string }) | null>(null);
   const [isLoadingSafeBackups, setIsLoadingSafeBackups] = useState(false);
+  
+  // LocalStorage backup (for undo last restore)
+  const [localStorageBackup, setLocalStorageBackup] = useState<LocalStorageBackup | null>(null);
+  const [showUndoConfirm, setShowUndoConfirm] = useState(false);
 
   const currentProviderTypes = ["google.com"];
   
-  // Load safe backups on mount
+  // Load safe backups and check for localStorage backup on mount
   useEffect(() => {
     if (!user) return;
     async function loadSafeBackups() {
@@ -72,6 +80,10 @@ export default function Settings() {
       setIsLoadingSafeBackups(false);
     }
     loadSafeBackups();
+    
+    // Check for localStorage backup (undo capability)
+    const lsBackup = getLocalStorageBackup();
+    setLocalStorageBackup(lsBackup);
   }, [user]);
 
   useEffect(() => {
@@ -122,6 +134,7 @@ export default function Settings() {
     await editTotalSpendingBudget(nextBudget, user!.uid);
     setTotalSpendingBudget(nextBudget);
     setShowIntervalSettings(false);
+    showToast("Budget interval updated");
   }
 
   async function updateIncome() {
@@ -136,12 +149,14 @@ export default function Settings() {
     setTotalSpendingBudget(newBal);
     setIncome(Number(newIncome));
     setShowEditIncome(false);
+    showToast("Income updated");
   }
 
   async function handlePayDateChange(value: Value) {
     if (value instanceof Date) {
       setPayDate(Timestamp.fromDate(value));
       await editPayDate(value, user!.uid);
+      showToast("Pay date updated");
       // TODO: recalculate budget based on paydate change
       // This involves checking which bills in the current interval are paid
       // If not paid, and no longer in interval add the amount to budget
@@ -155,6 +170,7 @@ export default function Settings() {
 
   async function handleEditRent() {
     await editRent(rent, user!.uid);
+    showToast("Rent updated");
   }
   
   function handleSelectBackup(backupId: string) {
@@ -177,7 +193,38 @@ export default function Settings() {
       setIncome(Number(result.income));
       setTotalSpendingBudget(Number(result.totalSpendingBudget));
       handleCloseBackup();
+      // After restore, update localStorage backup state (now available for undo)
+      const lsBackup = getLocalStorageBackup();
+      setLocalStorageBackup(lsBackup);
+      showToast("Backup restored successfully");
+    } else {
+      showToast("Failed to restore backup", "error");
     }
+  }
+  
+  async function handleUndoRestore() {
+    if (!user || !localStorageBackup) return;
+    const success = await restoreFromLocalStorageBackup(user);
+    if (success) {
+      // Update local state with restored values
+      const { data } = localStorageBackup;
+      setPayments(data.payments ?? []);
+      setEnvelopes(data.envelopes ?? []);
+      setIncome(Number(data.income));
+      setTotalSpendingBudget(Number(data.totalSpendingBudget));
+      setRent(Number(data.rent));
+      // Clear the localStorage backup state
+      setLocalStorageBackup(null);
+      setShowUndoConfirm(false);
+      showToast("Restore undone successfully");
+    } else {
+      showToast("Failed to undo restore", "error");
+    }
+  }
+
+  function resetPasswordForEmail(email: string) {
+    console.log('Reset password for email:', email);
+    showToast('Feature not implemented yet', 'error');
   }
 
   if (isEditingCash) {
@@ -324,8 +371,11 @@ export default function Settings() {
 
         {/* Once account is created simply display email has password */}
         {hasPassword && (
-          <div className="w-full flex justify-center items-center p-2">
-            <Notification text={`Password has been set for ${user?.email}`} />
+          <div className="w-full bg-my-white-light cursor-pointer flex flex-col justify-center items-center p-2"
+              onClick={() => resetPasswordForEmail(user?.email ?? '')}
+          >
+            <Button color="red" onClick={() => resetPasswordForEmail(user?.email ?? '')}>Reset Password</Button>
+            <p className="text-sm">For {user?.email}</p>
           </div>
         )}
 
@@ -367,11 +417,42 @@ export default function Settings() {
           >
             <div className="w-full text-center">
               <h1 className="text-xl text-my-red-light">Are you sure?</h1>
-              <p>This cannot be undone.</p>
+              <p>You can undo this restore if needed.</p>
               <p>Your income will reset to {selectedSafeBackup.income}</p>
               <p>Your budget will reset to {selectedSafeBackup.totalSpendingBudget}</p>
               <p>You will have {selectedSafeBackup.payments?.length ?? 0} payments totaling ${(selectedSafeBackup.payments ?? []).reduce((acc, p) => p.amount + acc, 0).toFixed(2)}</p>
               <p>You will have {selectedSafeBackup.nvelopes?.length ?? 0} envelopes totaling ${(selectedSafeBackup.nvelopes ?? []).reduce((acc, p) => p.total + acc, 0).toFixed(2)}</p>
+            </div>
+          </FullScreen>
+        )}
+        
+        {/* Undo Last Restore - only shown when localStorage backup exists */}
+        {localStorageBackup && (
+          <div 
+            className="flex flex-col justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4 cursor-pointer hover:bg-my-blue-base gap-2"
+            onClick={() => setShowUndoConfirm(true)}
+          >
+            <p className="text-sm font-bold">Undo Last Restore</p>
+            <p className="text-xs">Saved: {new Date(localStorageBackup.timestamp).toLocaleString()}</p>
+            <p className="text-xs">{localStorageBackup.data.envelopes?.length ?? 0} envelopes, {localStorageBackup.data.payments?.length ?? 0} payments</p>
+            <button className="bg-my-white-dark rounded-md border-2 border-my-black-dark text-my-black-dark p-2 w-[80%]" onClick={() => setShowUndoConfirm(true)}>Undo</button>
+          </div>
+        )}
+        
+        {showUndoConfirm && localStorageBackup && (
+          <FullScreen
+            theme="DARK"
+            onClose={() => setShowUndoConfirm(false)}
+            onSave={handleUndoRestore}
+            showButtons
+          >
+            <div className="w-full text-center">
+              <h1 className="text-xl text-my-blue-light">Undo Last Restore?</h1>
+              <p className="mb-4">This will restore your data to the state before the last restore.</p>
+              <p>Your income will reset to {localStorageBackup.data.income}</p>
+              <p>Your budget will reset to {localStorageBackup.data.totalSpendingBudget}</p>
+              <p>You will have {localStorageBackup.data.payments?.length ?? 0} payments</p>
+              <p>You will have {localStorageBackup.data.envelopes?.length ?? 0} envelopes</p>
             </div>
           </FullScreen>
         )}

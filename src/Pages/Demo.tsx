@@ -283,7 +283,7 @@ export default function Demo() {
     await editIsNewUser(false, user!.uid);
     setIsNewUser(false);
     setStep(10);
-    navigate("/nvelopes");
+    navigate("/");
   }
 
   if (isLoading) {
@@ -364,7 +364,7 @@ export default function Demo() {
             <select
               className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
               onChange={(e) => {
-                setNewInterval("MONTHLY");
+                setNewInterval(e.target.value as Interval ?? '');
                 console.log(e);
               }} // TODO: FIX THIS e.target.value as Interval)}
               value={newInterval ?? ""}

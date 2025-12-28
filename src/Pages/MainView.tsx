@@ -12,6 +12,7 @@ import {
   editTotalSpendingBudget,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
+import { useToast } from "../Context/ToastContext/useToast";
 import Button from "../components/Buttons/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
@@ -37,6 +38,7 @@ import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const {
     totalSpendingBudget,
     setTotalSpendingBudget,
@@ -110,6 +112,7 @@ export default function MainEnvelopesView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, user.uid);
     resetPaymentState();
+    showToast("Payment deleted");
   }
 
   function handleAddPayment() {
@@ -187,6 +190,7 @@ export default function MainEnvelopesView() {
     await editRent(newRentAmount, user!.uid);
     setRent(newRentAmount);
     resetState();
+    showToast("Rent updated");
   }
 
   async function saveNewEnvelope(e: Envelope) {
@@ -210,6 +214,7 @@ export default function MainEnvelopesView() {
       setTotalSpendingBudget
     );
     resetState();
+    showToast("Envelope created");
   }
 
   async function handleSetShowSpendingPage(e: Envelope) {
@@ -227,9 +232,11 @@ export default function MainEnvelopesView() {
       setEnvelopes(newEnvelopes);
       await editEnvelopes(newEnvelopes, user!.uid);
       resetState();
+      showToast("Envelope deleted");
     } catch (error) {
       console.error("Error deleting envelope:", error);
       setShowLoading(false);
+      showToast("Failed to delete envelope", "error");
     }
   }
 
@@ -259,9 +266,11 @@ export default function MainEnvelopesView() {
       setEnvelopes(newEnvelopes);
       await editEnvelopes(newEnvelopes, user!.uid);
       resetState();
+      showToast("Envelope updated");
     } catch (error) {
       console.error("Error editing envelope:", error);
       setShowLoading(false);
+      showToast("Failed to update envelope", "error");
     }
   }
 
