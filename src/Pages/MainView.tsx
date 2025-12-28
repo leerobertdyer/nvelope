@@ -355,6 +355,7 @@ export default function MainEnvelopesView() {
     setShowBudgetWarning(false);
     setShowLoading(false);
     setIsAddingCashToEnvelope(false);
+
   }
 
   function handleSetupDelete(id?: string) {

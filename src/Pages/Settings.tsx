@@ -234,7 +234,7 @@ export default function Settings() {
             label="Paycheck Amount"
             value={newIncome}
             onChange={(e) => setNewIncome(e.target.value)}
-            textOrNumber="number"
+            numeric
             placeholder="Enter new income"
           />
         </div>

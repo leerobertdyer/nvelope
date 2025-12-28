@@ -38,7 +38,7 @@ export default function FullScreen({
         w-full h-full 
         flex flex-col 
         justify-center align-center 
-        ${theme === "LIGHT" ? "bg-my-blue-dark text-my-white-dark" : "bg-my-black-dark text-my-white-light"} 
+        ${theme === "LIGHT" ? "bg-my-blue-dark text-my-white-dark" : "bg-my-black-base text-my-white-light"} 
         `}
     >
       <div

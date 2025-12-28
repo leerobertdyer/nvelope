@@ -37,7 +37,7 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
           id="newBudgetAmount"
           value={cashAmount}
           onChange={(e) => setCashAmount(e.target.value)}
-          textOrNumber="number"
+          numeric
           placeholder="Amount" />
       </div>
     </FullScreen>

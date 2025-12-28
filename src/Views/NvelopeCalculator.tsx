@@ -54,7 +54,7 @@ export default function NvelopeCalculator({ handleEnterAmount, handleBack, selec
                 <TextInput
                     id="newAmountForEnvelope"
                     label="Amount To Spend"
-                    textOrNumber="number"
+                    numeric
                     onChange={(e) => handleSetAmount(e.target.value)}
                     value={amount}
                     placeholder={`$5 from ${envelope?.name ?? ""}`} />
