@@ -93,8 +93,9 @@ export default function Header({ step, links }: { step?: number, links: { label:
             </p>
             <p ref={step && step > 3 && step < 9? stepRef : null}
               onClick={() => setShowEditSpendingBudget(true)}
-              className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
-                        ${totalSpendingBudget <= 0 ? "bg-my-red-dark" : "bg-my-green-dark"}`}>
+              className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light cursor-pointer hover:opacity-80 transition-opacity
+                        ${totalSpendingBudget <= 0 ? "bg-my-red-dark" : "bg-my-green-dark"}
+                        ${step && step > 3 && step < 9 ? "relative z-[10050]" : ""}`}>
               ${totalSpendingBudget.toFixed(2)}
             </p>
             <NavMenu showMenu={showMenu} setShowMenu={setShowMenu} links={links}/>

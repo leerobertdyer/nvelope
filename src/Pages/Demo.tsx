@@ -1,5 +1,4 @@
 import Button from "../components/Buttons/Button";
-import ClosingX from "../components/Buttons/ClosingX";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
   editPayments,
@@ -11,13 +10,15 @@ import {
   createUserDocument,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Calendar from "react-calendar";
 import Header from "../components/Header";
 import "react-calendar/dist/Calendar.css";
 import DemoStep from "../components/DemoStep";
 import type { Payment, Interval } from "../types";
 import { IoIosSad } from "react-icons/io";
+import { GiEnvelope, GiMoneyStack } from "react-icons/gi";
+import SpotlightOverlay from "../components/SpotlightOverlay";
 import Popup from "../components/Popup";
 import { Timestamp } from "firebase/firestore";
 import SpendBtn from "../components/Buttons/SpendBtn";
@@ -30,6 +31,11 @@ import {
 import { useNavigate } from "react-router-dom";
 import Loading from "../components/Loading";
 import { MONTHLY } from "../constants";
+import IntervalSelector from "../components/Forms/IntervalSelector";
+import PayDateCalendar from "../components/Forms/PayDateCalendar";
+import PaymentTypeSelector, { type PaymentTypeOption } from "../components/Forms/PaymentTypeSelector";
+import { useToast } from "../Context/ToastContext/useToast";
+import DemoTooltip from "../components/DemoTooltip";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
@@ -56,23 +62,54 @@ export default function Demo() {
   const [newPayDate, setNewPayDate] = useState<Value | null>(null);
   const [newIncome, setNewIncome] = useState<number | null>(null);
   const [newInterval, setNewInterval] = useState<string | null>(null);
-  const [newBills, setNewBills] = useState<Payment[]>([]);
-  const [newBillName, setNewBillName] = useState("rent");
-  const [newBillAmount, setNewBillAmount] = useState<number | null>(null);
-  const [newBillOriginalDate, setNewBillOriginalDate] = useState<Date | null>(
-    null
-  );
+  const [newPayments, setNewPayments] = useState<Payment[]>([]);
+  const [newPaymentName, setNewPaymentName] = useState("");
+  const [newPaymentAmount, setNewPaymentAmount] = useState<number | null>(null);
+  const [newPaymentDueDate, setNewPaymentDueDate] = useState<Date | null>(null);
+  const [newPaymentTotal, setNewPaymentTotal] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [showBillAdded, setShowBillAdded] = useState<boolean>(false);
-  const [showBillError, setShowBillError] = useState<boolean>(false);
+  const [showPaymentAdded, setShowPaymentAdded] = useState<boolean>(false);
+  const [showPaymentError, setShowPaymentError] = useState<boolean>(false);
+  
+  // Payment type selection for step 7
+  const [selectedPaymentType, setSelectedPaymentType] = useState<PaymentTypeOption | null>(null);
+  
+  // Refs for steps 10-14 button spotlight
+  const paymentBtnRef = useRef<HTMLDivElement>(null);
+  const envelopeBtnRef = useRef<HTMLDivElement>(null);
+  const cashBtnRef = useRef<HTMLDivElement>(null);
+  const clearBtnRef = useRef<HTMLDivElement>(null);
+  const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
+
+  const { showToast } = useToast();
+  
+  // Update spotlight when step changes (for steps 10-13)
+  useEffect(() => {
+    if (step < 10 || step > 13) {
+      setSpotlightRect(null);
+      return;
+    }
+    
+    const updateRect = () => {
+      const ref = step === 10 ? paymentBtnRef : step === 11 ? envelopeBtnRef : step === 12 ? cashBtnRef : clearBtnRef;
+      if (ref.current) {
+        setSpotlightRect(ref.current.getBoundingClientRect());
+      }
+    };
+    
+    // Small delay to ensure DOM is ready
+    setTimeout(updateRect, 100);
+    window.addEventListener("resize", updateRect);
+    return () => window.removeEventListener("resize", updateRect);
+  }, [step]);
   const navigate = useNavigate();
 
   useEffect(() => {
     setTimeout(() => {
-      setShowBillAdded(false);
-      setShowBillError(false);
+      setShowPaymentAdded(false);
+      setShowPaymentError(false);
     }, 2500);
-  }, [showBillAdded, showBillError]);
+  }, [showPaymentAdded, showPaymentError]);
 
   useEffect(() => {
     // Give firebase time to load user data
@@ -83,78 +120,126 @@ export default function Demo() {
     }, 2500);
   }, []);
 
-  function handleCalendarChange(value: Value) {
+  function handlePaymentCalendarChange(value: Value) {
     if (value instanceof Date) {
-      setNewBillOriginalDate(value);
+      setNewPaymentDueDate(value);
     }
   }
 
-  async function handleAddNewBill() {
-    if (!newBillName || !newBillAmount) return;
-    console.log("handleAddNewBill");
+  async function handleAddNewPayment() {
+    if (!newPaymentName || !newPaymentAmount || !selectedPaymentType) {
+      showToast("Please fill out all fields", "error");
+      return;
+    };
+    console.log("handleAddNewPayment", selectedPaymentType);
 
     // check to see if name is already used
-    if (newBills.some((bill) => bill.name === newBillName)) {
-      setShowBillError(true);
+    if (newPayments.some((p) => p.name === newPaymentName)) {
+      setShowPaymentError(true);
       return;
     }
 
-    if (!newBillOriginalDate || !payDate) {
-      return;
+    // For SPLIT save-up, due date is required (target date)
+    // For others, use current date as default if not set
+    const dueDate = newPaymentDueDate || new Date();
+    if (!payDate) return;
+
+    // Build payment based on type
+    let newPayment: Payment;
+    
+    if (selectedPaymentType === "BILL") {
+      newPayment = {
+        id: crypto.randomUUID(),
+        name: newPaymentName,
+        amount: newPaymentAmount,
+        dueDate: Timestamp.fromDate(dueDate),
+        paid: false,
+        interval: MONTHLY,
+        type: "BILL",
+      };
+    } else if (selectedPaymentType === "DEBT") {
+      newPayment = {
+        id: crypto.randomUUID(),
+        name: newPaymentName,
+        amount: newPaymentAmount,
+        dueDate: Timestamp.fromDate(dueDate),
+        paid: false,
+        interval: MONTHLY,
+        type: "DEBT",
+        total: newPaymentTotal || newPaymentAmount,
+      };
+    } else if (selectedPaymentType === "SPLIT_RECURRING") {
+      newPayment = {
+        id: crypto.randomUUID(),
+        name: newPaymentName,
+        amount: newPaymentAmount,
+        dueDate: Timestamp.fromDate(dueDate),
+        paid: false,
+        interval: "SPLIT",
+        type: "BILL",
+        recurring: true,
+      };
+    } else {
+      // SPLIT_SAVEUP
+      if (!newPaymentDueDate) {
+        setShowPaymentError(true);
+        return;
+      }
+      newPayment = {
+        id: crypto.randomUUID(),
+        name: newPaymentName,
+        amount: newPaymentAmount,
+        dueDate: Timestamp.fromDate(newPaymentDueDate),
+        paid: false,
+        interval: "SPLIT",
+        type: "DEBT",
+        recurring: false,
+        total: newPaymentAmount,
+      };
     }
 
-    await editPayments(
-      [
-        ...newBills,
-        {
-          name: newBillName,
-          amount: newBillAmount,
-          dueDate: Timestamp.fromDate(newBillOriginalDate),
-          paid: false,
-          interval: MONTHLY,
-        } as Payment,
-      ],
-      user?.uid || ""
-    );
+    const updatedPayments = [...newPayments, newPayment];
+    await editPayments(updatedPayments, user?.uid || "");
+    
     const nextBudget = recalculateBudget({
       currentAvailableBudget: totalSpendingBudget,
       diffAmount: isDateInCurrentPayPeriod(
         payPeriodInterval,
         payDate?.toDate(),
-        newBillOriginalDate
+        dueDate
       )
-        ? newBillAmount
+        ? newPaymentAmount
         : 0,
     });
     await editTotalSpendingBudget(nextBudget, user?.uid || "");
     setTotalSpendingBudget(nextBudget);
-    setNewBills([
-      ...newBills,
-      {
-        name: newBillName,
-        amount: newBillAmount,
-        dueDate: Timestamp.fromDate(newBillOriginalDate),
-        paid: false,
-        interval: MONTHLY,
-      } as Payment,
-    ]);
-    setPayments([
-      ...newBills,
-      {
-        name: newBillName,
-        amount: newBillAmount,
-        dueDate: Timestamp.fromDate(newBillOriginalDate),
-        paid: false,
-        interval: MONTHLY,
-      } as Payment,
-    ]);
-    setNewBillName("");
-    setNewBillAmount(0);
-    setShowBillAdded(true);
+    setNewPayments(updatedPayments);
+    setPayments(updatedPayments);
+    
+    // Reset form
+    setNewPaymentName("");
+    setNewPaymentAmount(0);
+    setNewPaymentTotal(null);
+    setNewPaymentDueDate(null);
+    setShowPaymentAdded(true);
   }
 
-  async function handleClickAddBill() {
-    handleAddNewBill();
+  async function handleClickAddPayment() {
+    handleAddNewPayment();
+  }
+  
+  function resetPaymentForm() {
+    setNewPaymentName("");
+    setNewPaymentAmount(null);
+    setNewPaymentTotal(null);
+    setNewPaymentDueDate(null);
+    setSelectedPaymentType(null);
+  }
+  
+  async function handleSkipPayments() {
+    console.log("handleSkipPayments - continuing without adding payments");
+    // Just move to the next step without adding any payments
+    setStep(8);
   }
 
   async function handleFirstStep() {
@@ -250,8 +335,8 @@ export default function Demo() {
     if (payments && payments.length > 0) {
       setStep(8);
     } else {
-      if (newBills) {
-        setPayments(newBills);
+      if (newPayments) {
+        setPayments(newPayments);
       }
       setStep(7);
     }
@@ -259,17 +344,17 @@ export default function Demo() {
 
   async function handleSeventhStep() {
     console.log("handleSeventhStep");
-    if (!newBills) return;
+    if (!newPayments) return;
     const diffAmount =
-      newBills.reduce((acc, bill) => acc + bill.amount, 0) * -1;
-    await editPayments(newBills, user!.uid);
+      newPayments.reduce((acc, p) => acc + p.amount, 0) * -1;
+    await editPayments(newPayments, user!.uid);
     const nextBudget = recalculateBudget({
       currentAvailableBudget: totalSpendingBudget,
       diffAmount,
     });
     await editTotalSpendingBudget(nextBudget, user!.uid);
     setTotalSpendingBudget(nextBudget);
-    setPayments(newBills);
+    setPayments(newPayments);
     setStep(8);
   }
 
@@ -278,11 +363,33 @@ export default function Demo() {
     setStep(9);
   }
 
-  async function handleNinthStep() {
+  function handleNinthStep() {
     console.log("handleNinthStep");
+    // Don't set isNewUser to false yet - continue the demo walkthrough
+    setStep(10);
+  }
+  
+  function handleStep10() {
+    setStep(11);
+  }
+  
+  function handleStep11() {
+    setStep(12);
+  }
+  
+  function handleStep12() {
+    setStep(13);
+  }
+  
+  function handleStep13() {
+    setStep(14);
+  }
+  
+  async function handleStep14() {
+    console.log("handleStep14 - Demo complete");
+    // Now mark as no longer a new user and navigate to main app
     await editIsNewUser(false, user!.uid);
     setIsNewUser(false);
-    setStep(10);
     navigate("/");
   }
 
@@ -301,22 +408,23 @@ export default function Demo() {
           step={step}
         />
       )}
-      {showBillAdded && <Popup type="success">Bill added!</Popup>}
-      {showBillError && <Popup type="error">Bill name already exists</Popup>}
+      {showPaymentAdded && <Popup type="success">Payment added!</Popup>}
+      {showPaymentError && <Popup type="error">Payment name already exists</Popup>}
       <div
         className={`absolute z-9999 left-0 right-0 bottom-0 
-            ${step > 1 ? "top-[20vh] h-[80vh]" : "top-0 h-screen"}
+            ${step > 1 ? "top-[4rem] h-[90vh]" : "top-0 h-screen"}
             bg-my-black-dark text-center 
             flex flex-col items-center justify-around`}
       >
-        {isNewUser && step === 0 ? (
+        {/* Show start button for new users (no document) or users still in onboarding */}
+        {(documentExists === false || isNewUser) && step === 0 ? (
           <SpendBtn onClick={() => setStep(1)} />
         ) : step == 1 ? (
           <>
             <div className="absolute inset-0 bg-my-black-dark opacity-80"></div>
             <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center text-white">
               <h3>Let's get you set up first...</h3>
-              <ClosingX text="New Account" onClick={handleFirstStep} />
+              <Button color="green" onClick={handleFirstStep} children="New Account" />
             </div>
           </>
         ) : step === 2 ? (
@@ -332,16 +440,12 @@ export default function Demo() {
               Speaking of which, when was{" "}
               <span className="text-my-green-base">your last paycheck?</span>
             </p>
-            <div className="text-black rounded-md overflow-hidden border-2">
-              <Calendar
-                calendarType="gregory"
-                onChange={setNewPayDate}
-                value={newPayDate || new Date()}
-                maxDate={new Date()}
-                selectRange={false}
-                className="cursor-pointer-calendar"
-              />
-            </div>
+            <PayDateCalendar
+              value={newPayDate instanceof Date ? newPayDate : null}
+              onChange={setNewPayDate}
+              label=""
+              maxDate={new Date()}
+            />
           </DemoStep>
         ) : step === 3 ? (
           <DemoStep
@@ -361,22 +465,11 @@ export default function Demo() {
               Note: If you are paid bi-weekly but want to budget weekly, no
               problem!
             </p>
-            <select
-              className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
-              onChange={(e) => {
-                setNewInterval(e.target.value as Interval ?? '');
-                console.log(e);
-              }} // TODO: FIX THIS e.target.value as Interval)}
-              value={newInterval ?? ""}
-            >
-              <option disabled value="">
-                Select
-              </option>
-              <option value={"WEEKLY"}>Weekly</option>
-              <option value={"BIWEEKLY"}>Biweekly</option>
-              <option value={"MONTHLY"}>Monthly</option>
-              <option value={"YEARLY"}>Yearly</option>
-            </select>
+            <IntervalSelector
+              value={newInterval as Interval}
+              onChange={(interval) => setNewInterval(interval ?? null)}
+              label=""
+            />
           </DemoStep>
         ) : step === 4 ? (
           <DemoStep onClick={handleFourthStep} text="Next" changeValue={true}>
@@ -419,73 +512,103 @@ export default function Demo() {
             <p className="text-sm sm:text-lg">
               Let's add your{" "}
               <span className="text-my-red-light">
-                bills <IoIosSad className="inline" size={30} />
+                payments <IoIosSad className="inline" size={30} />
               </span>
             </p>
           </DemoStep>
         ) : step === 7 ? (
           <DemoStep
             onClick={handleSeventhStep}
-            text="Save Bills"
-            changeValue={newBills}
+            text="Save Payments"
+            changeValue={newPayments}
           >
-            <p className="text-sm sm:text-lg">
-              Add your fixed{" "}
-              <span className="text-my-green-base underline">monthly</span>{" "}
-              expenses.
-            </p>
-            <p className="text-sm sm:text-lg">
-              Think <span className="text-my-red-light">rent</span>,{" "}
-              <span className="text-my-white-base">utilities</span>,{" "}
-              <span className="text-my-white-dark">loans</span>, etc.
-            </p>
-            <p className="text-sm sm:text-lg">
-              For everything else we will use{" "}
-              <span className="text-my-red-light">Nvelopes</span>
-            </p>
-            <form className="flex flex-col gap-2 w-full items-center">
-              <input
-                className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
-                type="text"
-                placeholder="Bill Name"
-                value={newBillName}
-                onChange={(e) => setNewBillName(e.target.value.toLowerCase())}
+            {/* Payment Type Selection */}
+            {!selectedPaymentType ? (
+              <PaymentTypeSelector
+                onSelect={setSelectedPaymentType}
+                onSkip={handleSkipPayments}
               />
-              <input
-                className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
-                type="number"
-                placeholder="Monthly Amount"
-                value={newBillAmount || ""}
-                onChange={(e) => setNewBillAmount(Number(e.target.value))}
-              />
-              <div className="text-black">
-                <Calendar
-                  calendarType="gregory"
-                  onChange={handleCalendarChange}
-                  value={newBillOriginalDate || new Date()}
-                  selectRange={false}
-                  className="cursor-pointer-calendar"
+            ) : (
+              /* Payment Form based on type */
+              <form className="flex flex-col gap-2 w-full items-center">
+                <button
+                  type="button"
+                  onClick={resetPaymentForm}
+                  className="text-xs text-my-white-dark underline mb-2"
+                >
+                  ← Change payment type
+                </button>
+                
+                <p className="text-sm text-my-green-light mb-2">
+                  Adding: {selectedPaymentType.replace("_", " ")}
+                </p>
+                
+                <input
+                  className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
+                  type="text"
+                  placeholder="Payment Name"
+                  value={newPaymentName}
+                  onChange={(e) => setNewPaymentName(e.target.value.toLowerCase())}
                 />
-              </div>
-              <Button
-                onClick={handleClickAddBill}
-                color="green"
-                children="Add Bill"
-              />
-            </form>
-            <div className="flex flex-col gap-2">
-              {newBills.map((bill, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span>{bill.name}</span>
-                  <span>${bill.amount}</span>
+                <input
+                  className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
+                  type="number"
+                  placeholder={selectedPaymentType === "SPLIT_SAVEUP" ? "Target Amount" : "Monthly Amount"}
+                  value={newPaymentAmount || ""}
+                  onChange={(e) => setNewPaymentAmount(Number(e.target.value))}
+                />
+                
+                {/* Show total field for DEBT type */}
+                {selectedPaymentType === "DEBT" && (
+                  <input
+                    className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
+                    type="number"
+                    placeholder="Total Balance Owed"
+                    value={newPaymentTotal || ""}
+                    onChange={(e) => setNewPaymentTotal(Number(e.target.value))}
+                  />
+                )}
+                
+                {/* Show calendar for due date (required for SPLIT_SAVEUP) */}
+                <div className="text-black">
+                  <p className="text-my-white-dark text-sm mb-1">
+                    {selectedPaymentType === "SPLIT_SAVEUP" ? "Target Date" : "Due Date (day of month)"}
+                  </p>
+                  <Calendar
+                    calendarType="gregory"
+                    onChange={handlePaymentCalendarChange}
+                    value={newPaymentDueDate || new Date()}
+                    selectRange={false}
+                    className="cursor-pointer-calendar"
+                    minDate={selectedPaymentType === "SPLIT_SAVEUP" ? new Date() : undefined}
+                  />
                 </div>
-              ))}
-            </div>
+                
+                <Button
+                  onClick={handleClickAddPayment}
+                  color="green"
+                  children="Add Payment"
+                />
+              </form>
+            )}
+            
+            {/* List of added payments */}
+            {newPayments.length > 0 && (
+              <div className="flex flex-col gap-2 mt-4 w-full max-w-[30rem]">
+                <p className="text-sm text-my-white-dark">Added payments:</p>
+                {newPayments.map((p, index) => (
+                  <div key={index} className="flex items-center justify-between bg-my-black-base p-2 rounded">
+                    <span>{p.name}</span>
+                    <span className="text-my-green-light">${p.amount}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </DemoStep>
         ) : step === 8 ? (
           <DemoStep onClick={handleEighthStep} text="Next" changeValue={true}>
             <h3 className="text-sm sm:text-lg p-2">
-              Note the balance changed according to your bills
+              Note the balance changed according to your payments
             </h3>
             <p className="text-sm sm:text-lg">
               This is the amount you have left until your next{" "}
@@ -496,26 +619,116 @@ export default function Demo() {
               <span className="text-my-white-dark">pay period</span> you
               selected earlier.
             </p>
+            <p className="text-sm sm:text-lg">Click on the amount to manually edit the balance.</p>
           </DemoStep>
-        ) : (
-          step === 9 && (
-            <DemoStep
-              onClick={handleNinthStep}
-              text="Let's Go!"
-              changeValue={true}
-            >
-              <h3 className="text-sm sm:text-lg p-2">We're all set up!</h3>
-              <p className="text-sm sm:text-lg">
-                If you need to make changes later, you can always head to{" "}
-                <span className="text-my-green-base">settings</span> in the menu
-              </p>
-              <p className="text-sm sm:text-lg">
-                For now, let's stuff some{" "}
-                <span className="text-my-red-light">Nvelopes</span>!
-              </p>
-            </DemoStep>
-          )
-        )}
+        ) : step === 9 ? (
+          <DemoStep
+            onClick={handleNinthStep}
+            text="Continue Tour"
+            changeValue={true}
+          >
+            <p className="text-sm sm:text-lg">
+              Let's quickly show you the main buttons...
+            </p>
+          </DemoStep>
+        ) : step >= 10 && step <= 14 ? (
+          /* Steps 10-14: Main button walkthrough */
+          <div className="absolute inset-0 bg-my-white-dark/90 flex flex-col items-center z-[9900]">
+            {spotlightRect && <SpotlightOverlay targetRect={spotlightRect} />}
+            
+            {/* Action buttons bar */}
+            <div className="flex w-full justify-center gap-4 items-center py-6">
+              <div
+                ref={paymentBtnRef}
+                className={`flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark text-my-red-dark ${step === 10 ? 'relative z-[9950] ring-4 ring-my-red-light' : ''}`}
+              >
+                <GiMoneyStack className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+                <p className="text-xs">Payment</p>
+              </div>
+              <div
+                ref={cashBtnRef}
+                className={`flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark text-my-green-dark ${step === 12 ? 'relative z-[9950] ring-4 ring-my-green-light' : ''}`}
+              >
+                <GiMoneyStack className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+                <p className="text-xs">Get Paid</p>
+              </div>
+              <div
+                ref={envelopeBtnRef}
+                className={`flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark text-my-green-dark ${step === 11 ? 'relative z-[9950] ring-4 ring-my-green-light' : ''}`}
+              >
+                <GiEnvelope className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+                <p className="text-xs">New</p>
+              </div>
+              <div
+                ref={clearBtnRef}
+                className={`flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark text-my-red-dark ${step === 13 ? 'relative z-[9950] ring-4 ring-my-red-light' : ''}`}
+              >
+                <GiEnvelope className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+                <p className="text-xs">Clear</p>
+              </div>
+            </div>
+            
+            {/* Tooltip content - centered below buttons */}
+            <div className="flex-1 flex items-start justify-center pt-8">
+              {step === 10 && (
+                <DemoTooltip onNext={handleStep10}>
+                  <h3 className="text-lg font-bold text-my-red-light">Payment Button</h3>
+                  <p className="text-sm text-my-white-light">
+                    Add recurring <span className="text-my-red-light">bills</span>, <span className="text-my-blue-light">debts</span>, or <span className="text-my-green-light">split payments</span>
+                  </p>
+                  <p className="text-xs text-my-white-dark">
+                    Fixed expenses that come out of each paycheck.
+                  </p>
+                </DemoTooltip>
+              )}
+              {step === 11 && (
+                <DemoTooltip onNext={handleStep11}>
+                  <h3 className="text-lg font-bold text-my-green-light">New Envelope</h3>
+                  <p className="text-sm text-my-white-light">
+                    Create <span className="text-my-green-light">spending envelopes</span> for flexible categories
+                  </p>
+                  <p className="text-xs text-my-white-dark">
+                    Groceries, gas, entertainment - allocate money from your budget.
+                  </p>
+                </DemoTooltip>
+              )}
+              {step === 12 && (
+                <DemoTooltip onNext={handleStep12}>
+                  <h3 className="text-lg font-bold text-my-green-light">Get Paid</h3>
+                  <p className="text-sm text-my-white-light">
+                    Add <span className="text-my-green-light">income</span> when you receive money
+                  </p>
+                  <p className="text-xs text-my-white-dark">
+                    Increases your available budget for the current period.
+                  </p>
+                </DemoTooltip>
+              )}
+              {step === 13 && (
+                <DemoTooltip onNext={handleStep13}>
+                  <h3 className="text-lg font-bold text-my-red-light">Clear Envelopes</h3>
+                  <p className="text-sm text-my-white-light">
+                    <span className="text-my-red-light">Reset</span> all envelope balances to zero
+                  </p>
+                  <p className="text-xs text-my-white-dark">
+                    Use at the start of a new budget period.
+                  </p>
+                </DemoTooltip>
+              )}
+              {step === 14 && (
+                <DemoTooltip onNext={handleStep14} buttonText="Start Using Nvelopes!">
+                  <h3 className="text-lg font-bold text-my-green-light">You're ready! 🎉</h3>
+                  <p className="text-sm text-my-white-light">
+                    You know everything to start budgeting with{" "}
+                    <span className="text-my-red-light">Nvelopes</span>
+                  </p>
+                  <p className="text-xs text-my-white-dark">
+                    Create envelopes, track spending, take control!
+                  </p>
+                </DemoTooltip>
+              )}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

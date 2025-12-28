@@ -34,7 +34,7 @@ export default function FullScreen({
       className={`
         fixed 
         inset-0 
-        z-[9999] 
+        z-[10100] 
         w-full h-full 
         flex flex-col 
         justify-center align-center 

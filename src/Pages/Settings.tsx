@@ -19,10 +19,10 @@ import signout from "../firebase/signOut";
 import { getIncomeByInterval, recalculateBudget } from "../util";
 import { IoPencil } from "react-icons/io5";
 import { GiMoneyStack } from "react-icons/gi";
-import Calendar from "react-calendar";
 import { Timestamp } from "firebase/firestore";
 import type { Value } from "react-calendar/src/shared/types.js";
-import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../constants";
+import IntervalSelector from "../components/Forms/IntervalSelector";
+import PayDateCalendar from "../components/Forms/PayDateCalendar";
 import EditSpendingBudget from "../components/Forms/EditSpendingBudget";
 import TextInput from "../components/TextInput";
 import FullScreen from "../Views/FullScreen";
@@ -295,38 +295,14 @@ export default function Settings() {
           <GiMoneyStack className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-green-dark text-my-white-light p-[2px] border-my-black-dark" />
           <p className="text-sm">Edit Recurring Income</p>
         </div>
-        <div className="bg-my-black-base w-[80%] max-w-[20rem] border-2 p-2 rounded-md my-4 flex flex-col items-center">
-          <p className="text-my-white-dark text-center w-full">
-            Change Budget Interval
-          </p>
-          <select
-            value={payPeriodInterval ?? ""}
-            onChange={(e) =>
-              handleIntervalChange(e.target.value.toUpperCase() as Interval)
-            }
-            className="w-[80%] max-w-[20rem] border-2 bg-my-white-light p-2 rounded-md my-4"
-          >
-            <option value="" disabled>
-              Select Interval
-            </option>
-            <option value={WEEKLY}>Weekly</option>
-            <option value={BIWEEKLY}>Biweekly</option>
-            <option value={MONTHLY}>Monthly</option>
-            <option value={YEARLY}>Yearly</option>
-          </select>
-        </div>
-        <div className="bg-my-black-base text-my-black-light w-[80%] max-w-[20rem] border-2 p-2 rounded-md my-4 flex flex-col items-center">
-          <p className="text-my-white-dark text-center w-full pb-2">
-            Change Pay Date
-          </p>
-          <Calendar
-            onChange={handlePayDateChange}
-            value={payDate?.toDate() || new Date()}
-            calendarType="gregory"
-            selectRange={false}
-            className="cursor-pointer-calendar"
-          />
-        </div>
+        <IntervalSelector
+          value={payPeriodInterval}
+          onChange={handleIntervalChange}
+        />
+        <PayDateCalendar
+          value={payDate?.toDate() || null}
+          onChange={handlePayDateChange}
+        />
 
         {/* If the user doesn't yet have a password and has signed in with one of current provider */}
         {currentProviderTypes.includes(providerType) && !hasPassword && (
@@ -335,12 +311,7 @@ export default function Settings() {
 
         {/* Once account is created simply display email has password */}
         {hasPassword && (
-          <div className="w-full bg-my-white-light cursor-pointer flex flex-col justify-center items-center p-2"
-              onClick={() => resetPasswordForEmail(user?.email ?? '')}
-          >
             <Button color="red" onClick={() => resetPasswordForEmail(user?.email ?? '')}>Reset Password</Button>
-            <p className="text-sm">For {user?.email}</p>
-          </div>
         )}
 
         {/* Restore from backup */}

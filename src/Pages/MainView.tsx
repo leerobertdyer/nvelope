@@ -630,28 +630,28 @@ export default function MainEnvelopesView() {
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"
             onClick={handleAddPayment}
           >
-            <GiMoneyStack className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+            <GiMoneyStack className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
             <p className="text-xs">Payment</p>
           </div>
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark  text-my-green-dark shadow-my-green-light"
             onClick={handleAddCash}
           >
-            <GiMoneyStack className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-base " />
-            <p className="text-xs">Get Paid</p>
+            <GiMoneyStack className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+            <p className="text-xs">Cash</p>
           </div>
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark  text-my-green-dark shadow-my-green-light"
             onClick={handleSetupNewEnvelope}
           >
-            <GiEnvelope className="cursor-pointer border-2 rounded-md  w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-            <p className="text-xs flex justify-center items-center">New</p>
+            <GiEnvelope className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
+            <p className="text-xs flex justify-center items-center">Nvelope</p>
           </div>
           <div
             className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark  text-my-red-dark shadow-my-red-light"
             onClick={() => setShowClearNvelopes(true)}
           >
-            <GiEnvelope className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-base " />
+            <GiEnvelope className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
             <p className="text-xs">Clear</p>
           </div>
         </div>
