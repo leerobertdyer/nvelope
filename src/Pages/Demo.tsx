@@ -17,7 +17,7 @@ import "react-calendar/dist/Calendar.css";
 import DemoStep from "../components/DemoStep";
 import type { Payment, Interval } from "../types";
 import { IoIosSad } from "react-icons/io";
-import { GiEnvelope, GiMoneyStack } from "react-icons/gi";
+import ActionButtons from "../components/Buttons/ActionButtons";
 import SpotlightOverlay from "../components/SpotlightOverlay";
 import Popup from "../components/Popup";
 import { Timestamp } from "firebase/firestore";
@@ -30,7 +30,7 @@ import {
 } from "../util";
 import { useNavigate } from "react-router-dom";
 import Loading from "../components/Loading";
-import { MONTHLY } from "../constants";
+import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../constants";
 import IntervalSelector from "../components/Forms/IntervalSelector";
 import PayDateCalendar from "../components/Forms/PayDateCalendar";
 import PaymentTypeSelector, { type PaymentTypeOption } from "../components/Forms/PaymentTypeSelector";
@@ -73,6 +73,8 @@ export default function Demo() {
   
   // Payment type selection for step 7
   const [selectedPaymentType, setSelectedPaymentType] = useState<PaymentTypeOption | null>(null);
+  const [newPaymentInterval, setNewPaymentInterval] = useState<Interval>(MONTHLY);
+  const [splitBillAcrossPayPeriods, setSplitBillAcrossPayPeriods] = useState(false);
   
   // Refs for steps 10-14 button spotlight
   const paymentBtnRef = useRef<HTMLDivElement>(null);
@@ -130,73 +132,43 @@ export default function Demo() {
     if (!newPaymentName || !newPaymentAmount || !selectedPaymentType) {
       showToast("Please fill out all fields", "error");
       return;
-    };
-    console.log("handleAddNewPayment", selectedPaymentType);
+    }
 
-    // check to see if name is already used
+    // Check if name is already used
     if (newPayments.some((p) => p.name === newPaymentName)) {
       setShowPaymentError(true);
       return;
     }
 
-    // For SPLIT save-up, due date is required (target date)
-    // For others, use current date as default if not set
+    // For FUND, due date is required (target date)
+    if (selectedPaymentType === "FUND" && !newPaymentDueDate) {
+      showToast("Please select a target date", "error");
+      return;
+    }
+
     const dueDate = newPaymentDueDate || new Date();
     if (!payDate) return;
 
-    // Build payment based on type
-    let newPayment: Payment;
-    
-    if (selectedPaymentType === "BILL") {
-      newPayment = {
-        id: crypto.randomUUID(),
-        name: newPaymentName,
-        amount: newPaymentAmount,
-        dueDate: Timestamp.fromDate(dueDate),
-        paid: false,
-        interval: MONTHLY,
-        type: "BILL",
-      };
-    } else if (selectedPaymentType === "DEBT") {
-      newPayment = {
-        id: crypto.randomUUID(),
-        name: newPaymentName,
-        amount: newPaymentAmount,
-        dueDate: Timestamp.fromDate(dueDate),
-        paid: false,
-        interval: MONTHLY,
-        type: "DEBT",
-        total: newPaymentTotal || newPaymentAmount,
-      };
-    } else if (selectedPaymentType === "SPLIT_RECURRING") {
-      newPayment = {
-        id: crypto.randomUUID(),
-        name: newPaymentName,
-        amount: newPaymentAmount,
-        dueDate: Timestamp.fromDate(dueDate),
-        paid: false,
-        interval: "SPLIT",
-        type: "BILL",
-        recurring: true,
-      };
-    } else {
-      // SPLIT_SAVEUP
-      if (!newPaymentDueDate) {
-        setShowPaymentError(true);
-        return;
-      }
-      newPayment = {
-        id: crypto.randomUUID(),
-        name: newPaymentName,
-        amount: newPaymentAmount,
-        dueDate: Timestamp.fromDate(newPaymentDueDate),
-        paid: false,
-        interval: "SPLIT",
-        type: "DEBT",
-        recurring: false,
-        total: newPaymentAmount,
-      };
-    }
+    // Determine interval based on type and split toggle
+    const interval: Interval = 
+      selectedPaymentType === "FUND" ? SPLIT :
+      (selectedPaymentType === "BILL" && splitBillAcrossPayPeriods) ? SPLIT :
+      newPaymentInterval;
+
+    // Build payment with common base, type-specific additions via ternary
+    const newPayment: Payment = {
+      id: crypto.randomUUID(),
+      name: newPaymentName,
+      amount: newPaymentAmount,
+      dueDate: Timestamp.fromDate(dueDate),
+      paid: false,
+      interval,
+      type: selectedPaymentType,
+      // Type-specific fields
+      ...(selectedPaymentType === "DEBT" && { total: newPaymentTotal || newPaymentAmount }),
+      ...(selectedPaymentType === "FUND" && { total: newPaymentAmount, recurring: false }),
+      ...(selectedPaymentType === "BILL" && splitBillAcrossPayPeriods && { recurring: true }),
+    };
 
     const updatedPayments = [...newPayments, newPayment];
     await editPayments(updatedPayments, user?.uid || "");
@@ -234,6 +206,8 @@ export default function Demo() {
     setNewPaymentTotal(null);
     setNewPaymentDueDate(null);
     setSelectedPaymentType(null);
+    setNewPaymentInterval(MONTHLY);
+    setSplitBillAcrossPayPeriods(false);
   }
   
   async function handleSkipPayments() {
@@ -540,7 +514,7 @@ export default function Demo() {
                 </button>
                 
                 <p className="text-sm text-my-green-light mb-2">
-                  Adding: {selectedPaymentType.replace("_", " ")}
+                  Adding: {selectedPaymentType}
                 </p>
                 
                 <input
@@ -553,7 +527,7 @@ export default function Demo() {
                 <input
                   className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
                   type="number"
-                  placeholder={selectedPaymentType === "SPLIT_SAVEUP" ? "Target Amount" : "Monthly Amount"}
+                  placeholder={selectedPaymentType === "FUND" ? "Target Amount" : "Amount"}
                   value={newPaymentAmount || ""}
                   onChange={(e) => setNewPaymentAmount(Number(e.target.value))}
                 />
@@ -568,11 +542,44 @@ export default function Demo() {
                     onChange={(e) => setNewPaymentTotal(Number(e.target.value))}
                   />
                 )}
+
+                {/* Interval selector for BILL and DEBT (not FUND) */}
+                {(selectedPaymentType === "BILL" || selectedPaymentType === "DEBT") && !splitBillAcrossPayPeriods && (
+                  <div className="flex flex-col items-center w-full">
+                    <p className="text-my-white-dark text-sm mb-1">Payment Frequency</p>
+                    <select
+                      value={newPaymentInterval || ""}
+                      onChange={(e) => setNewPaymentInterval(e.target.value as Interval)}
+                      className="w-[80%] max-w-[30rem] border-2 p-2 rounded-md bg-white text-black text-center"
+                    >
+                      <option value={MONTHLY}>Monthly</option>
+                      <option value={WEEKLY}>Weekly</option>
+                      <option value={BIWEEKLY}>Bi-Weekly</option>
+                      <option value={YEARLY}>Yearly</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Split toggle for BILL type only */}
+                {selectedPaymentType === "BILL" && (
+                  <div className="flex items-center gap-3 my-2">
+                    <label htmlFor="splitToggle" className="text-sm text-my-white-dark cursor-pointer">
+                      Split across pay periods (rent, mortgage)
+                    </label>
+                    <input
+                      id="splitToggle"
+                      type="checkbox"
+                      checked={splitBillAcrossPayPeriods}
+                      onChange={(e) => setSplitBillAcrossPayPeriods(e.target.checked)}
+                      className="w-5 h-5 cursor-pointer accent-my-green-light"
+                    />
+                  </div>
+                )}
                 
-                {/* Show calendar for due date (required for SPLIT_SAVEUP) */}
+                {/* Show calendar for due date (required for FUND) */}
                 <div className="text-black">
                   <p className="text-my-white-dark text-sm mb-1">
-                    {selectedPaymentType === "SPLIT_SAVEUP" ? "Target Date" : "Due Date (day of month)"}
+                    {selectedPaymentType === "FUND" ? "Target Date (when you need the money)" : "Due Date (day of month)"}
                   </p>
                   <Calendar
                     calendarType="gregory"
@@ -580,7 +587,7 @@ export default function Demo() {
                     value={newPaymentDueDate || new Date()}
                     selectRange={false}
                     className="cursor-pointer-calendar"
-                    minDate={selectedPaymentType === "SPLIT_SAVEUP" ? new Date() : undefined}
+                    minDate={selectedPaymentType === "FUND" ? new Date() : undefined}
                   />
                 </div>
                 
@@ -637,36 +644,18 @@ export default function Demo() {
             {spotlightRect && <SpotlightOverlay targetRect={spotlightRect} />}
             
             {/* Action buttons bar */}
-            <div className="flex w-full justify-center gap-4 items-center py-6">
-              <div
-                ref={paymentBtnRef}
-                className={`flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark text-my-red-dark ${step === 10 ? 'relative z-[9950] ring-4 ring-my-red-light' : ''}`}
-              >
-                <GiMoneyStack className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-                <p className="text-xs">Payment</p>
-              </div>
-              <div
-                ref={cashBtnRef}
-                className={`flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark text-my-green-dark ${step === 12 ? 'relative z-[9950] ring-4 ring-my-green-light' : ''}`}
-              >
-                <GiMoneyStack className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-                <p className="text-xs">Get Paid</p>
-              </div>
-              <div
-                ref={envelopeBtnRef}
-                className={`flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark text-my-green-dark ${step === 11 ? 'relative z-[9950] ring-4 ring-my-green-light' : ''}`}
-              >
-                <GiEnvelope className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-                <p className="text-xs">New</p>
-              </div>
-              <div
-                ref={clearBtnRef}
-                className={`flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark text-my-red-dark ${step === 13 ? 'relative z-[9950] ring-4 ring-my-red-light' : ''}`}
-              >
-                <GiEnvelope className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-                <p className="text-xs">Clear</p>
-              </div>
-            </div>
+            <ActionButtons
+              paymentRef={paymentBtnRef}
+              cashRef={cashBtnRef}
+              envelopeRef={envelopeBtnRef}
+              clearRef={clearBtnRef}
+              highlightPayment={step === 10}
+              highlightCash={step === 11}
+              highlightEnvelope={step === 12}
+              highlightClear={step === 13}
+              disableHover
+              className="py-6"
+            />
             
             {/* Tooltip content - centered below buttons */}
             <div className="flex-1 flex items-start justify-center pt-8">
