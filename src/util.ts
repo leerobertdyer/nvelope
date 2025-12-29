@@ -323,8 +323,8 @@ export function paymentsTotal(
   payPeriodInterval: Interval,
   payDate: Timestamp
 ) {
-  // Virtual Payments will map out any weekly/biweekly payments to get all occurances
-  const virtualPayments = getVirtualPaymentsForPeriod(
+  // Get all virtual payments for the month, then filter for current period totals
+  const virtualPayments = getVirtualPaymentsForMonth(
     payments,
     payPeriodInterval,
     payDate
@@ -425,6 +425,28 @@ export function transformIntervalMidSentence(i: Interval) {
   }
 }
 
+/**
+ * Removes undefined values from an object.
+ * Firebase doesn't accept undefined values, so this cleans objects before saving.
+ */
+export function removeUndefinedValues<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned as Partial<T>;
+}
+
+/**
+ * Cleans an array of payments by removing undefined values from each.
+ * Used before sending to Firebase which doesn't accept undefined values.
+ */
+export function cleanPaymentsForFirebase(payments: Payment[]): Record<string, unknown>[] {
+  return payments.map((payment) => removeUndefinedValues(payment as unknown as Record<string, unknown>));
+}
+
 export const generateFreshPayment = () => {
   return {
     id: crypto.randomUUID(),
@@ -486,15 +508,16 @@ export function isTodayCuspDate(payPeriod: Interval, payDate: Timestamp) {
 }
 
 /**
- * Generates virtual payment instances for weekly/biweekly payments within the current pay period.
- * Returns an array of payment objects, one for each occurrence within periodStart to periodEnd.
+ * Generates virtual payment instances for weekly/biweekly payments within a date range.
+ * Returns an array of payment objects, one for each occurrence within rangeStart to rangeEnd.
  * For monthly/yearly payments, returns array with single adjusted payment.
- * Note: Correctly handles pay periods that cross month/year boundaries (e.g., Dec 25 → Jan 7).
  */
-export function getMonthlyPaymentOccurrences(
+export function getPaymentOccurrencesInRange(
   payment: Payment,
   payPeriodInterval: Interval,
-  payDate: Timestamp
+  payDate: Timestamp,
+  rangeStart: Date,
+  rangeEnd: Date
 ): Payment[] {
   // For monthly/yearly, return single adjusted payment
   if (payment.interval === MONTHLY || payment.interval === YEARLY) {
@@ -503,29 +526,22 @@ export function getMonthlyPaymentOccurrences(
 
   // For SPLIT payments: divide monthly amount across user's pay periods
   if (payment.interval === "SPLIT") {
-    return getSplitPaymentOccurrences(payment, payPeriodInterval, payDate);
+    return getSplitPaymentOccurrencesInRange(payment, payPeriodInterval, payDate, rangeStart, rangeEnd);
   }
 
-  // For weekly/biweekly, calculate all occurrences in the period
+  // For weekly/biweekly, calculate all occurrences in the range
   const occurrences: Payment[] = [];
 
-  // Find the first occurrence in or before the period
+  // Find the first occurrence in or before the range
   let currentDate = calculateCurrentIntervalStart(
     payment.dueDate.toDate(),
     payment.interval
   );
 
-  // Use the actual pay period boundaries, not calendar month boundaries
-  // This ensures payments are correctly shown even when pay periods cross year/month boundaries
-  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(
-    payPeriodInterval,
-    payDate
-  );
-
-  // Walk forward and collect all occurrences in the period
-  while (!isAfter(currentDate, periodEnd)) {
+  // Walk forward and collect all occurrences in the range
+  while (!isAfter(currentDate, rangeEnd)) {
     if (
-      isWithinInterval(currentDate, { start: periodStart, end: periodEnd })
+      isWithinInterval(currentDate, { start: rangeStart, end: rangeEnd })
     ) {
       const occurrenceTime = startOfDay(currentDate).getTime();
       const isPaid =
@@ -551,7 +567,23 @@ export function getMonthlyPaymentOccurrences(
 }
 
 /**
- * Generate virtual payment occurrences for SPLIT payments.
+ * Generates virtual payment instances for the current pay period only.
+ * Used for calculations that need just the current period's payments.
+ */
+export function getPaymentOccurrencesForPeriod(
+  payment: Payment,
+  payPeriodInterval: Interval,
+  payDate: Timestamp
+): Payment[] {
+  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(
+    payPeriodInterval,
+    payDate
+  );
+  return getPaymentOccurrencesInRange(payment, payPeriodInterval, payDate, periodStart, periodEnd);
+}
+
+/**
+ * Generate virtual payment occurrences for SPLIT payments within a date range.
  * 
  * Two modes:
  * - BILL with SPLIT interval - Monthly recurring like rent, splits across current month's pay periods
@@ -559,10 +591,12 @@ export function getMonthlyPaymentOccurrences(
  * 
  * For example: $2000/month rent with weekly pay periods in a 4-week month = 4 payments of $500 each
  */
-function getSplitPaymentOccurrences(
+function getSplitPaymentOccurrencesInRange(
   payment: Payment,
   payPeriodInterval: Interval,
-  payDate: Timestamp
+  payDate: Timestamp,
+  displayRangeStart: Date,
+  displayRangeEnd: Date
 ): Payment[] {
   const occurrences: Payment[] = [];
   const today = startOfDay(new Date());
@@ -570,18 +604,13 @@ function getSplitPaymentOccurrences(
   // Determine mode: recurring (Bill with split) vs Fund (planned expense with target date)
   const isFund = payment.type === "FUND";
   
-  let rangeStart: Date;
-  let rangeEnd: Date;
   let periodCount: number;
   
   if (!isFund) {
-    // RECURRING MODE (Bill with split): Use current month boundaries
-    rangeStart = startOfMonth(today);
-    rangeEnd = endOfMonth(today);
+    // RECURRING MODE (Bill with split): Calculate split based on current month
     periodCount = getPayPeriodsInMonth(payDate, payPeriodInterval, today);
   } else {
-    // FUND MODE: Calculate split amount using ALL periods until target,
-    // but only DISPLAY current pay period's occurrences (like WEEKLY/BIWEEKLY)
+    // FUND MODE: Calculate split amount using ALL periods until target date
     const targetDate = startOfDay(payment.dueDate.toDate());
     
     // If target date has passed, show nothing (will be handled by modal)
@@ -589,17 +618,7 @@ function getSplitPaymentOccurrences(
       return [];
     }
     
-    // Use all periods until target for amount calculation
     periodCount = getPayPeriodsUntilDate(payDate, payPeriodInterval, targetDate);
-    
-    // Use current pay period for display (consistent with WEEKLY/BIWEEKLY behavior)
-    const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(
-      payPeriodInterval,
-      payDate
-    );
-    rangeStart = periodStart;
-    // End at target date if it's within current period, otherwise period end
-    rangeEnd = targetDate < periodEnd ? targetDate : periodEnd;
   }
   
   // Ensure periodCount is at least 1 to avoid division issues
@@ -609,23 +628,28 @@ function getSplitPaymentOccurrences(
   const splitAmount = Number((payment.amount / periodCount).toFixed(2));
   
   // payDate is the user's original/first paycheck date (always in the past)
-  // Step forward from that anchor to find the first pay date in the range
+  // Step forward from that anchor to find the first pay date in the display range
   let currentPayDate = startOfDay(payDate.toDate());
   
-  while (currentPayDate < rangeStart) {
+  while (currentPayDate < displayRangeStart) {
     if (payPeriodInterval === WEEKLY) {
       currentPayDate = addWeeks(currentPayDate, 1);
     } else if (payPeriodInterval === BIWEEKLY) {
       currentPayDate = addWeeks(currentPayDate, 2);
     } else {
-      // For monthly payPeriodInterval, just use rangeStart
-      currentPayDate = rangeStart;
+      // For monthly payPeriodInterval, just use displayRangeStart
+      currentPayDate = displayRangeStart;
       break;
     }
   }
   
-  // Generate virtual payments for each pay date in the range
-  while (currentPayDate <= rangeEnd) {
+  // For Fund, cap the display at the target date
+  const effectiveEnd = isFund 
+    ? (payment.dueDate.toDate() < displayRangeEnd ? payment.dueDate.toDate() : displayRangeEnd)
+    : displayRangeEnd;
+  
+  // Generate virtual payments for each pay date in the display range
+  while (currentPayDate <= effectiveEnd) {
     const occurrenceTime = startOfDay(currentPayDate).getTime();
     const isPaid = payment.paidDates?.some(
       (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
@@ -654,10 +678,10 @@ function getSplitPaymentOccurrences(
   if (occurrences.length === 0) {
     occurrences.push({
       ...payment,
-      id: `${payment.id}-SPLIT-${rangeStart.getTime()}`,
+      id: `${payment.id}-SPLIT-${displayRangeStart.getTime()}`,
       amount: splitAmount,
       paid: payment.paid,
-      dueDate: Timestamp.fromDate(rangeStart),
+      dueDate: Timestamp.fromDate(displayRangeStart),
     });
   }
   
@@ -665,21 +689,27 @@ function getSplitPaymentOccurrences(
 }
 
 /**
- * Helper to get all virtual payment occurrences for display/calculation
- * Combines all payments with their occurrences expanded
+ * Get all virtual payment occurrences for the current month.
+ * Used by MainView for display and paymentsTotal for calculations.
+ * Consumers filter as needed (PaymentMap filters to Past/Current/Future,
+ * paymentsTotal uses isDateInCurrentPayPeriod for current period totals).
  */
-export function getVirtualPaymentsForPeriod(
+export function getVirtualPaymentsForMonth(
   payments: Payment[],
   payPeriodInterval: Interval,
   payDate: Timestamp
 ): Payment[] {
   const virtualPayments: Payment[] = [];
+  const monthStart = startOfMonth(new Date());
+  const monthEnd = endOfMonth(new Date());
 
   for (const payment of payments) {
-    const occurrences = getMonthlyPaymentOccurrences(
+    const occurrences = getPaymentOccurrencesInRange(
       payment,
       payPeriodInterval,
-      payDate
+      payDate,
+      monthStart,
+      monthEnd
     );
     virtualPayments.push(...occurrences);
   }
@@ -688,6 +718,12 @@ export function getVirtualPaymentsForPeriod(
     (a, b) => a.dueDate.toMillis() - b.dueDate.toMillis()
   );
 }
+
+/**
+ * @deprecated Use getVirtualPaymentsForMonth instead.
+ * This alias exists for backwards compatibility.
+ */
+export const getVirtualPaymentsForPeriod = getVirtualPaymentsForMonth;
 
 /*
  * Helper to remove the added -INTERVAL- from a virtual Payment

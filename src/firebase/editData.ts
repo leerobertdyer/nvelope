@@ -8,6 +8,7 @@ import { doc, updateDoc, Timestamp, getDoc, setDoc, collection, query, orderBy, 
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
 import { MONTHLY } from "../constants";
+import { cleanPaymentsForFirebase } from "../util";
 
 /**
  * Creates the initial user document in Firestore.
@@ -87,9 +88,12 @@ export async function editPayments(p: Payment[], userId: string) {
   const sortedPayments = p.sort(
     (a, b) => a.dueDate!.seconds! - b.dueDate!.seconds!
   );
+  
+  const cleanedPayments = cleanPaymentsForFirebase(sortedPayments);
+  
   try {
     const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { payments: sortedPayments });
+    await updateDoc(userDocRef, { payments: cleanedPayments });
   } catch (error) {
     console.error("Firebase, editBills Failed", error);
   }

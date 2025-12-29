@@ -16,7 +16,7 @@ import Button from "../components/Buttons/Button";
 import Nvelope from "../components/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
-  getVirtualPaymentsForPeriod,
+  getVirtualPaymentsForMonth,
   recalculateBudget,
   removeVirtualIdPortion,
   resetAllNvelopes,
@@ -96,9 +96,11 @@ export default function MainEnvelopesView() {
 
   useEffect(() => {
     if (!payDate || !payments || !payPeriodInterval) return;
-    setPaymentsThisPeriod(
-      getVirtualPaymentsForPeriod(payments, payPeriodInterval, payDate)
-    );
+    setPaymentsThisPeriod(() => {
+     const p = getVirtualPaymentsForMonth(payments, payPeriodInterval, payDate);
+     console.log("PAYMENTS THIS MONTH", p);
+     return p;
+    });
   }, [payments, payDate, payPeriodInterval]);
 
   async function handleEditPayment(p: Payment) {
