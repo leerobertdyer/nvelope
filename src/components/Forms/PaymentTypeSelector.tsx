@@ -70,7 +70,7 @@ export default function PaymentTypeSelector({
           onClick={onBack}
           className="w-[80%] max-w-[20rem] p-2 rounded-md cursor-pointer hover:bg-my-black-dark hover:text-my-white-dark border border-my-red-dark bg-my-red-dark text-my-white-light mt-4 transition-colors"
         >
-          Cancel
+          Back
         </button>
       )}
     </div>

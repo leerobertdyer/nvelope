@@ -107,7 +107,7 @@ export default function EnvelopeForm(props: IProps) {
           }}
           color="red"
         >
-          Cancel
+          Back
         </Button>
       </div>
     </FullScreen>
