@@ -353,11 +353,24 @@ export function paymentsTotal(
       ? acc + p.amount
       : acc;
   }, 0);
+  const currentFunds = virtualPayments.reduce((acc, p: Payment) => {
+    return p.type === "FUND" &&
+      isDateInCurrentPayPeriod(
+        payPeriodInterval,
+        payDate.toDate(),
+        getPaymentCurrentDueDate(p)
+      )
+      ? acc + p.amount
+      : acc;
+  }, 0);
   const monthlyDebts = virtualPayments.reduce((acc, p: Payment) => {
     return p.type === "DEBT" ? acc + p.amount : acc;
   }, 0);
   const totalBills = virtualPayments.reduce((acc, p: Payment) => {
     return p.type === "BILL" ? acc + p.amount : acc;
+  }, 0);
+  const totalFunds = virtualPayments.reduce((acc, p: Payment) => {
+    return p.type === "FUND" ? acc + p.amount : acc;
   }, 0);
   const remainingDebt = payments.reduce((acc, p: Payment) => {
     // remainingDebt uses payments array instead of virtualPayments because this is the remaining balance not the payment due.
@@ -367,7 +380,9 @@ export function paymentsTotal(
     currentBills,
     totalBills,
     currentDebts,
+    currentFunds,
     monthlyDebts,
+    totalFunds,
     remainingDebt,
     totalMonthlyPayments,
   };
@@ -539,8 +554,8 @@ export function getMonthlyPaymentOccurrences(
  * Generate virtual payment occurrences for SPLIT payments.
  * 
  * Two modes:
- * - recurring: true (or undefined) - Monthly recurring like rent, splits across current month's pay periods
- * - recurring: false - Save-up mode, splits from today until target dueDate
+ * - BILL with SPLIT interval - Monthly recurring like rent, splits across current month's pay periods
+ * - FUND type - Planned expense, splits from today until target dueDate
  * 
  * For example: $2000/month rent with weekly pay periods in a 4-week month = 4 payments of $500 each
  */
@@ -552,20 +567,20 @@ function getSplitPaymentOccurrences(
   const occurrences: Payment[] = [];
   const today = startOfDay(new Date());
   
-  // Determine mode: recurring (monthly) vs save-up (target date)
-  const isRecurring = payment.recurring !== false; // Default to recurring for backwards compat
+  // Determine mode: recurring (Bill with split) vs Fund (planned expense with target date)
+  const isFund = payment.type === "FUND";
   
   let rangeStart: Date;
   let rangeEnd: Date;
   let periodCount: number;
   
-  if (isRecurring) {
-    // RECURRING MODE: Use current month boundaries
+  if (!isFund) {
+    // RECURRING MODE (Bill with split): Use current month boundaries
     rangeStart = startOfMonth(today);
     rangeEnd = endOfMonth(today);
     periodCount = getPayPeriodsInMonth(payDate, payPeriodInterval, today);
   } else {
-    // SAVE-UP MODE: Calculate split amount using ALL periods until target,
+    // FUND MODE: Calculate split amount using ALL periods until target,
     // but only DISPLAY current pay period's occurrences (like WEEKLY/BIWEEKLY)
     const targetDate = startOfDay(payment.dueDate.toDate());
     
@@ -586,6 +601,9 @@ function getSplitPaymentOccurrences(
     // End at target date if it's within current period, otherwise period end
     rangeEnd = targetDate < periodEnd ? targetDate : periodEnd;
   }
+  
+  // Ensure periodCount is at least 1 to avoid division issues
+  periodCount = Math.max(periodCount, 1);
   
   // Calculate the split amount per period
   const splitAmount = Number((payment.amount / periodCount).toFixed(2));
@@ -632,12 +650,12 @@ function getSplitPaymentOccurrences(
     }
   }
   
-  // Ensure at least one occurrence (edge case)
+  // Ensure at least one occurrence (edge case - use calculated splitAmount, not full amount)
   if (occurrences.length === 0) {
     occurrences.push({
       ...payment,
       id: `${payment.id}-SPLIT-${rangeStart.getTime()}`,
-      amount: payment.amount, // Full amount if only one period
+      amount: splitAmount,
       paid: payment.paid,
       dueDate: Timestamp.fromDate(rangeStart),
     });
@@ -737,11 +755,11 @@ export function getPayPeriodsInMonth(
 
 /**
  * Calculate total number of pay periods from today until a target date.
- * Used for SPLIT save-up mode to divide a target amount across remaining pay periods.
+ * Used for Fund (planned expense) mode to divide a target amount across remaining pay periods.
  * 
  * @param payDate - User's pay date (used to align pay periods)
  * @param payPeriodInterval - User's pay period interval (WEEKLY, BIWEEKLY, MONTHLY)
- * @param targetDate - The target date to save up until
+ * @param targetDate - The target date for the planned expense
  * @returns Number of pay periods from today until target date
  */
 export function getPayPeriodsUntilDate(

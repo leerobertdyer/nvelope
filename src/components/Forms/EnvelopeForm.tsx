@@ -37,7 +37,7 @@ export default function EnvelopeForm(props: IProps) {
       <h2 className="text-2xl text-my-white-base p-2 text-3xl text-center w-full">
         {isEditing ? "Edit Envelope" : "Add New Envelope"}
       </h2>
-      <div className="md:rounded-md bg-my-white-base text-my-black-dark flex flex-col items-center justify-start gap-2 max-w-[40rem] p-4 pb-6 my-20 mx-auto gap-4">
+      <div className="md:rounded-md bg-my-white-base text-my-black-dark flex flex-col items-center justify-start gap-2 max-w-[40rem] p-4 gap-4">
         <TextInput
           id="newEnvelopeName"
           label="What is the name of the envelope?"

@@ -50,17 +50,23 @@ export default function PaymentForm({
       paymentToEdit ? getPaymentTypeFromPayment(paymentToEdit) : null
     );
 
+  // Track if user wants to split bill across pay periods (for BILL type only)
+  const [splitBillAcrossPayPeriods, setSplitBillAcrossPayPeriods] = useState(
+    paymentToEdit?.interval === SPLIT && paymentToEdit?.recurring === true
+  );
+
   // Helper to determine PaymentTypeOption from existing Payment
   function getPaymentTypeFromPayment(p: Payment): PaymentTypeOption {
-    if (p.interval === SPLIT) {
-      return p.recurring === false ? "SPLIT_SAVEUP" : "SPLIT_RECURRING";
-    }
-    return p.type === "DEBT" ? "DEBT" : "BILL";
+    if (p.type === "FUND") return "FUND";
+    if (p.type === "DEBT") return "DEBT";
+    // For BILL with SPLIT interval, it's still a Bill (just split across pay periods)
+    return "BILL";
   }
 
   // Handle payment type selection
   function handleSelectPaymentType(type: PaymentTypeOption) {
     setSelectedPaymentType(type);
+    setSplitBillAcrossPayPeriods(false); // Reset split toggle
 
     switch (type) {
       case "BILL":
@@ -69,6 +75,7 @@ export default function PaymentForm({
           type: "BILL",
           interval: undefined, // Let user choose
           recurring: undefined,
+          total: undefined,
         });
         break;
       case "DEBT":
@@ -79,18 +86,11 @@ export default function PaymentForm({
           recurring: undefined,
         });
         break;
-      case "SPLIT_RECURRING":
+      case "FUND":
+        // Fund is a planned expense to save toward - uses SPLIT interval
         setNewPayment({
           ...newPayment,
-          type: "BILL",
-          interval: SPLIT,
-          recurring: true,
-        });
-        break;
-      case "SPLIT_SAVEUP":
-        setNewPayment({
-          ...newPayment,
-          type: "DEBT",
+          type: "FUND",
           interval: SPLIT,
           recurring: false,
           total: newPayment.amount,
@@ -99,10 +99,29 @@ export default function PaymentForm({
     }
   }
 
+  // Handle toggling split for BILL type
+  function handleToggleSplitBill(enabled: boolean) {
+    setSplitBillAcrossPayPeriods(enabled);
+    if (enabled) {
+      setNewPayment({
+        ...newPayment,
+        interval: SPLIT,
+        recurring: true,
+      });
+    } else {
+      setNewPayment({
+        ...newPayment,
+        interval: undefined,
+        recurring: undefined,
+      });
+    }
+  }
+
   function resetForm() {
     setShowPaymentError(false);
     setNewPayment(generateFreshPayment());
     setSelectedPaymentType(null);
+    setSplitBillAcrossPayPeriods(false);
   }
 
   function handleSetNewInterval(i: Interval) {
@@ -183,17 +202,23 @@ export default function PaymentForm({
   function getPaymentTypeLabel(): string {
     switch (selectedPaymentType) {
       case "BILL":
-        return "Bill";
+        return splitBillAcrossPayPeriods ? "Bill (Split)" : "Bill";
       case "DEBT":
         return "Debt";
-      case "SPLIT_RECURRING":
-        return "Split Recurring";
-      case "SPLIT_SAVEUP":
-        return "Split Save-Up";
+      case "FUND":
+        return "Fund";
       default:
         return "";
     }
   }
+
+  // Check if form is complete enough to save
+  const canSave =
+    selectedPaymentType &&
+    newPayment.name &&
+    newPayment.amount > 0 &&
+    newPayment.interval &&
+    newPaymentDate;
 
   return (
     <FullScreen>
@@ -250,7 +275,7 @@ export default function PaymentForm({
               {newPayment.name && (
                 <div className="flex flex-col items-center w-full mb-4">
                   <label className="text-sm mb-1">
-                    {selectedPaymentType === "SPLIT_SAVEUP"
+                    {selectedPaymentType === "FUND"
                       ? "Target Amount"
                       : "Amount"}
                   </label>
@@ -265,32 +290,59 @@ export default function PaymentForm({
                       setNewPayment({
                         ...newPayment,
                         amount,
-                        // Sync total for save-up SPLIT payments
-                        ...(selectedPaymentType === "SPLIT_SAVEUP"
+                        // Sync total for Fund payments
+                        ...(selectedPaymentType === "FUND"
                           ? { total: amount }
                           : {}),
                       });
                     }}
                     onWheel={(e) => e.currentTarget.blur()}
                     placeholder={
-                      selectedPaymentType === "SPLIT_SAVEUP"
+                      selectedPaymentType === "FUND"
                         ? "Target amount to save"
                         : "Payment amount"
                     }
                   />
-                  {selectedPaymentType === "SPLIT_RECURRING" && (
-                    <p className="text-xs text-my-green-dark mt-1">
+                  {selectedPaymentType === "FUND" && (
+                    <p className="text-xs text-my-white-light mt-1">
+                      This amount will be split across your pay periods until
+                      the target date
+                    </p>
+                  )}
+                  {splitBillAcrossPayPeriods && (
+                    <p className="text-xs text-my-white-light mt-1">
                       This monthly amount will be split across your pay periods
                     </p>
                   )}
                 </div>
               )}
 
+              {/* Split toggle for BILL type only */}
+              {selectedPaymentType === "BILL" &&
+                newPayment.name &&
+                newPayment.amount > 0 && (
+                  <div className="flex items-center gap-3 mb-4">
+                    <label
+                      htmlFor="splitToggle"
+                      className="text-sm cursor-pointer"
+                    >
+                      Split across pay periods (for rent, mortgage, etc.)
+                    </label>
+                    <input
+                      id="splitToggle"
+                      type="checkbox"
+                      checked={splitBillAcrossPayPeriods}
+                      onChange={(e) => handleToggleSplitBill(e.target.checked)}
+                      className="w-5 h-5 cursor-pointer accent-my-green-light"
+                    />
+                  </div>
+                )}
+
               {/* Due/Target Date */}
               {newPayment.name && newPayment.amount > 0 && (
                 <div className="flex flex-col items-center w-full">
                   <label htmlFor="dayOfMonth">
-                    {selectedPaymentType === "SPLIT_SAVEUP"
+                    {selectedPaymentType === "FUND"
                       ? "Target Date (when you need the money)"
                       : "Due Date"}
                   </label>
@@ -302,7 +354,7 @@ export default function PaymentForm({
                       selectRange={false}
                       className="cursor-pointer-calendar"
                       minDate={
-                        selectedPaymentType === "SPLIT_SAVEUP"
+                        selectedPaymentType === "FUND"
                           ? addDays(new Date(), 1)
                           : undefined
                       }
@@ -337,8 +389,8 @@ export default function PaymentForm({
                   </div>
                 )}
 
-              {/* Interval selector for BILL/DEBT (not SPLIT) */}
-              {(selectedPaymentType === "BILL" ||
+              {/* Interval selector for BILL (non-split) and DEBT */}
+              {((selectedPaymentType === "BILL" && !splitBillAcrossPayPeriods) ||
                 selectedPaymentType === "DEBT") &&
                 newPayment.name &&
                 newPayment.amount > 0 && (
@@ -374,11 +426,7 @@ export default function PaymentForm({
             </>
           )}
           {/* Save/Back buttons - show when we have enough info */}
-          {selectedPaymentType &&
-          newPayment.name &&
-          newPayment.amount > 0 &&
-          newPayment.interval &&
-          newPaymentDate ? (
+          {canSave ? (
             <div className="text-my-black-base pb-8 w-full mt-4">
               <div className="text-center mb-4 p-3 bg-my-white-light rounded-md mx-4">
                 <span className="text-my-green-dark font-bold">
@@ -389,11 +437,11 @@ export default function PaymentForm({
                   ${newPayment?.amount.toFixed(2)}
                 </span>
                 <div className="text-sm mt-1">
-                  {selectedPaymentType === "SPLIT_RECURRING" ? (
+                  {splitBillAcrossPayPeriods ? (
                     <>Monthly amount split across your pay periods</>
-                  ) : selectedPaymentType === "SPLIT_SAVEUP" ? (
+                  ) : selectedPaymentType === "FUND" ? (
                     <>
-                      Save-up goal due{" "}
+                      Planned expense due{" "}
                       <span className="text-my-blue-dark">
                         {format(newPayment.dueDate.toDate(), "MMM do, yyyy")}
                       </span>
@@ -408,7 +456,7 @@ export default function PaymentForm({
                   )}
                 </div>
               </div>
-              <div className="flex gap-4 items-center justify-center w-[95%] m-auto">
+              <div className="flex gap-4 items-center justify-center w-full">
                 <Button color="red" onClick={() => handleClickBack()}>
                   Cancel
                 </Button>
@@ -418,7 +466,7 @@ export default function PaymentForm({
               </div>
             </div>
           ) : selectedPaymentType ? (
-            <div className="mt-4">
+            <div className="mt-4 w-full flex justify-center items-center">
               <Button color="red" onClick={() => handleClickBack()}>
                 Cancel
               </Button>

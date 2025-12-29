@@ -33,10 +33,11 @@ export default function BigPayment({ handleBack, paymentToEdit, handleUpdateBudg
             <div className="w-full flex flex-col items-center justify-start">
                 <div className="flex flex-col justify-center items-start p-2 w-[17rem] text-my-black-light rounded-md mb-4">
                     <h1 className="text-lg text-my-white-dark mb-4 bg-my-black-light text-center rounded-md w-full">{p.name}</h1>
-                    <p className="w-full flex justify-between">Type: <span className={`${p.type === "BILL" ? 'text-my-red-dark' : 'text-my-blue-dark'}`}>{p.type}</span></p>
-                    <p className="w-full flex justify-between">Amount: <span className="text-my-green-dark">${Number(p.amount).toFixed(2)}</span></p>
-                    <p className="w-full flex justify-between">Due: <span className="text-my-green-dark">{format(p.dueDate.toDate(), "do")}</span></p>
+                    <p className="w-full flex justify-between">Type: <span className={`${p.type === "BILL" ? 'text-my-red-dark' : p.type === "FUND" ? 'text-my-green-dark' : 'text-my-blue-dark'}`}>{p.type}</span></p>
+                    <p className="w-full flex justify-between">{p.type === "FUND" ? "Per Period:" : "Amount:"} <span className="text-my-green-dark">${Number(p.amount).toFixed(2)}</span></p>
+                    <p className="w-full flex justify-between">{p.type === "FUND" ? "Target Date:" : "Due:"} <span className="text-my-green-dark">{format(p.dueDate.toDate(), p.type === "FUND" ? "MMM do, yyyy" : "do")}</span></p>
                     {p.type === "DEBT" && <p className="w-full flex justify-between">Remaining Due: <span className="text-my-green-dark">${Number(p.total).toFixed(2)}</span></p>}
+                    {p.type === "FUND" && <p className="w-full flex justify-between">Target Amount: <span className="text-my-green-dark">${Number(p.total).toFixed(2)}</span></p>}
                 </div>
                 <br />
                 <div className="flex flex-col justify-center items-center gap-2 ">

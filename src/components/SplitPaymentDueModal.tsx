@@ -3,7 +3,7 @@ import type { Payment } from "../types";
 import Button from "./Buttons/Button";
 import FullScreen from "../Views/FullScreen";
 
-interface SplitPaymentDueModalProps {
+interface FundPaymentDueModalProps {
   payment: Payment;
   onMarkPaid: (payment: Payment) => void;
   onExtendDate: (payment: Payment) => void;
@@ -11,15 +11,15 @@ interface SplitPaymentDueModalProps {
 }
 
 /**
- * Modal shown when a save-up SPLIT payment's target date has been reached.
+ * Modal shown when a Fund (planned expense) payment's target date has been reached.
  * User can mark it as paid, extend the date, or dismiss.
  */
-export default function SplitPaymentDueModal({
+export default function FundPaymentDueModal({
   payment,
   onMarkPaid,
   onExtendDate,
   onDismiss,
-}: SplitPaymentDueModalProps) {
+}: FundPaymentDueModalProps) {
   return (
     <FullScreen>
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -30,7 +30,7 @@ export default function SplitPaymentDueModal({
           
           <div className="text-my-white-dark mb-6">
             <p className="mb-2">
-              Your save-up goal for{" "}
+              Your planned expense for{" "}
               <span className="text-my-green-light font-bold">{payment.name}</span>{" "}
               is due!
             </p>
@@ -67,4 +67,3 @@ export default function SplitPaymentDueModal({
     </FullScreen>
   );
 }
-

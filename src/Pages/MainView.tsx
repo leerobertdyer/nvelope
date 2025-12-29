@@ -34,7 +34,7 @@ import BigPayment from "../Views/BigPayment";
 import PaymentForm from "../components/Forms/PaymentForm";
 import AddIncomeForm from "../components/Forms/AddIncomeForm";
 import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
-import SplitPaymentDueModal from "../components/SplitPaymentDueModal";
+import FundPaymentDueModal from "../components/SplitPaymentDueModal";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -71,28 +71,28 @@ export default function MainEnvelopesView() {
   const [showLoading, setShowLoading] = useState(false);
   const [isAddingCashToEnvelope, setIsAddingCashToEnvelope] = useState(false);
   const [showClearEnvelopes, setShowClearNvelopes] = useState(false);
-  const [dueSaveUpPayment, setDueSaveUpPayment] = useState<Payment | null>(null);
+  const [dueFundPayment, setDueFundPayment] = useState<Payment | null>(null);
   const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(new Set());
 
   const [paymentsThisPeriod, setPaymentsThisPeriod] = useState(payments);
 
-  // Check for due save-up SPLIT payments
+  // Check for due Fund (planned expense) payments
   useEffect(() => {
     if (!payments) return;
     const today = startOfDay(new Date());
     
-    // Find non-recurring SPLIT payments that are due (dueDate <= today) and not fully paid
+    // Find Fund payments that are due (dueDate <= today) and not fully paid
     const duePayment = payments.find((p) => {
-      if (p.interval !== "SPLIT" || p.recurring !== false) return false;
+      if (p.type !== "FUND") return false;
       if (dismissedDuePayments.has(p.id)) return false;
       const dueDate = startOfDay(p.dueDate.toDate());
       return dueDate <= today && !p.paid;
     });
     
-    if (duePayment && !dueSaveUpPayment) {
-      setDueSaveUpPayment(duePayment);
+    if (duePayment && !dueFundPayment) {
+      setDueFundPayment(duePayment);
     }
-  }, [payments, dismissedDuePayments, dueSaveUpPayment]);
+  }, [payments, dismissedDuePayments, dueFundPayment]);
 
   useEffect(() => {
     if (!payDate || !payments || !payPeriodInterval) return;
@@ -106,20 +106,20 @@ export default function MainEnvelopesView() {
     setShowPaymentInputs(true);
   }
 
-  // Handler for marking a save-up payment as fully paid
-  async function handleMarkSaveUpPaid(payment: Payment) {
+  // Handler for marking a Fund (planned expense) payment as fully paid
+  async function handleMarkFundPaid(payment: Payment) {
     if (!user) return;
     const updatedPayments = payments.map((p) =>
       p.id === payment.id ? { ...p, paid: true } : p
     );
     setPayments(updatedPayments);
     await editPayments(updatedPayments, user.uid);
-    setDueSaveUpPayment(null);
+    setDueFundPayment(null);
     showToast(`${payment.name} marked as paid!`);
   }
 
-  // Handler for extending a save-up payment's target date
-  async function handleExtendSaveUpDate(payment: Payment) {
+  // Handler for extending a Fund payment's target date
+  async function handleExtendFundDate(payment: Payment) {
     if (!user) return;
     // Extend by 1 month by default
     const newDueDate = addMonths(payment.dueDate.toDate(), 1);
@@ -130,16 +130,16 @@ export default function MainEnvelopesView() {
     );
     setPayments(updatedPayments);
     await editPayments(updatedPayments, user.uid);
-    setDueSaveUpPayment(null);
+    setDueFundPayment(null);
     showToast(`${payment.name} extended by 1 month`);
   }
 
-  // Handler for dismissing the save-up due modal (remind later)
-  function handleDismissSaveUpModal() {
-    if (dueSaveUpPayment) {
-      setDismissedDuePayments((prev) => new Set(prev).add(dueSaveUpPayment.id));
+  // Handler for dismissing the Fund due modal (remind later)
+  function handleDismissFundModal() {
+    if (dueFundPayment) {
+      setDismissedDuePayments((prev) => new Set(prev).add(dueFundPayment.id));
     }
-    setDueSaveUpPayment(null);
+    setDueFundPayment(null);
   }
 
   async function handleUpdateBudget(diffAmount: number) {
@@ -480,14 +480,14 @@ export default function MainEnvelopesView() {
 
   if (!payDate) return;
 
-  // Show modal for due save-up payments
-  if (dueSaveUpPayment) {
+  // Show modal for due Fund (planned expense) payments
+  if (dueFundPayment) {
     return (
-      <SplitPaymentDueModal
-        payment={dueSaveUpPayment}
-        onMarkPaid={handleMarkSaveUpPaid}
-        onExtendDate={handleExtendSaveUpDate}
-        onDismiss={handleDismissSaveUpModal}
+      <FundPaymentDueModal
+        payment={dueFundPayment}
+        onMarkPaid={handleMarkFundPaid}
+        onExtendDate={handleExtendFundDate}
+        onDismiss={handleDismissFundModal}
       />
     );
   }

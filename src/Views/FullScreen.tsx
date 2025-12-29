@@ -36,13 +36,13 @@ export default function FullScreen({
         inset-0 
         z-[10100] 
         w-full h-full 
-        flex flex-col 
+        flex 
         justify-center align-center 
         ${theme === "LIGHT" ? "bg-my-blue-dark text-my-white-dark" : "bg-my-black-base text-my-white-light"} 
         `}
     >
       <div
-        className="overflow-y-auto w-full"
+        className="overflow-y-auto w-full mt-[5rem]"
         onClick={(e) => e.stopPropagation()}
       >
         {children}

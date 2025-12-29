@@ -72,7 +72,7 @@ export default function PaymentMap({
     let t;
     if (time === "PAST" || time === "FUTURE")
       t = "bg-my-black-light text-white";
-    else if (isSplitPayment)
+    else if (p.type === "FUND" || isSplitPayment)
       t = "bg-my-black-base text-my-green-light border-l-4 border-l-my-green-dark";
     else if (p.type === "BILL") t = "bg-my-black-base text-my-red-light";
     else t = "bg-my-black-base text-my-white-dark";
@@ -86,7 +86,9 @@ export default function PaymentMap({
             ? "bg-my-black-light text-white"
             : p.type === "DEBT"
               ? "text-my-blue-light bg-my-black-base"
-              : t
+              : p.type === "FUND"
+                ? "text-my-green-light bg-my-black-base"
+                : t
           } `}
       >
         <div className="flex items-center justify-start col-span-1 ml-[.75rem] ">

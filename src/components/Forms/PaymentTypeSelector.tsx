@@ -1,8 +1,4 @@
-export type PaymentTypeOption =
-  | "BILL"
-  | "DEBT"
-  | "SPLIT_RECURRING"
-  | "SPLIT_SAVEUP";
+export type PaymentTypeOption = "BILL" | "DEBT" | "FUND";
 
 interface IPaymentTypeSelector {
   onSelect: (type: PaymentTypeOption) => void;
@@ -33,7 +29,7 @@ export default function PaymentTypeSelector({
         className="w-[80%] max-w-[20rem] p-3 rounded-md bg-my-white-light text-my-black-dark border-2 border-my-red-dark hover:bg-my-red-light transition-colors"
       >
         <span className="font-bold text-my-red-dark">BILL</span>
-        <p className="text-xs">Utilities, Subscriptions, Phone...</p>
+        <p className="text-xs">Utilities, Subscriptions, Rent...</p>
       </button>
 
       <button
@@ -47,25 +43,14 @@ export default function PaymentTypeSelector({
 
       <button
         type="button"
-        onClick={() => onSelect("SPLIT_RECURRING")}
+        onClick={() => onSelect("FUND")}
         className="w-[80%] max-w-[20rem] p-3 rounded-md bg-my-white-light text-my-black-dark border-2 border-my-green-dark hover:bg-my-green-light transition-colors"
       >
-        <span className="font-bold text-my-green-dark">SPLIT RECURRING</span>
+        <span className="font-bold text-my-green-dark">FUND</span>
         <p className="text-xs">
-          Rent, Mortgage, etc...
-          <br /> Split by paycheck.
-        </p>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onSelect("SPLIT_SAVEUP")}
-        className="w-[80%] max-w-[20rem] p-3 rounded-md bg-my-white-light text-my-black-dark border-2 border-my-green-base hover:bg-my-green-light transition-colors"
-      >
-        <span className="font-bold text-my-green-dark">SPLIT SAVE-UP</span>
-        <p className="text-xs">
-          Pay for a future purchase.
-          <br /> Split by paycheck.
+          Planned expense to save for
+          <br />
+          (doctor visit, vacation, etc.)
         </p>
       </button>
 

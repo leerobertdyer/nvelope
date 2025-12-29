@@ -17,14 +17,14 @@ export interface Payment {
     interval: Interval
     paid: boolean
     paidDates?: Timestamp[] // for tracking payments that span multiple intervals (ie WEEKLY | BIWEEKLY | SPLIT)
-    type: "DEBT" | "BILL" | undefined
+    type: "DEBT" | "BILL" | "FUND" | undefined
     isInInterval?: boolean
     total?: number
     interestRate?: number
-    recurring?: boolean // For SPLIT: true = monthly recurring, false = save-up to target date
+    recurring?: boolean // For SPLIT: true = monthly recurring (like rent), false = Fund (planned expense to save toward)
 }
 
-export type BillOrDebt = "BILL" | "DEBT"
+export type PaymentType = "BILL" | "DEBT" | "FUND"
 
 export interface OneTimeAmount {
     id: string
