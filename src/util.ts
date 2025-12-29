@@ -627,20 +627,33 @@ function getSplitPaymentOccurrencesInRange(
   // Calculate the split amount per period
   const splitAmount = Number((payment.amount / periodCount).toFixed(2));
   
-  // payDate is the user's original/first paycheck date (always in the past)
-  // Step forward from that anchor to find the first pay date in the display range
+  // payDate is the user's pay date (could be recent or in the past)
+  // We need to find ALL pay dates in the display range, so:
+  // 1. Walk BACKWARD from payDate to find a pay date before the range start
+  // 2. Then walk FORWARD to collect all pay dates in the range
   let currentPayDate = startOfDay(payDate.toDate());
   
-  while (currentPayDate < displayRangeStart) {
-    if (payPeriodInterval === WEEKLY) {
-      currentPayDate = addWeeks(currentPayDate, 1);
-    } else if (payPeriodInterval === BIWEEKLY) {
-      currentPayDate = addWeeks(currentPayDate, 2);
-    } else {
-      // For monthly payPeriodInterval, just use displayRangeStart
-      currentPayDate = displayRangeStart;
-      break;
+  if (payPeriodInterval === WEEKLY || payPeriodInterval === BIWEEKLY) {
+    // First, walk BACKWARD to find a pay date at or before displayRangeStart
+    while (currentPayDate > displayRangeStart) {
+      if (payPeriodInterval === WEEKLY) {
+        currentPayDate = subWeeks(currentPayDate, 1);
+      } else {
+        currentPayDate = subWeeks(currentPayDate, 2);
+      }
     }
+    
+    // Now walk FORWARD to find the first pay date that's within or after the range start
+    while (currentPayDate < displayRangeStart) {
+      if (payPeriodInterval === WEEKLY) {
+        currentPayDate = addWeeks(currentPayDate, 1);
+      } else {
+        currentPayDate = addWeeks(currentPayDate, 2);
+      }
+    }
+  } else {
+    // For monthly payPeriodInterval, just use displayRangeStart
+    currentPayDate = displayRangeStart;
   }
   
   // For Fund, cap the display at the target date
@@ -719,11 +732,6 @@ export function getVirtualPaymentsForMonth(
   );
 }
 
-/**
- * @deprecated Use getVirtualPaymentsForMonth instead.
- * This alias exists for backwards compatibility.
- */
-export const getVirtualPaymentsForPeriod = getVirtualPaymentsForMonth;
 
 /*
  * Helper to remove the added -INTERVAL- from a virtual Payment
@@ -762,10 +770,22 @@ export function getPayPeriodsInMonth(
   const monthStart = startOfMonth(targetMonth);
   const monthEnd = endOfMonth(targetMonth);
   
-  // payDate is the user's original/first paycheck date (always in the past)
-  // Step forward from that anchor to find the first pay date in the target month
+  // payDate is the user's pay date (could be recent or in the past)
+  // We need to find ALL pay dates in the month, so:
+  // 1. Walk BACKWARD from payDate to find a pay date before the month start
+  // 2. Then walk FORWARD to find the first pay date in the month
   let currentPayDate = startOfDay(payDate.toDate());
   
+  // First, walk BACKWARD to find a pay date at or before monthStart
+  while (currentPayDate > monthStart) {
+    if (interval === "WEEKLY") {
+      currentPayDate = subWeeks(currentPayDate, 1);
+    } else if (interval === "BIWEEKLY") {
+      currentPayDate = subWeeks(currentPayDate, 2);
+    }
+  }
+  
+  // Now walk FORWARD to find the first pay date that's within or after the month start
   while (currentPayDate < monthStart) {
     if (interval === "WEEKLY") {
       currentPayDate = addWeeks(currentPayDate, 1);
