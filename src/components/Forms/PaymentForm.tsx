@@ -15,7 +15,6 @@ import {
 } from "../../util";
 import { format, addDays } from "date-fns";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
-import FullScreen from "../../Views/FullScreen";
 import TextInput from "../TextInput";
 import PaymentTypeSelector, {
   type PaymentTypeOption,
@@ -221,259 +220,256 @@ export default function PaymentForm({
     newPaymentDate;
 
   return (
-    <FullScreen>
+    <div className="h-screen absolute inset-0 z-9999 flex flex-col justify-center items-center m-auto overflow-y-scroll w-full overflow-x-hidden">
       {showPaymentError && (
         <Popup type="error">Payment name already exists</Popup>
       )}
-      <h1 className="text-center w-full text-my-white-light p-2 text-3xl mb-4">
-        {paymentToEdit ? "Edit Payment" : "Add Payment"}
-      </h1>
-      <div className="flex flex-col justify-center items-center m-auto overflow-y-scroll w-full overflow-x-hidden">
-        <div className="flex flex-col gap-2 items-center justify-center py-[2rem] text-my-white-dark bg-my-green-dark w-full max-w-[35rem] md:max-w-[60rem]text-center rounded-md">
-          {/* Step 1: Payment Type Selection (for new payments only) */}
-          {!selectedPaymentType && !paymentToEdit ? (
-            <div className="py-4 w-full">
-              <PaymentTypeSelector
-                onSelect={handleSelectPaymentType}
-                onBack={handleClickBack}
-              />
-            </div>
-          ) : (
-            <>
-              {/* Show current type with option to change */}
-              {!paymentToEdit && (
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm text-my-white-light">
-                    Type:{" "}
-                    <span className="font-bold">{getPaymentTypeLabel()}</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPaymentType(null)}
-                    className="text-xs text-my-blue-base underline cursor-pointer"
+      <div className="flex flex-col gap-2 items-center  h-[100vh] overflow-y-auto text-my-white-dark bg-my-green-dark w-full text-center rounded-md">
+        <h1 className="text-center w-full text-my-white-light p-2 text-3xl">
+          {paymentToEdit ? "Edit Payment" : "Add Payment"} SDFSDFSDF
+        </h1>
+        HELLO
+        {/* Step 1: Payment Type Selection (for new payments only) */}
+        {!selectedPaymentType && !paymentToEdit ? (
+          <div className="w-full">
+            <PaymentTypeSelector
+              onSelect={handleSelectPaymentType}
+              onBack={handleClickBack}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Show current type with option to change */}
+            {!paymentToEdit && (
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-my-white-light">
+                  Type:{" "}
+                  <span className="font-bold">{getPaymentTypeLabel()}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentType(null)}
+                  className="text-xs text-my-blue-base underline cursor-pointer"
+                >
+                  Change
+                </button>
+              </div>
+            )}
+
+            {/* Payment Name */}
+            <TextInput
+              id="name"
+              label=""
+              value={newPayment?.name.toLowerCase()}
+              placeholder="Enter payment name"
+              onChange={(e) =>
+                setNewPayment({
+                  ...newPayment,
+                  name: e.target.value.toLowerCase(),
+                })
+              }
+            />
+
+            {/* Payment Amount */}
+            {newPayment.name && (
+              <div className="flex flex-col items-center w-full mb-4">
+                <label className="text-sm mb-1">
+                  {selectedPaymentType === "FUND" ? "Target Amount" : "Amount"}
+                </label>
+                <input
+                  id="amount"
+                  type="number"
+                  min={0}
+                  className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                  value={newPayment?.amount || ""}
+                  onChange={(e) => {
+                    const amount = Number(e.target.value);
+                    setNewPayment({
+                      ...newPayment,
+                      amount,
+                      // Sync total for Fund payments
+                      ...(selectedPaymentType === "FUND"
+                        ? { total: amount }
+                        : {}),
+                    });
+                  }}
+                  onWheel={(e) => e.currentTarget.blur()}
+                  placeholder={
+                    selectedPaymentType === "FUND"
+                      ? "Target amount to save"
+                      : "Payment amount"
+                  }
+                />
+                {selectedPaymentType === "FUND" && (
+                  <p className="text-xs text-my-white-light mt-1">
+                    This amount will be split across your pay periods until the
+                    target date
+                  </p>
+                )}
+                {splitBillAcrossPayPeriods && (
+                  <p className="text-xs text-my-white-light mt-1">
+                    This monthly amount will be split across your pay periods
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Split toggle for BILL type only */}
+            {selectedPaymentType === "BILL" &&
+              newPayment.name &&
+              newPayment.amount > 0 && (
+                <div className="flex items-center gap-3 mb-4">
+                  <label
+                    htmlFor="splitToggle"
+                    className="text-sm cursor-pointer"
                   >
-                    Change
-                  </button>
-                </div>
-              )}
-
-              {/* Payment Name */}
-              <TextInput
-                id="name"
-                label=""
-                value={newPayment?.name.toLowerCase()}
-                placeholder="Enter payment name"
-                onChange={(e) =>
-                  setNewPayment({
-                    ...newPayment,
-                    name: e.target.value.toLowerCase(),
-                  })
-                }
-              />
-
-              {/* Payment Amount */}
-              {newPayment.name && (
-                <div className="flex flex-col items-center w-full mb-4">
-                  <label className="text-sm mb-1">
-                    {selectedPaymentType === "FUND"
-                      ? "Target Amount"
-                      : "Amount"}
+                    Split across pay periods (for rent, mortgage, etc.)
                   </label>
                   <input
-                    id="amount"
-                    type="number"
-                    min={0}
-                    className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                    value={newPayment?.amount || ""}
-                    onChange={(e) => {
-                      const amount = Number(e.target.value);
-                      setNewPayment({
-                        ...newPayment,
-                        amount,
-                        // Sync total for Fund payments
-                        ...(selectedPaymentType === "FUND"
-                          ? { total: amount }
-                          : {}),
-                      });
-                    }}
-                    onWheel={(e) => e.currentTarget.blur()}
-                    placeholder={
+                    id="splitToggle"
+                    type="checkbox"
+                    checked={splitBillAcrossPayPeriods}
+                    onChange={(e) => handleToggleSplitBill(e.target.checked)}
+                    className="w-5 h-5 cursor-pointer accent-my-green-light"
+                  />
+                </div>
+              )}
+
+            {/* Due/Target Date */}
+            {newPayment.name && newPayment.amount > 0 && (
+              <div className="flex flex-col items-center w-full">
+                <label htmlFor="dayOfMonth">
+                  {selectedPaymentType === "FUND"
+                    ? "Target Date (when you need the money)"
+                    : "Due Date"}
+                </label>
+                <div className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2">
+                  <Calendar
+                    calendarType="gregory"
+                    onChange={handleCalendarChange}
+                    value={newPaymentDate}
+                    selectRange={false}
+                    className="cursor-pointer-calendar"
+                    minDate={
                       selectedPaymentType === "FUND"
-                        ? "Target amount to save"
-                        : "Payment amount"
+                        ? addDays(new Date(), 1)
+                        : undefined
                     }
                   />
-                  {selectedPaymentType === "FUND" && (
-                    <p className="text-xs text-my-white-light mt-1">
-                      This amount will be split across your pay periods until
-                      the target date
-                    </p>
-                  )}
-                  {splitBillAcrossPayPeriods && (
-                    <p className="text-xs text-my-white-light mt-1">
-                      This monthly amount will be split across your pay periods
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Split toggle for BILL type only */}
-              {selectedPaymentType === "BILL" &&
-                newPayment.name &&
-                newPayment.amount > 0 && (
-                  <div className="flex items-center gap-3 mb-4">
-                    <label
-                      htmlFor="splitToggle"
-                      className="text-sm cursor-pointer"
-                    >
-                      Split across pay periods (for rent, mortgage, etc.)
-                    </label>
-                    <input
-                      id="splitToggle"
-                      type="checkbox"
-                      checked={splitBillAcrossPayPeriods}
-                      onChange={(e) => handleToggleSplitBill(e.target.checked)}
-                      className="w-5 h-5 cursor-pointer accent-my-green-light"
-                    />
-                  </div>
-                )}
-
-              {/* Due/Target Date */}
-              {newPayment.name && newPayment.amount > 0 && (
-                <div className="flex flex-col items-center w-full">
-                  <label htmlFor="dayOfMonth">
-                    {selectedPaymentType === "FUND"
-                      ? "Target Date (when you need the money)"
-                      : "Due Date"}
-                  </label>
-                  <div className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2">
-                    <Calendar
-                      calendarType="gregory"
-                      onChange={handleCalendarChange}
-                      value={newPaymentDate}
-                      selectRange={false}
-                      className="cursor-pointer-calendar"
-                      minDate={
-                        selectedPaymentType === "FUND"
-                          ? addDays(new Date(), 1)
-                          : undefined
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Total Owed (for DEBT type only) */}
-              {selectedPaymentType === "DEBT" &&
-                newPayment.name &&
-                newPayment.amount > 0 && (
-                  <div className="flex flex-col items-center w-full mt-4">
-                    <label htmlFor="total">Total Owed</label>
-                    <input
-                      id="total"
-                      type="number"
-                      min={0}
-                      className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                      value={newPayment?.total || ""}
-                      onChange={(e) =>
-                        setNewPayment({
-                          ...newPayment,
-                          total: Number(e.target.value),
-                        })
-                      }
-                      placeholder="Total remaining balance"
-                    />
-                    <p className="text-xs text-my-blue-dark mt-1">
-                      Track how much you still owe
-                    </p>
-                  </div>
-                )}
-
-              {/* Interval selector for BILL (non-split) and DEBT */}
-              {((selectedPaymentType === "BILL" && !splitBillAcrossPayPeriods) ||
-                selectedPaymentType === "DEBT") &&
-                newPayment.name &&
-                newPayment.amount > 0 && (
-                  <div className="flex flex-col items-center w-full mt-4">
-                    <label>Payment Frequency</label>
-                    <select
-                      value={newPayment.interval || ""}
-                      onChange={(e) =>
-                        handleSetNewInterval(
-                          e.target.value.toUpperCase() as Interval
-                        )
-                      }
-                      className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                    >
-                      <option value="" disabled>
-                        -- Select Frequency --
-                      </option>
-                      <option value={MONTHLY} className="text-center">
-                        Monthly
-                      </option>
-                      <option value={WEEKLY} className="text-center">
-                        Weekly
-                      </option>
-                      <option value={BIWEEKLY} className="text-center">
-                        Bi-Weekly
-                      </option>
-                      <option value={YEARLY} className="text-center">
-                        Yearly
-                      </option>
-                    </select>
-                  </div>
-                )}
-            </>
-          )}
-          {/* Save/Back buttons - show when we have enough info */}
-          {canSave ? (
-            <div className="text-my-black-base pb-8 w-full mt-4">
-              <div className="text-center mb-4 p-3 bg-my-white-light rounded-md mx-4">
-                <span className="text-my-green-dark font-bold">
-                  {newPayment?.name}
-                </span>{" "}
-                -{" "}
-                <span className="text-my-red-dark">
-                  ${newPayment?.amount.toFixed(2)}
-                </span>
-                <div className="text-sm mt-1">
-                  {splitBillAcrossPayPeriods ? (
-                    <>Monthly amount split across your pay periods</>
-                  ) : selectedPaymentType === "FUND" ? (
-                    <>
-                      Planned expense due{" "}
-                      <span className="text-my-blue-dark">
-                        {format(newPayment.dueDate.toDate(), "MMM do, yyyy")}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      Due {newPayment.interval?.toLowerCase()} on the{" "}
-                      <span className="text-my-blue-dark">
-                        {format(newPayment.dueDate.toDate(), "do")}
-                      </span>
-                    </>
-                  )}
                 </div>
               </div>
-              <div className="flex gap-4 items-center justify-center w-full">
-                <Button color="red" onClick={() => handleClickBack()}>
-                  Cancel
-                </Button>
-                <Button color="green" onClick={handleSavePayment}>
-                  Save
-                </Button>
+            )}
+
+            {/* Total Owed (for DEBT type only) */}
+            {selectedPaymentType === "DEBT" &&
+              newPayment.name &&
+              newPayment.amount > 0 && (
+                <div className="flex flex-col items-center w-full mt-4">
+                  <label htmlFor="total">Total Owed</label>
+                  <input
+                    id="total"
+                    type="number"
+                    min={0}
+                    className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                    value={newPayment?.total || ""}
+                    onChange={(e) =>
+                      setNewPayment({
+                        ...newPayment,
+                        total: Number(e.target.value),
+                      })
+                    }
+                    placeholder="Total remaining balance"
+                  />
+                  <p className="text-xs text-my-blue-dark mt-1">
+                    Track how much you still owe
+                  </p>
+                </div>
+              )}
+
+            {/* Interval selector for BILL (non-split) and DEBT */}
+            {((selectedPaymentType === "BILL" && !splitBillAcrossPayPeriods) ||
+              selectedPaymentType === "DEBT") &&
+              newPayment.name &&
+              newPayment.amount > 0 && (
+                <div className="flex flex-col items-center w-full mt-4">
+                  <label>Payment Frequency</label>
+                  <select
+                    value={newPayment.interval || ""}
+                    onChange={(e) =>
+                      handleSetNewInterval(
+                        e.target.value.toUpperCase() as Interval
+                      )
+                    }
+                    className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                  >
+                    <option value="" disabled>
+                      -- Select Frequency --
+                    </option>
+                    <option value={MONTHLY} className="text-center">
+                      Monthly
+                    </option>
+                    <option value={WEEKLY} className="text-center">
+                      Weekly
+                    </option>
+                    <option value={BIWEEKLY} className="text-center">
+                      Bi-Weekly
+                    </option>
+                    <option value={YEARLY} className="text-center">
+                      Yearly
+                    </option>
+                  </select>
+                </div>
+              )}
+          </>
+        )}
+        {/* Save/Back buttons - show when we have enough info */}
+        {canSave ? (
+          <div className="text-my-black-base pb-8 w-full mt-4">
+            <div className="text-center mb-4 p-3 bg-my-white-light rounded-md mx-4">
+              <span className="text-my-green-dark font-bold">
+                {newPayment?.name}
+              </span>{" "}
+              -{" "}
+              <span className="text-my-red-dark">
+                ${newPayment?.amount.toFixed(2)}
+              </span>
+              <div className="text-sm mt-1">
+                {splitBillAcrossPayPeriods ? (
+                  <>Monthly amount split across your pay periods</>
+                ) : selectedPaymentType === "FUND" ? (
+                  <>
+                    Planned expense due{" "}
+                    <span className="text-my-blue-dark">
+                      {format(newPayment.dueDate.toDate(), "MMM do, yyyy")}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Due {newPayment.interval?.toLowerCase()} on the{" "}
+                    <span className="text-my-blue-dark">
+                      {format(newPayment.dueDate.toDate(), "do")}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
-          ) : selectedPaymentType ? (
-            <div className="mt-4 w-full flex justify-center items-center">
+            <div className="flex gap-4 items-center justify-center w-full">
               <Button color="red" onClick={() => handleClickBack()}>
                 Cancel
               </Button>
+              <Button color="green" onClick={handleSavePayment}>
+                Save
+              </Button>
             </div>
-          ) : null}
-        </div>
+          </div>
+        ) : selectedPaymentType ? (
+          <div className="mt-4 w-full flex justify-center items-center">
+            <Button color="red" onClick={() => handleClickBack()}>
+              Cancel
+            </Button>
+          </div>
+        ) : null}
       </div>
-    </FullScreen>
+    </div>
   );
 }

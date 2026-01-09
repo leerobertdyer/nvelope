@@ -13,7 +13,7 @@ export default function TextInput({ id, placeholder, onChange, value, label, num
         <label className="p-2 w-full text-center" htmlFor={id}>{label}</label>
         <input
             id={id}
-            className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark"
+            className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark box-border"
             placeholder={placeholder}
             type="text"
             inputMode={numeric ? "decimal" : undefined}

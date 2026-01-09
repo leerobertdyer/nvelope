@@ -51,7 +51,7 @@ export default function Header({ step, links }: { step?: number, links: { label:
       const today = startOfDay(new Date());
 
       const currentPayPeriodStart = calculateCurrentIntervalStart(payDate.toDate(), payPeriodInterval)
-      // console.log({payPeriod: startOfDay(currentPayPeriodStart), today: startOfDay(today), isSame: startOfDay(currentPayPeriodStart).getTime() === today.getTime()})
+      console.log({payPeriod: startOfDay(currentPayPeriodStart), today: startOfDay(today), isSame: startOfDay(currentPayPeriodStart).getTime() === today.getTime()})
       // If today IS the period start, show the full period length
       if (startOfDay(currentPayPeriodStart).getTime() === today.getTime()) {
         const periodLength = getNumberOfDaysFromInterval(payPeriodInterval);
