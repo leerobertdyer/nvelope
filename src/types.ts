@@ -22,6 +22,8 @@ export interface Payment {
     total?: number
     interestRate?: number
     recurring?: boolean // For SPLIT: true = monthly recurring (like rent), false = Fund (planned expense to save toward)
+    paymentsLeft?: number
+    payOffDate?: string
 }
 
 export type PaymentType = "BILL" | "DEBT" | "FUND"

@@ -4,17 +4,15 @@ import Home from "./Pages/Home";
 import Settings from "./Pages/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
 import { useDisableNumberScroll } from "./hooks";
+import Debt from "./Pages/Debt";
 
-
-
-// Protected route component that redirects to home if no user
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoadingUser} = useAuth();
-  
+  const { user, isLoadingUser } = useAuth();
+
   if (!user && !isLoadingUser) {
     return <Navigate to="/" replace />;
   }
-  
+
   return <>{children}</>;
 }
 
@@ -24,15 +22,22 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route 
-          path="/settings" 
+        <Route
+          path="/settings"
           element={
             <ProtectedRoute>
               <Settings />
             </ProtectedRoute>
-          } 
+          }
         />
-        {/* Redirect any unknown routes to home */}
+        <Route
+          path="/debt"
+          element={
+            <ProtectedRoute>
+              <Debt />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

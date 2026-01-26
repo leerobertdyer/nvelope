@@ -54,18 +54,18 @@ export default function Settings() {
   const [showEditIncome, setShowEditIncome] = useState(false);
   const [providerType, setProviderType] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
-  
+
   // Safe backups (stored in separate collection - survives user doc corruption)
   const [safeBackups, setSafeBackups] = useState<Array<BackupData & { id: string }>>([]);
   const [selectedSafeBackup, setSelectedSafeBackup] = useState<(BackupData & { id: string }) | null>(null);
   const [isLoadingSafeBackups, setIsLoadingSafeBackups] = useState(false);
-  
+
   // LocalStorage backup (for undo last restore)
   const [localStorageBackup, setLocalStorageBackup] = useState<LocalStorageBackup | null>(null);
   const [showUndoConfirm, setShowUndoConfirm] = useState(false);
 
   const currentProviderTypes = ["google.com"];
-  
+
   // Load safe backups and check for localStorage backup on mount
   useEffect(() => {
     if (!user) return;
@@ -76,7 +76,7 @@ export default function Settings() {
       setIsLoadingSafeBackups(false);
     }
     loadSafeBackups();
-    
+
     // Check for localStorage backup (undo capability)
     const lsBackup = getLocalStorageBackup();
     setLocalStorageBackup(lsBackup);
@@ -174,7 +174,7 @@ export default function Settings() {
   function handleCloseBackup() {
     setSelectedSafeBackup(null);
   }
-  
+
   async function handleRestoreBackup() {
     if (!user || !selectedSafeBackup) return;
     const result = await restoreFromSafeBackup(selectedSafeBackup.id, user);
@@ -192,7 +192,7 @@ export default function Settings() {
       showToast("Failed to restore backup", "error");
     }
   }
-  
+
   async function handleUndoRestore() {
     if (!user || !localStorageBackup) return;
     const success = await restoreFromLocalStorageBackup(user);
@@ -270,7 +270,7 @@ export default function Settings() {
 
   return (
     <div className="w-full h-screen overflow-y-scroll bg-my-white-light">
-      <Header links={[{ label: "Home", href: "/" }]} />
+      <Header links={[{ label: "Home", href: "/" }, { label: "Debt", href: "/debt" }]} />
       <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md ">
         Settings
       </h1>
@@ -311,7 +311,7 @@ export default function Settings() {
 
         {/* Once account is created simply display email has password */}
         {hasPassword && (
-            <Button color="red" onClick={() => resetPasswordForEmail(user?.email ?? '')}>Reset Password</Button>
+          <Button color="red" onClick={() => resetPasswordForEmail(user?.email ?? '')}>Reset Password</Button>
         )}
 
         {/* Restore from backup */}
@@ -342,7 +342,7 @@ export default function Settings() {
             )}
           </div>
         </div>
-        
+
         {selectedSafeBackup && (
           <FullScreen
             theme="DARK"
@@ -360,10 +360,10 @@ export default function Settings() {
             </div>
           </FullScreen>
         )}
-        
+
         {/* Undo Last Restore - only shown when localStorage backup exists */}
         {localStorageBackup && (
-          <div 
+          <div
             className="flex flex-col justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4 cursor-pointer hover:bg-my-blue-base gap-2"
             onClick={() => setShowUndoConfirm(true)}
           >
@@ -373,7 +373,7 @@ export default function Settings() {
             <button className="bg-my-white-dark rounded-md border-2 border-my-black-dark text-my-black-dark p-2 w-[80%]" onClick={() => setShowUndoConfirm(true)}>Undo</button>
           </div>
         )}
-        
+
         {showUndoConfirm && localStorageBackup && (
           <FullScreen
             theme="DARK"

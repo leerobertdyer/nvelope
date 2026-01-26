@@ -625,7 +625,7 @@ export default function MainEnvelopesView() {
     <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]">
       {showLoading && <Loading text={loadingText} />}
 
-      <Header links={[{ label: "Settings", href: "/settings" }]} />
+      <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt"}]} />
 
       <main className="flex flex-col items-center pt-[1rem] w-full">
         <ActionButtons

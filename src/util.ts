@@ -89,7 +89,6 @@ export function getOccurrencesOfWeekday(
   };
 }
 
-// Get the start date for the most recently occuring range of dates for a given interval
 export function calculateCurrentIntervalStart(d: Date, i: Interval): Date {
   const start = startOfDay(d);
   const today = startOfDay(new Date());
@@ -388,29 +387,68 @@ export function paymentsTotal(
   };
 }
 
-export function calculatePayoffDate(debt: Payment): Date | null {
-  if (!debt.interestRate || !debt.total) return null;
+/**
+ * Returns the number of remaining payment periods (n),
+ * or null if the debt cannot be paid off with the current payment.
+ */
+export function calculateRemainingDebtPayments(debt: Payment): number | null {
+  if (!debt.total || !debt.amount || !debt.interestRate) return null;
 
   const L = debt.total;
   const p = debt.amount;
 
   const periodsPerYear =
-    debt.interval === "MONTHLY" ? 12 : debt.interval === "BIWEEKLY" ? 26 : 52;
+    debt.interval === "MONTHLY" ? 12 :
+      debt.interval === "BIWEEKLY" ? 26 :
+        debt.interval === "WEEKLY" ? 52 : null;
 
-  const r = debt.interestRate / periodsPerYear;
+  if (!periodsPerYear) return null;
 
-  if (p <= L * r) {
-    // payment too small to ever pay off
-    return null;
+  // interestRate is stored as percent (eg 5 for 5%)
+  const annualRate = debt.interestRate / 100;
+  const r = annualRate / periodsPerYear;
+
+  // Zero interest: simple division
+  if (r === 0) {
+    if (p <= 0) return null;
+    return Math.ceil(L / p);
   }
 
-  const n = Math.log(p / (p - r * L)) / Math.log(1 + r);
+  // Payment too small to ever pay off
+  if (p <= L * r) return null;
 
-  const years = n / periodsPerYear;
-  const payoffDate = new Date();
-  payoffDate.setFullYear(payoffDate.getFullYear() + years);
-  return payoffDate;
+  const n =
+    Math.log(p / (p - r * L)) /
+    Math.log(1 + r);
+
+  if (!Number.isFinite(n) || n <= 0) return null;
+
+  return Math.ceil(n);
 }
+
+interface iDebtRemainder {
+  payOffDate: Date
+  paymentsLeft: number
+}
+export function calculatePayoffDate(
+  debt: Payment,
+  fromDate: Date = new Date()
+): iDebtRemainder | null {
+  const paymentsLeft = calculateRemainingDebtPayments(debt);
+  if (!paymentsLeft) return null;
+
+  switch (debt.interval) {
+    case "MONTHLY":
+      return { payOffDate: addMonths(fromDate, paymentsLeft), paymentsLeft }
+    case "BIWEEKLY":
+      return { payOffDate: addWeeks(fromDate, paymentsLeft * 2), paymentsLeft }
+    case "WEEKLY":
+      return {payOffDate: addWeeks(fromDate, paymentsLeft), paymentsLeft }
+    default:
+      return null;
+  }
+}
+
 
 export function transformIntervalMidSentence(i: Interval) {
   switch (i) {
@@ -600,39 +638,39 @@ function getSplitPaymentOccurrencesInRange(
 ): Payment[] {
   const occurrences: Payment[] = [];
   const today = startOfDay(new Date());
-  
+
   // Determine mode: recurring (Bill with split) vs Fund (planned expense with target date)
   const isFund = payment.type === "FUND";
-  
+
   let periodCount: number;
-  
+
   if (!isFund) {
     // RECURRING MODE (Bill with split): Calculate split based on current month
     periodCount = getPayPeriodsInMonth(payDate, payPeriodInterval, today);
   } else {
     // FUND MODE: Calculate split amount using ALL periods until target date
     const targetDate = startOfDay(payment.dueDate.toDate());
-    
+
     // If target date has passed, show nothing (will be handled by modal)
     if (targetDate < today) {
       return [];
     }
-    
+
     periodCount = getPayPeriodsUntilDate(payDate, payPeriodInterval, targetDate);
   }
-  
+
   // Ensure periodCount is at least 1 to avoid division issues
   periodCount = Math.max(periodCount, 1);
-  
+
   // Calculate the split amount per period
   const splitAmount = Number((payment.amount / periodCount).toFixed(2));
-  
+
   // payDate is the user's pay date (could be recent or in the past)
   // We need to find ALL pay dates in the display range, so:
   // 1. Walk BACKWARD from payDate to find a pay date before the range start
   // 2. Then walk FORWARD to collect all pay dates in the range
   let currentPayDate = startOfDay(payDate.toDate());
-  
+
   if (payPeriodInterval === WEEKLY || payPeriodInterval === BIWEEKLY) {
     // First, walk BACKWARD to find a pay date at or before displayRangeStart
     while (currentPayDate > displayRangeStart) {
@@ -642,7 +680,7 @@ function getSplitPaymentOccurrencesInRange(
         currentPayDate = subWeeks(currentPayDate, 2);
       }
     }
-    
+
     // Now walk FORWARD to find the first pay date that's within or after the range start
     while (currentPayDate < displayRangeStart) {
       if (payPeriodInterval === WEEKLY) {
@@ -655,19 +693,19 @@ function getSplitPaymentOccurrencesInRange(
     // For monthly payPeriodInterval, just use displayRangeStart
     currentPayDate = displayRangeStart;
   }
-  
+
   // For Fund, cap the display at the target date
-  const effectiveEnd = isFund 
+  const effectiveEnd = isFund
     ? (payment.dueDate.toDate() < displayRangeEnd ? payment.dueDate.toDate() : displayRangeEnd)
     : displayRangeEnd;
-  
+
   // Generate virtual payments for each pay date in the display range
   while (currentPayDate <= effectiveEnd) {
     const occurrenceTime = startOfDay(currentPayDate).getTime();
     const isPaid = payment.paidDates?.some(
       (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
     ) ?? false;
-    
+
     occurrences.push({
       ...payment,
       id: `${payment.id}-SPLIT-${currentPayDate.getTime()}`,
@@ -675,7 +713,7 @@ function getSplitPaymentOccurrencesInRange(
       paid: isPaid,
       dueDate: Timestamp.fromDate(currentPayDate),
     });
-    
+
     // Move to next pay period
     if (payPeriodInterval === WEEKLY) {
       currentPayDate = addWeeks(currentPayDate, 1);
@@ -686,7 +724,7 @@ function getSplitPaymentOccurrencesInRange(
       break;
     }
   }
-  
+
   // Ensure at least one occurrence (edge case - use calculated splitAmount, not full amount)
   if (occurrences.length === 0) {
     occurrences.push({
@@ -697,7 +735,7 @@ function getSplitPaymentOccurrencesInRange(
       dueDate: Timestamp.fromDate(displayRangeStart),
     });
   }
-  
+
   return occurrences;
 }
 
@@ -762,20 +800,20 @@ export function getPayPeriodsInMonth(
     // YEARLY and SPLIT don't make sense here, MONTHLY is always 1
     return 1;
   }
-  
+
   if (interval === "MONTHLY") {
     return 1;
   }
-  
+
   const monthStart = startOfMonth(targetMonth);
   const monthEnd = endOfMonth(targetMonth);
-  
+
   // payDate is the user's pay date (could be recent or in the past)
   // We need to find ALL pay dates in the month, so:
   // 1. Walk BACKWARD from payDate to find a pay date before the month start
   // 2. Then walk FORWARD to find the first pay date in the month
   let currentPayDate = startOfDay(payDate.toDate());
-  
+
   // First, walk BACKWARD to find a pay date at or before monthStart
   while (currentPayDate > monthStart) {
     if (interval === "WEEKLY") {
@@ -784,7 +822,7 @@ export function getPayPeriodsInMonth(
       currentPayDate = subWeeks(currentPayDate, 2);
     }
   }
-  
+
   // Now walk FORWARD to find the first pay date that's within or after the month start
   while (currentPayDate < monthStart) {
     if (interval === "WEEKLY") {
@@ -793,7 +831,7 @@ export function getPayPeriodsInMonth(
       currentPayDate = addWeeks(currentPayDate, 2);
     }
   }
-  
+
   // Count all pay periods in the month
   let count = 0;
   while (currentPayDate <= monthEnd) {
@@ -804,7 +842,7 @@ export function getPayPeriodsInMonth(
       currentPayDate = addWeeks(currentPayDate, 2);
     }
   }
-  
+
   // Ensure at least 1 period (edge case protection)
   return Math.max(count, 1);
 }
@@ -826,7 +864,7 @@ export function getPayPeriodsUntilDate(
   if (!payPeriodInterval || payPeriodInterval === "YEARLY" || payPeriodInterval === "SPLIT") {
     return 1;
   }
-  
+
   if (payPeriodInterval === "MONTHLY") {
     // Count months from now until target
     const today = startOfDay(new Date());
@@ -839,14 +877,14 @@ export function getPayPeriodsUntilDate(
     }
     return Math.max(count, 1);
   }
-  
+
   const today = startOfDay(new Date());
   const target = startOfDay(targetDate);
-  
+
   // payDate is the user's original/first paycheck date (always in the past)
   // Step forward from that anchor to find the first pay date on or after today
   let currentPayDate = startOfDay(payDate.toDate());
-  
+
   while (currentPayDate < today) {
     if (payPeriodInterval === "WEEKLY") {
       currentPayDate = addWeeks(currentPayDate, 1);
@@ -854,7 +892,7 @@ export function getPayPeriodsUntilDate(
       currentPayDate = addWeeks(currentPayDate, 2);
     }
   }
-  
+
   // Count all pay periods from today until target date
   let count = 0;
   while (currentPayDate <= target) {
@@ -865,7 +903,7 @@ export function getPayPeriodsUntilDate(
       currentPayDate = addWeeks(currentPayDate, 2);
     }
   }
-  
+
   // Ensure at least 1 period
   return Math.max(count, 1);
 }
