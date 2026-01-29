@@ -6,7 +6,7 @@ import type { Payment } from "../types";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
 import { editPayments } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
-import { format } from "date-fns";
+import { addMonths, format } from "date-fns";
 
 export default function Debt() {
     const { user } = useAuth();
@@ -24,6 +24,7 @@ export default function Debt() {
     }
 
     const updatedPayOffDates = useRef(false);
+    const finalPaymentsLeft = useRef(0);
 
     const updateAllPayOffDatesIfNeeded = useCallback(async () => {
         if (!payments?.length || !user?.uid) return;
@@ -36,6 +37,7 @@ export default function Debt() {
             const resp = calculatePayoffDate(p);
             if (!resp) return p;
             const {payOffDate, paymentsLeft} = resp;
+            finalPaymentsLeft.current += paymentsLeft
 
             const next = payOffDate ? format(payOffDate, "MMM do, yyyy") : undefined;
 
@@ -106,22 +108,31 @@ export default function Debt() {
 
         return (
             <div className={
-                `w-full grid 
+                `text-xs md:text-sm
+                w-full grid 
                 grid-cols-${cols}
                 text-${color}`}>
-                <p className="col-span-2 text-left">{name}</p>
-                <p className="col-span-1 text-center">{interest}</p>
-                <p className="col-span-2 text-right">{owed}</p>
-                {paymentsLeft && <p className="col-span-1 text-right">{paymentsLeft}</p>}
-                {payOffDate && <p className="col-span-3 text-right">{payOffDate}</p>}
+                <p className="col-span-3 text-left">{name}</p>
+                <p className="col-span1 text-center">{interest}</p>
+                <p className="col-span-1 text-right">{owed}</p>
+                {paymentsLeft && <p className="col-span-2 text-center">{paymentsLeft}</p>}
+                {payOffDate && <p className="col-span-2 text-right">{payOffDate}</p>}
             </div>)
     }
 
+
+    let finalPaymentDate = new Date();
+    finalPaymentDate = addMonths(finalPaymentDate, finalPaymentsLeft.current)
+    const finalPaymentDateStr = format(finalPaymentDate, "MMM yyyy")
 
     return (
         <div className="flex flex-col items-center justify-center w-full h-full bg-my-blue-dark text-my-white-dark">
             <h1 className="text-3xl">Debt</h1>
             <p className="bg-my-black-base p-2 rounded-md text-my-red-light mb-[2rem]"><span className="text-my-white-light">TOTAL:</span> ${remainingDebt.toFixed(2)}</p>
+            <div className="bg-my-black-base p-2 rounded-md text-my-red-light mb-[.4rem]"><span className="text-my-white-light">Final Payoff Date:</span> {finalPaymentDateStr}
+            <p className="text-center  text-xs text-my-white-dark rounded-md p-2 margin-auto">Only making minimum payments.</p>
+            </div>
+
 
             {debtsMissingInfo.length > 0 && <div className="flex flex-col items-center text-my-white-light bg-my-black-base p-4 rounded-md w-[20rem] margin-auto">
                 <p className="text-my-red-light">Missing Information on {debtsMissingInfo.length} debts:</p>
@@ -141,7 +152,7 @@ export default function Debt() {
             </div>
             }
 
-            {debts.length > 0 && <div className=" text-my-white-light bg-my-black-base p-4 rounded-md w-[30rem] margin-auto">
+            {debts.length > 0 && <div className=" text-my-white-light bg-my-black-base p-4 rounded-md w-[20rem] md:w-[30rem] margin-auto mt-[2rem]">
                 <DebtGrid name="Name" interest="Interest" owed="Owed" color="my-white-dark" paymentsLeft="Payments" payOffDate="Final" />
                 {debts.map((d: Payment) => (
                     <div key={d.id} >
@@ -149,7 +160,7 @@ export default function Debt() {
                             color="my-white-light"
                             name={d.name}
                             interest={d.interestRate ? d.interestRate.toString() + " %" : ''}
-                            owed={d.total?.toString() ?? ''}
+                            owed={`$${d.total?.toFixed(0) ?? ''}`}
                             paymentsLeft={d.paymentsLeft?.toString()}
                             payOffDate={d.payOffDate}
                         />
