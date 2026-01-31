@@ -34,7 +34,6 @@ export default function PaymentForm({
   user,
   handleUpdateBudget,
   handleBack,
-  onPaymentUpdated,
 }: IPaymentForm) {
   const { payDate, payPeriodInterval, payments, setPayments } = useDatabase();
 
