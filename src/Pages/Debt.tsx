@@ -217,8 +217,8 @@ export default function Debt() {
                         />
                     </div>
                     {snowballWithExtraDateStr && extraMonthly > 0 && (
-                        <p className="text-my-green-dark text-sm">
-                            With ${extraMonthly.toFixed(0)}/mo extra (including overage applied to snowball): <strong>{snowballWithExtraDateStr}</strong>
+                        <p className="text-my-green-dark text-sm text-center">
+                            With ${extraMonthly.toFixed(0)}/mo extra: <strong>{snowballWithExtraDateStr}</strong>
                         </p>
                     )}
                 </div>
