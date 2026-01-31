@@ -421,9 +421,10 @@ export function calculateRemainingDebtPayments(debt: Payment): number | null {
   const periodsPerYear =
     debt.interval === "MONTHLY" ? 12 :
       debt.interval === "BIWEEKLY" ? 26 :
-        debt.interval === "WEEKLY" ? 52 : null;
+        debt.interval === "WEEKLY" ? 52 :
+          debt.interval === "YEARLY" ? 1 : 12;
 
-  if (!periodsPerYear) return null;
+  // Default missing/unknown interval to monthly so we can still compute when we have total, amount, and interest
 
   // interestRate is stored as percent (eg 5 for 5%)
   const annualRate = debt.interestRate / 100;
