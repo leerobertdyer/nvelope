@@ -36,6 +36,7 @@ export default function Debt() {
             if (p.type !== "DEBT") return p;
 
             const resp = calculatePayoffDate(p);
+            console.log("[Debt updateAllPayOffDatesIfNeeded]", p.name, "calculatePayoffDate result:", resp, "payment keys:", Object.keys(p));
             if (!resp) return p;
             const { payOffDate, paymentsLeft } = resp;
 
