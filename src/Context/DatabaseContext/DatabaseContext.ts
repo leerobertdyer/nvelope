@@ -8,6 +8,8 @@ interface IDatabaseContext {
     setIsLoadingDb: (b: boolean) => void;
     snowball: number,
     setSnowball: (n: number) => void;
+    snowballTargetPaymentId: string | null;
+    setSnowballTargetPaymentId: (id: string | null) => void;
     payDate: Timestamp | null
     setPayDate: (payDate: Timestamp | null) => void
     payPeriodInterval: Interval

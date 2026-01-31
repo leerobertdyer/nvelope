@@ -5,6 +5,7 @@ import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import {
   getCurrentIntervalDateRange,
+  getEffectivePaymentAmount,
   isDateInCurrentPayPeriod,
 } from "../util";
 import ShowHideButton from "./Buttons/ShowHideButton";
@@ -68,7 +69,8 @@ export default function PaymentMap({
   function RenderPayment({ p, time }: { p: Payment; time: string }) {
     // Check if this is a SPLIT payment (ID contains "-SPLIT-")
     const isSplitPayment = p.id.includes("-SPLIT-");
-    
+    const isLastPayment = p.type === "DEBT" && p.total != null && p.total <= p.amount;
+
     let t;
     if (time === "PAST" || time === "FUTURE")
       t = "bg-my-black-light text-white";
@@ -82,6 +84,7 @@ export default function PaymentMap({
         key={p.id}
         onClick={() => handleEditBill(p)}
         className={`grid grid-cols-9 py-2 text-center border-y-1 border-my-black-dark rounded-xs w-full cursor-pointer 
+          ${isLastPayment ? "border-2 border-my-white-dark" : ""}
           ${p.paid
             ? "bg-my-black-light text-white"
             : p.type === "DEBT"
@@ -119,16 +122,16 @@ export default function PaymentMap({
             </span>
           )}
         </p>
-        {p.total && !p.paid ? (
+        {p.total != null && !p.paid ? (
           <p className="flex items-center justify-end col-span-2 gap-[2px] mr-[1rem] md:mr-[2.8rem]">
-            <span className="text-sm text-my-blue-light">${p.amount}</span>/
+            <span className="text-sm text-my-blue-light">${getEffectivePaymentAmount(p).toFixed(2)}</span>/
             <span className="text-sm text-my-blue-dark">
               {Math.ceil(p.total)}
             </span>
           </p>
         ) : (
           <p className="text-sm flex items-center justify-end col-span-2 mr-[1rem] md:mr-[2.8rem]">
-            ${p.amount.toFixed(2)}
+            ${getEffectivePaymentAmount(p).toFixed(2)}
           </p>
         )}
       </div>
@@ -136,15 +139,15 @@ export default function PaymentMap({
   }
 
   const pastPaymentsTotal = `$${Math.ceil(
-    pastPayments.reduce((acc, p) => p.amount + acc, 0)
+    pastPayments.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0)
   ).toFixed(2)}`;
 
   const currentPaymentsTotal = `$${Math.ceil(
-    currentPayments.reduce((acc, p) => p.amount + acc, 0)
+    currentPayments.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0)
   ).toFixed(2)}`;
 
   const futurePaymentsTotal = `$${Math.ceil(
-    futurePayments.reduce((acc, p) => p.amount + acc, 0)
+    futurePayments.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0)
   ).toFixed(2)}`;
 
   function PaymentBox({

@@ -17,6 +17,7 @@ export interface Payment {
     interval: Interval
     paid: boolean
     paidDates?: Timestamp[] // for tracking payments that span multiple intervals (ie WEEKLY | BIWEEKLY | SPLIT)
+    paidAmounts?: Record<string, number> // for DEBT: key = occurrence timestamp string, value = amount applied (so we can reverse on unmark)
     type: "DEBT" | "BILL" | "FUND" | undefined
     isInInterval?: boolean
     total?: number
@@ -57,6 +58,7 @@ export type BackupData = {
     payments: Payment[];
     shouldReset: Timestamp;
     snowball: number;
+    snowballTargetPaymentId?: string | null;
     totalSpendingBudget: number;
 }
 

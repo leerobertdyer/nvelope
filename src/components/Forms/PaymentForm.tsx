@@ -25,6 +25,8 @@ interface IPaymentForm {
   user: User;
   handleUpdateBudget: (d: number) => Promise<void>;
   handleBack: () => void;
+  /** Called when a payment is updated in place (e.g. Pay extra on a debt). Optional. */
+  onPaymentUpdated?: (payment: Payment) => void;
 }
 
 export default function PaymentForm({
@@ -32,6 +34,7 @@ export default function PaymentForm({
   user,
   handleUpdateBudget,
   handleBack,
+  onPaymentUpdated,
 }: IPaymentForm) {
   const { payDate, payPeriodInterval, payments, setPayments } = useDatabase();
 
@@ -226,9 +229,8 @@ export default function PaymentForm({
       )}
       <div className="flex flex-col gap-2 items-center  h-[100vh] overflow-y-auto text-my-white-dark bg-my-green-dark w-full text-center rounded-md">
         <h1 className="text-center w-full text-my-white-light p-2 text-3xl">
-          {paymentToEdit ? "Edit Payment" : "Add Payment"} SDFSDFSDF
+          {paymentToEdit ? "Edit Payment" : "Add Payment"}
         </h1>
-        HELLO
         {/* Step 1: Payment Type Selection (for new payments only) */}
         {!selectedPaymentType && !paymentToEdit ? (
           <div className="w-full">
@@ -383,6 +385,32 @@ export default function PaymentForm({
                   <p className="text-xs text-my-blue-dark mt-1">
                     Track how much you still owe
                   </p>
+                </div>
+              )}
+
+            {/* Interest rate (optional, for DEBT type only) */}
+            {selectedPaymentType === "DEBT" &&
+              newPayment.name &&
+              newPayment.amount > 0 && (
+                <div className="flex flex-col items-center w-full mt-4">
+                  <label htmlFor="interestRate">Interest rate (%) – optional</label>
+                  <input
+                    id="interestRate"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                    value={newPayment?.interestRate ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewPayment({
+                        ...newPayment,
+                        interestRate: val === "" ? undefined : Number(val),
+                      });
+                    }}
+                    placeholder="e.g. 5.5"
+                  />
                 </div>
               )}
 

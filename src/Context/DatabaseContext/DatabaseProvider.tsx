@@ -9,7 +9,8 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const { user } = useAuth();
 
     const [isLoadingDb, setIsLoadingDb] = useState(true);
-    const [snowball, setSnowball] = useState<number>(0)
+    const [snowball, setSnowball] = useState<number>(0);
+    const [snowballTargetPaymentId, setSnowballTargetPaymentId] = useState<string | null>(null);
     const [payDate, setPayDate] = useState<Timestamp|null>(null);
     const [payPeriodInterval, setPayPeriodInterval] = useState<Interval>("MONTHLY");
     const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
@@ -53,6 +54,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setDocumentExists(true);
                     setIsLoadingDb(false);
                     setSnowball(data.snowball || 0);
+                    setSnowballTargetPaymentId(data.snowballTargetPaymentId ?? null);
                     setEnvelopes(data.envelopes || []);
                     setPayDate(data.payDate ?? null);
                     setPayPeriodInterval(data.payPeriodInterval || "MONTHLY");
@@ -101,6 +103,8 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         setIsLoadingDb,
         snowball,
         setSnowball,
+        snowballTargetPaymentId,
+        setSnowballTargetPaymentId,
         payDate,
         setPayDate,
         payPeriodInterval,

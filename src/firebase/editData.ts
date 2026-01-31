@@ -306,6 +306,12 @@ export async function editSnowball(user: User, amount: number) {
   }
 }
 
+export async function editSnowballTargetPaymentId(user: User, paymentId: string | null) {
+  if (!user) return;
+  const userDocRef = doc(db, "users", user.uid);
+  await updateDoc(userDocRef, { snowballTargetPaymentId: paymentId });
+}
+
 const TEN_MINUTES_MS = 10 * 60 * 1000; // 10 minutes in milliseconds
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 const MAX_BACKUPS = 30;
@@ -395,6 +401,7 @@ export async function backupUserDataSafe(user: User) {
       income: data.income ?? 0,
       shouldReset: data.shouldReset ?? false,
       snowball: data.snowball ?? 0,
+      snowballTargetPaymentId: data.snowballTargetPaymentId ?? null,
       totalSpendingBudget: data.totalSpendingBudget ?? 0,
     };
     

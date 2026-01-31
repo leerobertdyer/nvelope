@@ -8,6 +8,7 @@ import {
   editOneTimeCashAndBudget,
   editPayments,
   editSnowball,
+  editSnowballTargetPaymentId,
   editTotalSpendingBudget,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
@@ -48,6 +49,8 @@ export default function MainEnvelopesView() {
     payPeriodInterval,
     snowball,
     setSnowball,
+    snowballTargetPaymentId,
+    setSnowballTargetPaymentId,
     payments,
     setPayments,
   } = useDatabase();
@@ -97,9 +100,11 @@ export default function MainEnvelopesView() {
   useEffect(() => {
     if (!payDate || !payments || !payPeriodInterval) return;
     setPaymentsThisPeriod(() => {
-     const p = getVirtualPaymentsForMonth(payments, payPeriodInterval, payDate);
-     console.log("PAYMENTS THIS MONTH", p);
-     return p;
+      const virtual = getVirtualPaymentsForMonth(payments, payPeriodInterval, payDate);
+      // Hide paid-off debts from main payment view (they appear on Debt page)
+      return virtual.filter(
+        (p) => !(p.type === "DEBT" && p.total != null && p.total <= 0)
+      );
     });
   }, [payments, payDate, payPeriodInterval]);
 
@@ -182,55 +187,124 @@ export default function MainEnvelopesView() {
   }
 
   async function handleUpdatePaid(payment: Payment) {
-    setPayments((prev) => {
-      const originalId = payment.id.includes("-WEEKLY-")
-        ? payment.id.split("-WEEKLY-")[0]
-        : payment.id.includes("-BIWEEKLY-")
-          ? payment.id.split("-BIWEEKLY-")[0]
-          : payment.id.includes("-SPLIT-")
-            ? payment.id.split("-SPLIT-")[0]
-            : payment.id;
+    const originalId = payment.id.includes("-WEEKLY-")
+      ? payment.id.split("-WEEKLY-")[0]
+      : payment.id.includes("-BIWEEKLY-")
+        ? payment.id.split("-BIWEEKLY-")[0]
+        : payment.id.includes("-SPLIT-")
+          ? payment.id.split("-SPLIT-")[0]
+          : payment.id;
 
-      const updatedPayments = prev.map((p) => {
-        if (p.id !== originalId) return p;
+    const updatedPayments = payments.map((p) => {
+      if (p.id !== originalId) return p;
 
-        // For weekly/biweekly/split, toggle the specific occurrence in paidDates
-        if (p.interval === "WEEKLY" || p.interval === "BIWEEKLY" || p.interval === "SPLIT") {
-          const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
-          const paidDates = p.paidDates || [];
+      // DEBT: mark paid subtracts from total; mark unpaid adds it back (store amount in paidAmounts)
+      if (p.type === "DEBT") {
+        const occurrenceKey =
+          p.interval === "WEEKLY" || p.interval === "BIWEEKLY" || p.interval === "SPLIT"
+            ? startOfDay(payment.dueDate.toDate()).getTime().toString()
+            : "monthly";
+        const paidDates = p.paidDates || [];
+        const paidAmounts = { ...(p.paidAmounts || {}) };
+        const occurrenceTime =
+          occurrenceKey === "monthly"
+            ? null
+            : startOfDay(payment.dueDate.toDate()).getTime();
+        const alreadyPaid =
+          occurrenceKey === "monthly"
+            ? p.paid
+            : paidDates.some((pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime);
 
-          // Check if this date is already paid
-          const alreadyPaid = paidDates.some(
-            (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
-          );
-
-          if (alreadyPaid) {
-            // REMOVE the date (mark unpaid)
-            return {
-              ...p,
-              paidDates: paidDates.filter(
-                (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime
-              ),
-            };
-          } else {
-            // ADD the date (mark paid)
-            return {
-              ...p,
-              paidDates: [
-                ...paidDates,
-                Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
-              ],
-            };
+        if (alreadyPaid) {
+          const amountToAddBack = paidAmounts[occurrenceKey] ?? 0;
+          delete paidAmounts[occurrenceKey];
+          const newTotal = Math.max(0, (p.total ?? 0) + amountToAddBack);
+          if (occurrenceKey === "monthly") {
+            return { ...p, total: newTotal, paid: false, paidAmounts };
           }
+          return {
+            ...p,
+            total: newTotal,
+            paidDates: paidDates.filter(
+              (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime
+            ),
+            paidAmounts,
+          };
         }
 
-        // For monthly/yearly, toggle simple paid boolean
-        return { ...p, paid: !p.paid };
-      });
+        const periodPayment =
+          p.amount + (p.id === snowballTargetPaymentId ? snowball : 0);
+        const amountToApply = Math.min(periodPayment, p.total ?? 0);
+        const newTotal = Math.max(0, (p.total ?? 0) - amountToApply);
+        paidAmounts[occurrenceKey] = amountToApply;
 
-      editPayments(updatedPayments, user!.uid);
-      return updatedPayments;
+        if (occurrenceKey === "monthly") {
+          return {
+            ...p,
+            total: newTotal,
+            paid: true,
+            paidAmounts,
+          };
+        }
+        return {
+          ...p,
+          total: newTotal,
+          paidDates: [
+            ...paidDates,
+            Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
+          ],
+          paidAmounts,
+        };
+      }
+
+      // Non-DEBT: original behavior (toggle paid/paidDates only)
+      if (p.interval === "WEEKLY" || p.interval === "BIWEEKLY" || p.interval === "SPLIT") {
+        const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
+        const paidDates = p.paidDates || [];
+        const alreadyPaid = paidDates.some(
+          (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
+        );
+        if (alreadyPaid) {
+          return {
+            ...p,
+            paidDates: paidDates.filter(
+              (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime
+            ),
+          };
+        }
+        return {
+          ...p,
+          paidDates: [
+            ...paidDates,
+            Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
+          ],
+        };
+      }
+      return { ...p, paid: !p.paid };
     });
+
+    setPayments(updatedPayments);
+    await editPayments(updatedPayments, user!.uid);
+
+    // Roll snowball when a debt is paid off (total hit 0)
+    const paidOffPayment = updatedPayments.find(
+      (p) => p.id === originalId && p.type === "DEBT" && p.total != null && p.total <= 0
+    );
+    if (paidOffPayment && paidOffPayment.amount != null) {
+      const newSnowball = snowball + paidOffPayment.amount;
+      setSnowball(newSnowball);
+      await editSnowball(user!, newSnowball);
+      const remainingDebts = updatedPayments.filter(
+        (p) => p.type === "DEBT" && p.total != null && p.total > 0
+      );
+      const nextTarget =
+        remainingDebts.length > 0
+          ? remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0]
+          : null;
+      const nextId = nextTarget?.id ?? null;
+      setSnowballTargetPaymentId(nextId);
+      await editSnowballTargetPaymentId(user!, nextId);
+    }
   }
 
   const emptyEnvelope = {
@@ -504,6 +578,7 @@ export default function MainEnvelopesView() {
           paymentToEdit={paymentToEdit}
           handleUpdateBudget={handleUpdateBudget}
           handleDeleteBill={handleDeleteBill}
+          onPaymentUpdated={setPaymentToEdit}
         />
       );
     } else if (user)

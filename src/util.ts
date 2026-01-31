@@ -317,6 +317,18 @@ export async function updateBudgetStateAndDBB(
   setTotalSpendingBudget(newBudget);
 }
 
+/**
+ * Effective amount for display and period totals.
+ * For DEBT: min(amount, total) so last (smaller) payment is correct.
+ * Do not use for mark-paid or snowball-update logic.
+ */
+export function getEffectivePaymentAmount(p: Payment): number {
+  if (p.type === "DEBT" && p.total != null) {
+    return Math.min(p.amount, p.total);
+  }
+  return p.amount;
+}
+
 export function paymentsTotal(
   payments: Payment[],
   payPeriodInterval: Interval,
@@ -329,7 +341,7 @@ export function paymentsTotal(
     payDate
   );
   const totalMonthlyPayments = virtualPayments.reduce(
-    (acc, p: Payment) => acc + p.amount,
+    (acc, p: Payment) => acc + getEffectivePaymentAmount(p),
     0
   );
   const currentBills = virtualPayments.reduce((acc, p: Payment) => {
@@ -349,7 +361,7 @@ export function paymentsTotal(
         payDate.toDate(),
         getPaymentCurrentDueDate(p)
       )
-      ? acc + p.amount
+      ? acc + getEffectivePaymentAmount(p)
       : acc;
   }, 0);
   const currentFunds = virtualPayments.reduce((acc, p: Payment) => {
@@ -363,7 +375,7 @@ export function paymentsTotal(
       : acc;
   }, 0);
   const monthlyDebts = virtualPayments.reduce((acc, p: Payment) => {
-    return p.type === "DEBT" ? acc + p.amount : acc;
+    return p.type === "DEBT" ? acc + getEffectivePaymentAmount(p) : acc;
   }, 0);
   const totalBills = virtualPayments.reduce((acc, p: Payment) => {
     return p.type === "BILL" ? acc + p.amount : acc;
@@ -392,10 +404,19 @@ export function paymentsTotal(
  * or null if the debt cannot be paid off with the current payment.
  */
 export function calculateRemainingDebtPayments(debt: Payment): number | null {
-  if (!debt.total || !debt.amount || !debt.interestRate) return null;
+  if (!debt.total || !debt.amount) return null;
 
   const L = debt.total;
   const p = debt.amount;
+
+  // When remaining balance <= payment amount, one more payment pays it off
+  if (L <= p) return 1;
+
+  if (!debt.interestRate) {
+    // Zero interest: simple division
+    if (p <= 0) return null;
+    return Math.ceil(L / p);
+  }
 
   const periodsPerYear =
     debt.interval === "MONTHLY" ? 12 :
@@ -449,6 +470,79 @@ export function calculatePayoffDate(
   }
 }
 
+/**
+ * Periods per month for each interval (for snowball simulation).
+ */
+function periodsPerMonth(interval: Interval): number {
+  switch (interval) {
+    case "MONTHLY": return 1;
+    case "BIWEEKLY": return 2;
+    case "WEEKLY": return 4;
+    case "YEARLY": return 1 / 12;
+    default: return 1;
+  }
+}
+
+/**
+ * Simulates the debt snowball: minimums to all debts, snowball extra to target.
+ * When a debt is paid off, its minimum rolls into the snowball and target moves to lowest balance.
+ * Returns the date when the last debt would be paid off, or null if no debts / invalid.
+ */
+export function calculateSnowballPayoffDate(
+  debts: Payment[],
+  snowball: number,
+  snowballTargetId: string | null,
+  fromDate: Date = new Date()
+): Date | null {
+  if (debts.length === 0) return null;
+
+  type DebtState = { id: string; balance: number; amount: number; interval: Interval };
+  const state: DebtState[] = debts
+    .filter((d) => d.total != null && d.total > 0 && d.amount != null)
+    .map((d) => ({ id: d.id, balance: d.total!, amount: d.amount, interval: d.interval ?? "MONTHLY" }));
+  if (state.length === 0) return null;
+
+  let rollingSnowball = Math.max(0, snowball);
+  let targetId =
+    snowballTargetId && state.some((d) => d.id === snowballTargetId)
+      ? snowballTargetId
+      : [...state].sort((a, b) => a.balance - b.balance)[0]?.id ?? null;
+
+  let currentDate = startOfDay(fromDate);
+  const maxMonths = 1200; // cap at ~100 years to avoid infinite loop
+  let months = 0;
+
+  while (state.length > 0 && months < maxMonths) {
+    for (const d of state) {
+      const paymentPerPeriod = d.amount + (d.id === targetId ? rollingSnowball : 0);
+      const periods = periodsPerMonth(d.interval);
+      const applied = Math.min(d.balance, paymentPerPeriod * (periods > 0 ? periods : 1));
+      d.balance -= applied;
+    }
+
+    const paidOff = state.filter((d) => d.balance <= 0);
+    for (const d of paidOff) {
+      rollingSnowball += d.amount;
+    }
+    const remaining = state.filter((d) => d.balance > 0);
+    state.length = 0;
+    state.push(...remaining);
+
+    if (state.length === 0) {
+      return currentDate;
+    }
+
+    targetId =
+      state.some((d) => d.id === targetId)
+        ? targetId
+        : [...state].sort((a, b) => a.balance - b.balance)[0]?.id ?? null;
+
+    currentDate = addMonths(currentDate, 1);
+    months++;
+  }
+
+  return months >= maxMonths ? currentDate : null;
+}
 
 export function transformIntervalMidSentence(i: Interval) {
   switch (i) {
