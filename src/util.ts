@@ -7,7 +7,7 @@ import type {
   Backup,
 } from "./types";
 import { editTotalSpendingBudget, editEnvelopes } from "./firebase/editData";
-import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "./constants";
+import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "./constants";
 import {
   addMonths,
   addWeeks,
@@ -144,6 +144,8 @@ export function calculateIntervalsFromPastDate(
       }
       return start;
     }
+    case SPLIT:
+      return calculateIntervalsFromPastDate(MONTHLY, start, today);
     default:
       console.error(`Unsupported interval: ${i}`);
       return today;
@@ -182,6 +184,8 @@ export function calculateIntervalsFromFutureDate(
       }
       return start;
     }
+    case SPLIT:
+      return calculateIntervalsFromFutureDate(MONTHLY, start, today);
     default:
       console.error(`Unsupported interval: ${i}`);
       return today;
@@ -208,6 +212,13 @@ export function getIntervalDateRange(i: Interval, start: Date): IntervalDates {
       break;
     case YEARLY:
       end = addYears(start, 1);
+      break;
+    case SPLIT:
+      // SPLIT = monthly amount split across pay periods; use same range as MONTHLY
+      end = addMonths(start, 1);
+      if (end.getDate() !== start.getDate()) {
+        end = lastDayOfMonth(subMonths(end, 1));
+      }
       break;
     default:
       console.error(`Unsupported interval: ${i}`);
@@ -404,36 +415,17 @@ export function paymentsTotal(
  * or null if the debt cannot be paid off with the current payment.
  */
 export function calculateRemainingDebtPayments(debt: Payment): number | null {
-  console.log("[calculateRemainingDebtPayments] debt:", debt.name, {
-    total: debt.total,
-    amount: debt.amount,
-    interestRate: debt.interestRate,
-    interval: debt.interval,
-  });
-
-  if (!debt.total || !debt.amount) {
-    console.log("[calculateRemainingDebtPayments] early return: missing total or amount");
-    return null;
-  }
+  if (!debt.total || !debt.amount) return null;
 
   const L = debt.total;
   const p = debt.amount;
 
   // When remaining balance <= payment amount, one more payment pays it off
-  if (L <= p) {
-    console.log("[calculateRemainingDebtPayments] L <= p, return 1");
-    return 1;
-  }
+  if (L <= p) return 1;
 
   if (!debt.interestRate) {
-    // Zero interest: simple division
-    if (p <= 0) {
-      console.log("[calculateRemainingDebtPayments] early return: p <= 0 (zero interest path)");
-      return null;
-    }
-    const n = Math.ceil(L / p);
-    console.log("[calculateRemainingDebtPayments] zero interest, return", n);
-    return n;
+    if (p <= 0) return null;
+    return Math.ceil(L / p);
   }
 
   const periodsPerYear =
@@ -442,39 +434,25 @@ export function calculateRemainingDebtPayments(debt: Payment): number | null {
         debt.interval === "WEEKLY" ? 52 :
           debt.interval === "YEARLY" ? 1 : 12;
 
-  // interestRate is stored as percent (eg 5 for 5%)
   const annualRate = debt.interestRate / 100;
   const r = annualRate / periodsPerYear;
 
   if (r === 0) {
-    if (p <= 0) {
-      console.log("[calculateRemainingDebtPayments] early return: p <= 0 (r===0 path)");
-      return null;
-    }
-    const n = Math.ceil(L / p);
-    console.log("[calculateRemainingDebtPayments] r===0, return", n);
-    return n;
+    if (p <= 0) return null;
+    return Math.ceil(L / p);
   }
 
-  // Payment too small to ever pay off
+  // Payment too small to ever pay off (period interest exceeds payment)
   const minToPayOff = L * r;
-  if (p <= minToPayOff) {
-    console.log("[calculateRemainingDebtPayments] payment too small: p", p, "<= L*r", minToPayOff, "(need payment >", minToPayOff, ")");
-    return null;
-  }
+  if (p <= minToPayOff) return null;
 
   const n =
     Math.log(p / (p - r * L)) /
     Math.log(1 + r);
 
-  if (!Number.isFinite(n) || n <= 0) {
-    console.log("[calculateRemainingDebtPayments] n not finite or <= 0:", n);
-    return null;
-  }
+  if (!Number.isFinite(n) || n <= 0) return null;
 
-  const result = Math.ceil(n);
-  console.log("[calculateRemainingDebtPayments] result:", result, "(n =", n, ")");
-  return result;
+  return Math.ceil(n);
 }
 
 interface iDebtRemainder {
@@ -486,11 +464,9 @@ export function calculatePayoffDate(
   fromDate: Date = new Date()
 ): iDebtRemainder | null {
   const paymentsLeft = calculateRemainingDebtPayments(debt);
-  console.log("[calculatePayoffDate]", debt.name, "paymentsLeft:", paymentsLeft);
   if (!paymentsLeft) return null;
 
   const interval = debt.interval ?? "MONTHLY";
-  console.log("[calculatePayoffDate]", debt.name, "interval:", interval);
   switch (interval) {
     case "MONTHLY":
       return { payOffDate: addMonths(fromDate, paymentsLeft), paymentsLeft }

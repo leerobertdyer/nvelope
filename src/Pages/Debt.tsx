@@ -8,6 +8,8 @@ import Header from "../components/Header";
 import { editPayments, editSnowballTargetPaymentId } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { format, parse } from "date-fns";
+import { IoWarning } from "react-icons/io5";
+import PaymentForm from "../components/Forms/PaymentForm";
 
 export default function Debt() {
     const { user } = useAuth();
@@ -20,6 +22,7 @@ export default function Debt() {
     const [paidOffDebts, setPaidOffDebts] = useState<Payment[]>([])
     const [showMissingInfoDebts, setShowMissingInfoDebts] = useState(false)
     const [interestRate, setInterestRate] = useState<number>();
+    const [editingDebt, setEditingDebt] = useState<Payment | null>(null);
 
     function debtHasAllValues(d: Payment) {
         return (typeof d.total === "number" && typeof d.amount === "number" && typeof d.interestRate === "number")
@@ -36,7 +39,6 @@ export default function Debt() {
             if (p.type !== "DEBT") return p;
 
             const resp = calculatePayoffDate(p);
-            console.log("[Debt updateAllPayOffDatesIfNeeded]", p.name, "calculatePayoffDate result:", resp, "payment keys:", Object.keys(p));
             if (!resp) return p;
             const { payOffDate, paymentsLeft } = resp;
 
@@ -109,7 +111,18 @@ export default function Debt() {
     }
 
 
-    if (isLoading) return <Loading text="Crunching Numbers" />
+    if (isLoading) return <Loading text="Crunching Numbers" />;
+
+    if (editingDebt && user) {
+        return (
+            <PaymentForm
+                paymentToEdit={editingDebt}
+                user={user}
+                handleBack={() => setEditingDebt(null)}
+                handleUpdateBudget={async () => {}}
+            />
+        );
+    }
 
     interface iDebtGrid {
         name: string
@@ -173,14 +186,24 @@ export default function Debt() {
                 <p className="text-my-red-light">Missing Information on {debtsMissingInfo.length} debts:</p>
                 {showMissingInfoDebts
                     ? <div className="w-full ">
+                        <p className="text-xs text-my-white-dark mb-1">Click a debt to edit</p>
                         <DebtGrid name="Name" interest="Interest" owed="Owed" color="my-white-dark" />
-                        {debtsMissingInfo.map((d: Payment) => <div className="w-full grid grid-cols-5" key={d.id}>
-                            <p className="col-span-2 text-left">{d.name}</p>
-                            {d.interestRate
-                                ? <p className="col-span-1 text-center mb-2">{d.interestRate}</p>
-                                : <input className="bg-white rounded-md mb-2 text-black px-2" onChange={(e) => setInterestRate(Number(e.target.value))} onBlur={() => saveDebtInformation(d)} type="number" min={0} max={100} placeholder="0" />}
-                            <p className="col-span-2 text-right">{d.total}</p>
-                        </div>)}
+                        {debtsMissingInfo.map((d: Payment) => (
+                            <div
+                                key={d.id}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setEditingDebt(d)}
+                                onKeyDown={(e) => e.key === "Enter" && setEditingDebt(d)}
+                                className="w-full grid grid-cols-5 cursor-pointer hover:bg-my-black-light rounded px-1 -mx-1"
+                            >
+                                <p className="col-span-2 text-left">{d.name}</p>
+                                {d.interestRate
+                                    ? <p className="col-span-1 text-center mb-2">{d.interestRate}</p>
+                                    : <input className="bg-white rounded-md mb-2 text-black px-2" onClick={(e) => e.stopPropagation()} onChange={(e) => setInterestRate(Number(e.target.value))} onBlur={() => saveDebtInformation(d)} type="number" min={0} max={100} placeholder="0" />}
+                                <p className="col-span-2 text-right">{d.total}</p>
+                            </div>
+                        ))}
                         <ShowAndHide label="Hide" onClick={() => setShowMissingInfoDebts(false)}></ShowAndHide>
                     </div>
                     : <ShowAndHide label="Show" up={false} onClick={() => setShowMissingInfoDebts(true)}></ShowAndHide>}
@@ -209,18 +232,40 @@ export default function Debt() {
                             ))}
                         </select>
                     </div>
+                    <p className="text-xs text-my-white-dark mb-1">Click a debt to edit</p>
                     <DebtGrid name="Name" interest="Interest" owed="Owed" color="my-white-dark" paymentsLeft="Payments" payOffDate="Final" />
-                    {debtsByLowestOwed.map((d: Payment) => (
-                        <div key={d.id} className={d.id === effectiveSnowballTargetId ? "ring-2 ring-my-white-dark rounded px-1 -mx-1" : ""}>
-                            <DebtGrid
-                                color="my-white-light"
-                                name={d.name + (d.id === effectiveSnowballTargetId ? " ❄️" : "")}
-                                interest={d.interestRate != null ? d.interestRate.toString() + " %" : "—"}
-                                owed={`$${d.total?.toFixed(0) ?? ''}`}
-                                paymentsLeft={d.paymentsLeft?.toString() ?? "—"}
-                                payOffDate={d.payOffDate ?? "—"}
-                            />
-                        </div>))}
+                    {debtsByLowestOwed.map((d: Payment) => {
+                        const cannotPayOff = d.paymentsLeft == null || d.payOffDate == null;
+                        return (
+                        <div
+                            key={d.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setEditingDebt(d)}
+                            onKeyDown={(e) => e.key === "Enter" && setEditingDebt(d)}
+                            className={`cursor-pointer hover:bg-my-black-light rounded px-1 -mx-1 flex items-center gap-1 ${d.id === effectiveSnowballTargetId ? "ring-2 ring-my-white-dark rounded px-1 -mx-1" : ""}`}
+                        >
+                            <div className="flex-1 min-w-0">
+                                <DebtGrid
+                                    color="my-white-light"
+                                    name={d.name + (d.id === effectiveSnowballTargetId ? " ❄️" : "")}
+                                    interest={d.interestRate != null ? d.interestRate.toString() + " %" : "—"}
+                                    owed={`$${d.total?.toFixed(0) ?? ''}`}
+                                    paymentsLeft={d.paymentsLeft?.toString() ?? "—"}
+                                    payOffDate={d.payOffDate ?? "—"}
+                                />
+                            </div>
+                            {cannotPayOff && (
+                                <span
+                                    title="Payoff cannot be calculated. Your minimum payment may be too low to cover interest – try increasing the payment amount."
+                                    className="flex-shrink-0 text-my-red-light"
+                                    aria-label="Warning: payoff cannot be calculated"
+                                >
+                                    <IoWarning size={20} />
+                                </span>
+                            )}
+                        </div>
+                    );})}
                 </div>
                 );
             })()}
