@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { calculatePayoffDate, calculateSnowballPayoffDate, paymentsTotal } from "../util";
+import { calculatePayoffDate, calculateSnowballPayoffDate, calculateSnowballPayoffDateWithExtra, paymentsTotal } from "../util";
 import Loading from "../components/Loading";
 import type { Payment } from "../types";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
@@ -13,7 +13,7 @@ import PaymentForm from "../components/Forms/PaymentForm";
 
 export default function Debt() {
     const { user } = useAuth();
-    const { payments, payPeriodInterval, payDate, snowball, snowballTargetPaymentId, setSnowballTargetPaymentId } = useDatabase();
+    const { payments, setPayments, payPeriodInterval, payDate, snowball, snowballTargetPaymentId, setSnowballTargetPaymentId } = useDatabase();
     const { remainingDebt } = paymentsTotal(payments, payPeriodInterval, payDate!)
 
     const [isLoading, setIsLoading] = useState(true);
@@ -23,12 +23,14 @@ export default function Debt() {
     const [showMissingInfoDebts, setShowMissingInfoDebts] = useState(false)
     const [interestRate, setInterestRate] = useState<number>();
     const [editingDebt, setEditingDebt] = useState<Payment | null>(null);
+    const [extraMonthlyInput, setExtraMonthlyInput] = useState("");
 
     function debtHasAllValues(d: Payment) {
         return (typeof d.total === "number" && typeof d.amount === "number" && typeof d.interestRate === "number")
     }
 
     const updatedPayOffDates = useRef(false);
+    const previousEditingDebtRef = useRef<Payment | null>(null);
 
     const updateAllPayOffDatesIfNeeded = useCallback(async () => {
         if (!payments?.length || !user?.uid) return;
@@ -50,8 +52,9 @@ export default function Debt() {
         });
 
         if (!changed) return;
+        setPayments(nextPayments);
         await editPayments(nextPayments, user.uid);
-    }, [payments, user?.uid]);
+    }, [payments, user?.uid, setPayments]);
 
     useEffect(() => {
         if (updatedPayOffDates.current) return;
@@ -60,6 +63,16 @@ export default function Debt() {
         updatedPayOffDates.current = true;
         updateAllPayOffDatesIfNeeded();
     }, [payments, user?.uid, updateAllPayOffDatesIfNeeded]);
+
+    // When returning from edit form, recalc payoff dates so UI shows latest
+    useEffect(() => {
+        if (previousEditingDebtRef.current !== null && editingDebt === null && payments?.length && user?.uid) {
+            updatedPayOffDates.current = false;
+            updateAllPayOffDatesIfNeeded();
+            updatedPayOffDates.current = true;
+        }
+        previousEditingDebtRef.current = editingDebt;
+    }, [editingDebt, payments?.length, user?.uid, updateAllPayOffDatesIfNeeded]);
 
 
     useEffect(() => {
@@ -166,6 +179,12 @@ export default function Debt() {
     const snowballPayoffDate = calculateSnowballPayoffDate(debts, snowball, effectiveSnowballTargetId, new Date());
     const snowballPayoffDateStr = snowballPayoffDate ? format(snowballPayoffDate, "MMM yyyy") : null;
 
+    const extraMonthly = Number(extraMonthlyInput) || 0;
+    const snowballWithExtraDate = extraMonthly > 0 && debts.length > 0
+        ? calculateSnowballPayoffDateWithExtra(debts, snowball, extraMonthly, effectiveSnowballTargetId, new Date())
+        : null;
+    const snowballWithExtraDateStr = snowballWithExtraDate ? format(snowballWithExtraDate, "MMM yyyy") : null;
+
     return (
         <div className="flex flex-col items-center justify-center w-full h-full bg-my-blue-dark text-my-white-dark">
             <Header links={[{ label: "Home", href: "/" }, { label: "Settings", href: "/settings" }]} />
@@ -175,12 +194,35 @@ export default function Debt() {
             <p className="text-center  text-xs text-my-white-dark rounded-md p-2 margin-auto">Only making minimum payments.</p>
             </div>
             {snowballPayoffDateStr && (
-                <div className="bg-my-black-base p-2 rounded-md text-my-green-dark mb-[2rem]">
+                <div className="bg-my-black-base p-2 rounded-md text-my-green-dark mb-[.4rem]">
                     <span className="text-my-white-light">With snowball:</span> {snowballPayoffDateStr}
                     <p className="text-center text-xs text-my-white-dark rounded-md p-2 margin-auto">Using your snowball target and extra payment.</p>
                 </div>
             )}
 
+            {debts.length > 0 && (
+                <div className="bg-my-black-base p-2 rounded-md text-my-white-light mb-[2rem] w-[20rem] md:w-[24rem]">
+                    <p className="text-my-white-dark text-sm font-medium mb-2">What if I pay an extra amount each month?</p>
+                    <div className="flex items-center gap-2 mb-2">
+                        <label htmlFor="extra-monthly" className="text-sm">Extra per month ($)</label>
+                        <input
+                            id="extra-monthly"
+                            type="number"
+                            min={0}
+                            step={1}
+                            className="w-24 border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                            value={extraMonthlyInput}
+                            onChange={(e) => setExtraMonthlyInput(e.target.value)}
+                            placeholder="e.g. 400"
+                        />
+                    </div>
+                    {snowballWithExtraDateStr && extraMonthly > 0 && (
+                        <p className="text-my-green-dark text-sm">
+                            With ${extraMonthly.toFixed(0)}/mo extra (including overage applied to snowball): <strong>{snowballWithExtraDateStr}</strong>
+                        </p>
+                    )}
+                </div>
+            )}
 
             {debtsMissingInfo.length > 0 && <div className="flex flex-col items-center text-my-white-light bg-my-black-base p-4 rounded-md w-[20rem] margin-auto">
                 <p className="text-my-red-light">Missing Information on {debtsMissingInfo.length} debts:</p>

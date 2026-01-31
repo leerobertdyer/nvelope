@@ -555,6 +555,79 @@ export function calculateSnowballPayoffDate(
   return months >= maxMonths ? currentDate : null;
 }
 
+/**
+ * Same as calculateSnowballPayoffDate but with an extra amount per month toward the target.
+ * When a debt is paid off, any overage (allocated payment minus what was needed) is added to the snowball for the next period.
+ * extraMonthly is in dollars per month (e.g. 400 = $400 extra per month to the snowball target).
+ */
+export function calculateSnowballPayoffDateWithExtra(
+  debts: Payment[],
+  snowball: number,
+  extraMonthly: number,
+  snowballTargetId: string | null,
+  fromDate: Date = new Date()
+): Date | null {
+  if (debts.length === 0) return null;
+
+  type DebtState = { id: string; balance: number; amount: number; interval: Interval };
+  const state: DebtState[] = debts
+    .filter((d) => d.total != null && d.total > 0 && d.amount != null)
+    .map((d) => ({ id: d.id, balance: d.total!, amount: d.amount, interval: d.interval ?? "MONTHLY" }));
+  if (state.length === 0) return null;
+
+  const extra = Math.max(0, extraMonthly);
+  let rollingSnowball = Math.max(0, snowball);
+  let targetId =
+    snowballTargetId && state.some((d) => d.id === snowballTargetId)
+      ? snowballTargetId
+      : [...state].sort((a, b) => a.balance - b.balance)[0]?.id ?? null;
+
+  let currentDate = startOfDay(fromDate);
+  const maxMonths = 1200;
+  let months = 0;
+
+  while (state.length > 0 && months < maxMonths) {
+    let overageThisMonth = 0;
+
+    for (const d of state) {
+      const periods = periodsPerMonth(d.interval);
+      const basePayment = d.amount * (periods > 0 ? periods : 1);
+      const extraToTarget = d.id === targetId ? rollingSnowball + extra : 0;
+      const totalThisMonth = basePayment + extraToTarget;
+      const applied = Math.min(d.balance, totalThisMonth);
+      d.balance -= applied;
+
+      if (d.balance <= 0) {
+        overageThisMonth += totalThisMonth - applied;
+      }
+    }
+
+    const paidOff = state.filter((d) => d.balance <= 0);
+    for (const d of paidOff) {
+      rollingSnowball += d.amount;
+    }
+    rollingSnowball += overageThisMonth;
+
+    const remaining = state.filter((d) => d.balance > 0);
+    state.length = 0;
+    state.push(...remaining);
+
+    if (state.length === 0) {
+      return currentDate;
+    }
+
+    targetId =
+      state.some((d) => d.id === targetId)
+        ? targetId
+        : [...state].sort((a, b) => a.balance - b.balance)[0]?.id ?? null;
+
+    currentDate = addMonths(currentDate, 1);
+    months++;
+  }
+
+  return months >= maxMonths ? currentDate : null;
+}
+
 export function transformIntervalMidSentence(i: Interval) {
   switch (i) {
     case "WEEKLY":
