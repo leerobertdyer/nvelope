@@ -458,15 +458,18 @@ export function calculatePayoffDate(
   const paymentsLeft = calculateRemainingDebtPayments(debt);
   if (!paymentsLeft) return null;
 
-  switch (debt.interval) {
+  const interval = debt.interval ?? "MONTHLY";
+  switch (interval) {
     case "MONTHLY":
       return { payOffDate: addMonths(fromDate, paymentsLeft), paymentsLeft }
     case "BIWEEKLY":
       return { payOffDate: addWeeks(fromDate, paymentsLeft * 2), paymentsLeft }
     case "WEEKLY":
       return {payOffDate: addWeeks(fromDate, paymentsLeft), paymentsLeft }
+    case "YEARLY":
+      return { payOffDate: addMonths(fromDate, paymentsLeft * 12), paymentsLeft }
     default:
-      return null;
+      return { payOffDate: addMonths(fromDate, paymentsLeft), paymentsLeft }
   }
 }
 

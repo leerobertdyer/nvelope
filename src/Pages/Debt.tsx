@@ -186,7 +186,9 @@ export default function Debt() {
             </div>
             }
 
-            {debts.length > 0 && (
+            {debts.length > 0 && (() => {
+                const debtsByLowestOwed = [...debts].sort((a, b) => (a.total ?? 0) - (b.total ?? 0));
+                return (
                 <div className=" text-my-white-light bg-my-black-base p-4 rounded-md w-[20rem] md:w-[30rem] margin-auto mt-[2rem]">
                     <div className="flex flex-col gap-2 mb-4">
                         <label htmlFor="snowball-target" className="text-my-white-dark text-sm">Snowball target</label>
@@ -199,7 +201,7 @@ export default function Debt() {
                             }}
                             className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark text-sm"
                         >
-                            {debts.map((d) => (
+                            {debtsByLowestOwed.map((d) => (
                                 <option key={d.id} value={d.id}>
                                     {d.name} (${d.total?.toFixed(0) ?? "0"})
                                 </option>
@@ -207,19 +209,20 @@ export default function Debt() {
                         </select>
                     </div>
                     <DebtGrid name="Name" interest="Interest" owed="Owed" color="my-white-dark" paymentsLeft="Payments" payOffDate="Final" />
-                    {debts.map((d: Payment) => (
+                    {debtsByLowestOwed.map((d: Payment) => (
                         <div key={d.id} className={d.id === effectiveSnowballTargetId ? "ring-2 ring-my-white-dark rounded px-1 -mx-1" : ""}>
                             <DebtGrid
                                 color="my-white-light"
                                 name={d.name + (d.id === effectiveSnowballTargetId ? " ❄️" : "")}
-                                interest={d.interestRate ? d.interestRate.toString() + " %" : ''}
+                                interest={d.interestRate != null ? d.interestRate.toString() + " %" : "—"}
                                 owed={`$${d.total?.toFixed(0) ?? ''}`}
-                                paymentsLeft={d.paymentsLeft?.toString()}
-                                payOffDate={d.payOffDate}
+                                paymentsLeft={d.paymentsLeft?.toString() ?? "—"}
+                                payOffDate={d.payOffDate ?? "—"}
                             />
                         </div>))}
                 </div>
-            )}
+                );
+            })()}
 
             {paidOffDebts.length > 0 && (
                 <div className="text-my-white-light bg-my-black-base p-4 rounded-md w-[20rem] md:w-[30rem] margin-auto mt-[2rem]">
