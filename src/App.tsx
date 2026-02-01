@@ -5,6 +5,7 @@ import Settings from "./Pages/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
 import { useDisableNumberScroll } from "./hooks";
 import Debt from "./Pages/Debt";
+import Feedback from "./Pages/Feedback";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoadingUser } = useAuth();
@@ -38,6 +39,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/feedback" element={<Feedback />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

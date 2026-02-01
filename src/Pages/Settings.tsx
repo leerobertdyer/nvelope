@@ -280,7 +280,7 @@ export default function Settings() {
 
   return (
     <div className="w-full h-screen overflow-y-scroll bg-my-white-light">
-      <Header links={[{ label: "Home", href: "/" }, { label: "Debt", href: "/debt" }]} />
+      <Header links={[{ label: "Home", href: "/" }, { label: "Debt", href: "/debt" }, { label: "Feedback", href: "/feedback" }]} />
       <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md ">
         Settings
       </h1>

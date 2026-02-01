@@ -186,7 +186,7 @@ export default function Debt() {
 
     return (
         <div className="flex flex-col items-center justify-start py-[5rem] w-full h-full bg-my-blue-dark text-my-white-dark">
-            <Header links={[{ label: "Home", href: "/" }, { label: "Settings", href: "/settings" }]} />
+            <Header links={[{ label: "Home", href: "/" }, { label: "Settings", href: "/settings" }, { label: "Feedback", href: "/feedback" }]} />
             <h1 className="text-3xl">Debt</h1>
             <p className="bg-my-black-base p-2 rounded-md text-my-red-light mb-[1rem] w-[20rem] text-center "><span className="text-my-white-light">TOTAL:</span> ${remainingDebt.toFixed(2)}</p>
             <div className="bg-my-black-base p-2 rounded-md text-my-blue-base mb-[1rem] w-[20rem] text-center "><span className="text-my-white-light">Final Payoff Date:</span> {finalPaymentDateStr}
