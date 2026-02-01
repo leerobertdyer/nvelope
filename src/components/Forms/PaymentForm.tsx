@@ -15,6 +15,7 @@ import {
 } from "../../util";
 import { format, addDays } from "date-fns";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
+import { useToast } from "../../Context/ToastContext/useToast";
 import TextInput from "../TextInput";
 import PaymentTypeSelector, {
   type PaymentTypeOption,
@@ -36,8 +37,8 @@ export default function PaymentForm({
   handleBack,
 }: IPaymentForm) {
   const { payDate, payPeriodInterval, payments, setPayments } = useDatabase();
+  const { showToast } = useToast();
 
-  const [showPaymentError, setShowPaymentError] = useState(false);
   const [newPaymentDate, setNewPaymentDate] = useState<Value | null>(
     paymentToEdit?.dueDate.toDate() ?? null
   );
@@ -119,7 +120,6 @@ export default function PaymentForm({
   }
 
   function resetForm() {
-    setShowPaymentError(false);
     setNewPayment(generateFreshPayment());
     setSelectedPaymentType(null);
     setSplitBillAcrossPayPeriods(false);
@@ -162,12 +162,13 @@ export default function PaymentForm({
       await handleUpdateBudget(diffAmount);
     }
     resetForm();
+    showToast("Payment updated");
   }
 
   async function addPayment() {
     if (!user || !newPayment) return;
     if (payments.some((p) => p.id === newPayment.id)) {
-      setShowPaymentError(true);
+      showToast("Payment name already exists", "error");
       return;
     }
     const updatedPayments = [...payments, newPayment];
@@ -184,6 +185,7 @@ export default function PaymentForm({
     ) {
       await handleUpdateBudget(newPayment.amount * -1);
     }
+    showToast("Payment added");
     resetForm();
   }
 
@@ -223,9 +225,6 @@ export default function PaymentForm({
 
   return (
     <div className="h-screen absolute inset-0 z-9999 flex flex-col justify-center items-center m-auto overflow-y-scroll w-full overflow-x-hidden">
-      {showPaymentError && (
-        <Popup type="error">Payment name already exists</Popup>
-      )}
       <div className="flex flex-col gap-2 items-center  h-[100vh] overflow-y-auto text-my-white-dark bg-my-green-dark w-full text-center rounded-md">
         <h1 className="text-center w-full text-my-white-light p-2 text-3xl">
           {paymentToEdit ? "Edit Payment" : "Add Payment"}

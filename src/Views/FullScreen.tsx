@@ -7,6 +7,9 @@ interface IFullScreen {
   onSave?: () => void;
   showButtons?: boolean;
   theme?: "LIGHT" | "DARK";
+  saveButtonText?: string;
+  saveButtonColor?: "green" | "red";
+  closeButtonText?: string;
 }
 
 export default function FullScreen({
@@ -15,6 +18,9 @@ export default function FullScreen({
   onSave,
   showButtons,
   theme = "LIGHT",
+  saveButtonText = "Save",
+  saveButtonColor = "green",
+  closeButtonText = "Back",
 }: IFullScreen) {
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -49,13 +55,13 @@ export default function FullScreen({
         {showButtons && (
           <div className="flex flex-col gap-4 items-center justify-center w-[95%] m-auto mt-4">
             {onSave && (
-              <Button onClick={handleSave} color="green">
-                Save
+              <Button onClick={handleSave} color={saveButtonColor}>
+                {saveButtonText}
               </Button>
             )}
             {onClose && (
               <Button onClick={onClose} color="red">
-                Back
+                {closeButtonText}
               </Button>
             )}
           </div>

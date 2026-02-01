@@ -291,6 +291,7 @@ export default function MainEnvelopesView() {
       (p) => p.id === originalId && p.type === "DEBT" && p.total != null && p.total <= 0
     );
     if (paidOffPayment && paidOffPayment.amount != null) {
+      showToast(`${paidOffPayment.name} paid off!`);
       const newSnowball = snowball + paidOffPayment.amount;
       setSnowball(newSnowball);
       await editSnowball(user!, newSnowball);
@@ -450,6 +451,7 @@ export default function MainEnvelopesView() {
   async function handleResetNvelopes() {
     if (!user) return;
     await resetAllNvelopes(envelopes, setEnvelopes, user.uid);
+    showToast("Envelopes cleared");
   }
 
   async function addCashToDb() {
@@ -471,6 +473,7 @@ export default function MainEnvelopesView() {
     );
     setTotalSpendingBudget(totalSpendingBudget + Number(cashAmount));
     resetState();
+    showToast("Cash added to budget");
   }
 
   function handleAddCashToEnvelope(envelope: Envelope) {
@@ -494,6 +497,7 @@ export default function MainEnvelopesView() {
     );
     await editEnvelopes(newEnvelopes, user.uid);
     setEnvelopes(newEnvelopes);
+    showToast(`${cashAmount} added to ${n.name}`);
     resetState();
   }
 
@@ -554,7 +558,15 @@ export default function MainEnvelopesView() {
     );
   }
 
-  if (!payDate) return;
+  if (!payDate) {
+    return (
+      <div className="w-full min-h-screen bg-my-blue-dark flex flex-col items-center justify-center p-6 text-center text-my-white-dark">
+        <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt" }, { label: "Feedback", href: "/feedback" }]} />
+        <p className="text-lg mt-8">Set your pay date in Settings to get started.</p>
+        <a href="/settings" className="text-my-green-light underline mt-4">Go to Settings</a>
+      </div>
+    );
+  }
 
   // Show modal for due Fund (planned expense) payments
   if (dueFundPayment) {

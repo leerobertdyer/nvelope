@@ -57,6 +57,61 @@ export async function createUserDocument(user: User) {
   }
 }
 
+/**
+ * Ensures the user has a complete document so MainView can render (no blank screen).
+ * Used when the user skips the demo: creates doc if missing, sets payDate if null,
+ * and marks onboarding complete so they land on a working main view.
+ */
+export async function completeDemoWithDefaults(user: User): Promise<boolean> {
+  if (!user) return false;
+  try {
+    const userDocRef = doc(db, "users", user.uid);
+    const existingDoc = await getDoc(userDocRef);
+
+    // Start of current month as default pay date so MainView has something to show
+    const now = new Date();
+    const defaultPayDate = Timestamp.fromDate(new Date(now.getFullYear(), now.getMonth(), 1));
+
+    if (!existingDoc.exists()) {
+      const initialUserData = {
+        id: user.uid,
+        email: user.email,
+        isNewUser: false,
+        envelopes: [],
+        payDate: defaultPayDate,
+        payPeriodInterval: MONTHLY,
+        payments: [],
+        income: 0,
+        totalSpendingBudget: 0,
+        oneTimeCash: null,
+        resetBudgetTimestamp: null,
+        oneTimeExpenses: null,
+        backups: null,
+        createdAt: Timestamp.now(),
+      };
+      await setDoc(userDocRef, initialUserData);
+      console.log("✅ User document created with defaults (skip demo)");
+      return true;
+    }
+
+    const data = existingDoc.data();
+    const updates: Record<string, unknown> = { isNewUser: false };
+    if (data.payDate == null) {
+      updates.payDate = defaultPayDate;
+    }
+    if (Object.keys(updates).length > 1) {
+      await updateDoc(userDocRef, updates);
+    } else {
+      await updateDoc(userDocRef, { isNewUser: false });
+    }
+    console.log("✅ Demo skipped – document updated with defaults");
+    return true;
+  } catch (error) {
+    console.error("completeDemoWithDefaults failed:", error);
+    return false;
+  }
+}
+
 export async function editResetBudgetTimestamp(
   resetBudgetTimestamp: Timestamp,
   userId: string
@@ -488,6 +543,24 @@ export async function restoreFromSafeBackup(backupId: string, user: User) {
   } catch (error) {
     console.error("Error restoring from safe backup:", error);
     return null;
+  }
+}
+
+/**
+ * Deletes all Firestore data for a user (user doc + backup subcollection).
+ * Call before Firebase Auth deleteUser so we have the uid.
+ */
+export async function deleteUserDataInFirestore(userId: string): Promise<void> {
+  try {
+    const backupsRef = collection(db, "userBackups", userId, "backups");
+    const snapshot = await getDocs(backupsRef);
+    for (const d of snapshot.docs) {
+      await deleteDoc(doc(db, "userBackups", userId, "backups", d.id));
+    }
+    await deleteDoc(doc(db, "users", userId));
+  } catch (error) {
+    console.error("deleteUserDataInFirestore failed:", error);
+    throw error;
   }
 }
 

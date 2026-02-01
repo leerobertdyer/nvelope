@@ -7,6 +7,7 @@ import ShowAndHide from "../components/Buttons/ShowAndHide";
 import Header from "../components/Header";
 import { editPayments, editSnowballTargetPaymentId } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
+import { useToast } from "../Context/ToastContext/useToast";
 import { format, parse } from "date-fns";
 import { IoWarning } from "react-icons/io5";
 import PaymentForm from "../components/Forms/PaymentForm";
@@ -14,6 +15,7 @@ import TextInput from "../components/TextInput";
 
 export default function Debt() {
     const { user } = useAuth();
+    const { showToast } = useToast();
     const { payments, setPayments, payPeriodInterval, payDate, snowball, snowballTargetPaymentId, setSnowballTargetPaymentId } = useDatabase();
     const { remainingDebt } = paymentsTotal(payments, payPeriodInterval, payDate!)
 
@@ -110,6 +112,7 @@ export default function Debt() {
         })
         await editPayments(nextPayments, user!.uid);
         setInterestRate(undefined);
+        showToast("Debt updated");
     }
 
     const effectiveSnowballTargetId =
@@ -122,6 +125,7 @@ export default function Debt() {
     async function handleSnowballTargetChange(debtId: string) {
         setSnowballTargetPaymentId(debtId);
         await editSnowballTargetPaymentId(user!, debtId);
+        showToast("Snowball target updated");
     }
 
 

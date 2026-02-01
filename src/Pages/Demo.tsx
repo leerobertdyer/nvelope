@@ -8,6 +8,7 @@ import {
   editPayDate,
   editTotalSpendingBudget,
   createUserDocument,
+  completeDemoWithDefaults,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState, useRef } from "react";
@@ -51,8 +52,10 @@ export default function Demo() {
     income,
     setIncome,
     payPeriodInterval,
+    setPayPeriodInterval,
     payments,
     setPayments,
+    setEnvelopes,
     setTotalSpendingBudget,
     totalSpendingBudget,
     documentExists,
@@ -236,6 +239,28 @@ export default function Demo() {
     setStep(8);
   }
 
+  /** Skip the entire demo and land on main view with safe defaults (no blank screen). */
+  async function handleSkipDemo() {
+    if (!user) return;
+    const ok = await completeDemoWithDefaults(user);
+    if (!ok) {
+      showToast("Could not skip. Please try again.", "error");
+      return;
+    }
+    // Sync context so MainView has payDate, interval, etc. (avoids blank blue screen)
+    const now = new Date();
+    const defaultPayDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    setPayDate(Timestamp.fromDate(defaultPayDate));
+    setPayPeriodInterval(MONTHLY);
+    setIncome(0);
+    setTotalSpendingBudget(0);
+    setPayments([]);
+    setEnvelopes([]);
+    setIsNewUser(false);
+    setDocumentExists(true);
+    navigate("/");
+  }
+
   async function handleStep1() {
     console.log("[DEMO] handleStep1");
 
@@ -247,7 +272,7 @@ export default function Demo() {
         setDocumentExists(true);
       } else {
         console.error("[DEMO] Failed to create user document");
-        // Could show an error to the user here
+        showToast("Could not create account. Please try again.", "error");
         return;
       }
     }
@@ -393,6 +418,15 @@ export default function Demo() {
   return (
     <div className="absolute inset-0 z-9990">
       {user && <Header links={[]} step={step} />}
+      {step >= 2 && step <= 9 && (
+        <button
+          type="button"
+          onClick={handleSkipDemo}
+          className="fixed bottom-6 left-0 right-0 z-[9999] text-sm text-my-white-dark hover:text-my-white-light underline"
+        >
+          Skip demo
+        </button>
+      )}
       {showPaymentAdded && <Popup type="success">Payment added!</Popup>}
       {showPaymentError && (
         <Popup type="error">Payment name already exists</Popup>
@@ -405,7 +439,16 @@ export default function Demo() {
       >
         {/* Show start button for new users (no document) or users still in onboarding */}
         {(documentExists === false || isNewUser) && step === 0 ? (
-          <SpendBtn onClick={() => setStep(1)} />
+          <div className="flex flex-col items-center gap-6">
+            <SpendBtn onClick={() => setStep(1)} />
+            <button
+              type="button"
+              onClick={handleSkipDemo}
+              className="text-sm text-my-white-dark hover:text-my-white-light underline"
+            >
+              Skip demo
+            </button>
+          </div>
         ) : step == 1 ? (
           <>
             <div className="absolute inset-0 bg-my-black-dark opacity-80"></div>
@@ -416,6 +459,13 @@ export default function Demo() {
                 onClick={handleStep1}
                 children="New Account"
               />
+              <button
+                type="button"
+                onClick={handleSkipDemo}
+                className="text-sm text-my-white-dark hover:text-my-white-light underline mt-2"
+              >
+                Skip demo
+              </button>
             </div>
           </>
         ) : step === 2 ? (

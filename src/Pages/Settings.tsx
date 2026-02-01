@@ -16,6 +16,7 @@ import {
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
+import { deleteAccount } from "../firebase/deleteAccount";
 import { sendPasswordResetEmailToUser } from "../firebase/emailAndPassword";
 import { getIncomeByInterval, recalculateBudget } from "../util";
 import { IoPencil } from "react-icons/io5";
@@ -64,6 +65,10 @@ export default function Settings() {
   // LocalStorage backup (for undo last restore)
   const [localStorageBackup, setLocalStorageBackup] = useState<LocalStorageBackup | null>(null);
   const [showUndoConfirm, setShowUndoConfirm] = useState(false);
+
+  // Delete account
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const currentProviderTypes = ["google.com"];
 
@@ -116,48 +121,63 @@ export default function Settings() {
 
   async function handleUpdateInterval() {
     if (!newIncome || !newInterval) return;
-    const diffAmount = getIncomeByInterval(
-      payPeriodInterval,
-      newInterval,
-      Number(newIncome)
-    );
-    setIncome(Number(newIncome));
-    setPayPeriodInterval(newInterval);
-    await editPayPeriodInterval(newInterval, user!.uid);
-    const nextBudget = recalculateBudget({
-      currentAvailableBudget: totalSpendingBudget,
-      diffAmount,
-    });
-    await editTotalSpendingBudget(nextBudget, user!.uid);
-    setTotalSpendingBudget(nextBudget);
-    setShowIntervalSettings(false);
-    showToast("Budget interval updated");
+    try {
+      const diffAmount = getIncomeByInterval(
+        payPeriodInterval,
+        newInterval,
+        Number(newIncome)
+      );
+      setIncome(Number(newIncome));
+      setPayPeriodInterval(newInterval);
+      await editPayPeriodInterval(newInterval, user!.uid);
+      const nextBudget = recalculateBudget({
+        currentAvailableBudget: totalSpendingBudget,
+        diffAmount,
+      });
+      await editTotalSpendingBudget(nextBudget, user!.uid);
+      setTotalSpendingBudget(nextBudget);
+      setShowIntervalSettings(false);
+      showToast("Budget interval updated");
+    } catch (e) {
+      console.error("Error updating budget interval", e);
+      showToast("Failed to update budget interval", "error");
+    }
   }
 
   async function updateIncome() {
     if (!newIncome || !income) return;
-    const diffAmount = Number(newIncome) - Number(income);
-    const newBal = recalculateBudget({
-      currentAvailableBudget: totalSpendingBudget,
-      diffAmount,
-    });
-    await editTotalSpendingBudget(newBal, user!.uid);
-    await editIncome(Number(newIncome), user!.uid);
-    setTotalSpendingBudget(newBal);
-    setIncome(Number(newIncome));
-    setShowEditIncome(false);
-    showToast("Income updated");
+    try {
+      const diffAmount = Number(newIncome) - Number(income);
+      const newBal = recalculateBudget({
+        currentAvailableBudget: totalSpendingBudget,
+        diffAmount,
+      });
+      await editTotalSpendingBudget(newBal, user!.uid);
+      await editIncome(Number(newIncome), user!.uid);
+      setTotalSpendingBudget(newBal);
+      setIncome(Number(newIncome));
+      setShowEditIncome(false);
+      showToast("Income updated");
+    } catch (e) {
+      console.error("Error updating income", e);
+      showToast("Failed to update income", "error");
+    }
   }
 
   async function handlePayDateChange(value: Value) {
     if (value instanceof Date) {
-      setPayDate(Timestamp.fromDate(value));
-      await editPayDate(value, user!.uid);
-      showToast("Pay date updated");
-      // TODO: recalculate budget based on paydate change
-      // This involves checking which bills in the current interval are paid
-      // If not paid, and no longer in interval add the amount to budget
-      // If paid and no longer in interval - not sure lol
+      try {
+        setPayDate(Timestamp.fromDate(value));
+        await editPayDate(value, user!.uid);
+        showToast("Pay date updated");
+        // TODO: recalculate budget based on paydate change
+        // This involves checking which bills in the current interval are paid
+        // If not paid, and no longer in interval add the amount to budget
+        // If paid and no longer in interval - not sure lol
+      } catch (e) {
+        console.error("Error updating pay date", e);
+        showToast("Failed to update pay date", "error");
+      }
     }
   }
 
@@ -210,6 +230,18 @@ export default function Settings() {
       showToast("Restore undone successfully");
     } else {
       showToast("Failed to undo restore", "error");
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setIsDeletingAccount(true);
+    const result = await deleteAccount();
+    setIsDeletingAccount(false);
+    setShowDeleteAccountConfirm(false);
+    if (result.success) {
+      window.location.href = "/";
+    } else {
+      showToast(result.error, "error");
     }
   }
 
@@ -401,7 +433,37 @@ export default function Settings() {
             </div>
           </FullScreen>
         )}
+
+        {/* Delete Account - at bottom of settings */}
+        <div
+          className="flex flex-col justify-center h-fit w-[80%] max-w-[20rem] items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8 cursor-pointer hover:opacity-90"
+          onClick={() => setShowDeleteAccountConfirm(true)}
+        >
+          <p className="text-sm font-bold text-my-red-light">Delete Account</p>
+          <p className="text-xs text-my-white-dark mt-1">Permanently delete your account and all data</p>
+        </div>
       </div>
+
+      {showDeleteAccountConfirm && (
+        <FullScreen
+          theme="DARK"
+          onClose={() => !isDeletingAccount && setShowDeleteAccountConfirm(false)}
+          onSave={handleDeleteAccount}
+          showButtons
+          saveButtonText="Delete account"
+          saveButtonColor="red"
+          closeButtonText="Cancel"
+        >
+          <div className="w-full text-center px-4">
+            <h1 className="text-xl text-my-red-light font-bold mb-4">Are you sure?</h1>
+            <p className="text-my-white-light mb-2">
+              This will permanently delete your account and all your data (envelopes, payments, backups).
+            </p>
+            <p className="text-my-white-dark text-sm">This cannot be undone.</p>
+            {isDeletingAccount && <p className="text-my-white-dark text-sm mt-4">Deleting…</p>}
+          </div>
+        </FullScreen>
+      )}
     </div>
   );
 }

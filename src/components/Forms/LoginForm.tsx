@@ -7,25 +7,18 @@ import {
 } from "../../firebase/emailAndPassword";
 import Button from "../Buttons/Button";
 import { useAuth } from "../../Context/AuthContext/useAuth";
+import { useToast } from "../../Context/ToastContext/useToast";
 
 interface LoginError {
   code: string;
   message: string;
 }
 
-type ErrorType =
-  | "wrong-password"
-  | "no-account"
-  | "email-in-use"
-  | "reset-sent"
-  | "reset-failed"
-  | "generic";
-
 export default function LoginForm() {
   const { setUser } = useAuth();
+  const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorType, setErrorType] = useState<ErrorType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -58,14 +51,9 @@ export default function LoginForm() {
     }
   }, [showForgotPassword]);
 
-  function clearError() {
-    setErrorType(null);
-  }
-
   async function loginOrSignup() {
-    setErrorType(null);
     if (!email.trim() || !password) {
-      setErrorType("generic");
+      showToast("Please enter email and password", "error");
       return;
     }
     setIsLoading(true);
@@ -73,6 +61,7 @@ export default function LoginForm() {
       const loggedInUser = await loginWithEmailAndPassword(email.trim(), password);
       if (loggedInUser) {
         setUser(loggedInUser);
+        showToast("Welcome back");
       }
     } catch (error: unknown) {
       const code = (error as LoginError).code;
@@ -80,7 +69,7 @@ export default function LoginForm() {
         const methods = await getSignInMethodsForEmail(email.trim());
         const hasPassword = methods.includes("password");
         if (hasPassword) {
-          setErrorType("wrong-password");
+          showToast("Wrong password. Check your password or use Forgot password below.", "error");
           setIsLoading(false);
           return;
         }
@@ -88,13 +77,19 @@ export default function LoginForm() {
           const newUser = await createUserEmailPass(email.trim(), password);
           if (newUser) {
             setUser(newUser);
+            showToast("Welcome back");
           }
         } catch (signupError: unknown) {
           const signupCode = (signupError as LoginError).code;
-          setErrorType(signupCode === "auth/email-already-in-use" ? "email-in-use" : "generic");
+          showToast(
+            signupCode === "auth/email-already-in-use"
+              ? "An account with this email already exists. Sign in with your password or use Forgot password."
+              : "Something went wrong. Please try again.",
+            "error"
+          );
         }
       } else {
-        setErrorType("generic");
+        showToast("Something went wrong. Please try again.", "error");
       }
     } finally {
       setIsLoading(false);
@@ -104,44 +99,22 @@ export default function LoginForm() {
   async function handleForgotPassword() {
     const emailToUse = showForgotPassword ? forgotEmail.trim() : email.trim();
     if (!emailToUse) {
-      setErrorType("generic");
+      showToast("Please enter an email address", "error");
       return;
     }
-    setErrorType(null);
     setIsSendingReset(true);
     try {
       await sendPasswordResetEmailToUser(emailToUse);
-      setErrorType("reset-sent");
+      showToast("If an account exists for this email, check your inbox and spam folder for the reset link.");
       setShowForgotPassword(false);
       setForgotEmail("");
     } catch (err: unknown) {
       console.error("Password reset failed:", err);
-      setErrorType("reset-failed");
+      showToast("Could not send reset email. Check the email address and try again.", "error");
     } finally {
       setIsSendingReset(false);
     }
   }
-
-  function getErrorMessage(): string | null {
-    if (!errorType) return null;
-    switch (errorType) {
-      case "wrong-password":
-        return "Wrong password. Check your password or use Forgot password below.";
-      case "no-account":
-        return "No account found with this email.";
-      case "email-in-use":
-        return "An account with this email already exists. Sign in with your password or use Forgot password.";
-      case "reset-sent":
-        return "If an account exists for this email, check your inbox and spam folder for the reset link.";
-      case "reset-failed":
-        return "Could not send reset email. Check the email address and try again.";
-      default:
-        return "Something went wrong. Please try again.";
-    }
-  }
-
-  const message = getErrorMessage();
-  const isSuccess = errorType === "reset-sent";
 
   return (
     <form
@@ -165,10 +138,7 @@ export default function LoginForm() {
           autoComplete="email"
           placeholder="Email for reset link"
           value={forgotEmail}
-          onChange={(e) => {
-            setForgotEmail(e.target.value);
-            clearError();
-          }}
+          onChange={(e) => setForgotEmail(e.target.value)}
           className="w-[80%] max-w-[20rem] p-2 border rounded-lg bg-my-white-dark"
         />
         <div className="flex flex-col items-center gap-2 w-[80%] max-w-[20rem]">
@@ -186,7 +156,6 @@ export default function LoginForm() {
             onClick={() => {
               setShowForgotPassword(false);
               setForgotEmail("");
-              clearError();
             }}
           >
             Back to login
@@ -207,10 +176,7 @@ export default function LoginForm() {
           autoComplete="email"
           placeholder="Email"
           value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            clearError();
-          }}
+          onChange={(e) => setEmail(e.target.value)}
           className="w-[80%] max-w-[20rem] p-2 border rounded-lg bg-my-white-dark"
         />
         <input
@@ -219,10 +185,7 @@ export default function LoginForm() {
           autoComplete="current-password"
           placeholder="Password"
           value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            clearError();
-          }}
+          onChange={(e) => setPassword(e.target.value)}
           className="w-[80%] max-w-[20rem] p-2 border rounded-lg bg-my-white-dark"
         />
         <Button
@@ -239,23 +202,11 @@ export default function LoginForm() {
           onClick={() => {
             setShowForgotPassword(true);
             setForgotEmail(email);
-            clearError();
           }}
         >
           Forgot password?
         </button>
       </div>
-
-      {message && (
-        <p
-          className={`text-center text-sm w-[80%] max-w-[20rem] ${
-            isSuccess ? "text-green-400" : "text-my-red-dark"
-          }`}
-          role="alert"
-        >
-          {message}
-        </p>
-      )}
     </form>
   );
 }
