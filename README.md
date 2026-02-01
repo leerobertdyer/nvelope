@@ -15,6 +15,8 @@ A personal finance management app built with React, TypeScript, and Firebase.
 - Firebase
 - Tailwind CSS
 
+Firestore rules are in `firestore.rules`; deploy via Firebase Console.
+
 
 # TODO
 

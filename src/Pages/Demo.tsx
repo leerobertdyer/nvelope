@@ -224,7 +224,6 @@ export default function Demo() {
   }
 
   async function handleSkipPayments() {
-    console.log("handleSkipPayments - continuing without adding payments");
     // Just move to the next step without adding any payments
     setStep(8);
   }
@@ -252,11 +251,8 @@ export default function Demo() {
   }
 
   async function handleStep1() {
-    console.log("[DEMO] handleStep1");
-
     // If no document exists yet, create it now (user has intentionally started onboarding)
     if (documentExists === false && user) {
-      console.log("[DEMO] Creating user document...");
       const created = await createUserDocument(user);
       if (created) {
         setDocumentExists(true);
@@ -268,23 +264,19 @@ export default function Demo() {
     }
 
     if (payDate) {
-      console.log("[DEMO] payDate found: ", payDate);
       setNewPayDate(payDate.toDate());
       if (payPeriodInterval) {
         setNewInterval(payPeriodInterval);
         setStep(4);
       } else {
-        console.log("[DEMO] payDate found, No interval found");
         setStep(3);
       }
     } else {
-      console.log("[DEMO] No pay date found");
       setStep(2);
     }
   }
 
   async function handleStep2() {
-    console.log("[DEMO] handleStep2");
     if (!newPayDate || Array.isArray(newPayDate)) return;
     await editPayDate(newPayDate, user!.uid);
     if (newPayDate instanceof Date) {
@@ -294,7 +286,6 @@ export default function Demo() {
   }
 
   async function handleStep3() {
-    console.log("handleStep3");
     if (!newInterval && !payPeriodInterval) return;
     const newIncomeAmount = getIncomeByInterval(
       payPeriodInterval,
@@ -325,7 +316,6 @@ export default function Demo() {
   }
 
   async function handleStep5() {
-    console.log("handleStep5");
     if (!newIncome) return;
     const diffAmount = newIncome - income;
     await editIncome(newIncome, user!.uid);
@@ -340,7 +330,6 @@ export default function Demo() {
   }
 
   function handleStep6() {
-    console.log("handleStep6");
     if (payments && payments.length > 0) {
       setStep(8);
     } else {
@@ -352,7 +341,6 @@ export default function Demo() {
   }
 
   async function handleStep7() {
-    console.log("handleStep7");
     if (!newPayments) return;
     const diffAmount = newPayments.reduce((acc, p) => acc + p.amount, 0) * -1;
     await editPayments(newPayments, user!.uid);
@@ -367,12 +355,10 @@ export default function Demo() {
   }
 
   function handleStep8() {
-    console.log("handleStep8");
     setStep(9);
   }
 
   function handleStep9() {
-    console.log("handleStep9");
     // Don't set isNewUser to false yet - continue the demo walkthrough
     setStep(10);
   }
@@ -394,7 +380,6 @@ export default function Demo() {
   }
 
   async function handleStep14() {
-    console.log("handleStep14 - Demo complete");
     // Now mark as no longer a new user and navigate to main app
     await editIsNewUser(false, user!.uid);
     setIsNewUser(false);

@@ -37,9 +37,7 @@ export async function createUserEmailPass(email: string, password: string) {
    try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
     if (userCredential) {
-        // Signed up 
         const user = userCredential.user;
-        console.log('User created successfully:', user);
         return user;
     }
    } catch (error: unknown) {
@@ -54,9 +52,7 @@ export async function loginWithEmailAndPassword(email: string, password: string)
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password)
         if (userCredential) {
-            // Signed in 
             const user = userCredential.user;
-            console.log('User signed in successfully:', user);
             return user;
         }
     } catch (error: unknown) {

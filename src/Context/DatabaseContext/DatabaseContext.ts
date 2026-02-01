@@ -28,8 +28,6 @@ interface IDatabaseContext {
     setTotalSpendingBudget: (totalSpendingBudget: number) => void
     resetBudgetTimestamp: Timestamp | null
     setResetBudgetTimestamp: (resetBudgetTimestamp: Timestamp | null) => void
-    oneTimeExpenses: OneTimeAmount[] | null
-    setOneTimeExpenses: (oneTimeExpenses: OneTimeAmount[] | null) => void
     backups: Backup | null;
     dbError: string | null;
     documentExists: boolean | null;

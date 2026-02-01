@@ -27,7 +27,6 @@ export async function createUserDocument(user: User) {
     // Double-check document doesn't already exist (safety check)
     const existingDoc = await getDoc(userDocRef);
     if (existingDoc.exists()) {
-      console.warn("createUserDocument: Document already exists, not overwriting");
       return true; // Document exists, that's fine
     }
     
@@ -43,13 +42,11 @@ export async function createUserDocument(user: User) {
       totalSpendingBudget: 0,
       oneTimeCash: null,
       resetBudgetTimestamp: null,
-      oneTimeExpenses: null,
       backups: null,
       createdAt: Timestamp.now(),
     };
     
     await setDoc(userDocRef, initialUserData);
-    console.log("✅ User document created successfully");
     return true;
   } catch (error) {
     console.error("createUserDocument failed:", error);
@@ -85,12 +82,10 @@ export async function completeDemoWithDefaults(user: User): Promise<boolean> {
         totalSpendingBudget: 0,
         oneTimeCash: null,
         resetBudgetTimestamp: null,
-        oneTimeExpenses: null,
         backups: null,
         createdAt: Timestamp.now(),
       };
       await setDoc(userDocRef, initialUserData);
-      console.log("✅ User document created with defaults (skip demo)");
       return true;
     }
 
@@ -100,7 +95,6 @@ export async function completeDemoWithDefaults(user: User): Promise<boolean> {
     } else {
       await updateDoc(userDocRef, { isNewUser: false });
     }
-    console.log("✅ Demo skipped – document updated with defaults");
     return true;
   } catch (error) {
     console.error("completeDemoWithDefaults failed:", error);
@@ -188,28 +182,6 @@ export async function editPayDate(payDate: Date, userId: string) {
     await updateDoc(userDocRef, { payDate: date });
   } catch (error) {
     console.error("Firebase, editPayDate Failed", error);
-  }
-  return;
-}
-
-export async function editOneTimeExpense(
-  newExpense: OneTimeAmount | null,
-  userId: string
-) {
-  try {
-    const userDocRef = doc(db, "users", userId);
-    const docSnap = await getDoc(userDocRef);
-    if (docSnap.exists()) {
-      const { oneTimeExpense } = docSnap.data() || [];
-      const nextOneTimeExpense = [...(oneTimeExpense || []), newExpense];
-      await updateDoc(userDocRef, { oneTimeExpense: nextOneTimeExpense });
-    } else {
-      console.error(
-        "Firebase, editOneTimeExpense Failed: Document does not exist"
-      );
-    }
-  } catch (error) {
-    console.error("Firebase, editOneTimeExpense Failed", error);
   }
   return;
 }
@@ -350,11 +322,6 @@ export async function editSnowball(user: User, amount: number) {
   if (!user) return;
   const userDocRef = doc(db, "users", user.uid);
   await updateDoc(userDocRef, { snowball: amount });
-  try {
-    console.log("attempting to updateDoc for snowball");
-  } catch (e) {
-    console.error("There was an error in editSnowball when updating db: ", e);
-  }
 }
 
 export async function editSnowballTargetPaymentId(user: User, paymentId: string | null) {
@@ -445,7 +412,6 @@ export async function backupUserDataSafe(user: User) {
       backupTimeStamp: newTime,
       nvelopes: data.envelopes ?? [],
       payments: data.payments ?? [],
-      expenses: data.oneTimeExpense ?? [],
       cash: data.oneTimeCash ?? [],
       payDate: data.payDate ?? null,
       payPeriodInterval: data.payPeriodInterval ?? "MONTHLY",
@@ -459,8 +425,6 @@ export async function backupUserDataSafe(user: User) {
     // Store in separate collection: /userBackups/{userId}/backups/{auto-id}
     const backupsCollectionRef = collection(db, "userBackups", user.uid, "backups");
     await addDoc(backupsCollectionRef, backupData);
-    
-    console.log("✅ Safe backup created at", newTime.toDate());
     
     // Prune old backups in separate collection (keep last 30)
     await pruneOldBackups(user.uid, 30);
@@ -524,12 +488,6 @@ export async function restoreFromSafeBackup(backupId: string, user: User) {
     
     const b = backupSnap.data();
     
-    console.log(`⚠️ Restoring from SAFE backup ${b.backupTimeStamp?.toDate()}!`);
-    console.log(`  - ${b.payments?.length ?? 0} payments`);
-    console.log(`  - ${b.nvelopes?.length ?? 0} envelopes`);
-    console.log(`  - Income: ${b.income}`);
-    console.log(`  - Budget: ${b.totalSpendingBudget}`);
-    
     await editTotalSpendingBudget(Number(b.totalSpendingBudget), user.uid);
     await editIncome(Number(b.income), user.uid);
     await editEnvelopes(b.nvelopes ?? [], user.uid);
@@ -558,8 +516,6 @@ async function pruneOldBackups(userId: string, keepCount: number) {
     for (const docToDelete of docsToDelete) {
       await deleteDoc(doc(db, "userBackups", userId, "backups", docToDelete.id));
     }
-    
-    console.log(`🗑️ Pruned ${docsToDelete.length} old backups`);
   } catch (error) {
     console.error("Error pruning old backups:", error);
   }
@@ -606,7 +562,6 @@ export function saveToLocalStorageBackup(userData: {
     };
     // Overwrite any existing backup (only keep most recent)
     localStorage.setItem(LOCALSTORAGE_BACKUP_KEY, JSON.stringify(backup));
-    console.log("💾 Saved current state to localStorage before restore");
   } catch (error) {
     console.error("Error saving to localStorage:", error);
   }

@@ -5,5 +5,4 @@ export async function createLoginForExistingUser(email: string, password: string
   const user = auth.currentUser!;
   const credential = EmailAuthProvider.credential(email, password);
   await linkWithCredential(user, credential);
-  console.log("Account linking success");
 }

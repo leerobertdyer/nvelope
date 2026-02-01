@@ -18,7 +18,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [income, setIncome] = useState<number>(0);
     const [isNewUser, setIsNewUser] = useState<boolean>(false);
     const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
-    const [oneTimeExpenses, setOneTimeExpenses] = useState<OneTimeAmount[] | null>(null);
     const [resetBudgetTimestamp, setResetBudgetTimestamp] = useState<Timestamp | null>(null);
     const [oneTimeCash, setOneTimeCash] = useState<OneTimeAmount[] | null>(null);
     const [backups, setBackups] = useState<Backup | null>(null);
@@ -33,7 +32,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
             setIsLoadingDb(false);
             return;
         };
-        console.log("🔄 Setting up real-time Firebase listener for user:", user.uid);
         const userDocRef = doc(db, "users", user.uid);
         
         /**
@@ -64,13 +62,11 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setTotalSpendingBudget(data.totalSpendingBudget || 0);
                     setOneTimeCash(data.oneTimeCash || null);
                     setResetBudgetTimestamp(data.resetBudgetTimestamp || null);
-                    setOneTimeExpenses(data.oneTimeExpense || null);
                     setBackups(data.backups || null);
                 } else {
                     // Document doesn't exist - this is either a new user OR a network glitch
                     // We do NOT auto-create. The UI will handle this state.
                     // Document creation only happens through intentional user action (Demo flow)
-                    console.log("📭 No document found for user - documentExists = false");
                     setDocumentExists(false);
                     setIsLoadingDb(false);
                     // Keep all state at defaults (empty arrays, 0s, nulls)
@@ -93,7 +89,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
          * - Effect dependencies change (in this case, just 'user')
          */
         return () => {
-            console.log("🔌 Unsubscribing from Firebase listener");
             unsubscribe();
         };
     }, [user]);
@@ -123,8 +118,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         setOneTimeCash,
         resetBudgetTimestamp,
         setResetBudgetTimestamp,
-        oneTimeExpenses,
-        setOneTimeExpenses,
         backups,
         setBackups,
         dbError,

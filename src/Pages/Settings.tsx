@@ -95,7 +95,6 @@ export default function Settings() {
       // Check what providers are linked to this user
       user.providerData.forEach((profile) => {
         setProviderType(profile.providerId);
-        console.log("Sign-in provider:", profile.providerId);
       });
       // Check if password exists already
       user.providerData.some((provider) => {
