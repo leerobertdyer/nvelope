@@ -2,7 +2,6 @@ import Calendar from "react-calendar";
 import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../../constants";
 import type { Interval, Payment } from "../../types";
 import Button from "../Buttons/Button";
-import Popup from "../Popup";
 import type { Value } from "react-calendar/src/shared/types.js";
 import { Timestamp } from "firebase/firestore";
 import { useState } from "react";

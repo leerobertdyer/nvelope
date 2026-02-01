@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../Context/AuthContext/useAuth";
-import LoginOptions from "../components/LoginOptions";
+import LoginOptions from "../components/Auth/LoginOptions";
 import MainView from "./MainView";
 import Loading from "../components/Loading";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";

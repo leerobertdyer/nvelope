@@ -1,14 +1,14 @@
-import type { Payment } from "../types";
+import type { Payment } from "../../types";
 import { format, isAfter, startOfDay } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
-import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { useAuth } from "../Context/AuthContext/useAuth";
+import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
+import { useAuth } from "../../Context/AuthContext/useAuth";
 import {
   getCurrentIntervalDateRange,
   getEffectivePaymentAmount,
   isDateInCurrentPayPeriod,
-} from "../util";
-import ShowHideButton from "./Buttons/ShowHideButton";
+} from "../../util";
+import ShowHideButton from "../Buttons/ShowHideButton";
 import { IoIosCheckmarkCircle, IoIosCheckmarkCircleOutline } from "react-icons/io";
 
 interface PaymentMapProps {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import Header from "../components/Header";
-import Nvelopes from "../components/Nvelopes";
+import Header from "../components/Nav/Header";
+import Nvelopes from "../components/Nvelopes/NvelopesContainer";
 import { type Envelope, type Payment } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
@@ -14,7 +14,7 @@ import {
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useToast } from "../Context/ToastContext/useToast";
 import Button from "../components/Buttons/Button";
-import Nvelope from "../components/Nvelope";
+import Nvelope from "../components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
   getVirtualPaymentsForMonth,
@@ -28,14 +28,14 @@ import Loading from "../components/Loading";
 import FullScreen from "../Views/FullScreen";
 import TextInput from "../components/TextInput";
 import { startOfDay, addMonths } from "date-fns";
-import PaymentMap from "../components/PaymentMap";
+import PaymentMap from "../components/Payments/PaymentMap";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
-import Summary from "../components/Summary";
+import Summary from "../components/Payments/Summary";
 import BigPayment from "../Views/BigPayment";
 import PaymentForm from "../components/Forms/PaymentForm";
 import AddIncomeForm from "../components/Forms/AddIncomeForm";
 import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
-import FundPaymentDueModal from "../components/SplitPaymentDueModal";
+import FundPaymentDueModal from "../components/Payments/SplitPaymentDueModal";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -757,7 +757,6 @@ export default function MainEnvelopesView() {
             handleEditBill={handleEditPayment}
           />
         </div>
-        {/* <Expenses expenses={expenses} /> */}
       </main>
     </div>
   );

@@ -13,14 +13,13 @@ import {
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useEffect, useState, useRef } from "react";
 import Calendar from "react-calendar";
-import Header from "../components/Header";
+import Header from "../components/Nav/Header";
 import "react-calendar/dist/Calendar.css";
-import DemoStep from "../components/DemoStep";
+import DemoStep from "../components/Demo/DemoStep";
 import type { Payment, Interval } from "../types";
 import { IoIosSad } from "react-icons/io";
 import ActionButtons from "../components/Buttons/ActionButtons";
-import SpotlightOverlay from "../components/SpotlightOverlay";
-import Popup from "../components/Popup";
+import SpotlightOverlay from "../components/Demo/SpotlightOverlay";
 import { Timestamp } from "firebase/firestore";
 import SpendBtn from "../components/Buttons/SpendBtn";
 import {
@@ -38,7 +37,7 @@ import PaymentTypeSelector, {
   type PaymentTypeOption,
 } from "../components/Forms/PaymentTypeSelector";
 import { useToast } from "../Context/ToastContext/useToast";
-import DemoTooltip from "../components/DemoTooltip";
+import DemoTooltip from "../components/Demo/DemoTooltip";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
@@ -73,8 +72,6 @@ export default function Demo() {
   const [newPaymentDueDate, setNewPaymentDueDate] = useState<Date | null>(null);
   const [newPaymentTotal, setNewPaymentTotal] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [showPaymentAdded, setShowPaymentAdded] = useState<boolean>(false);
-  const [showPaymentError, setShowPaymentError] = useState<boolean>(false);
 
   // Payment type selection for step 7
   const [selectedPaymentType, setSelectedPaymentType] =
@@ -122,13 +119,6 @@ export default function Demo() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setTimeout(() => {
-      setShowPaymentAdded(false);
-      setShowPaymentError(false);
-    }, 2500);
-  }, [showPaymentAdded, showPaymentError]);
-
-  useEffect(() => {
     // Give firebase time to load user data
     // That way if there is already a startDate but user has not finished remaining steps
     // We allow them to start where left off
@@ -151,7 +141,7 @@ export default function Demo() {
 
     // Check if name is already used
     if (newPayments.some((p) => p.name === newPaymentName)) {
-      setShowPaymentError(true);
+      showToast("Payment name already exists", "error");
       return;
     }
 
@@ -216,7 +206,7 @@ export default function Demo() {
     setNewPaymentAmount(0);
     setNewPaymentTotal(null);
     setNewPaymentDueDate(null);
-    setShowPaymentAdded(true);
+    showToast("Payment added!", "success");
   }
 
   async function handleClickAddPayment() {
@@ -426,10 +416,6 @@ export default function Demo() {
         >
           Skip demo
         </button>
-      )}
-      {showPaymentAdded && <Popup type="success">Payment added!</Popup>}
-      {showPaymentError && (
-        <Popup type="error">Payment name already exists</Popup>
       )}
       <div
         className={`absolute z-9999 left-0 right-0 bottom-0 

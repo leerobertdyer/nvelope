@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Button from "../components/Buttons/Button";
-import Header from "../components/Header";
+import Header from "../components/Nav/Header";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { type BackupData, type Interval } from "../types";
 import {

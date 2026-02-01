@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Header from "../components/Header";
+import Header from "../components/Nav/Header";
 import Button from "../components/Buttons/Button";
 import TextInput from "../components/TextInput";
 import { IoStar, IoStarOutline } from "react-icons/io5";

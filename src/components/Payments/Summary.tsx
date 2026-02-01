@@ -1,8 +1,8 @@
 
-import type { Payment } from "../types";
-import { paymentsTotal } from "../util";
-import ShowAndHide from "./Buttons/ShowAndHide";
-import { useDatabase } from "../Context/DatabaseContext/useDatabase";
+import type { Payment } from "../../types";
+import { paymentsTotal } from "../../util";
+import ShowAndHide from "../Buttons/ShowAndHide";
+import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 
 interface IProps {
     payments: Payment[]

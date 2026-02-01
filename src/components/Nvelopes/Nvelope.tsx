@@ -1,3 +1,10 @@
+/**
+ * Nvelope – Single envelope rendered in different modes (kind).
+ * Handles: card view, delete confirm, add/edit forms, spending view, dash/loading
+ * placeholder. Used by BigEnvelope (Views), Loading screen, and EnvelopeForm.
+ * Sibling to Nvelopes/ListEnvelope; this is the polymorphic envelope UI, not the
+ * list container or list row.
+ */
 import { useEffect, useState } from "react";
 import {
   BsEnvelope,
@@ -6,12 +13,12 @@ import {
   BsEnvelopePaperFill,
   BsEnvelopeX,
 } from "react-icons/bs";
-import Button from "./Buttons/Button";
-import type { Envelope } from "../types";
+import Button from "../Buttons/Button";
+import type { Envelope } from "../../types";
 import { IoIosRepeat } from "react-icons/io";
 import { IoAddCircle } from "react-icons/io5";
-import NvelopeCalculator from "../Views/NvelopeCalculator";
-import EnvelopeForm from "./Forms/EnvelopeForm";
+import NvelopeCalculator from "../../Views/NvelopeCalculator";
+import EnvelopeForm from "../Forms/EnvelopeForm";
 
 interface NvelopeProps {
   kind:

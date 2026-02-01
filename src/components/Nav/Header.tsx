@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import SpotlightOverlay from "./SpotlightOverlay";
+import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
+import SpotlightOverlay from "../Demo/SpotlightOverlay";
 import NavMenu from "./NavMenu";
-import { calculateCurrentIntervalStart, getIntervalDateRange, getNumberOfDaysFromInterval } from "../util";
+import { calculateCurrentIntervalStart, getIntervalDateRange, getNumberOfDaysFromInterval } from "../../util";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
-import EditSpendingBudget from "./Forms/EditSpendingBudget";
+import EditSpendingBudget from "../Forms/EditSpendingBudget";
 
 export default function Header({ step, links }: { step?: number, links: { label: string, href: string }[] }) {
   const { totalSpendingBudget, payPeriodInterval, payDate } = useDatabase();

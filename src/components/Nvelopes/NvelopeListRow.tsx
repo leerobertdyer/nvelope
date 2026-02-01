@@ -1,5 +1,11 @@
+/**
+ * NvelopeView – One envelope as a row in the main envelope view.
+ * Shows name, remaining (total − spent), and total; color reflects spend level.
+ * Used only by NvelopesContainer to render each envelope; supports drag-and-drop for
+ * reordering. Child of NvelopesContainer; does not use Nvelope (that’s for detail/edit views).
+ */
 import { BiEnvelope } from "react-icons/bi";
-import type { Envelope } from "../types";
+import type { Envelope } from "../../types";
 
 interface IListEnvelopeProps {
     envelope: Envelope;

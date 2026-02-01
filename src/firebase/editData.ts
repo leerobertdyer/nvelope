@@ -95,12 +95,8 @@ export async function completeDemoWithDefaults(user: User): Promise<boolean> {
     }
 
     const data = existingDoc.data();
-    const updates: Record<string, unknown> = { isNewUser: false };
     if (data.payDate == null) {
-      updates.payDate = defaultPayDate;
-    }
-    if (Object.keys(updates).length > 1) {
-      await updateDoc(userDocRef, updates);
+      await updateDoc(userDocRef, { isNewUser: false, payDate: defaultPayDate });
     } else {
       await updateDoc(userDocRef, { isNewUser: false });
     }

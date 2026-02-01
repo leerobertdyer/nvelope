@@ -1,12 +1,19 @@
-import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import type { Envelope } from "../types";
-import { editEnvelopes, editTotalSpendingBudget } from "../firebase/editData";
-import { useAuth } from "../Context/AuthContext/useAuth";
+/**
+ * Nvelopes – Main envelope list container on the main view.
+ * Renders the envelope section header (Nvelope / Remaining / Total), uses ListEnvelope
+ * for each envelope row, and handles give/take between envelopes and opening the
+ * selected envelope in BigEnvelope (Views). Parent of ListEnvelope; coordinates
+ * drag-and-drop reorder and selection state.
+ */
+import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
+import type { Envelope } from "../../types";
+import { editEnvelopes, editTotalSpendingBudget } from "../../firebase/editData";
+import { useAuth } from "../../Context/AuthContext/useAuth";
 import { useEffect, useState } from "react";
-import GiveAndTake from "../Views/GiveAndTake";
-import ListEnvelope from "./ListEnvelope";
-import BigEnvelope from "../Views/BigEnvelope";
-import ShowHideButton from "./Buttons/ShowHideButton";
+import GiveAndTake from "../../Views/GiveAndTake";
+import ListEnvelope from "./NvelopeListRow";
+import BigEnvelope from "../../Views/BigEnvelope";
+import ShowHideButton from "../Buttons/ShowHideButton";
 
 interface NvelopeProps {
   resetState: () => void;

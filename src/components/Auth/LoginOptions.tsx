@@ -1,6 +1,6 @@
-import LoginForm from "./Forms/LoginForm";
+import LoginForm from "../Forms/LoginForm";
 import LoginProvider from "./LoginProvider";
-import googleIcon from "../assets/googleIcon.png";
+import googleIcon from "../../assets/googleIcon.png";
 
 export default function LoginOptions() {
   return (

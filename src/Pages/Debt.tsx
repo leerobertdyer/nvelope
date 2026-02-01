@@ -4,7 +4,7 @@ import { calculatePayoffDate, calculateSnowballPayoffDate, paymentsTotal } from 
 import Loading from "../components/Loading";
 import type { Payment } from "../types";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
-import Header from "../components/Header";
+import Header from "../components/Nav/Header";
 import { editPayments, editSnowballTargetPaymentId } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useToast } from "../Context/ToastContext/useToast";

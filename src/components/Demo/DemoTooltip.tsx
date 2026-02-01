@@ -1,4 +1,4 @@
-import Button from "./Buttons/Button";
+import Button from "../Buttons/Button";
 
 interface IDemoTooltip {
   children: React.ReactNode;

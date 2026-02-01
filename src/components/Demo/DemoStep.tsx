@@ -1,5 +1,5 @@
-import ClosingX from "./Buttons/ClosingX";
-import type { ChangeValue } from "../types";
+import ClosingX from "../Buttons/ClosingX";
+import type { ChangeValue } from "../../types";
 
 export default function DemoStep({
   children,

@@ -1,5 +1,5 @@
 import FullScreen from "../Views/FullScreen";
-import Nvelope from "./Nvelope";
+import Nvelope from "./Nvelopes/Nvelope";
 
 export default function Loading({ text }: { text: string }) {
   return (

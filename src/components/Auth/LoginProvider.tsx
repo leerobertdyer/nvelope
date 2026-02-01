@@ -1,5 +1,5 @@
-import signInWithGoogle from "../firebase/signInWithGoogle";
-import Button from "./Buttons/Button";
+import signInWithGoogle from "../../firebase/signInWithGoogle";
+import Button from "../Buttons/Button";
 
 export default function LoginProvider({src, text}: {src: string, text: string}) {
   return (

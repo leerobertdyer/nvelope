@@ -1,7 +1,7 @@
 import { format } from "date-fns";
-import type { Payment } from "../types";
-import Button from "./Buttons/Button";
-import FullScreen from "../Views/FullScreen";
+import type { Payment } from "../../types";
+import Button from "../Buttons/Button";
+import FullScreen from "../../Views/FullScreen";
 
 interface FundPaymentDueModalProps {
   payment: Payment;

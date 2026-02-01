@@ -1,4 +1,4 @@
-import type { Toast } from "../Context/ToastContext/ToastContext";
+import type { Toast } from "../../Context/ToastContext/ToastContext";
 
 interface ToastContainerProps {
   toasts: Toast[];
