@@ -33,7 +33,9 @@ import Loading from "../components/Loading";
 import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../constants";
 import IntervalSelector from "../components/Forms/IntervalSelector";
 import PayDateCalendar from "../components/Forms/PayDateCalendar";
-import PaymentTypeSelector, { type PaymentTypeOption } from "../components/Forms/PaymentTypeSelector";
+import PaymentTypeSelector, {
+  type PaymentTypeOption,
+} from "../components/Forms/PaymentTypeSelector";
 import { useToast } from "../Context/ToastContext/useToast";
 import DemoTooltip from "../components/DemoTooltip";
 
@@ -70,12 +72,15 @@ export default function Demo() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showPaymentAdded, setShowPaymentAdded] = useState<boolean>(false);
   const [showPaymentError, setShowPaymentError] = useState<boolean>(false);
-  
+
   // Payment type selection for step 7
-  const [selectedPaymentType, setSelectedPaymentType] = useState<PaymentTypeOption | null>(null);
-  const [newPaymentInterval, setNewPaymentInterval] = useState<Interval>(MONTHLY);
-  const [splitBillAcrossPayPeriods, setSplitBillAcrossPayPeriods] = useState(false);
-  
+  const [selectedPaymentType, setSelectedPaymentType] =
+    useState<PaymentTypeOption | null>(null);
+  const [newPaymentInterval, setNewPaymentInterval] =
+    useState<Interval>(MONTHLY);
+  const [splitBillAcrossPayPeriods, setSplitBillAcrossPayPeriods] =
+    useState(false);
+
   // Refs for steps 10-14 button spotlight
   const paymentBtnRef = useRef<HTMLDivElement>(null);
   const envelopeBtnRef = useRef<HTMLDivElement>(null);
@@ -84,21 +89,28 @@ export default function Demo() {
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
 
   const { showToast } = useToast();
-  
+
   // Update spotlight when step changes (for steps 10-13)
   useEffect(() => {
     if (step < 10 || step > 13) {
       setSpotlightRect(null);
       return;
     }
-    
+
     const updateRect = () => {
-      const ref = step === 10 ? paymentBtnRef : step === 11 ? envelopeBtnRef : step === 12 ? cashBtnRef : clearBtnRef;
+      const ref =
+        step === 10
+          ? paymentBtnRef
+          : step === 11
+            ? cashBtnRef
+            : step === 12
+              ? envelopeBtnRef
+              : clearBtnRef;
       if (ref.current) {
         setSpotlightRect(ref.current.getBoundingClientRect());
       }
     };
-    
+
     // Small delay to ensure DOM is ready
     setTimeout(updateRect, 100);
     window.addEventListener("resize", updateRect);
@@ -150,10 +162,12 @@ export default function Demo() {
     if (!payDate) return;
 
     // Determine interval based on type and split toggle
-    const interval: Interval = 
-      selectedPaymentType === "FUND" ? SPLIT :
-      (selectedPaymentType === "BILL" && splitBillAcrossPayPeriods) ? SPLIT :
-      newPaymentInterval;
+    const interval: Interval =
+      selectedPaymentType === "FUND"
+        ? SPLIT
+        : selectedPaymentType === "BILL" && splitBillAcrossPayPeriods
+          ? SPLIT
+          : newPaymentInterval;
 
     // Build payment with common base, type-specific additions via ternary
     const newPayment: Payment = {
@@ -165,20 +179,26 @@ export default function Demo() {
       interval,
       type: selectedPaymentType,
       // Type-specific fields
-      ...(selectedPaymentType === "DEBT" && { total: newPaymentTotal || newPaymentAmount }),
-      ...(selectedPaymentType === "FUND" && { total: newPaymentAmount, recurring: false }),
-      ...(selectedPaymentType === "BILL" && splitBillAcrossPayPeriods && { recurring: true }),
+      ...(selectedPaymentType === "DEBT" && {
+        total: newPaymentTotal || newPaymentAmount,
+      }),
+      ...(selectedPaymentType === "FUND" && {
+        total: newPaymentAmount,
+        recurring: false,
+      }),
+      ...(selectedPaymentType === "BILL" &&
+        splitBillAcrossPayPeriods && { recurring: true }),
     };
 
     const updatedPayments = [...newPayments, newPayment];
     await editPayments(updatedPayments, user?.uid || "");
-    
+
     const nextBudget = recalculateBudget({
       currentAvailableBudget: totalSpendingBudget,
       diffAmount: isDateInCurrentPayPeriod(
         payPeriodInterval,
         payDate?.toDate(),
-        dueDate
+        dueDate,
       )
         ? newPaymentAmount
         : 0,
@@ -187,7 +207,7 @@ export default function Demo() {
     setTotalSpendingBudget(nextBudget);
     setNewPayments(updatedPayments);
     setPayments(updatedPayments);
-    
+
     // Reset form
     setNewPaymentName("");
     setNewPaymentAmount(0);
@@ -199,7 +219,7 @@ export default function Demo() {
   async function handleClickAddPayment() {
     handleAddNewPayment();
   }
-  
+
   function resetPaymentForm() {
     setNewPaymentName("");
     setNewPaymentAmount(null);
@@ -209,16 +229,16 @@ export default function Demo() {
     setNewPaymentInterval(MONTHLY);
     setSplitBillAcrossPayPeriods(false);
   }
-  
+
   async function handleSkipPayments() {
     console.log("handleSkipPayments - continuing without adding payments");
     // Just move to the next step without adding any payments
     setStep(8);
   }
 
-  async function handleFirstStep() {
-    console.log("[DEMO] handleFirstStep");
-    
+  async function handleStep1() {
+    console.log("[DEMO] handleStep1");
+
     // If no document exists yet, create it now (user has intentionally started onboarding)
     if (documentExists === false && user) {
       console.log("[DEMO] Creating user document...");
@@ -231,7 +251,7 @@ export default function Demo() {
         return;
       }
     }
-    
+
     if (payDate) {
       console.log("[DEMO] payDate found: ", payDate);
       setNewPayDate(payDate.toDate());
@@ -248,8 +268,8 @@ export default function Demo() {
     }
   }
 
-  async function handleSecondStep() {
-    console.log("[DEMO] handleSecondStep");
+  async function handleStep2() {
+    console.log("[DEMO] handleStep2");
     if (!newPayDate || Array.isArray(newPayDate)) return;
     await editPayDate(newPayDate, user!.uid);
     if (newPayDate instanceof Date) {
@@ -258,13 +278,13 @@ export default function Demo() {
     setStep(3);
   }
 
-  async function handleThirdStep() {
-    console.log("handleThirdStep");
+  async function handleStep3() {
+    console.log("handleStep3");
     if (!newInterval && !payPeriodInterval) return;
     const newIncomeAmount = getIncomeByInterval(
       payPeriodInterval,
       newInterval as Interval,
-      income
+      income,
     );
     await editPayPeriodInterval(newInterval as Interval, user!.uid);
     const nextBudget = recalculateBudget({
@@ -278,7 +298,7 @@ export default function Demo() {
     setStep(4);
   }
 
-  function handleFourthStep() {
+  function handleStep4() {
     if (income) {
       setStep(6);
     } else {
@@ -289,8 +309,8 @@ export default function Demo() {
     }
   }
 
-  async function handleFifthStep() {
-    console.log("handleFifthStep");
+  async function handleStep5() {
+    console.log("handleStep5");
     if (!newIncome) return;
     const diffAmount = newIncome - income;
     await editIncome(newIncome, user!.uid);
@@ -304,8 +324,8 @@ export default function Demo() {
     setStep(6);
   }
 
-  function handleSixthStep() {
-    console.log("handleSixthStep");
+  function handleStep6() {
+    console.log("handleStep6");
     if (payments && payments.length > 0) {
       setStep(8);
     } else {
@@ -316,11 +336,10 @@ export default function Demo() {
     }
   }
 
-  async function handleSeventhStep() {
-    console.log("handleSeventhStep");
+  async function handleStep7() {
+    console.log("handleStep7");
     if (!newPayments) return;
-    const diffAmount =
-      newPayments.reduce((acc, p) => acc + p.amount, 0) * -1;
+    const diffAmount = newPayments.reduce((acc, p) => acc + p.amount, 0) * -1;
     await editPayments(newPayments, user!.uid);
     const nextBudget = recalculateBudget({
       currentAvailableBudget: totalSpendingBudget,
@@ -332,33 +351,33 @@ export default function Demo() {
     setStep(8);
   }
 
-  function handleEighthStep() {
-    console.log("handleEighthStep");
+  function handleStep8() {
+    console.log("handleStep8");
     setStep(9);
   }
 
-  function handleNinthStep() {
-    console.log("handleNinthStep");
+  function handleStep9() {
+    console.log("handleStep9");
     // Don't set isNewUser to false yet - continue the demo walkthrough
     setStep(10);
   }
-  
+
   function handleStep10() {
     setStep(11);
   }
-  
+
   function handleStep11() {
     setStep(12);
   }
-  
+
   function handleStep12() {
     setStep(13);
   }
-  
+
   function handleStep13() {
     setStep(14);
   }
-  
+
   async function handleStep14() {
     console.log("handleStep14 - Demo complete");
     // Now mark as no longer a new user and navigate to main app
@@ -373,17 +392,11 @@ export default function Demo() {
 
   return (
     <div className="absolute inset-0 z-9990">
-      {user && (
-        <Header
-          links={[
-            { label: "Payments", href: "/payments" },
-            { label: "Settings", href: "/settings" },
-          ]}
-          step={step}
-        />
-      )}
+      {user && <Header links={[]} step={step} />}
       {showPaymentAdded && <Popup type="success">Payment added!</Popup>}
-      {showPaymentError && <Popup type="error">Payment name already exists</Popup>}
+      {showPaymentError && (
+        <Popup type="error">Payment name already exists</Popup>
+      )}
       <div
         className={`absolute z-9999 left-0 right-0 bottom-0 
             ${step > 1 ? "top-[4rem] h-[90vh]" : "top-0 h-screen"}
@@ -398,12 +411,16 @@ export default function Demo() {
             <div className="absolute inset-0 bg-my-black-dark opacity-80"></div>
             <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center text-white">
               <h3>Let's get you set up first...</h3>
-              <Button color="green" onClick={handleFirstStep} children="New Account" />
+              <Button
+                color="green"
+                onClick={handleStep1}
+                children="New Account"
+              />
             </div>
           </>
         ) : step === 2 ? (
           <DemoStep
-            onClick={handleSecondStep}
+            onClick={handleStep2}
             text="Save Pay Date"
             changeValue={newPayDate}
           >
@@ -423,7 +440,7 @@ export default function Demo() {
           </DemoStep>
         ) : step === 3 ? (
           <DemoStep
-            onClick={handleThirdStep}
+            onClick={handleStep3}
             text="Save Schedule"
             changeValue={newInterval}
           >
@@ -433,7 +450,7 @@ export default function Demo() {
             </h3>
             <p className="text-sm">
               (Or how often do you want to{" "}
-              <span className="text-my-red-light">budget?</span>)
+              <span className="text-my-blue-light">budget?</span>)
             </p>
             <p className="text-sm">
               Note: If you are paid bi-weekly but want to budget weekly, no
@@ -446,30 +463,39 @@ export default function Demo() {
             />
           </DemoStep>
         ) : step === 4 ? (
-          <DemoStep onClick={handleFourthStep} text="Next" changeValue={true}>
+          <DemoStep onClick={handleStep4} text="Next" changeValue={true}>
             <h3 className="text-sm sm:text-lg p-2">
               This is your budget until your next{" "}
               <span className="text-my-green-light">paycheck</span>
             </h3>
             <p className="text-sm sm:text-lg">
-              It includes <span className="text-my-green-light">$$$</span> from
-              all your <span className="text-my-red-light">Nvelopes</span>, and
-              any unspent cash as well.
+              It shows <span className="text-my-green-light">$$$</span>{" "}
+              available for{" "}
+              <span className="text-my-green-light">Nvelopes</span> or{" "}
+              <span className="text-my-red-light">Payments</span>.
+            </p>
+            <p className="text-sm sm:text-lg">
+              You can click on it to manually edit the budget.
             </p>
           </DemoStep>
         ) : step === 5 ? (
           <DemoStep
-            onClick={handleFifthStep}
+            onClick={handleStep5}
             text="Save Income"
             changeValue={newIncome}
           >
             <h3 className="text-sm sm:text-lg p-2">
-              Now, how much do you make every {transformIntervalMidSentence(newInterval as Interval)}?
+              Now, how much do you make every{" "}
+              {transformIntervalMidSentence(newInterval as Interval)}?
             </h3>
             <p className="text-sm sm:text-lg italic">
-              Include all household income{" "}
+              Include all household income {" "}
               <span className="text-my-red-light">before expenses.</span>
             </p>
+            <p className="text-sm sm:text-lg">
+              You will have the ability to add more income later. This is best for recurring income.
+            </p>
+            <p className="text-sm sm:text-lg">If your income changes week to week, estimate as best you can.</p>
             <input
               className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem]"
               type="number"
@@ -479,7 +505,7 @@ export default function Demo() {
             />
           </DemoStep>
         ) : step === 6 ? (
-          <DemoStep onClick={handleSixthStep} text="Next" changeValue={true}>
+          <DemoStep onClick={handleStep6} text="Next" changeValue={true}>
             <h3 className="text-sm sm:text-lg p-2">
               Time for the final and most exciting step
             </h3>
@@ -492,7 +518,7 @@ export default function Demo() {
           </DemoStep>
         ) : step === 7 ? (
           <DemoStep
-            onClick={handleSeventhStep}
+            onClick={handleStep7}
             text="Save Payments"
             changeValue={newPayments}
           >
@@ -512,26 +538,30 @@ export default function Demo() {
                 >
                   ← Change payment type
                 </button>
-                
+
                 <p className="text-sm text-my-green-light mb-2">
                   Adding: {selectedPaymentType}
                 </p>
-                
+
                 <input
                   className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
                   type="text"
                   placeholder="Payment Name"
                   value={newPaymentName}
-                  onChange={(e) => setNewPaymentName(e.target.value.toLowerCase())}
+                  onChange={(e) =>
+                    setNewPaymentName(e.target.value.toLowerCase())
+                  }
                 />
                 <input
                   className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
                   type="number"
-                  placeholder={selectedPaymentType === "FUND" ? "Target Amount" : "Amount"}
+                  placeholder={
+                    selectedPaymentType === "FUND" ? "Target Amount" : "Amount"
+                  }
                   value={newPaymentAmount || ""}
                   onChange={(e) => setNewPaymentAmount(Number(e.target.value))}
                 />
-                
+
                 {/* Show total field for DEBT type */}
                 {selectedPaymentType === "DEBT" && (
                   <input
@@ -544,42 +574,55 @@ export default function Demo() {
                 )}
 
                 {/* Interval selector for BILL and DEBT (not FUND) */}
-                {(selectedPaymentType === "BILL" || selectedPaymentType === "DEBT") && !splitBillAcrossPayPeriods && (
-                  <div className="flex flex-col items-center w-full">
-                    <p className="text-my-white-dark text-sm mb-1">Payment Frequency</p>
-                    <select
-                      value={newPaymentInterval || ""}
-                      onChange={(e) => setNewPaymentInterval(e.target.value as Interval)}
-                      className="w-[80%] max-w-[30rem] border-2 p-2 rounded-md bg-white text-black text-center"
-                    >
-                      <option value={MONTHLY}>Monthly</option>
-                      <option value={WEEKLY}>Weekly</option>
-                      <option value={BIWEEKLY}>Bi-Weekly</option>
-                      <option value={YEARLY}>Yearly</option>
-                    </select>
-                  </div>
-                )}
+                {(selectedPaymentType === "BILL" ||
+                  selectedPaymentType === "DEBT") &&
+                  !splitBillAcrossPayPeriods && (
+                    <div className="flex flex-col items-center w-full">
+                      <p className="text-my-white-dark text-sm mb-1">
+                        Payment Frequency
+                      </p>
+                      <select
+                        value={newPaymentInterval || ""}
+                        onChange={(e) =>
+                          setNewPaymentInterval(e.target.value as Interval)
+                        }
+                        className="w-[80%] max-w-[30rem] border-2 p-2 rounded-md bg-white text-black text-center"
+                      >
+                        <option value={MONTHLY}>Monthly</option>
+                        <option value={WEEKLY}>Weekly</option>
+                        <option value={BIWEEKLY}>Bi-Weekly</option>
+                        <option value={YEARLY}>Yearly</option>
+                      </select>
+                    </div>
+                  )}
 
                 {/* Split toggle for BILL type only */}
                 {selectedPaymentType === "BILL" && (
                   <div className="flex items-center gap-3 my-2">
-                    <label htmlFor="splitToggle" className="text-sm text-my-white-dark cursor-pointer">
+                    <label
+                      htmlFor="splitToggle"
+                      className="text-sm text-my-white-dark cursor-pointer"
+                    >
                       Split across pay periods (rent, mortgage)
                     </label>
                     <input
                       id="splitToggle"
                       type="checkbox"
                       checked={splitBillAcrossPayPeriods}
-                      onChange={(e) => setSplitBillAcrossPayPeriods(e.target.checked)}
+                      onChange={(e) =>
+                        setSplitBillAcrossPayPeriods(e.target.checked)
+                      }
                       className="w-5 h-5 cursor-pointer accent-my-green-light"
                     />
                   </div>
                 )}
-                
+
                 {/* Show calendar for due date (required for FUND) */}
                 <div className="text-black">
                   <p className="text-my-white-dark text-sm mb-1">
-                    {selectedPaymentType === "FUND" ? "Target Date (when you need the money)" : "Due Date (day of month)"}
+                    {selectedPaymentType === "FUND"
+                      ? "Target Date (when you need the money)"
+                      : "Due Date (day of month)"}
                   </p>
                   <Calendar
                     calendarType="gregory"
@@ -587,10 +630,12 @@ export default function Demo() {
                     value={newPaymentDueDate || new Date()}
                     selectRange={false}
                     className="cursor-pointer-calendar"
-                    minDate={selectedPaymentType === "FUND" ? new Date() : undefined}
+                    minDate={
+                      selectedPaymentType === "FUND" ? new Date() : undefined
+                    }
                   />
                 </div>
-                
+
                 <Button
                   onClick={handleClickAddPayment}
                   color="green"
@@ -598,13 +643,16 @@ export default function Demo() {
                 />
               </form>
             )}
-            
+
             {/* List of added payments */}
             {newPayments.length > 0 && (
               <div className="flex flex-col gap-2 mt-4 w-full max-w-[30rem]">
                 <p className="text-sm text-my-white-dark">Added payments:</p>
                 {newPayments.map((p, index) => (
-                  <div key={index} className="flex items-center justify-between bg-my-black-base p-2 rounded">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-my-black-base p-2 rounded"
+                  >
                     <span>{p.name}</span>
                     <span className="text-my-green-light">${p.amount}</span>
                   </div>
@@ -613,36 +661,35 @@ export default function Demo() {
             )}
           </DemoStep>
         ) : step === 8 ? (
-          <DemoStep onClick={handleEighthStep} text="Next" changeValue={true}>
-            <h3 className="text-sm sm:text-lg p-2">
-              Note the balance changed according to your payments
+          <DemoStep onClick={handleStep8} text="Next" changeValue={true}>
+            <h3 className="text-xs sm:text-lg">
+              Note the balance will change according to your <span className="text-my-red-light">payments</span>
             </h3>
-            <p className="text-sm sm:text-lg">
+            <p className="text-xs sm:text-lg">
               This is the amount you have left until your next{" "}
               <span className="text-my-green-light">paycheck</span>
             </p>
-            <p className="text-sm sm:text-lg">
+            <p className="text-xs sm:text-lg">
               And takes into account the{" "}
               <span className="text-my-white-dark">pay period</span> you
               selected earlier.
             </p>
-            <p className="text-sm sm:text-lg">Click on the amount to manually edit the balance.</p>
           </DemoStep>
         ) : step === 9 ? (
           <DemoStep
-            onClick={handleNinthStep}
+            onClick={handleStep9}
             text="Continue Tour"
             changeValue={true}
           >
             <p className="text-sm sm:text-lg">
-              Let's quickly show you the main buttons...
+              Let's quickly see how the main buttons work...
             </p>
           </DemoStep>
         ) : step >= 10 && step <= 14 ? (
           /* Steps 10-14: Main button walkthrough */
           <div className="absolute inset-0 bg-my-white-dark/90 flex flex-col items-center z-[9900]">
             {spotlightRect && <SpotlightOverlay targetRect={spotlightRect} />}
-            
+
             {/* Action buttons bar */}
             <ActionButtons
               paymentRef={paymentBtnRef}
@@ -656,14 +703,19 @@ export default function Demo() {
               disableHover
               className="py-6"
             />
-            
+
             {/* Tooltip content - centered below buttons */}
             <div className="flex-1 flex items-start justify-center pt-8">
               {step === 10 && (
                 <DemoTooltip onNext={handleStep10}>
-                  <h3 className="text-lg font-bold text-my-red-light">Payment Button</h3>
+                  <h3 className="text-lg font-bold text-my-red-light">
+                    Payment Button
+                  </h3>
                   <p className="text-sm text-my-white-light">
-                    Add recurring <span className="text-my-red-light">bills</span>, <span className="text-my-blue-light">debts</span>, or <span className="text-my-green-light">split payments</span>
+                    Add recurring{" "}
+                    <span className="text-my-red-light">bills</span>,{" "}
+                    <span className="text-my-blue-light">debts</span>, or{" "}
+                    <span className="text-my-green-light">split payments</span>
                   </p>
                   <p className="text-xs text-my-white-dark">
                     Fixed expenses that come out of each paycheck.
@@ -672,31 +724,44 @@ export default function Demo() {
               )}
               {step === 11 && (
                 <DemoTooltip onNext={handleStep11}>
-                  <h3 className="text-lg font-bold text-my-green-light">New Envelope</h3>
+                  <h3 className="text-lg font-bold text-my-green-light">
+                    Get Paid
+                  </h3>
                   <p className="text-sm text-my-white-light">
-                    Create <span className="text-my-green-light">spending envelopes</span> for flexible categories
-                  </p>
-                  <p className="text-xs text-my-white-dark">
-                    Groceries, gas, entertainment - allocate money from your budget.
-                  </p>
-                </DemoTooltip>
-              )}
-              {step === 12 && (
-                <DemoTooltip onNext={handleStep12}>
-                  <h3 className="text-lg font-bold text-my-green-light">Get Paid</h3>
-                  <p className="text-sm text-my-white-light">
-                    Add <span className="text-my-green-light">income</span> when you receive money
+                    Add <span className="text-my-green-light">income</span> when
+                    you receive money
                   </p>
                   <p className="text-xs text-my-white-dark">
                     Increases your available budget for the current period.
                   </p>
                 </DemoTooltip>
               )}
+              {step === 12 && (
+                <DemoTooltip onNext={handleStep12}>
+                  <h3 className="text-lg font-bold text-my-green-light">
+                    New Envelope
+                  </h3>
+                  <p className="text-sm text-my-white-light">
+                    Create{" "}
+                    <span className="text-my-green-light">
+                      spending envelopes
+                    </span>{" "}
+                    for flexible categories
+                  </p>
+                  <p className="text-xs text-my-white-dark">
+                    Groceries, gas, entertainment - allocate money from your
+                    budget.
+                  </p>
+                </DemoTooltip>
+              )}
               {step === 13 && (
                 <DemoTooltip onNext={handleStep13}>
-                  <h3 className="text-lg font-bold text-my-red-light">Clear Envelopes</h3>
+                  <h3 className="text-lg font-bold text-my-red-light">
+                    Clear Envelopes
+                  </h3>
                   <p className="text-sm text-my-white-light">
-                    <span className="text-my-red-light">Reset</span> all envelope balances to zero
+                    <span className="text-my-red-light">Reset</span> all
+                    envelope balances to zero
                   </p>
                   <p className="text-xs text-my-white-dark">
                     Use at the start of a new budget period.
@@ -704,8 +769,13 @@ export default function Demo() {
                 </DemoTooltip>
               )}
               {step === 14 && (
-                <DemoTooltip onNext={handleStep14} buttonText="Start Using Nvelopes!">
-                  <h3 className="text-lg font-bold text-my-green-light">You're ready! 🎉</h3>
+                <DemoTooltip
+                  onNext={handleStep14}
+                  buttonText="Start Using Nvelopes!"
+                >
+                  <h3 className="text-lg font-bold text-my-green-light">
+                    You're ready! 🎉
+                  </h3>
                   <p className="text-sm text-my-white-light">
                     You know everything to start budgeting with{" "}
                     <span className="text-my-red-light">Nvelopes</span>

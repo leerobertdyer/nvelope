@@ -14,7 +14,7 @@ export default function DemoStep({
 }) {
   return (
     <div
-      className="w-[95vw] absolute top-[4rem] flex flex-col gap-4 items-center justify-start text-xs text-my-white-light z-[10000] overflow-y-auto overflow-x-hidden max-h-[calc(100vh-4rem)]"
+      className="w-[95vw] absolute top-[4rem] flex flex-col gap-4 items-center justify-start text-xs text-my-white-light z-[10000] overflow-y-auto overflow-x-hidden max-h-[calc(100vh-4rem)] max-w-[40rem]"
       style={{ pointerEvents: "auto" }}
     >
       <div className="w-full p-2 sm:p-4 md:p-4 h-fit flex flex-col justify-center items-center gap-6 bg-my-black-base rounded-md pb-[1rem]">
