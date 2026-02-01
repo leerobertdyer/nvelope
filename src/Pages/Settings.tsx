@@ -16,6 +16,7 @@ import {
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
+import { sendPasswordResetEmailToUser } from "../firebase/emailAndPassword";
 import { getIncomeByInterval, recalculateBudget } from "../util";
 import { IoPencil } from "react-icons/io5";
 import { GiMoneyStack } from "react-icons/gi";
@@ -212,9 +213,18 @@ export default function Settings() {
     }
   }
 
-  function resetPasswordForEmail(email: string) {
-    console.log('Reset password for email:', email);
-    showToast('Feature not implemented yet', 'error');
+  async function resetPasswordForEmail(email: string) {
+    if (!email?.trim()) {
+      showToast("No email address", "error");
+      return;
+    }
+    try {
+      await sendPasswordResetEmailToUser(email.trim());
+      showToast("Password reset email sent. Check your inbox.", "success");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to send reset email";
+      showToast(message, "error");
+    }
   }
 
   if (isEditingCash) {
