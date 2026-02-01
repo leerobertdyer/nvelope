@@ -547,24 +547,6 @@ export async function restoreFromSafeBackup(backupId: string, user: User) {
 }
 
 /**
- * Deletes all Firestore data for a user (user doc + backup subcollection).
- * Call before Firebase Auth deleteUser so we have the uid.
- */
-export async function deleteUserDataInFirestore(userId: string): Promise<void> {
-  try {
-    const backupsRef = collection(db, "userBackups", userId, "backups");
-    const snapshot = await getDocs(backupsRef);
-    for (const d of snapshot.docs) {
-      await deleteDoc(doc(db, "userBackups", userId, "backups", d.id));
-    }
-    await deleteDoc(doc(db, "users", userId));
-  } catch (error) {
-    console.error("deleteUserDataInFirestore failed:", error);
-    throw error;
-  }
-}
-
-/**
  * Prune old backups, keeping only the most recent N
  */
 async function pruneOldBackups(userId: string, keepCount: number) {

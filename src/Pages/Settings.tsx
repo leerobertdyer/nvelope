@@ -69,6 +69,8 @@ export default function Settings() {
   // Delete account
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deletePasswordStep, setDeletePasswordStep] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
 
   const currentProviderTypes = ["google.com"];
 
@@ -233,15 +235,31 @@ export default function Settings() {
     }
   }
 
-  async function handleDeleteAccount() {
+  async function handleDeleteAccount(password?: string) {
+    if (isDeletingAccount) return;
     setIsDeletingAccount(true);
-    const result = await deleteAccount();
-    setIsDeletingAccount(false);
-    setShowDeleteAccountConfirm(false);
-    if (result.success) {
-      window.location.href = "/";
-    } else {
+    try {
+      const result = await deleteAccount(password ? { password } : undefined);
+      if (result.success) {
+        setShowDeleteAccountConfirm(false);
+        setDeletePasswordStep(false);
+        setDeletePassword("");
+        window.location.href = "/";
+        return;
+      }
+      if ("needPassword" in result && result.needPassword) {
+        setDeletePasswordStep(true);
+        return;
+      }
       showToast(result.error, "error");
+      // If they were on the password step (wrong password, etc.), keep modal open so they can try again or cancel.
+      if (!password) {
+        setShowDeleteAccountConfirm(false);
+        setDeletePasswordStep(false);
+        setDeletePassword("");
+      }
+    } finally {
+      setIsDeletingAccount(false);
     }
   }
 
@@ -316,7 +334,7 @@ export default function Settings() {
       <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md ">
         Settings
       </h1>
-      <div className="w-full flex flex-col items-center justify-center">
+      <div className="w-full flex flex-col items-center justify-center text-xs sm:text-sm md:text-lg">
         You are logged in as {user?.email}
         <Button color="red" onClick={() => signout()}>
           Log Out
@@ -434,10 +452,14 @@ export default function Settings() {
           </FullScreen>
         )}
 
-        {/* Delete Account - at bottom of settings */}
+        {/* Delete Account — only path to account deletion: this block opens the confirm modal; confirmation is the only trigger for handleDeleteAccount. */}
         <div
           className="flex flex-col justify-center h-fit w-[80%] max-w-[20rem] items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8 cursor-pointer hover:opacity-90"
-          onClick={() => setShowDeleteAccountConfirm(true)}
+          onClick={() => {
+            setShowDeleteAccountConfirm(true);
+            setDeletePasswordStep(false);
+            setDeletePassword("");
+          }}
         >
           <p className="text-sm font-bold text-my-red-light">Delete Account</p>
           <p className="text-xs text-my-white-dark mt-1">Permanently delete your account and all data</p>
@@ -447,19 +469,46 @@ export default function Settings() {
       {showDeleteAccountConfirm && (
         <FullScreen
           theme="DARK"
-          onClose={() => !isDeletingAccount && setShowDeleteAccountConfirm(false)}
-          onSave={handleDeleteAccount}
+          closeOnSave={false}
+          onClose={() => {
+            if (!isDeletingAccount) {
+              setShowDeleteAccountConfirm(false);
+              setDeletePasswordStep(false);
+              setDeletePassword("");
+            }
+          }}
+          onSave={() => handleDeleteAccount(deletePasswordStep ? deletePassword : undefined)}
           showButtons
           saveButtonText="Delete account"
           saveButtonColor="red"
           closeButtonText="Cancel"
+          saveButtonDisabled={isDeletingAccount || (deletePasswordStep && !deletePassword.trim())}
         >
-          <div className="w-full text-center px-4">
-            <h1 className="text-xl text-my-red-light font-bold mb-4">Are you sure?</h1>
-            <p className="text-my-white-light mb-2">
-              This will permanently delete your account and all your data (envelopes, payments, backups).
-            </p>
-            <p className="text-my-white-dark text-sm">This cannot be undone.</p>
+          <div className="w-full text-center">
+            {!deletePasswordStep ? (
+              <div className="flex flex-col items-center justify-center w-full">
+                <h1 className="text-xl text-my-red-light font-bold mb-4">Are you sure?</h1>
+                <p className="text-my-white-light mb-2">
+                  This will permanently delete your account and all your data (envelopes, payments, backups).
+                </p>
+                <p className="text-my-white-dark text-sm">This cannot be undone.</p>
+                <p className="text-my-white-dark text-sm mt-4">
+                  To confirm, you may see a Google sign-in window or be asked for your password, depending on how you signed up.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center w-full">
+                <h1 className="text-xl text-my-red-light font-bold mb-4">Enter your password</h1>
+                <p className="text-my-white-light mb-2">Confirm your identity to delete your account.</p>
+                <TextInput
+                  id="deletePassword"
+                  label="Password"
+                  placeholder="Enter your password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                />
+              </div>
+            )}
             {isDeletingAccount && <p className="text-my-white-dark text-sm mt-4">Deleting…</p>}
           </div>
         </FullScreen>

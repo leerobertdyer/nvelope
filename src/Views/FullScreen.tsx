@@ -10,6 +10,10 @@ interface IFullScreen {
   saveButtonText?: string;
   saveButtonColor?: "green" | "red";
   closeButtonText?: string;
+  /** When true, the save/confirm button is disabled (e.g. to prevent double-submit on delete account). */
+  saveButtonDisabled?: boolean;
+  /** When false, do not call onClose after onSave (caller closes manually, e.g. after async result). Default true. */
+  closeOnSave?: boolean;
 }
 
 export default function FullScreen({
@@ -21,6 +25,8 @@ export default function FullScreen({
   saveButtonText = "Save",
   saveButtonColor = "green",
   closeButtonText = "Back",
+  saveButtonDisabled = false,
+  closeOnSave = true,
 }: IFullScreen) {
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -31,8 +37,9 @@ export default function FullScreen({
   }, []);
 
   function handleSave() {
+    if (saveButtonDisabled) return;
     onSave?.();
-    onClose?.();
+    if (closeOnSave) onClose?.();
   }
 
   return (
@@ -55,7 +62,11 @@ export default function FullScreen({
         {showButtons && (
           <div className="flex flex-col gap-4 items-center justify-center w-[95%] m-auto mt-4">
             {onSave && (
-              <Button onClick={handleSave} color={saveButtonColor}>
+              <Button
+                onClick={handleSave}
+                color={saveButtonColor}
+                disabled={saveButtonDisabled}
+              >
                 {saveButtonText}
               </Button>
             )}

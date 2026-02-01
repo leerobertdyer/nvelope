@@ -8,6 +8,7 @@ import {
 import Button from "../Buttons/Button";
 import { useAuth } from "../../Context/AuthContext/useAuth";
 import { useToast } from "../../Context/ToastContext/useToast";
+import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 
 interface LoginError {
   code: string;
@@ -15,6 +16,7 @@ interface LoginError {
 }
 
 export default function LoginForm() {
+  const { isNewUser } = useDatabase();
   const { setUser } = useAuth();
   const { showToast } = useToast();
   const [email, setEmail] = useState("");
@@ -58,18 +60,29 @@ export default function LoginForm() {
     }
     setIsLoading(true);
     try {
-      const loggedInUser = await loginWithEmailAndPassword(email.trim(), password);
+      const loggedInUser = await loginWithEmailAndPassword(
+        email.trim(),
+        password,
+      );
       if (loggedInUser) {
         setUser(loggedInUser);
-        showToast("Welcome back");
+        if (!isNewUser) {
+          showToast("Welcome back");
+        }
       }
     } catch (error: unknown) {
       const code = (error as LoginError).code;
-      if (code === "auth/invalid-credential" || code === "auth/user-not-found") {
+      if (
+        code === "auth/invalid-credential" ||
+        code === "auth/user-not-found"
+      ) {
         const methods = await getSignInMethodsForEmail(email.trim());
         const hasPassword = methods.includes("password");
         if (hasPassword) {
-          showToast("Wrong password. Check your password or use Forgot password below.", "error");
+          showToast(
+            "Wrong password. Check your password or use Forgot password below.",
+            "error",
+          );
           setIsLoading(false);
           return;
         }
@@ -85,7 +98,7 @@ export default function LoginForm() {
             signupCode === "auth/email-already-in-use"
               ? "An account with this email already exists. Sign in with your password or use Forgot password."
               : "Something went wrong. Please try again.",
-            "error"
+            "error",
           );
         }
       } else {
@@ -105,12 +118,17 @@ export default function LoginForm() {
     setIsSendingReset(true);
     try {
       await sendPasswordResetEmailToUser(emailToUse);
-      showToast("If an account exists for this email, check your inbox and spam folder for the reset link.");
+      showToast(
+        "If an account exists for this email, check your inbox and spam folder for the reset link.",
+      );
       setShowForgotPassword(false);
       setForgotEmail("");
     } catch (err: unknown) {
       console.error("Password reset failed:", err);
-      showToast("Could not send reset email. Check the email address and try again.", "error");
+      showToast(
+        "Could not send reset email. Check the email address and try again.",
+        "error",
+      );
     } finally {
       setIsSendingReset(false);
     }
