@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { calculatePayoffDate, calculateSnowballPayoffDate, calculateSnowballPayoffDateWithExtra, paymentsTotal } from "../util";
+import { calculatePayoffDate, calculateSnowballPayoffDate, paymentsTotal } from "../util";
 import Loading from "../components/Loading";
 import type { Payment } from "../types";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
@@ -10,6 +10,7 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import { format, parse } from "date-fns";
 import { IoWarning } from "react-icons/io5";
 import PaymentForm from "../components/Forms/PaymentForm";
+import TextInput from "../components/TextInput";
 
 export default function Debt() {
     const { user } = useAuth();
@@ -176,44 +177,37 @@ export default function Debt() {
             : new Date();
     const finalPaymentDateStr = format(finalPaymentDate, "MMM yyyy");
 
-    const snowballPayoffDate = calculateSnowballPayoffDate(debts, snowball, effectiveSnowballTargetId, new Date());
+    const extraMonthly = Number(extraMonthlyInput) || 0;
+    const snowballPayoffDate = calculateSnowballPayoffDate(debts, snowball, effectiveSnowballTargetId, new Date(), extraMonthly || undefined);
     const snowballPayoffDateStr = snowballPayoffDate ? format(snowballPayoffDate, "MMM yyyy") : null;
 
-    const extraMonthly = Number(extraMonthlyInput) || 0;
-    const snowballWithExtraDate = extraMonthly > 0 && debts.length > 0
-        ? calculateSnowballPayoffDateWithExtra(debts, snowball, extraMonthly, effectiveSnowballTargetId, new Date())
-        : null;
+    const snowballWithExtraDate = extraMonthly > 0 ? snowballPayoffDate : null;
     const snowballWithExtraDateStr = snowballWithExtraDate ? format(snowballWithExtraDate, "MMM yyyy") : null;
 
     return (
-        <div className="flex flex-col items-center justify-center w-full h-full bg-my-blue-dark text-my-white-dark">
+        <div className="flex flex-col items-center justify-start py-[5rem] w-full h-full bg-my-blue-dark text-my-white-dark">
             <Header links={[{ label: "Home", href: "/" }, { label: "Settings", href: "/settings" }]} />
             <h1 className="text-3xl">Debt</h1>
-            <p className="bg-my-black-base p-2 rounded-md text-my-red-light mb-[2rem]"><span className="text-my-white-light">TOTAL:</span> ${remainingDebt.toFixed(2)}</p>
-            <div className="bg-my-black-base p-2 rounded-md text-my-red-light mb-[.4rem]"><span className="text-my-white-light">Final Payoff Date:</span> {finalPaymentDateStr}
-            <p className="text-center  text-xs text-my-white-dark rounded-md p-2 margin-auto">Only making minimum payments.</p>
+            <p className="bg-my-black-base p-2 rounded-md text-my-red-light mb-[1rem] w-[20rem] text-center "><span className="text-my-white-light">TOTAL:</span> ${remainingDebt.toFixed(2)}</p>
+            <div className="bg-my-black-base p-2 rounded-md text-my-blue-base mb-[1rem] w-[20rem] text-center "><span className="text-my-white-light">Final Payoff Date:</span> {finalPaymentDateStr}
             </div>
             {snowballPayoffDateStr && (
-                <div className="bg-my-black-base p-2 rounded-md text-my-green-dark mb-[.4rem]">
+                <div className="bg-my-black-base p-2 rounded-md text-my-green-light mb-[1rem] w-[20rem] text-center">
                     <span className="text-my-white-light">With snowball:</span> {snowballPayoffDateStr}
-                    <p className="text-center text-xs text-my-white-dark rounded-md p-2 margin-auto">Using your snowball target and extra payment.</p>
                 </div>
             )}
 
             {debts.length > 0 && (
                 <div className="bg-my-black-base p-2 rounded-md text-my-white-light mb-[2rem] w-[20rem] md:w-[24rem]">
-                    <p className="text-my-white-dark text-sm font-medium mb-2">What if I pay an extra amount each month?</p>
-                    <div className="flex items-center gap-2 mb-2">
-                        <label htmlFor="extra-monthly" className="text-sm">Extra per month ($)</label>
-                        <input
+                    <p className="text-my-white-dark text-sm font-medium mb-2 text-center">What if I pay an extra amount each month?</p>
+                    <div className="flex flex-col items-center gap-2 mb-2">
+                        <TextInput
                             id="extra-monthly"
-                            type="number"
-                            min={0}
-                            step={1}
-                            className="w-24 border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                            label="Extra per month ($)"
+                            placeholder="e.g. 400"
                             value={extraMonthlyInput}
                             onChange={(e) => setExtraMonthlyInput(e.target.value)}
-                            placeholder="e.g. 400"
+                            numeric
                         />
                     </div>
                     {snowballWithExtraDateStr && extraMonthly > 0 && (
@@ -224,26 +218,24 @@ export default function Debt() {
                 </div>
             )}
 
-            {debtsMissingInfo.length > 0 && <div className="flex flex-col items-center text-my-white-light bg-my-black-base p-4 rounded-md w-[20rem] margin-auto">
+            {debtsMissingInfo.length > 0 && <div className="flex flex-col items-center text-my-white-light bg-my-black-base p-2 rounded-md w-[20rem] margin-auto">
                 <p className="text-my-red-light">Missing Information on {debtsMissingInfo.length} debts:</p>
                 {showMissingInfoDebts
                     ? <div className="w-full ">
-                        <p className="text-xs text-my-white-dark mb-1">Click a debt to edit</p>
                         <DebtGrid name="Name" interest="Interest" owed="Owed" color="my-white-dark" />
                         {debtsMissingInfo.map((d: Payment) => (
                             <div
                                 key={d.id}
                                 role="button"
                                 tabIndex={0}
-                                onClick={() => setEditingDebt(d)}
                                 onKeyDown={(e) => e.key === "Enter" && setEditingDebt(d)}
                                 className="w-full grid grid-cols-5 cursor-pointer hover:bg-my-black-light rounded px-1 -mx-1"
                             >
-                                <p className="col-span-2 text-left">{d.name}</p>
+                                <p className="col-span-3 text-left">{d.name}</p>
                                 {d.interestRate
                                     ? <p className="col-span-1 text-center mb-2">{d.interestRate}</p>
-                                    : <input className="bg-white rounded-md mb-2 text-black px-2" onClick={(e) => e.stopPropagation()} onChange={(e) => setInterestRate(Number(e.target.value))} onBlur={() => saveDebtInformation(d)} type="number" min={0} max={100} placeholder="0" />}
-                                <p className="col-span-2 text-right">{d.total}</p>
+                                    : <input className="col-span-1 text-center bg-white rounded-md mb-2 text-black" onChange={(e) => setInterestRate(Number(e.target.value))} onBlur={() => saveDebtInformation(d)} type="number" min={0} max={100} placeholder="0" />}
+                                <p className="col-span-1 text-right">{d.total}</p>
                             </div>
                         ))}
                         <ShowAndHide label="Hide" onClick={() => setShowMissingInfoDebts(false)}></ShowAndHide>
@@ -265,7 +257,7 @@ export default function Debt() {
                                 const id = e.target.value;
                                 if (id) handleSnowballTargetChange(id);
                             }}
-                            className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark text-sm"
+                            className="w-[90%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark text-sm"
                         >
                             {debtsByLowestOwed.map((d) => (
                                 <option key={d.id} value={d.id}>

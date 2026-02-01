@@ -9,7 +9,7 @@ interface ITextInput {
 }
 
 export default function TextInput({ id, placeholder, onChange, value, label, numeric, maxLength }: ITextInput) {
-    return <div className="w-full flex flex-col gap-2 items-center justify-center">
+    return <div className="w-[90%] flex flex-col gap-2 items-center justify-center">
         <label className="p-2 w-full text-center" htmlFor={id}>{label}</label>
         <input
             id={id}

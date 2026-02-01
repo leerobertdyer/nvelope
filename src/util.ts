@@ -497,13 +497,17 @@ function periodsPerMonth(interval: Interval): number {
 /**
  * Simulates the debt snowball: minimums to all debts, snowball extra to target.
  * When a debt is paid off, its minimum rolls into the snowball and target moves to lowest balance.
+ * Any unused snowball (remainder) from a payoff is applied to the next target in the same month,
+ * recursively until spent or no debts remain.
  * Returns the date when the last debt would be paid off, or null if no debts / invalid.
+ * @param extraMonthly - optional extra $/month toward the snowball target (e.g. 400 = $400 extra).
  */
 export function calculateSnowballPayoffDate(
   debts: Payment[],
   snowball: number,
   snowballTargetId: string | null,
-  fromDate: Date = new Date()
+  fromDate: Date = new Date(),
+  extraMonthly?: number
 ): Date | null {
   if (debts.length === 0) return null;
 
@@ -513,7 +517,8 @@ export function calculateSnowballPayoffDate(
     .map((d) => ({ id: d.id, balance: d.total!, amount: d.amount, interval: d.interval ?? "MONTHLY" }));
   if (state.length === 0) return null;
 
-  let rollingSnowball = Math.max(0, snowball);
+  const extra = extraMonthly != null ? Math.max(0, extraMonthly) : 0;
+  let rollingSnowball = Math.max(0, snowball) + extra;
   let targetId =
     snowballTargetId && state.some((d) => d.id === snowballTargetId)
       ? snowballTargetId
@@ -524,13 +529,20 @@ export function calculateSnowballPayoffDate(
   let months = 0;
 
   while (state.length > 0 && months < maxMonths) {
+    // One month of payments: each debt gets min, target gets + snowball
+    let remainder = 0;
     for (const d of state) {
       const paymentPerPeriod = d.amount + (d.id === targetId ? rollingSnowball : 0);
       const periods = periodsPerMonth(d.interval);
-      const applied = Math.min(d.balance, paymentPerPeriod * (periods > 0 ? periods : 1));
+      const payment = paymentPerPeriod * (periods > 0 ? periods : 1);
+      const applied = Math.min(d.balance, payment);
       d.balance -= applied;
+      if (d.id === targetId && applied > 0) {
+        remainder = payment - applied;
+      }
     }
 
+    // Roll paid-off minimums into snowball and remove paid-off debts
     const paidOff = state.filter((d) => d.balance <= 0);
     for (const d of paidOff) {
       rollingSnowball += d.amount;
@@ -539,37 +551,37 @@ export function calculateSnowballPayoffDate(
     state.length = 0;
     state.push(...remaining);
 
-    if (state.length === 0) {
-      return currentDate;
-    }
+    if (state.length === 0) return currentDate;
 
     targetId =
       state.some((d) => d.id === targetId)
         ? targetId
         : [...state].sort((a, b) => a.balance - b.balance)[0]?.id ?? null;
 
+    // Apply remainder to next target(s) in the same month until spent or no debts
+    while (remainder > 0 && state.length > 0 && targetId != null) {
+      const target = state.find((d) => d.id === targetId);
+      if (!target) break;
+      const applied = Math.min(target.balance, remainder);
+      target.balance -= applied;
+      remainder -= applied;
+      if (target.balance <= 0) {
+        rollingSnowball += target.amount;
+        remainder += target.amount;
+        const idx = state.indexOf(target);
+        if (idx !== -1) state.splice(idx, 1);
+        if (state.length === 0) return currentDate;
+        targetId = [...state].sort((a, b) => a.balance - b.balance)[0]?.id ?? null;
+      } else {
+        break;
+      }
+    }
+
     currentDate = addMonths(currentDate, 1);
     months++;
   }
 
   return months >= maxMonths ? currentDate : null;
-}
-
-/**
- * Payoff date with an extra amount per month toward the snowball target.
- * Uses the same snowball logic as calculateSnowballPayoffDate with effective snowball = snowball + extraMonthly.
- * So more extra always yields an earlier or equal payoff date.
- * extraMonthly is in dollars per month (e.g. 400 = $400 extra per month to the target).
- */
-export function calculateSnowballPayoffDateWithExtra(
-  debts: Payment[],
-  snowball: number,
-  extraMonthly: number,
-  snowballTargetId: string | null,
-  fromDate: Date = new Date()
-): Date | null {
-  const extra = Math.max(0, extraMonthly);
-  return calculateSnowballPayoffDate(debts, snowball + extra, snowballTargetId, fromDate);
 }
 
 export function transformIntervalMidSentence(i: Interval) {
