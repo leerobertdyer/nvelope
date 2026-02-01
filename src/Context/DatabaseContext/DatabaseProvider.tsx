@@ -3,10 +3,14 @@ import { DatabaseContext } from "./DatabaseContext";
 import { useEffect, useState } from "react";
 import { type Backup, type Envelope, type Interval, type OneTimeAmount, type Payment } from "../../types";
 import { useAuth } from "../AuthContext/useAuth";
+import { useBudget } from "../BudgetContext/useBudget";
 import { db } from "../../firebase/firebase";
+
+const BUDGET_DATA_DOC_ID = "main";
 
 export default function DatabaseProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
+    const { activeBudgetId, hasBudgets } = useBudget();
 
     const [isLoadingDb, setIsLoadingDb] = useState(true);
     const [snowball, setSnowball] = useState<number>(0);
@@ -22,55 +26,49 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [oneTimeCash, setOneTimeCash] = useState<OneTimeAmount[] | null>(null);
     const [backups, setBackups] = useState<Backup | null>(null);
     const [dbError, setDbError] = useState<string | null>(null);
-    
-    // Tracks whether a Firestore document exists for this user
-    // null = still loading, true = exists, false = no document (new user)
     const [documentExists, setDocumentExists] = useState<boolean | null>(null);
-    
+
     useEffect(() => {
         if (!user) {
+            setDocumentExists(null);
             setIsLoadingDb(false);
             return;
-        };
-        const userDocRef = doc(db, "users", user.uid);
-        
-        /**
-         * onSnapshot establishes a REAL-TIME listener to the Firebase document.
-         * 
-         * How it works:
-         * 1. Immediately fetches the current document state (like getDoc)
-         * 2. Keeps a persistent connection open to Firebase
-         * 3. Firebase pushes updates whenever the document changes
-         * 4. This callback fires automatically on every change
-         */
+        }
+        if (!hasBudgets) {
+            setDocumentExists(false);
+            setIsLoadingDb(false);
+            return;
+        }
+        if (!activeBudgetId) {
+            return;
+        }
+
+        setIsLoadingDb(true);
+        const dataRef = doc(db, "budgets", activeBudgetId, "data", BUDGET_DATA_DOC_ID);
+
         const unsubscribe = onSnapshot(
-            userDocRef,
+            dataRef,
             (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     const data = docSnapshot.data();
                     setDbError(null);
                     setDocumentExists(true);
                     setIsLoadingDb(false);
-                    setSnowball(data.snowball || 0);
+                    setSnowball(data.snowball ?? 0);
                     setSnowballTargetPaymentId(data.snowballTargetPaymentId ?? null);
-                    setEnvelopes(data.envelopes || []);
+                    setEnvelopes(data.envelopes ?? []);
                     setPayDate(data.payDate ?? null);
-                    setPayPeriodInterval(data.payPeriodInterval || "MONTHLY");
-                    setPayments(data.payments || []);
-                    setIncome(data.income || 0);
+                    setPayPeriodInterval(data.payPeriodInterval ?? "MONTHLY");
+                    setPayments(data.payments ?? []);
+                    setIncome(data.income ?? 0);
                     setIsNewUser(data.isNewUser ?? false);
-                    setTotalSpendingBudget(data.totalSpendingBudget || 0);
-                    setOneTimeCash(data.oneTimeCash || null);
-                    setResetBudgetTimestamp(data.resetBudgetTimestamp || null);
-                    setBackups(data.backups || null);
+                    setTotalSpendingBudget(data.totalSpendingBudget ?? 0);
+                    setOneTimeCash(data.oneTimeCash ?? null);
+                    setResetBudgetTimestamp(data.resetBudgetTimestamp ?? null);
+                    setBackups(data.backups ?? null);
                 } else {
-                    // Document doesn't exist - this is either a new user OR a network glitch
-                    // We do NOT auto-create. The UI will handle this state.
-                    // Document creation only happens through intentional user action (Demo flow)
                     setDocumentExists(false);
                     setIsLoadingDb(false);
-                    // Keep all state at defaults (empty arrays, 0s, nulls)
-                    // The UI layer will detect documentExists === false and show appropriate screen
                 }
             },
             (error) => {
@@ -79,20 +77,12 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                 setIsLoadingDb(false);
             }
         );
-        /**
-         * CRITICAL: Cleanup function DO NOT REMOVE
-         * 
-         * This unsubscribe function is returned by onSnapshot.
-         * React calls this cleanup when:
-         * - Component unmounts (user logs out, navigates away)
-         * - User changes (different user logs in)
-         * - Effect dependencies change (in this case, just 'user')
-         */
+
         return () => {
             unsubscribe();
         };
-    }, [user]);
-    
+    }, [user, activeBudgetId, hasBudgets]);
+
     const value = {
         isLoadingDb,
         setIsLoadingDb,

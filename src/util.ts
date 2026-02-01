@@ -1,4 +1,3 @@
-import type { User } from "firebase/auth";
 import type {
   Payment,
   Envelope,
@@ -55,12 +54,12 @@ export function capitalizeFirstLetter(str: string | null): string {
 export async function resetAllNvelopes(
   nvelopes: Envelope[],
   setEnvelopes: (e: Envelope[]) => void,
-  userId: string
+  budgetId: string
 ) {
   const updatedNvelopes = [...nvelopes].map((n) => {
     return { ...n, spent: 0, total: 0, paid: false };
   });
-  await editEnvelopes(updatedNvelopes, userId);
+  await editEnvelopes(updatedNvelopes, budgetId);
   setEnvelopes(updatedNvelopes);
 }
 
@@ -205,10 +204,6 @@ export function getIntervalDateRange(i: Interval, start: Date): IntervalDates {
       break;
     case MONTHLY:
       end = addMonths(start, 1);
-      // Check month to ensure day exists (eg feb 30th...)
-      if (end.getDate() !== start.getDate()) {
-        end = lastDayOfMonth(subMonths(end, 1));
-      }
       break;
     case YEARLY:
       end = addYears(start, 1);
@@ -216,9 +211,6 @@ export function getIntervalDateRange(i: Interval, start: Date): IntervalDates {
     case SPLIT:
       // SPLIT = monthly amount split across pay periods; use same range as MONTHLY
       end = addMonths(start, 1);
-      if (end.getDate() !== start.getDate()) {
-        end = lastDayOfMonth(subMonths(end, 1));
-      }
       break;
     default:
       console.error(`Unsupported interval: ${i}`);
@@ -318,13 +310,12 @@ export function getIncomeByInterval(
 
 export async function updateBudgetStateAndDBB(
   amount: number,
-  user: User,
+  budgetId: string,
   totalSpendingBudget: number,
   setTotalSpendingBudget: (totalSpendingBudget: number) => void
 ) {
-  if (!user) return;
   const newBudget = totalSpendingBudget + amount;
-  await editTotalSpendingBudget(newBudget, user.uid);
+  await editTotalSpendingBudget(newBudget, budgetId);
   setTotalSpendingBudget(newBudget);
 }
 
@@ -346,7 +337,7 @@ export function paymentsTotal(
   payDate: Timestamp
 ) {
   // Get all virtual payments for the month, then filter for current period totals
-  const virtualPayments = getVirtualPaymentsForMonth(
+  const virtualPayments = getVirtualPaymentsForCurrentPeriod(
     payments,
     payPeriodInterval,
     payDate
@@ -656,11 +647,13 @@ export function adjustPaymentToCurrentPeriod(
     isOnCusp;
   // console.log("current payperiod dates: ", { periodStart, periodEnd, payment: { ...payment, dueDate: payment.dueDate.toDate() }, payPeriodCrossesMonths, paymentDayNumber, periodEndDayNumber, shouldMoveToNextMonth, isOnCusp })
 
-  const adjustedDueDate = new Date(
-    today.getFullYear(),
-    shouldMoveToNextMonth ? today.getMonth() + 1 : today.getMonth(),
-    payment.dueDate.toDate().getDate()
-  );
+  const targetMonth = shouldMoveToNextMonth ? today.getMonth() + 1 : today.getMonth();
+  const targetYear = today.getFullYear();
+  const dayOfMonth = payment.dueDate.toDate().getDate();
+  // Clamp to last day of month when day doesn't exist (e.g. 31st in February)
+  const lastDay = lastDayOfMonth(new Date(targetYear, targetMonth, 1));
+  const clampedDay = Math.min(dayOfMonth, lastDay.getDate());
+  const adjustedDueDate = new Date(targetYear, targetMonth, clampedDay);
 
   return {
     ...payment,
@@ -677,6 +670,78 @@ export function isTodayCuspDate(payPeriod: Interval, payDate: Timestamp) {
   const today = startOfDay(new Date());
   const { end } = getCurrentIntervalDateRange(payPeriod, payDate);
   return isAfter(end, today) && end.getMonth() !== today.getMonth();
+}
+
+/**
+ * True when we're in the first days of the new month but the current pay period started in the previous month.
+ * Used to show the "Overdue" bucket (unpaid bills from last month that would otherwise disappear).
+ */
+export function isOnNewMonthCusp(payPeriodInterval: Interval, payDate: Timestamp): boolean {
+  const today = startOfDay(new Date());
+  const firstOfMonth = startOfMonth(today);
+  const { start: periodStart } = getCurrentIntervalDateRange(payPeriodInterval, payDate);
+  return today.getDate() <= 7 && periodStart < firstOfMonth;
+}
+
+/**
+ * Virtual payments for an arbitrary date range. Used for "Overdue" (previous month slice of current period).
+ * For MONTHLY/YEARLY, returns one occurrence in range with correct paid state from paidDates.
+ * For SPLIT when range is in the past: skipped (getSplitPaymentOccurrencesInRange uses today's month).
+ */
+export function getVirtualPaymentsForDateRange(
+  payments: Payment[],
+  payPeriodInterval: Interval,
+  payDate: Timestamp,
+  rangeStart: Date,
+  rangeEnd: Date
+): Payment[] {
+  const today = startOfDay(new Date());
+  const isPastRange = rangeEnd < today;
+  const result: Payment[] = [];
+  for (const payment of payments) {
+    if (payment.interval === MONTHLY) {
+      const dayOfMonth = payment.dueDate.toDate().getDate();
+      const occurrenceDate = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), dayOfMonth);
+      if (occurrenceDate.getMonth() !== rangeStart.getMonth()) occurrenceDate.setDate(0);
+      if (occurrenceDate < rangeStart || occurrenceDate > rangeEnd) continue;
+      const occurrenceTime = startOfDay(occurrenceDate).getTime();
+      const isPaid =
+        payment.paidDates?.some((pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime) ?? false;
+      result.push({
+        ...payment,
+        dueDate: Timestamp.fromDate(occurrenceDate),
+        paid: isPaid,
+      });
+    } else if (payment.interval === YEARLY) {
+      const due = payment.dueDate.toDate();
+      let occurrenceDate = new Date(rangeStart.getFullYear(), due.getMonth(), due.getDate());
+      if (occurrenceDate.getMonth() !== due.getMonth()) {
+        occurrenceDate = lastDayOfMonth(new Date(rangeStart.getFullYear(), due.getMonth(), 1));
+      }
+      if (occurrenceDate < rangeStart || occurrenceDate > rangeEnd) continue;
+      const occurrenceTime = startOfDay(occurrenceDate).getTime();
+      const isPaid =
+        payment.paidDates?.some((pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime) ?? false;
+      result.push({
+        ...payment,
+        dueDate: Timestamp.fromDate(occurrenceDate),
+        paid: isPaid,
+      });
+    } else if (payment.interval === "SPLIT" && isPastRange) {
+      // SPLIT uses today's month for period count; skip for past ranges to avoid wrong dates
+      continue;
+    } else {
+      const occurrences = getPaymentOccurrencesInRange(
+        payment,
+        payPeriodInterval,
+        payDate,
+        rangeStart,
+        rangeEnd
+      );
+      result.push(...occurrences);
+    }
+  }
+  return result.sort((a, b) => a.dueDate.toMillis() - b.dueDate.toMillis());
 }
 
 /**
@@ -874,27 +939,28 @@ function getSplitPaymentOccurrencesInRange(
 }
 
 /**
- * Get all virtual payment occurrences for the current month.
+ * Get all virtual payment occurrences for the current pay period only.
  * Used by MainView for display and paymentsTotal for calculations.
- * Consumers filter as needed (PaymentMap filters to Past/Current/Future,
- * paymentsTotal uses isDateInCurrentPayPeriod for current period totals).
+ * Aligns with getCurrentIntervalDateRange so we don't show dates outside the interval.
  */
-export function getVirtualPaymentsForMonth(
+export function getVirtualPaymentsForCurrentPeriod(
   payments: Payment[],
   payPeriodInterval: Interval,
   payDate: Timestamp
 ): Payment[] {
   const virtualPayments: Payment[] = [];
-  const monthStart = startOfMonth(new Date());
-  const monthEnd = endOfMonth(new Date());
+  const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(
+    payPeriodInterval,
+    payDate
+  );
 
   for (const payment of payments) {
     const occurrences = getPaymentOccurrencesInRange(
       payment,
       payPeriodInterval,
       payDate,
-      monthStart,
-      monthEnd
+      periodStart,
+      periodEnd
     );
     virtualPayments.push(...occurrences);
   }

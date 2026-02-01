@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Button from "../components/Buttons/Button";
 import Header from "../components/Nav/Header";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
+import { useBudget } from "../Context/BudgetContext/useBudget";
 import { type BackupData, type Interval } from "../types";
 import {
   editIncome,
@@ -12,6 +13,12 @@ import {
   restoreFromSafeBackup,
   getLocalStorageBackup,
   restoreFromLocalStorageBackup,
+  createBudget,
+  getBudgetMeta,
+  deleteBudgetAsOwner,
+  leaveBudget,
+  removeMemberFromBudget,
+  addInviteToBudget,
   type LocalStorageBackup,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
@@ -34,6 +41,8 @@ import { useToast } from "../Context/ToastContext/useToast";
 
 export default function Settings() {
   const { user } = useAuth();
+  const { activeBudgetId, budgets, setActiveBudgetId, refetchBudgets } =
+    useBudget();
   const { showToast } = useToast();
   const {
     payPeriodInterval,
@@ -58,37 +67,85 @@ export default function Settings() {
   const [hasPassword, setHasPassword] = useState(false);
 
   // Safe backups (stored in separate collection - survives user doc corruption)
-  const [safeBackups, setSafeBackups] = useState<Array<BackupData & { id: string }>>([]);
-  const [selectedSafeBackup, setSelectedSafeBackup] = useState<(BackupData & { id: string }) | null>(null);
+  const [safeBackups, setSafeBackups] = useState<
+    Array<BackupData & { id: string }>
+  >([]);
+  const [selectedSafeBackup, setSelectedSafeBackup] = useState<
+    (BackupData & { id: string }) | null
+  >(null);
   const [isLoadingSafeBackups, setIsLoadingSafeBackups] = useState(false);
 
   // LocalStorage backup (for undo last restore)
-  const [localStorageBackup, setLocalStorageBackup] = useState<LocalStorageBackup | null>(null);
+  const [localStorageBackup, setLocalStorageBackup] =
+    useState<LocalStorageBackup | null>(null);
   const [showUndoConfirm, setShowUndoConfirm] = useState(false);
 
   // Delete account
-  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] =
+    useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deletePasswordStep, setDeletePasswordStep] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
 
-  const currentProviderTypes = ["google.com"];
+  // Budget management (create, share, delete, leave, members)
+  const [budgetMeta, setBudgetMeta] = useState<{
+    name: string;
+    ownerId: string;
+    memberIds: string[];
+  } | null>(null);
+  const [newBudgetName, setNewBudgetName] = useState("");
+  const [shareEmail, setShareEmail] = useState("");
+  const [isLoadingBudgetMeta, setIsLoadingBudgetMeta] = useState(false);
+  const [showDeleteBudgetConfirm, setShowDeleteBudgetConfirm] = useState(false);
+  const [showLeaveBudgetConfirm, setShowLeaveBudgetConfirm] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+  const [isCreatingBudget, setIsCreatingBudget] = useState(false);
+  const [isDeletingBudget, setIsDeletingBudget] = useState(false);
+  const [isLeavingBudget, setIsLeavingBudget] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
 
-  // Load safe backups and check for localStorage backup on mount
+  const currentProviderTypes = ["google.com"];
+  const isOwner = user && budgetMeta && budgetMeta.ownerId === user.uid;
+  const isMember =
+    user && budgetMeta && budgetMeta.memberIds.includes(user.uid) && !isOwner;
+
+  // Load safe backups for active budget and check for localStorage backup
   useEffect(() => {
-    if (!user) return;
+    if (!user || !activeBudgetId) return;
+    const budgetId = activeBudgetId;
     async function loadSafeBackups() {
       setIsLoadingSafeBackups(true);
-      const backups = await getSafeBackups(user!);
+      const backups = await getSafeBackups(user!, budgetId);
       setSafeBackups(backups as Array<BackupData & { id: string }>);
       setIsLoadingSafeBackups(false);
     }
     loadSafeBackups();
-
-    // Check for localStorage backup (undo capability)
     const lsBackup = getLocalStorageBackup();
     setLocalStorageBackup(lsBackup);
-  }, [user]);
+  }, [user, activeBudgetId]);
+
+  // Load budget meta for active budget (for share/delete/members)
+  useEffect(() => {
+    if (!activeBudgetId) {
+      setBudgetMeta(null);
+      return;
+    }
+    let cancelled = false;
+    setIsLoadingBudgetMeta(true);
+    getBudgetMeta(activeBudgetId).then((meta) => {
+      if (!cancelled && meta)
+        setBudgetMeta({
+          name: meta.name,
+          ownerId: meta.ownerId,
+          memberIds: meta.memberIds,
+        });
+      else if (!cancelled) setBudgetMeta(null);
+      setIsLoadingBudgetMeta(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeBudgetId]);
 
   useEffect(() => {
     if (user) {
@@ -126,16 +183,17 @@ export default function Settings() {
       const diffAmount = getIncomeByInterval(
         payPeriodInterval,
         newInterval,
-        Number(newIncome)
+        Number(newIncome),
       );
       setIncome(Number(newIncome));
       setPayPeriodInterval(newInterval);
-      await editPayPeriodInterval(newInterval, user!.uid);
+      if (!activeBudgetId) return;
+      await editPayPeriodInterval(newInterval, activeBudgetId);
       const nextBudget = recalculateBudget({
         currentAvailableBudget: totalSpendingBudget,
         diffAmount,
       });
-      await editTotalSpendingBudget(nextBudget, user!.uid);
+      await editTotalSpendingBudget(nextBudget, activeBudgetId!);
       setTotalSpendingBudget(nextBudget);
       setShowIntervalSettings(false);
       showToast("Budget interval updated");
@@ -153,8 +211,8 @@ export default function Settings() {
         currentAvailableBudget: totalSpendingBudget,
         diffAmount,
       });
-      await editTotalSpendingBudget(newBal, user!.uid);
-      await editIncome(Number(newIncome), user!.uid);
+      await editTotalSpendingBudget(newBal, activeBudgetId!);
+      await editIncome(Number(newIncome), activeBudgetId!);
       setTotalSpendingBudget(newBal);
       setIncome(Number(newIncome));
       setShowEditIncome(false);
@@ -169,7 +227,8 @@ export default function Settings() {
     if (value instanceof Date) {
       try {
         setPayDate(Timestamp.fromDate(value));
-        await editPayDate(value, user!.uid);
+        if (!activeBudgetId) return;
+        await editPayDate(value, activeBudgetId);
         showToast("Pay date updated");
         // TODO: recalculate budget based on paydate change
         // This involves checking which bills in the current interval are paid
@@ -187,7 +246,7 @@ export default function Settings() {
   }
 
   function handleSelectBackup(backupId: string) {
-    const backup = safeBackups.find(b => b.id === backupId);
+    const backup = safeBackups.find((b) => b.id === backupId);
     if (backup) {
       setSelectedSafeBackup(backup);
     }
@@ -199,7 +258,12 @@ export default function Settings() {
 
   async function handleRestoreBackup() {
     if (!user || !selectedSafeBackup) return;
-    const result = await restoreFromSafeBackup(selectedSafeBackup.id, user);
+    if (!activeBudgetId) return;
+    const result = await restoreFromSafeBackup(
+      selectedSafeBackup.id,
+      user,
+      activeBudgetId,
+    );
     if (result) {
       setPayments(result.payments ?? []);
       setEnvelopes(result.nvelopes ?? []);
@@ -216,8 +280,8 @@ export default function Settings() {
   }
 
   async function handleUndoRestore() {
-    if (!user || !localStorageBackup) return;
-    const success = await restoreFromLocalStorageBackup(user);
+    if (!user || !localStorageBackup || !activeBudgetId) return;
+    const success = await restoreFromLocalStorageBackup(user, activeBudgetId);
     if (success) {
       // Update local state with restored values
       const { data } = localStorageBackup;
@@ -271,8 +335,114 @@ export default function Settings() {
       await sendPasswordResetEmailToUser(email.trim());
       showToast("Password reset email sent. Check your inbox.", "success");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to send reset email";
+      const message =
+        err instanceof Error ? err.message : "Failed to send reset email";
       showToast(message, "error");
+    }
+  }
+
+  async function handleCreateBudget() {
+    if (!user) return;
+    const name = newBudgetName.trim() || "My Budget";
+    setIsCreatingBudget(true);
+    try {
+      const budgetId = await createBudget(user, name);
+      if (budgetId) {
+        setNewBudgetName("");
+        await refetchBudgets();
+        setActiveBudgetId(budgetId);
+        showToast(`Budget "${name}" created`);
+      } else {
+        showToast("Failed to create budget", "error");
+      }
+    } finally {
+      setIsCreatingBudget(false);
+    }
+  }
+
+  async function handleInvite() {
+    if (!user || !activeBudgetId || !shareEmail.trim()) return;
+    setIsInviting(true);
+    try {
+      const ok = await addInviteToBudget(
+        activeBudgetId,
+        shareEmail.trim(),
+        user.uid,
+      );
+      if (ok) {
+        setShareEmail("");
+        showToast(
+          `Invite sent to ${shareEmail.trim()}. They'll see this budget when they sign in.`,
+        );
+      } else {
+        showToast("Failed to send invite", "error");
+      }
+    } finally {
+      setIsInviting(false);
+    }
+  }
+
+  async function handleDeleteBudgetConfirm() {
+    if (!user || !activeBudgetId) return;
+    setIsDeletingBudget(true);
+    try {
+      const ok = await deleteBudgetAsOwner(user.uid, activeBudgetId);
+      setShowDeleteBudgetConfirm(false);
+      if (ok) {
+        await refetchBudgets();
+        const next = budgets.find((b) => b.id !== activeBudgetId)?.id ?? null;
+        setActiveBudgetId(next);
+        showToast("Budget deleted");
+      } else {
+        showToast("Failed to delete budget", "error");
+      }
+    } finally {
+      setIsDeletingBudget(false);
+    }
+  }
+
+  async function handleLeaveBudgetConfirm() {
+    if (!user || !activeBudgetId) return;
+    setIsLeavingBudget(true);
+    try {
+      const ok = await leaveBudget(user.uid, activeBudgetId);
+      setShowLeaveBudgetConfirm(false);
+      if (ok) {
+        await refetchBudgets();
+        const next = budgets.find((b) => b.id !== activeBudgetId)?.id ?? null;
+        setActiveBudgetId(next);
+        showToast("You left the budget");
+      } else {
+        showToast("Failed to leave budget", "error");
+      }
+    } finally {
+      setIsLeavingBudget(false);
+    }
+  }
+
+  async function handleRemoveMemberConfirm() {
+    if (!user || !activeBudgetId || !memberToRemove) return;
+    try {
+      const ok = await removeMemberFromBudget(
+        user.uid,
+        activeBudgetId,
+        memberToRemove,
+      );
+      setMemberToRemove(null);
+      if (ok) {
+        const meta = await getBudgetMeta(activeBudgetId);
+        if (meta)
+          setBudgetMeta({
+            name: meta.name,
+            ownerId: meta.ownerId,
+            memberIds: meta.memberIds,
+          });
+        showToast("Member removed");
+      } else {
+        showToast("Failed to remove member", "error");
+      }
+    } catch {
+      showToast("Failed to remove member", "error");
     }
   }
 
@@ -329,7 +499,13 @@ export default function Settings() {
 
   return (
     <div className="w-full h-screen overflow-y-scroll bg-my-white-light">
-      <Header links={[{ label: "Home", href: "/" }, { label: "Debt", href: "/debt" }, { label: "Feedback", href: "/feedback" }]} />
+      <Header
+        links={[
+          { label: "Home", href: "/" },
+          { label: "Debt", href: "/debt" },
+          { label: "Feedback", href: "/feedback" },
+        ]}
+      />
       <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md ">
         Settings
       </h1>
@@ -338,6 +514,108 @@ export default function Settings() {
         <Button color="red" onClick={() => signout()}>
           Log Out
         </Button>
+      </div>
+      {/* Budgets: switcher, create, share, members, delete/leave */}
+      <div className="w-full flex flex-col items-center gap-2 bg-my-white-base mt-4 py-[1rem]">
+        <h2 className="text-sm font-semibold">Budgets</h2>
+        {budgets.length >= 1 && (
+          <div className="w-full flex flex-col items-center gap-2">
+            <label htmlFor="budget-switcher" className="text-xs">
+              Current budget
+            </label>
+            <select
+              id="budget-switcher"
+              value={activeBudgetId ?? ""}
+              onChange={(e) => setActiveBudgetId(e.target.value || null)}
+              className="bg-my-white-light border-2 border-my-white-dark rounded-md px-3 py-2 text-my-black-dark max-w-[20rem] w-[80%]"
+            >
+              {budgets.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className="flex flex-col items-center gap-2 w-full">
+          <TextInput
+            id="new-budget-name"
+            label="New budget name"
+            placeholder="e.g. Household"
+            value={newBudgetName}
+            onChange={(e) => setNewBudgetName(e.target.value)}
+          />
+          <Button
+            color="green"
+            onClick={handleCreateBudget}
+            disabled={isCreatingBudget}
+          >
+            {isCreatingBudget ? "Creating…" : "Create budget"}
+          </Button>
+        </div>
+        {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
+          <>
+            {isOwner && (
+              <div className="w-full flex flex-col gap-2 flex flex-col items-center justify-center">
+                <TextInput
+                  id="Email to share with"
+                  label="Share budget by email"
+                  placeholder="email@example.com"
+                  value={shareEmail}
+                  onChange={(e) => setShareEmail(e.target.value)}
+                />
+                <Button
+                  color="green"
+                  onClick={handleInvite}
+                  disabled={isInviting || !shareEmail.trim()}
+                >
+                  {isInviting ? "Sending…" : "Invite"}
+                </Button>
+              </div>
+            )}
+            {isOwner &&
+              budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
+                .length > 0 && (
+                <div className="w-full max-w-[20rem] flex flex-col gap-1">
+                  <p className="text-my-white-light text-xs">Members</p>
+                  <ul className="list-none">
+                    {budgetMeta.memberIds
+                      .filter((id) => id !== budgetMeta.ownerId)
+                      .map((mid) => (
+                        <li
+                          key={mid}
+                          className="flex items-center justify-between gap-2 py-1 text-my-white-dark text-sm"
+                        >
+                          <span title={mid}>{mid.slice(0, 8)}…</span>
+                          <Button
+                            color="red"
+                            onClick={() => setMemberToRemove(mid)}
+                          >
+                            Remove
+                          </Button>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+            {isOwner && (
+              <Button
+                color="red"
+                onClick={() => setShowDeleteBudgetConfirm(true)}
+              >
+                Delete this budget
+              </Button>
+            )}
+            {isMember && (
+              <Button
+                color="red"
+                onClick={() => setShowLeaveBudgetConfirm(true)}
+              >
+                Leave this budget
+              </Button>
+            )}
+          </>
+        )}
       </div>
       <div className="overflow-y-scroll  flex flex-col items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
         <div
@@ -370,7 +648,12 @@ export default function Settings() {
 
         {/* Once account is created simply display email has password */}
         {hasPassword && (
-          <Button color="red" onClick={() => resetPasswordForEmail(user?.email ?? '')}>Reset Password</Button>
+          <Button
+            color="red"
+            onClick={() => resetPasswordForEmail(user?.email ?? "")}
+          >
+            Reset Password
+          </Button>
         )}
 
         {/* Restore from backup */}
@@ -388,12 +671,11 @@ export default function Settings() {
                 onChange={(e) => handleSelectBackup(e.target.value)}
                 defaultValue=""
               >
-                <option value="" disabled>Select A Backup</option>
+                <option value="" disabled>
+                  Select A Backup
+                </option>
                 {safeBackups.map((b) => (
-                  <option
-                    key={b.id}
-                    value={b.id}
-                  >
+                  <option key={b.id} value={b.id}>
                     {format(b.backupTimeStamp.toDate(), "MMMM dd, yyyy hh:mm")}
                   </option>
                 ))}
@@ -413,9 +695,24 @@ export default function Settings() {
               <h1 className="text-xl text-my-red-light">Are you sure?</h1>
               <p>You can undo this restore if needed.</p>
               <p>Your income will reset to {selectedSafeBackup.income}</p>
-              <p>Your budget will reset to {selectedSafeBackup.totalSpendingBudget}</p>
-              <p>You will have {selectedSafeBackup.payments?.length ?? 0} payments totaling ${(selectedSafeBackup.payments ?? []).reduce((acc, p) => p.amount + acc, 0).toFixed(2)}</p>
-              <p>You will have {selectedSafeBackup.nvelopes?.length ?? 0} envelopes totaling ${(selectedSafeBackup.nvelopes ?? []).reduce((acc, p) => p.total + acc, 0).toFixed(2)}</p>
+              <p>
+                Your budget will reset to{" "}
+                {selectedSafeBackup.totalSpendingBudget}
+              </p>
+              <p>
+                You will have {selectedSafeBackup.payments?.length ?? 0}{" "}
+                payments totaling $
+                {(selectedSafeBackup.payments ?? [])
+                  .reduce((acc, p) => p.amount + acc, 0)
+                  .toFixed(2)}
+              </p>
+              <p>
+                You will have {selectedSafeBackup.nvelopes?.length ?? 0}{" "}
+                envelopes totaling $
+                {(selectedSafeBackup.nvelopes ?? [])
+                  .reduce((acc, p) => p.total + acc, 0)
+                  .toFixed(2)}
+              </p>
             </div>
           </FullScreen>
         )}
@@ -427,9 +724,19 @@ export default function Settings() {
             onClick={() => setShowUndoConfirm(true)}
           >
             <p className="text-sm font-bold">Undo Last Restore</p>
-            <p className="text-xs">Saved: {new Date(localStorageBackup.timestamp).toLocaleString()}</p>
-            <p className="text-xs">{localStorageBackup.data.envelopes?.length ?? 0} envelopes, {localStorageBackup.data.payments?.length ?? 0} payments</p>
-            <button className="bg-my-white-dark rounded-md border-2 border-my-black-dark text-my-black-dark p-2 w-[80%]" onClick={() => setShowUndoConfirm(true)}>Undo</button>
+            <p className="text-xs">
+              Saved: {new Date(localStorageBackup.timestamp).toLocaleString()}
+            </p>
+            <p className="text-xs">
+              {localStorageBackup.data.envelopes?.length ?? 0} envelopes,{" "}
+              {localStorageBackup.data.payments?.length ?? 0} payments
+            </p>
+            <button
+              className="bg-my-white-dark rounded-md border-2 border-my-black-dark text-my-black-dark p-2 w-[80%]"
+              onClick={() => setShowUndoConfirm(true)}
+            >
+              Undo
+            </button>
           </div>
         )}
 
@@ -442,11 +749,98 @@ export default function Settings() {
           >
             <div className="w-full text-center">
               <h1 className="text-xl text-my-blue-light">Undo Last Restore?</h1>
-              <p className="mb-4">This will restore your data to the state before the last restore.</p>
+              <p className="mb-4">
+                This will restore your data to the state before the last
+                restore.
+              </p>
               <p>Your income will reset to {localStorageBackup.data.income}</p>
-              <p>Your budget will reset to {localStorageBackup.data.totalSpendingBudget}</p>
-              <p>You will have {localStorageBackup.data.payments?.length ?? 0} payments</p>
-              <p>You will have {localStorageBackup.data.envelopes?.length ?? 0} envelopes</p>
+              <p>
+                Your budget will reset to{" "}
+                {localStorageBackup.data.totalSpendingBudget}
+              </p>
+              <p>
+                You will have {localStorageBackup.data.payments?.length ?? 0}{" "}
+                payments
+              </p>
+              <p>
+                You will have {localStorageBackup.data.envelopes?.length ?? 0}{" "}
+                envelopes
+              </p>
+            </div>
+          </FullScreen>
+        )}
+
+        {showDeleteBudgetConfirm && (
+          <FullScreen
+            theme="DARK"
+            closeOnSave={false}
+            onClose={() => setShowDeleteBudgetConfirm(false)}
+            onSave={handleDeleteBudgetConfirm}
+            showButtons
+            saveButtonText="Delete budget"
+            saveButtonColor="red"
+            closeButtonText="Cancel"
+            saveButtonDisabled={isDeletingBudget}
+          >
+            <div className="text-center">
+              <h1 className="text-xl text-my-red-light mb-2">
+                Delete this budget?
+              </h1>
+              <p className="text-my-white-light">
+                All data (envelopes, payments) will be permanently deleted. All
+                members will lose access. This cannot be undone.
+              </p>
+              {isDeletingBudget && (
+                <p className="text-my-white-dark text-sm mt-4">Deleting…</p>
+              )}
+            </div>
+          </FullScreen>
+        )}
+
+        {showLeaveBudgetConfirm && (
+          <FullScreen
+            theme="DARK"
+            closeOnSave={false}
+            onClose={() => setShowLeaveBudgetConfirm(false)}
+            onSave={handleLeaveBudgetConfirm}
+            showButtons
+            saveButtonText="Leave budget"
+            saveButtonColor="red"
+            closeButtonText="Cancel"
+            saveButtonDisabled={isLeavingBudget}
+          >
+            <div className="text-center">
+              <h1 className="text-xl text-my-red-light mb-2">
+                Leave this budget?
+              </h1>
+              <p className="text-my-white-light">
+                You will no longer see or edit this budget. Your data elsewhere
+                is unaffected.
+              </p>
+              {isLeavingBudget && (
+                <p className="text-my-white-dark text-sm mt-4">Leaving…</p>
+              )}
+            </div>
+          </FullScreen>
+        )}
+
+        {memberToRemove && (
+          <FullScreen
+            theme="DARK"
+            onClose={() => setMemberToRemove(null)}
+            onSave={handleRemoveMemberConfirm}
+            showButtons
+            saveButtonText="Remove member"
+            saveButtonColor="red"
+            closeButtonText="Cancel"
+          >
+            <div className="text-center">
+              <h1 className="text-xl text-my-red-light mb-2">
+                Remove this member?
+              </h1>
+              <p className="text-my-white-light">
+                They will lose access to this budget.
+              </p>
             </div>
           </FullScreen>
         )}
@@ -461,7 +855,9 @@ export default function Settings() {
           }}
         >
           <p className="text-sm font-bold text-my-red-light">Delete Account</p>
-          <p className="text-xs text-my-white-dark mt-1">Permanently delete your account and all data</p>
+          <p className="text-xs text-my-white-dark mt-1">
+            Permanently delete your account and all data
+          </p>
         </div>
       </div>
 
@@ -476,29 +872,43 @@ export default function Settings() {
               setDeletePassword("");
             }
           }}
-          onSave={() => handleDeleteAccount(deletePasswordStep ? deletePassword : undefined)}
+          onSave={() =>
+            handleDeleteAccount(deletePasswordStep ? deletePassword : undefined)
+          }
           showButtons
           saveButtonText="Delete account"
           saveButtonColor="red"
           closeButtonText="Cancel"
-          saveButtonDisabled={isDeletingAccount || (deletePasswordStep && !deletePassword.trim())}
+          saveButtonDisabled={
+            isDeletingAccount || (deletePasswordStep && !deletePassword.trim())
+          }
         >
           <div className="w-full text-center">
             {!deletePasswordStep ? (
               <div className="flex flex-col items-center justify-center w-full">
-                <h1 className="text-xl text-my-red-light font-bold mb-4">Are you sure?</h1>
+                <h1 className="text-xl text-my-red-light font-bold mb-4">
+                  Are you sure?
+                </h1>
                 <p className="text-my-white-light mb-2">
-                  This will permanently delete your account and all your data (envelopes, payments, backups).
+                  This will permanently delete your account and all your data
+                  (envelopes, payments, backups).
                 </p>
-                <p className="text-my-white-dark text-sm">This cannot be undone.</p>
+                <p className="text-my-white-dark text-sm">
+                  This cannot be undone.
+                </p>
                 <p className="text-my-white-dark text-sm mt-4">
-                  To confirm, you may see a Google sign-in window or be asked for your password, depending on how you signed up.
+                  To confirm, you may see a Google sign-in window or be asked
+                  for your password, depending on how you signed up.
                 </p>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center w-full">
-                <h1 className="text-xl text-my-red-light font-bold mb-4">Enter your password</h1>
-                <p className="text-my-white-light mb-2">Confirm your identity to delete your account.</p>
+                <h1 className="text-xl text-my-red-light font-bold mb-4">
+                  Enter your password
+                </h1>
+                <p className="text-my-white-light mb-2">
+                  Confirm your identity to delete your account.
+                </p>
                 <TextInput
                   id="deletePassword"
                   label="Password"
@@ -508,7 +918,9 @@ export default function Settings() {
                 />
               </div>
             )}
-            {isDeletingAccount && <p className="text-my-white-dark text-sm mt-4">Deleting…</p>}
+            {isDeletingAccount && (
+              <p className="text-my-white-dark text-sm mt-4">Deleting…</p>
+            )}
           </div>
         </FullScreen>
       )}

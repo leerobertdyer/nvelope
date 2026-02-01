@@ -7,10 +7,11 @@ import {
   editIsNewUser,
   editPayDate,
   editTotalSpendingBudget,
-  createUserDocument,
+  createFirstBudget,
   completeDemoWithDefaults,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
+import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useEffect, useState, useRef } from "react";
 import Calendar from "react-calendar";
 import Header from "../components/Nav/Header";
@@ -61,6 +62,9 @@ export default function Demo() {
     setDocumentExists,
   } = useDatabase();
   const { user } = useAuth();
+  const { activeBudgetId, setActiveBudgetId, refetchBudgets } = useBudget();
+  const [createdBudgetId, setCreatedBudgetId] = useState<string | null>(null);
+  const budgetId = createdBudgetId ?? activeBudgetId;
 
   const [step, setStep] = useState(0);
   const [newPayDate, setNewPayDate] = useState<Value | null>(null);
@@ -184,7 +188,8 @@ export default function Demo() {
     };
 
     const updatedPayments = [...newPayments, newPayment];
-    await editPayments(updatedPayments, user?.uid || "");
+    if (!budgetId) return;
+    await editPayments(updatedPayments, budgetId);
 
     const nextBudget = recalculateBudget({
       currentAvailableBudget: totalSpendingBudget,
@@ -196,7 +201,7 @@ export default function Demo() {
         ? newPaymentAmount
         : 0,
     });
-    await editTotalSpendingBudget(nextBudget, user?.uid || "");
+    await editTotalSpendingBudget(nextBudget, budgetId);
     setTotalSpendingBudget(nextBudget);
     setNewPayments(updatedPayments);
     setPayments(updatedPayments);
@@ -251,13 +256,15 @@ export default function Demo() {
   }
 
   async function handleStep1() {
-    // If no document exists yet, create it now (user has intentionally started onboarding)
     if (documentExists === false && user) {
-      const created = await createUserDocument(user);
-      if (created) {
+      const newBudgetId = await createFirstBudget(user, "My Budget");
+      if (newBudgetId) {
+        setCreatedBudgetId(newBudgetId);
+        setActiveBudgetId(newBudgetId);
+        refetchBudgets();
         setDocumentExists(true);
       } else {
-        console.error("[DEMO] Failed to create user document");
+        console.error("[DEMO] Failed to create budget");
         showToast("Could not create account. Please try again.", "error");
         return;
       }
@@ -277,8 +284,8 @@ export default function Demo() {
   }
 
   async function handleStep2() {
-    if (!newPayDate || Array.isArray(newPayDate)) return;
-    await editPayDate(newPayDate, user!.uid);
+    if (!newPayDate || Array.isArray(newPayDate) || !budgetId) return;
+    await editPayDate(newPayDate, budgetId);
     if (newPayDate instanceof Date) {
       setPayDate(Timestamp.fromDate(newPayDate));
     }
@@ -286,18 +293,18 @@ export default function Demo() {
   }
 
   async function handleStep3() {
-    if (!newInterval && !payPeriodInterval) return;
+    if ((!newInterval && !payPeriodInterval) || !budgetId) return;
     const newIncomeAmount = getIncomeByInterval(
       payPeriodInterval,
       newInterval as Interval,
       income,
     );
-    await editPayPeriodInterval(newInterval as Interval, user!.uid);
+    await editPayPeriodInterval(newInterval as Interval, budgetId);
     const nextBudget = recalculateBudget({
       currentAvailableBudget: newIncomeAmount,
       diffAmount: 0,
     });
-    await editTotalSpendingBudget(nextBudget, user!.uid);
+    await editTotalSpendingBudget(nextBudget, budgetId);
     setTotalSpendingBudget(nextBudget);
     // TODO: FIX THIS
     // setInterval(newInterval as Interval)
@@ -316,14 +323,14 @@ export default function Demo() {
   }
 
   async function handleStep5() {
-    if (!newIncome) return;
+    if (!newIncome || !budgetId) return;
     const diffAmount = newIncome - income;
-    await editIncome(newIncome, user!.uid);
+    await editIncome(newIncome, budgetId);
     const nextBudget = recalculateBudget({
       currentAvailableBudget: totalSpendingBudget,
       diffAmount,
     });
-    await editTotalSpendingBudget(nextBudget, user!.uid);
+    await editTotalSpendingBudget(nextBudget, budgetId);
     setTotalSpendingBudget(nextBudget);
     setIncome(newIncome);
     setStep(6);
@@ -341,14 +348,14 @@ export default function Demo() {
   }
 
   async function handleStep7() {
-    if (!newPayments) return;
+    if (!newPayments || !budgetId) return;
     const diffAmount = newPayments.reduce((acc, p) => acc + p.amount, 0) * -1;
-    await editPayments(newPayments, user!.uid);
+    await editPayments(newPayments, budgetId);
     const nextBudget = recalculateBudget({
       currentAvailableBudget: totalSpendingBudget,
       diffAmount,
     });
-    await editTotalSpendingBudget(nextBudget, user!.uid);
+    await editTotalSpendingBudget(nextBudget, budgetId);
     setTotalSpendingBudget(nextBudget);
     setPayments(newPayments);
     setStep(8);
@@ -380,8 +387,8 @@ export default function Demo() {
   }
 
   async function handleStep14() {
-    // Now mark as no longer a new user and navigate to main app
-    await editIsNewUser(false, user!.uid);
+    if (!budgetId) return;
+    await editIsNewUser(false, budgetId);
     setIsNewUser(false);
     navigate("/");
   }

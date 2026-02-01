@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { editTotalSpendingBudget } from "../../firebase/editData";
-import { useAuth } from "../../Context/AuthContext/useAuth";
+import { useBudget } from "../../Context/BudgetContext/useBudget";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 import FullScreen from "../../Views/FullScreen";
 import TextInput from "../TextInput";
@@ -11,7 +11,7 @@ interface IProps {
 
 export default function EditSpendingBudget({ handleBack }: IProps) {
   const [cashAmount, setCashAmount] = useState("");
-  const { user } = useAuth();
+  const { activeBudgetId } = useBudget();
   const { setTotalSpendingBudget } = useDatabase();
 
   function resetState() {
@@ -20,8 +20,8 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
   }
 
   async function manuallySetBudgetInDB() {
-    if (!cashAmount || !user) return;
-    await editTotalSpendingBudget(Number(cashAmount), user.uid);
+    if (!cashAmount || !activeBudgetId) return;
+    await editTotalSpendingBudget(Number(cashAmount), activeBudgetId);
     setTotalSpendingBudget(Number(cashAmount));
     handleBack();
   }

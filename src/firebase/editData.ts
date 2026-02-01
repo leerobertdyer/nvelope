@@ -4,36 +4,42 @@ import type {
   Interval,
   OneTimeAmount,
 } from "../types";
-import { doc, updateDoc, Timestamp, getDoc, setDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc, getCountFromServer } from "firebase/firestore";
+import { doc, updateDoc, Timestamp, getDoc, setDoc, collection, query, orderBy, getDocs, addDoc, deleteDoc, where, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
-import { MONTHLY } from "../constants";
+import { MONTHLY, BUDGET_DATA_DOC_ID } from "../constants";
 import { cleanPaymentsForFirebase } from "../util";
 
+function budgetDataRef(budgetId: string) {
+  return doc(db, "budgets", budgetId, "data", BUDGET_DATA_DOC_ID);
+}
+
+function budgetRef(budgetId: string) {
+  return doc(db, "budgets", budgetId);
+}
+
 /**
- * Creates the initial user document in Firestore.
- * This is called ONLY through intentional user action (Demo onboarding flow).
- * The document is NEVER auto-created to prevent accidental data overwrites.
+ * Creates the first budget for a user (Demo onboarding). Writes budget meta, data doc, and users/{uid}/budgets/{budgetId}.
+ * Returns the new budgetId or null on failure.
  */
-export async function createUserDocument(user: User) {
+export async function createFirstBudget(user: User, name: string = "My Budget"): Promise<string | null> {
   if (!user) {
-    console.error("createUserDocument: No user provided");
-    return false;
+    console.error("createFirstBudget: No user provided");
+    return null;
   }
-  
   try {
-    const userDocRef = doc(db, "users", user.uid);
-    
-    // Double-check document doesn't already exist (safety check)
-    const existingDoc = await getDoc(userDocRef);
-    if (existingDoc.exists()) {
-      return true; // Document exists, that's fine
-    }
-    
-    const initialUserData = {
-      id: user.uid,
-      email: user.email,
-      isNewUser: true,
+    const budgetRef = doc(collection(db, "budgets"));
+    const budgetId = budgetRef.id;
+    const dataRef = budgetDataRef(budgetId);
+    const userBudgetRef = doc(db, "users", user.uid, "budgets", budgetId);
+
+    const budgetMeta = {
+      name,
+      ownerId: user.uid,
+      memberIds: [user.uid],
+      createdAt: Timestamp.now(),
+    };
+    const initialData = {
       envelopes: [],
       payDate: null,
       payPeriodInterval: "MONTHLY",
@@ -42,59 +48,217 @@ export async function createUserDocument(user: User) {
       totalSpendingBudget: 0,
       oneTimeCash: null,
       resetBudgetTimestamp: null,
+      snowball: 0,
+      snowballTargetPaymentId: null,
+      isNewUser: true,
       backups: null,
+    };
+    const userBudgetDoc = { name, budgetId };
+
+    await setDoc(budgetRef, budgetMeta);
+    await setDoc(dataRef, initialData);
+    await setDoc(userBudgetRef, userBudgetDoc);
+    return budgetId;
+  } catch (error) {
+    console.error("createFirstBudget failed:", error);
+    return null;
+  }
+}
+
+/**
+ * Create a new budget (from Settings). Same as createFirstBudget but isNewUser: false so user is not sent to Demo.
+ */
+export async function createBudget(user: User, name: string = "My Budget"): Promise<string | null> {
+  if (!user) return null;
+  try {
+    const budgetRef = doc(collection(db, "budgets"));
+    const budgetId = budgetRef.id;
+    const dataRef = budgetDataRef(budgetId);
+    const userBudgetRef = doc(db, "users", user.uid, "budgets", budgetId);
+    const budgetMeta = {
+      name,
+      ownerId: user.uid,
+      memberIds: [user.uid],
       createdAt: Timestamp.now(),
     };
-    
-    await setDoc(userDocRef, initialUserData);
+    const initialData = {
+      envelopes: [],
+      payDate: null,
+      payPeriodInterval: "MONTHLY",
+      payments: [],
+      income: 0,
+      totalSpendingBudget: 0,
+      oneTimeCash: null,
+      resetBudgetTimestamp: null,
+      snowball: 0,
+      snowballTargetPaymentId: null,
+      isNewUser: false,
+      backups: null,
+    };
+    const userBudgetDoc = { name, budgetId };
+    await setDoc(budgetRef, budgetMeta);
+    await setDoc(dataRef, initialData);
+    await setDoc(userBudgetRef, userBudgetDoc);
+    return budgetId;
+  } catch (error) {
+    console.error("createBudget failed:", error);
+    return null;
+  }
+}
+
+/** Get budget metadata (ownerId, memberIds, name). */
+export async function getBudgetMeta(budgetId: string) {
+  const snap = await getDoc(budgetRef(budgetId));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return {
+    name: d.name ?? "Budget",
+    ownerId: d.ownerId as string,
+    memberIds: (d.memberIds as string[]) ?? [],
+    createdAt: d.createdAt,
+  };
+}
+
+/** Owner: delete budget, its data doc, and all users' budget refs. Member: leave (remove self from memberIds, delete own ref). */
+export async function deleteBudgetAsOwner(ownerId: string, budgetId: string): Promise<boolean> {
+  try {
+    const meta = await getBudgetMeta(budgetId);
+    if (!meta || meta.ownerId !== ownerId) return false;
+    const dataRef = budgetDataRef(budgetId);
+    for (const uid of meta.memberIds) {
+      const userBudgetRef = doc(db, "users", uid, "budgets", budgetId);
+      await deleteDoc(userBudgetRef);
+    }
+    await deleteDoc(dataRef);
+    await deleteDoc(budgetRef(budgetId));
     return true;
   } catch (error) {
-    console.error("createUserDocument failed:", error);
+    console.error("deleteBudgetAsOwner failed:", error);
+    return false;
+  }
+}
+
+/** Member leaves budget: remove self from memberIds, delete own users/{uid}/budgets/{budgetId}. */
+export async function leaveBudget(userId: string, budgetId: string): Promise<boolean> {
+  try {
+    const meta = await getBudgetMeta(budgetId);
+    if (!meta || meta.ownerId === userId) return false;
+    await updateDoc(budgetRef(budgetId), { memberIds: arrayRemove(userId) });
+    const userBudgetRef = doc(db, "users", userId, "budgets", budgetId);
+    await deleteDoc(userBudgetRef);
+    return true;
+  } catch (error) {
+    console.error("leaveBudget failed:", error);
+    return false;
+  }
+}
+
+/** Owner removes a member from the budget. */
+export async function removeMemberFromBudget(ownerId: string, budgetId: string, memberId: string): Promise<boolean> {
+  try {
+    const meta = await getBudgetMeta(budgetId);
+    if (!meta || meta.ownerId !== ownerId || memberId === ownerId) return false;
+    await updateDoc(budgetRef(budgetId), { memberIds: arrayRemove(memberId) });
+    const userBudgetRef = doc(db, "users", memberId, "budgets", budgetId);
+    await deleteDoc(userBudgetRef);
+    return true;
+  } catch (error) {
+    console.error("removeMemberFromBudget failed:", error);
+    return false;
+  }
+}
+
+const BUDGET_INVITES_COLLECTION = "budgetInvites";
+
+/** Owner invites by email. If user exists they can be added when they process invites on load. */
+export async function addInviteToBudget(budgetId: string, email: string, ownerId: string): Promise<boolean> {
+  try {
+    const meta = await getBudgetMeta(budgetId);
+    if (!meta || meta.ownerId !== ownerId) return false;
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return false;
+    const inviteRef = doc(collection(db, BUDGET_INVITES_COLLECTION));
+    await setDoc(inviteRef, {
+      budgetId,
+      email: normalizedEmail,
+      invitedBy: ownerId,
+      createdAt: Timestamp.now(),
+    });
+    return true;
+  } catch (error) {
+    console.error("addInviteToBudget failed:", error);
     return false;
   }
 }
 
 /**
- * Ensures the user has a complete document so MainView can render (no blank screen).
- * Used when the user skips the demo: creates doc if missing, sets payDate if null,
- * and marks onboarding complete so they land on a working main view.
+ * Call on app load: for current user's email, consume any invites (add user to budget, delete invite). Returns count processed.
+ * Note: Firestore rules only allow budget write by owner/members, so the invited user cannot add themselves. Either deploy
+ * a callable Cloud Function that uses Admin SDK to add the user and delete the invite, or add a rule that allows update
+ * when an invite doc exists for this budget and request.auth.token.email (e.g. invite subcollection under budget).
+ */
+export async function processInvitesForUser(user: User): Promise<number> {
+  const email = user?.email?.trim()?.toLowerCase();
+  if (!email) return 0;
+  try {
+    const q = query(
+      collection(db, BUDGET_INVITES_COLLECTION),
+      where("email", "==", email)
+    );
+    const snap = await getDocs(q);
+    let count = 0;
+    const metaCache: Record<string, { name: string }> = {};
+    for (const inviteDoc of snap.docs) {
+      const data = inviteDoc.data();
+      const bid = data.budgetId as string;
+      if (!bid) continue;
+      let name = metaCache[bid]?.name;
+      if (name === undefined) {
+        const m = await getBudgetMeta(bid);
+        name = m?.name ?? "Budget";
+        metaCache[bid] = { name };
+      }
+      const budgetSnap = await getDoc(budgetRef(bid));
+      if (!budgetSnap.exists()) {
+        await deleteDoc(inviteDoc.ref);
+        continue;
+      }
+      const budgetData = budgetSnap.data();
+      const memberIds = (budgetData.memberIds as string[]) ?? [];
+      if (memberIds.includes(user.uid)) {
+        await deleteDoc(inviteDoc.ref);
+        continue;
+      }
+      await updateDoc(budgetRef(bid), { memberIds: arrayUnion(user.uid) });
+      await setDoc(doc(db, "users", user.uid, "budgets", bid), { name, budgetId: bid });
+      await deleteDoc(inviteDoc.ref);
+      count++;
+    }
+    return count;
+  } catch (error) {
+    console.error("processInvitesForUser failed:", error);
+    return 0;
+  }
+}
+
+/** @deprecated Use createFirstBudget. Kept for migration script / reference. */
+export async function createUserDocument(user: User) {
+  const budgetId = await createFirstBudget(user, "My Budget");
+  return budgetId != null;
+}
+
+/**
+ * Skip demo: create first budget with defaults so MainView can render.
  */
 export async function completeDemoWithDefaults(user: User): Promise<boolean> {
   if (!user) return false;
   try {
-    const userDocRef = doc(db, "users", user.uid);
-    const existingDoc = await getDoc(userDocRef);
-
-    // Start of current month as default pay date so MainView has something to show
     const now = new Date();
     const defaultPayDate = Timestamp.fromDate(new Date(now.getFullYear(), now.getMonth(), 1));
-
-    if (!existingDoc.exists()) {
-      const initialUserData = {
-        id: user.uid,
-        email: user.email,
-        isNewUser: false,
-        envelopes: [],
-        payDate: defaultPayDate,
-        payPeriodInterval: MONTHLY,
-        payments: [],
-        income: 0,
-        totalSpendingBudget: 0,
-        oneTimeCash: null,
-        resetBudgetTimestamp: null,
-        backups: null,
-        createdAt: Timestamp.now(),
-      };
-      await setDoc(userDocRef, initialUserData);
-      return true;
-    }
-
-    const data = existingDoc.data();
-    if (data.payDate == null) {
-      await updateDoc(userDocRef, { isNewUser: false, payDate: defaultPayDate });
-    } else {
-      await updateDoc(userDocRef, { isNewUser: false });
-    }
+    const budgetId = await createFirstBudget(user, "My Budget");
+    if (!budgetId) return false;
+    const dataRef = budgetDataRef(budgetId);
+    await updateDoc(dataRef, { isNewUser: false, payDate: defaultPayDate });
     return true;
   } catch (error) {
     console.error("completeDemoWithDefaults failed:", error);
@@ -104,132 +268,105 @@ export async function completeDemoWithDefaults(user: User): Promise<boolean> {
 
 export async function editResetBudgetTimestamp(
   resetBudgetTimestamp: Timestamp,
-  userId: string
+  budgetId: string
 ) {
   try {
-    const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { resetBudgetTimestamp });
+    await updateDoc(budgetDataRef(budgetId), { resetBudgetTimestamp });
   } catch (error) {
     console.error("Firebase, editResetBudgetTimestamp Failed", error);
   }
-  return;
 }
 
-export async function editEnvelopes(envelopes: Envelope[], userId: string) {
+export async function editEnvelopes(envelopes: Envelope[], budgetId: string) {
   const toFixedEnvelopes = envelopes.map((e: Envelope) => ({
     ...e,
     total: Number(e.total.toFixed(2)),
   }));
   try {
-    const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { envelopes: toFixedEnvelopes });
+    await updateDoc(budgetDataRef(budgetId), { envelopes: toFixedEnvelopes });
   } catch (error) {
     console.error("Firebase, editEnvelopes Failed", error);
   }
-  return;
 }
 
-export async function editPayments(p: Payment[], userId: string) {
+export async function editPayments(p: Payment[], budgetId: string) {
   const sortedPayments = p.sort(
     (a, b) => a.dueDate!.seconds! - b.dueDate!.seconds!
   );
-  
   const cleanedPayments = cleanPaymentsForFirebase(sortedPayments);
-  
   try {
-    const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { payments: cleanedPayments });
+    await updateDoc(budgetDataRef(budgetId), { payments: cleanedPayments });
   } catch (error) {
     console.error("Firebase, editBills Failed", error);
   }
-  return;
 }
 
-export async function editIncome(income: number, userId: string) {
+export async function editIncome(income: number, budgetId: string) {
   try {
-    const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { income });
+    await updateDoc(budgetDataRef(budgetId), { income });
   } catch (error) {
     console.error("Firebase, editIncome Failed", error);
   }
-  return;
 }
 
-export async function editPayPeriodInterval(i: Interval, userId: string) {
+export async function editPayPeriodInterval(i: Interval, budgetId: string) {
   try {
-    const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { payPeriodInterval: i });
+    await updateDoc(budgetDataRef(budgetId), { payPeriodInterval: i });
   } catch (error) {
     console.error("Firebase, editInterval Failed", error);
   }
-  return;
 }
 
-export async function editIsNewUser(isNewUser: boolean, userId: string) {
+export async function editIsNewUser(isNewUser: boolean, budgetId: string) {
   try {
-    const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { isNewUser });
+    await updateDoc(budgetDataRef(budgetId), { isNewUser });
   } catch (error) {
     console.error("Firebase, editIsNewUser Failed", error);
   }
-  return;
 }
 
-export async function editPayDate(payDate: Date, userId: string) {
+export async function editPayDate(payDate: Date, budgetId: string) {
   const date = Timestamp.fromDate(payDate);
   try {
-    const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { payDate: date });
+    await updateDoc(budgetDataRef(budgetId), { payDate: date });
   } catch (error) {
     console.error("Firebase, editPayDate Failed", error);
   }
-  return;
 }
 
 export async function editOneTimeCashAndBudget(
   newCashEntry: OneTimeAmount | null,
-  userId: string,
+  budgetId: string,
   currentBudget: number
 ) {
   try {
-    const userDocRef = doc(db, "users", userId);
-    const docSnap = await getDoc(userDocRef);
+    const dataRef = budgetDataRef(budgetId);
+    const docSnap = await getDoc(dataRef);
     if (!newCashEntry) {
-      await updateDoc(userDocRef, {
-        oneTimeCash: [],
-        totalSpendingBudget: currentBudget,
-      });
+      await updateDoc(dataRef, { oneTimeCash: [], totalSpendingBudget: currentBudget });
       return;
     }
     if (docSnap.exists()) {
-      const { oneTimeCash } = docSnap.data() || [];
-      const nextOneTimeCash = [...(oneTimeCash || []), newCashEntry];
-      await updateDoc(userDocRef, {
-        oneTimeCash: nextOneTimeCash,
+      const data = docSnap.data();
+      const oneTimeCash = data.oneTimeCash ?? [];
+      await updateDoc(dataRef, {
+        oneTimeCash: [...oneTimeCash, newCashEntry],
         totalSpendingBudget: currentBudget + newCashEntry.amount,
       });
     } else {
-      console.error(
-        "Firebase, editOneTimeCashAndBudget Failed: Document does not exist"
-      );
+      console.error("Firebase, editOneTimeCashAndBudget Failed: Document does not exist");
     }
   } catch (error) {
     console.error("Firebase, editOneTimeCashAndBudget Failed", error);
   }
-  return;
 }
 
-export async function editTotalSpendingBudget(
-  newTotal: number,
-  userId: string
-) {
+export async function editTotalSpendingBudget(newTotal: number, budgetId: string) {
   try {
-    const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, { totalSpendingBudget: newTotal });
+    await updateDoc(budgetDataRef(budgetId), { totalSpendingBudget: newTotal });
   } catch (error) {
     console.error("Firebase, editTotalSpendingBudget Failed", error);
   }
-  return;
 }
 
 /**
@@ -248,39 +385,33 @@ export async function editTotalSpendingBudget(
  * This would enable pie charts, spending trends, and period comparisons.
  */
 
-export async function setDefaultPaymentInterval(userId: string) {
+export async function setDefaultPaymentInterval(budgetId: string) {
   try {
-    const userDocRef = doc(db, "users", userId);
-    const docSnap = await getDoc(userDocRef);
-
+    const dataRef = budgetDataRef(budgetId);
+    const docSnap = await getDoc(dataRef);
     if (!docSnap.exists()) return;
-
     const payments = docSnap.data().payments || [];
     const newPayments = payments.map((p: Payment) => ({
       ...p,
       interval: p.interval ?? MONTHLY,
     }));
-
-    await updateDoc(userDocRef, { payments: newPayments });
+    await updateDoc(dataRef, { payments: newPayments });
   } catch (error) {
     console.error("Firebase, error in setDefaultPaymentInterval:", error);
   }
 }
 
-export async function importAndTransformLegacyBills(userId: string) {
-  const userDocRef = doc(db, "users", userId);
-  const docSnap = await getDoc(userDocRef);
-
+export async function importAndTransformLegacyBills(budgetId: string) {
+  const dataRef = budgetDataRef(budgetId);
+  const docSnap = await getDoc(dataRef);
   if (!docSnap.exists()) return [];
-  const bills = docSnap.data().bills || [];
-  const existingPayments = docSnap.data().payments || [];
+  const data = docSnap.data();
+  const bills = data.bills || [];
+  const existingPayments = data.payments || [];
   const newPayments = transformBillsToPayments(bills).filter((p) =>
     existingPayments.every((e: Payment) => e.name !== p.name)
   );
-
-  await updateDoc(userDocRef, {
-    payments: [...existingPayments, ...newPayments],
-  });
+  await updateDoc(dataRef, { payments: [...existingPayments, ...newPayments] });
 }
 
 type Bill = {
@@ -318,16 +449,12 @@ export const validIntervals: Interval[] = [
   "SPLIT",
 ];
 
-export async function editSnowball(user: User, amount: number) {
-  if (!user) return;
-  const userDocRef = doc(db, "users", user.uid);
-  await updateDoc(userDocRef, { snowball: amount });
+export async function editSnowball(budgetId: string, amount: number) {
+  await updateDoc(budgetDataRef(budgetId), { snowball: amount });
 }
 
-export async function editSnowballTargetPaymentId(user: User, paymentId: string | null) {
-  if (!user) return;
-  const userDocRef = doc(db, "users", user.uid);
-  await updateDoc(userDocRef, { snowballTargetPaymentId: paymentId });
+export async function editSnowballTargetPaymentId(budgetId: string, paymentId: string | null) {
+  await updateDoc(budgetDataRef(budgetId), { snowballTargetPaymentId: paymentId });
 }
 
 const TEN_MINUTES_MS = 10 * 60 * 1000; // 10 minutes in milliseconds
@@ -345,71 +472,54 @@ const MAX_BACKUPS = 30;
  * - If >= 30 backups exist: only backup if > 4 hours since last backup
  *   This ensures we maintain at least 5 days of backup history (30 × 4 hours = 120 hours)
  */
-export async function shouldBackupUserDataSafe(user: User) {
+/** Backups for a budget: filter by budgetId or missing (migrated). */
+function backupsForBudget(docs: { id: string; data: () => Record<string, unknown> }[], budgetId: string) {
+  return docs.filter((d) => {
+    const data = d.data();
+    const bid = data.budgetId;
+    return bid === budgetId || bid === undefined;
+  });
+}
+
+export async function shouldBackupUserDataSafe(user: User, budgetId: string) {
   if (!user) return false;
   try {
     const now = Timestamp.fromDate(new Date());
     const backupsCollectionRef = collection(db, "userBackups", user.uid, "backups");
-    
-    // Get count using server-side aggregation (doesn't download documents)
-    const countSnapshot = await getCountFromServer(backupsCollectionRef);
-    const backupCount = countSnapshot.data().count;
-    
-    // No backups exist yet - definitely backup
+    const q = query(backupsCollectionRef, orderBy("backupTimeStamp", "desc"));
+    const snapshot = await getDocs(q);
+    const forBudget = backupsForBudget(snapshot.docs, budgetId);
+    const backupCount = forBudget.length;
     if (backupCount === 0) return true;
-    
-    // Get most recent backup (only fetches 1 document)
-    const recentQuery = query(backupsCollectionRef, orderBy("backupTimeStamp", "desc"), limit(1));
-    const recentSnapshot = await getDocs(recentQuery);
-    
-    const mostRecentBackup = recentSnapshot.docs[0].data();
-    const backupTimeStamp = mostRecentBackup.backupTimeStamp;
+    const mostRecent = forBudget[0].data();
+    const backupTimeStamp = mostRecent.backupTimeStamp as Timestamp;
     const timeSinceLastBackup = now.toMillis() - backupTimeStamp.toMillis();
-    
-    // If we have fewer than MAX_BACKUPS, backup frequently to build up safety net
-    if (backupCount < MAX_BACKUPS) {
-      return timeSinceLastBackup > TEN_MINUTES_MS;
-    }
-    
-    // If we have MAX_BACKUPS or more, only backup if > 4 hours since last
-    // This spaces out backups to maintain historical coverage
+    if (backupCount < MAX_BACKUPS) return timeSinceLastBackup > TEN_MINUTES_MS;
     return timeSinceLastBackup > FOUR_HOURS_MS;
   } catch (error) {
     console.error("Error in shouldBackupUserDataSafe:", error);
-    return false; // Don't backup if we can't check - safer than potentially losing data
+    return false;
   }
 }
 
 /**
- * Creates a backup in a SEPARATE collection that survives user document corruption
- * Keeps up to 30 backups per user, automatically pruning old ones
+ * Creates a backup in userBackups/{userId}/backups with budgetId. Reads from budget data doc.
  */
-export async function backupUserDataSafe(user: User) {
+export async function backupUserDataSafe(user: User, budgetId: string) {
   if (!user) return;
   try {
-    const userDocRef = doc(db, "users", user.uid);
-    const docSnap = await getDoc(userDocRef);
-    
-    if (!docSnap.exists()) {
-      console.warn("User document doesn't exist, cannot backup");
-      return;
-    }
-    
+    const dataRef = budgetDataRef(budgetId);
+    const docSnap = await getDoc(dataRef);
+    if (!docSnap.exists()) return;
     const data = docSnap.data();
-    
-    // Don't backup if data looks empty/corrupted (safety check)
     const hasEnvelopes = Array.isArray(data.envelopes) && data.envelopes.length > 0;
     const hasPayments = Array.isArray(data.payments) && data.payments.length > 0;
-    const hasIncome = typeof data.income === 'number' && data.income > 0;
-    
-    if (!hasEnvelopes && !hasPayments && !hasIncome) {
-      console.warn("⚠️ Skipping backup - user data appears empty or corrupted");
-      return;
-    }
-    
+    const hasIncome = typeof data.income === "number" && data.income > 0;
+    if (!hasEnvelopes && !hasPayments && !hasIncome) return;
     const newTime = Timestamp.fromDate(new Date());
     const backupData = {
       backupTimeStamp: newTime,
+      budgetId,
       nvelopes: data.envelopes ?? [],
       payments: data.payments ?? [],
       cash: data.oneTimeCash ?? [],
@@ -421,53 +531,36 @@ export async function backupUserDataSafe(user: User) {
       snowballTargetPaymentId: data.snowballTargetPaymentId ?? null,
       totalSpendingBudget: data.totalSpendingBudget ?? 0,
     };
-    
-    // Store in separate collection: /userBackups/{userId}/backups/{auto-id}
     const backupsCollectionRef = collection(db, "userBackups", user.uid, "backups");
     await addDoc(backupsCollectionRef, backupData);
-    
-    // Prune old backups in separate collection (keep last 30)
     await pruneOldBackups(user.uid, 30);
-    
   } catch (error) {
     console.error("Error in backupUserDataSafe:", error);
   }
 }
 
-/**
- * Get all safe backups for a user (from separate collection)
- */
-export async function getSafeBackups(user: User) {
+/** Get safe backups for the given budget (includes migrated backups with no budgetId). */
+export async function getSafeBackups(user: User, budgetId: string) {
   if (!user) return [];
   try {
     const backupsCollectionRef = collection(db, "userBackups", user.uid, "backups");
     const q = query(backupsCollectionRef, orderBy("backupTimeStamp", "desc"));
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const snapshot = await getDocs(q);
+    const forBudget = backupsForBudget(snapshot.docs, budgetId);
+    return forBudget.map((d) => ({ id: d.id, ...d.data() }));
   } catch (error) {
     console.error("Error getting safe backups:", error);
     return [];
   }
 }
 
-/**
- * Restore from a safe backup (from separate collection)
- * Saves current state to localStorage before restoring (for undo capability)
- */
-export async function restoreFromSafeBackup(backupId: string, user: User) {
+export async function restoreFromSafeBackup(backupId: string, user: User, budgetId: string) {
   if (!user || !backupId) return null;
   try {
-    // First, fetch current user data to save to localStorage before restore
-    const userDocRef = doc(db, "users", user.uid);
-    const currentDataSnap = await getDoc(userDocRef);
-    
+    const dataRef = budgetDataRef(budgetId);
+    const currentDataSnap = await getDoc(dataRef);
     if (currentDataSnap.exists()) {
       const currentData = currentDataSnap.data();
-      // Save current state to localStorage for undo capability
       saveToLocalStorageBackup({
         envelopes: currentData.envelopes ?? [],
         payments: currentData.payments ?? [],
@@ -477,22 +570,14 @@ export async function restoreFromSafeBackup(backupId: string, user: User) {
         payPeriodInterval: currentData.payPeriodInterval ?? "MONTHLY",
       });
     }
-    
     const backupDocRef = doc(db, "userBackups", user.uid, "backups", backupId);
     const backupSnap = await getDoc(backupDocRef);
-    
-    if (!backupSnap.exists()) {
-      console.error("Safe backup not found:", backupId);
-      return null;
-    }
-    
+    if (!backupSnap.exists()) return null;
     const b = backupSnap.data();
-    
-    await editTotalSpendingBudget(Number(b.totalSpendingBudget), user.uid);
-    await editIncome(Number(b.income), user.uid);
-    await editEnvelopes(b.nvelopes ?? [], user.uid);
-    await editPayments(b.payments ?? [], user.uid);
-    
+    await editTotalSpendingBudget(Number(b.totalSpendingBudget), budgetId);
+    await editIncome(Number(b.income), budgetId);
+    await editEnvelopes(b.nvelopes ?? [], budgetId);
+    await editPayments(b.payments ?? [], budgetId);
     return b;
   } catch (error) {
     console.error("Error restoring from safe backup:", error);
@@ -608,41 +693,24 @@ function toTimestamp(obj: unknown): Timestamp | null {
 }
 
 /**
- * Restore from localStorage backup (undo last restore)
+ * Restore from localStorage backup (undo last restore) into the given budget.
  */
-export async function restoreFromLocalStorageBackup(user: User): Promise<boolean> {
+export async function restoreFromLocalStorageBackup(user: User, budgetId: string): Promise<boolean> {
   if (!user) return false;
-  
   const backup = getLocalStorageBackup();
-  if (!backup) {
-    console.error("No localStorage backup found");
-    return false;
-  }
-  
+  if (!backup) return false;
   try {
     const { data } = backup;
-    
-    console.log(`⏪ Undoing restore - reverting to state from ${backup.timestamp}`);
-    console.log(`  - ${data.payments?.length ?? 0} payments`);
-    console.log(`  - ${data.envelopes?.length ?? 0} envelopes`);
-    console.log(`  - Income: ${data.income}`);
-    console.log(`  - Budget: ${data.totalSpendingBudget}`);
-    
-    // Convert plain date objects back to Timestamps (lost during JSON serialization)
-    const restoredPayments = (data.payments ?? []).map((p) => ({
+    const restoredPayments = (data.payments ?? []).map((p: Payment & { dueDate?: unknown; paidDates?: unknown[] }) => ({
       ...p,
       dueDate: toTimestamp(p.dueDate) ?? Timestamp.now(),
-      paidDates: p.paidDates?.map((pd) => toTimestamp(pd)).filter((t): t is Timestamp => t !== null) ?? [],
+      paidDates: (p.paidDates ?? []).map((pd) => toTimestamp(pd)).filter((t): t is Timestamp => t !== null) ?? [],
     }));
-    
-    await editTotalSpendingBudget(Number(data.totalSpendingBudget), user.uid);
-    await editIncome(Number(data.income), user.uid);
-    await editEnvelopes(data.envelopes ?? [], user.uid);
-    await editPayments(restoredPayments, user.uid);
-    
-    // Clear the localStorage backup after successful restore
+    await editTotalSpendingBudget(Number(data.totalSpendingBudget), budgetId);
+    await editIncome(Number(data.income), budgetId);
+    await editEnvelopes(data.envelopes ?? [], budgetId);
+    await editPayments(restoredPayments, budgetId);
     clearLocalStorageBackup();
-    
     return true;
   } catch (error) {
     console.error("Error restoring from localStorage backup:", error);

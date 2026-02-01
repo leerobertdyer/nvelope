@@ -7,6 +7,7 @@ import ShowAndHide from "../components/Buttons/ShowAndHide";
 import Header from "../components/Nav/Header";
 import { editPayments, editSnowballTargetPaymentId } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
+import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useToast } from "../Context/ToastContext/useToast";
 import { format, parse } from "date-fns";
 import { IoWarning } from "react-icons/io5";
@@ -15,6 +16,7 @@ import TextInput from "../components/TextInput";
 
 export default function Debt() {
     const { user } = useAuth();
+    const { activeBudgetId } = useBudget();
     const { showToast } = useToast();
     const { payments, setPayments, payPeriodInterval, payDate, snowball, snowballTargetPaymentId, setSnowballTargetPaymentId } = useDatabase();
     const { remainingDebt } = paymentsTotal(payments, payPeriodInterval, payDate!)
@@ -56,7 +58,7 @@ export default function Debt() {
 
         if (!changed) return;
         setPayments(nextPayments);
-        await editPayments(nextPayments, user.uid);
+        await editPayments(nextPayments, activeBudgetId!);
     }, [payments, user?.uid, setPayments]);
 
     useEffect(() => {
@@ -110,7 +112,7 @@ export default function Debt() {
             if (p.id === d.id) return { ...d, interestRate: interestRate };
             return p;
         })
-        await editPayments(nextPayments, user!.uid);
+        await editPayments(nextPayments, activeBudgetId!);
         setInterestRate(undefined);
         showToast("Debt updated");
     }
@@ -124,7 +126,7 @@ export default function Debt() {
 
     async function handleSnowballTargetChange(debtId: string) {
         setSnowballTargetPaymentId(debtId);
-        await editSnowballTargetPaymentId(user!, debtId);
+        await editSnowballTargetPaymentId(activeBudgetId!, debtId);
         showToast("Snowball target updated");
     }
 

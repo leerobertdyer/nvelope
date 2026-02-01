@@ -1,12 +1,12 @@
 import type { Payment } from "../../types";
-import { format, isAfter, startOfDay } from "date-fns";
+import { format, isAfter, isBefore, startOfDay } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 import { useAuth } from "../../Context/AuthContext/useAuth";
 import {
   getCurrentIntervalDateRange,
   getEffectivePaymentAmount,
-  isDateInCurrentPayPeriod,
+  removeVirtualIdPortion,
 } from "../../util";
 import ShowHideButton from "../Buttons/ShowHideButton";
 import { IoIosCheckmarkCircle, IoIosCheckmarkCircleOutline } from "react-icons/io";
@@ -15,16 +15,17 @@ interface PaymentMapProps {
   handleUpdatePaid: (payment: Payment) => void;
   handleEditBill: (payment: Payment) => void;
   paymentsThisPeriod: Payment[];
+  overduePayments?: Payment[];
 }
 export default function PaymentMap({
   handleEditBill,
   handleUpdatePaid,
-  paymentsThisPeriod
+  paymentsThisPeriod,
+  overduePayments = [],
 }: PaymentMapProps) {
   const { payPeriodInterval, payDate } = useDatabase();
   const { user } = useAuth();
 
-  const today = useMemo(() => startOfDay(new Date()), []);
   const { start: periodStart, end: periodEnd } = useMemo(
     () => getCurrentIntervalDateRange(payPeriodInterval, payDate!),
     [payPeriodInterval, payDate]
@@ -35,21 +36,31 @@ export default function PaymentMap({
   const [futurePayments, setFuturePayments] = useState<Payment[]>([]);
 
   const [showPast, setShowPast] = useState(false);
+  const [showOverdue, setShowOverdue] = useState(true);
   const [showCurrent, setShowCurrent] = useState(true);
   const [showFuture, setShowFuture] = useState(false);
 
   useEffect(() => {
     if (!paymentsThisPeriod || !user || !payDate) return;
-    const pastPayments = paymentsThisPeriod.filter(
-      (p) => p.dueDate.toDate() < periodStart
+    const today = startOfDay(new Date());
+    // Split by today: Past = already passed, Current = due today or later in period, Future = after period end
+    const rawPast = paymentsThisPeriod.filter((p) => {
+      const d = startOfDay(p.dueDate.toDate());
+      return isBefore(d, today);
+    });
+    // Don't show in Past what we already show in Overdue (same occurrence)
+    const pastPayments = rawPast.filter(
+      (p) =>
+        !overduePayments.some(
+          (o) =>
+            removeVirtualIdPortion(p) === removeVirtualIdPortion(o) &&
+            p.dueDate.toMillis() === o.dueDate.toMillis()
+        )
     );
-    const currentPayments = paymentsThisPeriod.filter((p) =>
-      isDateInCurrentPayPeriod(
-        payPeriodInterval,
-        payDate.toDate(),
-        p.dueDate.toDate()
-      )
-    );
+    const currentPayments = paymentsThisPeriod.filter((p) => {
+      const d = startOfDay(p.dueDate.toDate());
+      return !isBefore(d, today) && !isAfter(d, periodEnd);
+    });
     const futurePayments = paymentsThisPeriod.filter((p) =>
       isAfter(p.dueDate.toDate(), periodEnd)
     );
@@ -62,8 +73,8 @@ export default function PaymentMap({
     payDate,
     user,
     payPeriodInterval,
-    today,
     periodStart,
+    overduePayments,
   ]);
 
   function RenderPayment({ p, time }: { p: Payment; time: string }) {
@@ -142,6 +153,10 @@ export default function PaymentMap({
     pastPayments.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0)
   ).toFixed(2)}`;
 
+  const overduePaymentsTotal = `$${overduePayments
+    .reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0)
+    .toFixed(2)}`;
+
   const currentPaymentsTotal = `$${Math.ceil(
     currentPayments.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0)
   ).toFixed(2)}`;
@@ -191,6 +206,23 @@ export default function PaymentMap({
           )}
         </>
         }
+        {overduePayments.length > 0 && (
+          <div className="border-2 border-my-red-dark rounded-md overflow-hidden">
+            <PaymentBox
+              isShown={showOverdue}
+              setter={() => setShowOverdue(!showOverdue)}
+              name="Overdue"
+              total={overduePaymentsTotal}
+            />
+            {showOverdue && (
+              <div className="bg-my-black-dark">
+                {overduePayments.map((p) => (
+                  <RenderPayment key={p.id} p={p} time="PAST" />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <PaymentBox
           name="Current Payments"
           total={currentPaymentsTotal}

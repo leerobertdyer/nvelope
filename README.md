@@ -13,6 +13,14 @@ Live at [https://www.nvelopes.app](https://www.nvelopes.app)
 
 Firestore rules are in `firestore.rules`; deploy via Firebase Console.
 
+## Multi-budget & sharing
+
+- **Create budget**: Settings → Budgets → New budget name + "Create budget".
+- **Switch budget**: Settings → Budgets → Current budget dropdown.
+- **Share by email**: Owner can invite by email (Settings → Share). Invites are stored in `budgetInvites`. When the invited user signs in, the app tries to add them to the budget; **Firestore rules only allow budget writes by owner/members**, so the invited user cannot add themselves from the client. To make "accept invite" work for new users, either deploy a **callable Cloud Function** that uses the Admin SDK to add the user to the budget and delete the invite, or add a Firestore rule that allows the invited user to update the budget when an invite doc exists for their email.
+- **Delete budget**: Owner can delete (removes budget and data; all members lose access). Member can "Leave budget" (removes only their access).
+- **Remove member**: Owner can remove a member from the budget (Settings → Members → Remove).
+
 # Nice To Haves
 - Make money flip like it's an actual counter like at a baseball game
 - Tie in bank account with Plaid and import transactions...

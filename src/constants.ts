@@ -1,3 +1,6 @@
+/** Single doc id under budgets/{budgetId}/data (holds envelopes, payments, etc.) */
+export const BUDGET_DATA_DOC_ID = "main";
+
 export const WEEKLY = "WEEKLY";
 export const BIWEEKLY = "BIWEEKLY";
 export const MONTHLY = "MONTHLY";

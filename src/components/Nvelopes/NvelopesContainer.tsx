@@ -8,7 +8,7 @@
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 import type { Envelope } from "../../types";
 import { editEnvelopes, editTotalSpendingBudget } from "../../firebase/editData";
-import { useAuth } from "../../Context/AuthContext/useAuth";
+import { useBudget } from "../../Context/BudgetContext/useBudget";
 import { useEffect, useState } from "react";
 import GiveAndTake from "../../Views/GiveAndTake";
 import ListEnvelope from "./NvelopeListRow";
@@ -38,7 +38,7 @@ export default function Nvelopes({
     envelopes,
     setEnvelopes,
   } = useDatabase();
-  const { user } = useAuth();
+  const { activeBudgetId } = useBudget();
   const [showGiveAndTake, setShowGiveAndTake] = useState(false);
   const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
   const [isEnvelopeSelected, setIsEnvelopeSelected] = useState(false);
@@ -72,7 +72,7 @@ export default function Nvelopes({
       envelopeToEdit.total = envelopeToEdit.spent;
     }
     await editEnvelope(envelopeToEdit);
-    await editTotalSpendingBudget(remainingBalancePlusTotal, user!.uid);
+    await editTotalSpendingBudget(remainingBalancePlusTotal, activeBudgetId!);
     setTotalSpendingBudget(remainingBalancePlusTotal);
     handleBack();
   }
@@ -88,7 +88,7 @@ export default function Nvelopes({
       (e) => e.id === envelopeToEdit.id
     );
     newEnvelopes[envelopeToEditIndex] = envelopeToEdit;
-    await editEnvelopes(newEnvelopes, user!.uid);
+    await editEnvelopes(newEnvelopes, activeBudgetId!);
     setEnvelopes(newEnvelopes);
     handleBack();
   }
@@ -154,7 +154,7 @@ export default function Nvelopes({
       newEnvelopes[i].order = i + 1;
     }
     setEnvelopes(newEnvelopes);
-    await editEnvelopes(newEnvelopes, user!.uid);
+    await editEnvelopes(newEnvelopes, activeBudgetId!);
   }
 
   function handleDragEnd(event: React.DragEvent<HTMLDivElement>) {

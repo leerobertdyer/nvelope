@@ -12,12 +12,16 @@ import {
   editTotalSpendingBudget,
 } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
+import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useToast } from "../Context/ToastContext/useToast";
 import Button from "../components/Buttons/Button";
 import Nvelope from "../components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
-  getVirtualPaymentsForMonth,
+  getVirtualPaymentsForCurrentPeriod,
+  getVirtualPaymentsForDateRange,
+  getCurrentIntervalDateRange,
+  isOnNewMonthCusp,
   recalculateBudget,
   removeVirtualIdPortion,
   resetAllNvelopes,
@@ -27,7 +31,7 @@ import ActionButtons from "../components/Buttons/ActionButtons";
 import Loading from "../components/Loading";
 import FullScreen from "../Views/FullScreen";
 import TextInput from "../components/TextInput";
-import { startOfDay, addMonths } from "date-fns";
+import { startOfDay, addMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
 import PaymentMap from "../components/Payments/PaymentMap";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
 import Summary from "../components/Payments/Summary";
@@ -39,6 +43,7 @@ import FundPaymentDueModal from "../components/Payments/SplitPaymentDueModal";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
+  const { activeBudgetId } = useBudget();
   const { showToast } = useToast();
   const {
     totalSpendingBudget,
@@ -78,6 +83,7 @@ export default function MainEnvelopesView() {
   const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(new Set());
 
   const [paymentsThisPeriod, setPaymentsThisPeriod] = useState(payments);
+  const [overduePayments, setOverduePayments] = useState<Payment[]>([]);
 
   // Check for due Fund (planned expense) payments
   useEffect(() => {
@@ -100,12 +106,47 @@ export default function MainEnvelopesView() {
   useEffect(() => {
     if (!payDate || !payments || !payPeriodInterval) return;
     setPaymentsThisPeriod(() => {
-      const virtual = getVirtualPaymentsForMonth(payments, payPeriodInterval, payDate);
+      const virtual = getVirtualPaymentsForCurrentPeriod(payments, payPeriodInterval, payDate);
       // Hide paid-off debts from main payment view (they appear on Debt page)
       return virtual.filter(
         (p) => !(p.type === "DEBT" && p.total != null && p.total <= 0)
       );
     });
+  }, [payments, payDate, payPeriodInterval]);
+
+  // Overdue bucket: only on new-month cusp; unpaid bills from the *previous month slice* of the current pay period (so we don't show duplicates)
+  useEffect(() => {
+    if (!payDate || !payments || !payPeriodInterval) {
+      setOverduePayments([]);
+      return;
+    }
+    if (!isOnNewMonthCusp(payPeriodInterval, payDate)) {
+      setOverduePayments([]);
+      return;
+    }
+    const today = startOfDay(new Date());
+    const firstOfMonth = startOfMonth(today);
+    const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(payPeriodInterval, payDate);
+    // Only the part of the current period that falls in the previous calendar month (e.g. Jan 6 - Jan 31)
+    const rangeStart = periodStart;
+    const endOfPrevMonth = endOfMonth(periodStart);
+    const rangeEnd = isAfter(endOfPrevMonth, periodEnd) ? periodEnd : endOfPrevMonth;
+    if (rangeStart >= firstOfMonth) {
+      setOverduePayments([]);
+      return;
+    }
+    const virtual = getVirtualPaymentsForDateRange(
+      payments,
+      payPeriodInterval,
+      payDate,
+      rangeStart,
+      rangeEnd
+    );
+    const unpaid = virtual.filter((p) => !p.paid);
+    const noPaidOffDebts = unpaid.filter(
+      (p) => !(p.type === "DEBT" && p.total != null && p.total <= 0)
+    );
+    setOverduePayments(noPaidOffDebts);
   }, [payments, payDate, payPeriodInterval]);
 
   async function handleEditPayment(p: Payment) {
@@ -120,7 +161,7 @@ export default function MainEnvelopesView() {
       p.id === payment.id ? { ...p, paid: true } : p
     );
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, user.uid);
+    await editPayments(updatedPayments, activeBudgetId!);
     setDueFundPayment(null);
     showToast(`${payment.name} marked as paid!`);
   }
@@ -136,7 +177,7 @@ export default function MainEnvelopesView() {
         : p
     );
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, user.uid);
+    await editPayments(updatedPayments, activeBudgetId!);
     setDueFundPayment(null);
     showToast(`${payment.name} extended by 1 month`);
   }
@@ -154,7 +195,7 @@ export default function MainEnvelopesView() {
       currentAvailableBudget: totalSpendingBudget,
       diffAmount,
     });
-    await editTotalSpendingBudget(nextBudget, user!.uid);
+    await editTotalSpendingBudget(nextBudget, activeBudgetId!);
     setTotalSpendingBudget(nextBudget);
   }
 
@@ -171,7 +212,7 @@ export default function MainEnvelopesView() {
       return originalPId !== originalPaymentToEditId;
     });
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, user.uid);
+    await editPayments(updatedPayments, activeBudgetId!);
     resetPaymentState();
     showToast("Payment deleted");
   }
@@ -220,7 +261,16 @@ export default function MainEnvelopesView() {
           delete paidAmounts[occurrenceKey];
           const newTotal = Math.max(0, (p.total ?? 0) + amountToAddBack);
           if (occurrenceKey === "monthly") {
-            return { ...p, total: newTotal, paid: false, paidAmounts };
+            const monthlyOccurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
+            return {
+              ...p,
+              total: newTotal,
+              paid: false,
+              paidAmounts,
+              paidDates: paidDates.filter(
+                (pd) => startOfDay(pd.toDate()).getTime() !== monthlyOccurrenceTime
+              ),
+            };
           }
           return {
             ...p,
@@ -244,6 +294,10 @@ export default function MainEnvelopesView() {
             total: newTotal,
             paid: true,
             paidAmounts,
+            paidDates: [
+              ...paidDates,
+              Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
+            ],
           };
         }
         return {
@@ -257,34 +311,34 @@ export default function MainEnvelopesView() {
         };
       }
 
-      // Non-DEBT: original behavior (toggle paid/paidDates only)
-      if (p.interval === "WEEKLY" || p.interval === "BIWEEKLY" || p.interval === "SPLIT") {
-        const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
-        const paidDates = p.paidDates || [];
-        const alreadyPaid = paidDates.some(
-          (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
+      // Non-DEBT: toggle paid/paidDates so Overdue and virtual lists stay in sync (they use paidDates)
+      const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
+      const paidDates = p.paidDates || [];
+      const alreadyPaid = paidDates.some(
+        (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
+      );
+      if (alreadyPaid) {
+        const newPaidDates = paidDates.filter(
+          (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime
         );
-        if (alreadyPaid) {
-          return {
-            ...p,
-            paidDates: paidDates.filter(
-              (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime
-            ),
-          };
-        }
         return {
           ...p,
-          paidDates: [
-            ...paidDates,
-            Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
-          ],
+          paidDates: newPaidDates,
+          paid: newPaidDates.length > 0,
         };
       }
-      return { ...p, paid: !p.paid };
+      return {
+        ...p,
+        paidDates: [
+          ...paidDates,
+          Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
+        ],
+        paid: true,
+      };
     });
 
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, user!.uid);
+    await editPayments(updatedPayments, activeBudgetId!);
 
     // Roll snowball when a debt is paid off (total hit 0)
     const paidOffPayment = updatedPayments.find(
@@ -294,7 +348,7 @@ export default function MainEnvelopesView() {
       showToast(`${paidOffPayment.name} paid off!`);
       const newSnowball = snowball + paidOffPayment.amount;
       setSnowball(newSnowball);
-      await editSnowball(user!, newSnowball);
+      await editSnowball(activeBudgetId!, newSnowball);
       const remainingDebts = updatedPayments.filter(
         (p) => p.type === "DEBT" && p.total != null && p.total > 0
       );
@@ -304,7 +358,7 @@ export default function MainEnvelopesView() {
           : null;
       const nextId = nextTarget?.id ?? null;
       setSnowballTargetPaymentId(nextId);
-      await editSnowballTargetPaymentId(user!, nextId);
+      await editSnowballTargetPaymentId(activeBudgetId!, nextId);
     }
   }
 
@@ -329,10 +383,10 @@ export default function MainEnvelopesView() {
       order: e.order || 0,
     });
     setEnvelopes(newEnvelopes);
-    await editEnvelopes(newEnvelopes, user!.uid);
+    await editEnvelopes(newEnvelopes, activeBudgetId!);
     await updateBudgetStateAndDBB(
       Number(e.total) * -1,
-      user!,
+      activeBudgetId!,
       totalSpendingBudget,
       setTotalSpendingBudget
     );
@@ -353,7 +407,7 @@ export default function MainEnvelopesView() {
         (e) => e.id !== envelopeToEdit?.id
       );
       setEnvelopes(newEnvelopes);
-      await editEnvelopes(newEnvelopes, user!.uid);
+      await editEnvelopes(newEnvelopes, activeBudgetId!);
       resetState();
       showToast("Envelope deleted");
     } catch (error) {
@@ -373,21 +427,21 @@ export default function MainEnvelopesView() {
       if (originalEnvelope.total > n.total) {
         await updateBudgetStateAndDBB(
           Number(originalEnvelope.total - n.total),
-          user!,
+          activeBudgetId!,
           totalSpendingBudget,
           setTotalSpendingBudget
         );
       } else if (originalEnvelope.total < n.total) {
         await updateBudgetStateAndDBB(
           Number(n.total - originalEnvelope.total) * -1,
-          user!,
+          activeBudgetId!,
           totalSpendingBudget,
           setTotalSpendingBudget
         );
       }
       const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
       setEnvelopes(newEnvelopes);
-      await editEnvelopes(newEnvelopes, user!.uid);
+      await editEnvelopes(newEnvelopes, activeBudgetId!);
       resetState();
       showToast("Envelope updated");
     } catch (error) {
@@ -405,7 +459,7 @@ export default function MainEnvelopesView() {
     setShowLoading(true);
     const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
     setEnvelopes(newEnvelopes);
-    await editEnvelopes(newEnvelopes, user!.uid);
+    await editEnvelopes(newEnvelopes, activeBudgetId!);
     resetState();
   }
 
@@ -449,8 +503,8 @@ export default function MainEnvelopesView() {
   }
 
   async function handleResetNvelopes() {
-    if (!user) return;
-    await resetAllNvelopes(envelopes, setEnvelopes, user.uid);
+    if (!activeBudgetId) return;
+    await resetAllNvelopes(envelopes, setEnvelopes, activeBudgetId);
     showToast("Envelopes cleared");
   }
 
@@ -468,7 +522,7 @@ export default function MainEnvelopesView() {
     };
     await editOneTimeCashAndBudget(
       newOneTimeCash,
-      user.uid,
+      activeBudgetId!,
       totalSpendingBudget
     );
     setTotalSpendingBudget(totalSpendingBudget + Number(cashAmount));
@@ -491,11 +545,11 @@ export default function MainEnvelopesView() {
     );
     await updateBudgetStateAndDBB(
       Number(cashAmount) * -1,
-      user,
+      activeBudgetId!,
       totalSpendingBudget,
       setTotalSpendingBudget
     );
-    await editEnvelopes(newEnvelopes, user.uid);
+    await editEnvelopes(newEnvelopes, activeBudgetId!);
     setEnvelopes(newEnvelopes);
     showToast(`${cashAmount} added to ${n.name}`);
     resetState();
@@ -605,7 +659,7 @@ export default function MainEnvelopesView() {
   }
 
   async function handleEditSnowball() {
-    await editSnowball(user!, snowball);
+    await editSnowball(activeBudgetId!, snowball);
   }
 
   if (showEditSnowball)
@@ -753,6 +807,7 @@ export default function MainEnvelopesView() {
           />
           <PaymentMap
             paymentsThisPeriod={paymentsThisPeriod}
+            overduePayments={overduePayments}
             handleUpdatePaid={handleUpdatePaid}
             handleEditBill={handleEditPayment}
           />

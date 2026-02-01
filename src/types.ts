@@ -66,3 +66,33 @@ export type Backup = {
     backupTimeStamp: Timestamp;
     data: BackupData[]
 }
+
+// Multi-budget: budget metadata (budgets/{budgetId})
+export interface Budget {
+    name: string;
+    ownerId: string;
+    memberIds: string[];
+    createdAt?: Timestamp;
+}
+
+// User's reference to a budget (users/{userId}/budgets/{budgetId})
+export interface UserBudgetRef {
+    name: string;
+    budgetId: string;
+}
+
+// Single doc under budgets/{budgetId}/data/main - same shape as old user doc
+export type BudgetDataDoc = {
+    envelopes: Envelope[];
+    payments: Payment[];
+    income: number;
+    payDate: Timestamp | null;
+    payPeriodInterval: Interval;
+    totalSpendingBudget: number;
+    oneTimeCash: OneTimeAmount[] | null;
+    resetBudgetTimestamp: Timestamp | null;
+    snowball: number;
+    snowballTargetPaymentId: string | null;
+    isNewUser: boolean;
+    backups: Backup | null;
+};

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../Context/AuthContext/useAuth";
+import { useBudget } from "../Context/BudgetContext/useBudget";
 import LoginOptions from "../components/Auth/LoginOptions";
 import MainView from "./MainView";
 import Loading from "../components/Loading";
@@ -9,28 +10,25 @@ import { shouldBackupUserDataSafe, backupUserDataSafe } from "../firebase/editDa
 
 export default function Home() {
   const { user, isLoadingUser } = useAuth();
+  const { isLoadingBudgets, activeBudgetId } = useBudget();
   const { isNewUser, isLoadingDb, dbError, documentExists } = useDatabase();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLoadingUser && !isLoadingDb) {
+    if (!isLoadingUser && !isLoadingBudgets && !isLoadingDb) {
       setIsLoading(false);
     }
-  }, [isLoadingUser, isLoadingDb]);
+  }, [isLoadingUser, isLoadingBudgets, isLoadingDb]);
   
-  // Run backup check for authenticated users with existing documents
+  // Run backup check for authenticated users with active budget
   useEffect(() => {
-    if (!user || documentExists !== true) return;
-    
+    if (!user || !activeBudgetId || documentExists !== true) return;
     async function checkAndBackup() {
-      const shouldBackup = await shouldBackupUserDataSafe(user!);
-      if (shouldBackup) {
-        console.log("📦 Safe backup initiated...");
-        await backupUserDataSafe(user!);
-      }
+      const shouldBackup = await shouldBackupUserDataSafe(user!, activeBudgetId!);
+      if (shouldBackup) await backupUserDataSafe(user!, activeBudgetId!);
     }
     checkAndBackup();
-  }, [user, documentExists]);
+  }, [user, activeBudgetId, documentExists]);
 
   if (isLoading)
     return (
