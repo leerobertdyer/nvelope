@@ -13,23 +13,17 @@ Live at [https://www.nvelopes.app](https://www.nvelopes.app)
 
 Firestore rules are in `firestore.rules`; deploy via Firebase Console.
 
-## Google sign-in (redirect flow & proxy)
+## Google sign-in (popup)
 
-We use **redirect flow only** (no popup) so sign-in behaves the same in every browser and device. Popup works only when the user is already logged into Google in that browser; otherwise it often hangs or is blocked (Safari, Firefox, Chrome with strict settings). Redirect is more reliable.
+We use **signInWithPopup**: no redirects, no `getRedirectResult()`. Auth state is handled by `onAuthStateChanged` in `AuthProvider`.
 
-Safari and Chrome on iOS also block third-party storage, which would break auth when the helper runs on `*.firebaseapp.com` and the app is on a custom domain. We proxy the auth helper under the app domain (Firebase Option 3).
+**Config you need:**
 
-**1. Vercel proxy** – `vercel.json` rewrites `/__/auth/*` and `/__/firebase/*` to `https://<project>.firebaseapp.com`. If your Firebase project ID is not `nvelope-3e93b`, edit those URLs in `vercel.json`.
-
-**2. Auth domain** – In Vercel (production), set `VITE_AUTH_DOMAIN` to the domain that serves the app, e.g. `nvelopes.app` or `www.nvelopes.app`. That way the SDK uses your domain for auth (same-origin).
-
-**3. OAuth redirect URIs** – In Google Cloud Console → Credentials → your Web OAuth client, add these **Authorized redirect URIs**:
-- `https://nvelopes.app/__/auth/handler`
-- `https://www.nvelopes.app/__/auth/handler`
-
-**4. Firebase Authorized domains** – In Firebase Console → Authentication → Authorized domains, keep `nvelopes.app` and `www.nvelopes.app` (you already have these).
-
-**5. Local dev** – Vite proxies `/__/auth` and `/__/firebase` to Firebase so the handler is same-origin and `getRedirectResult()` works. Add `localhost` to Firebase Authorized domains and `http://localhost:5173/__/auth/handler` to Google OAuth Authorized redirect URIs (or the port your dev server uses).
+1. **Firebase Console** → Authentication → Sign-in method → Google: enable it.
+2. **Google Cloud Console** → APIs & Credentials → your OAuth 2.0 Client ID (Web client used by Firebase):
+   - **Authorized JavaScript origins**: add your app origins, e.g. `https://www.nvelopes.app`, `https://nvelopes.app`, `http://localhost:5173` (and the port you use in dev).
+   - **Authorized redirect URIs**: Firebase usually adds `https://<project-id>.firebaseapp.com/__/auth/handler` when you enable Google sign-in. You don’t need to add your own domain here for popup.
+3. **Firebase Console** → Authentication → Authorized domains: include your production domain(s) and `localhost` for dev.
 
 ## Multi-budget & sharing
 

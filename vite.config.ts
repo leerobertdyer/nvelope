@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      // Same as production (vercel.json): auth and firebase must be same-origin so getRedirectResult() works and init.json loads.
+      // Optional: proxy Firebase paths. Not required for popup auth; can remove if you don't need it.
       '/__/auth': {
         target: 'https://nvelope-3e93b.firebaseapp.com',
         changeOrigin: true,

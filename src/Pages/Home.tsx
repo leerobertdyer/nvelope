@@ -43,6 +43,7 @@ export default function Home() {
     );
   }
 
+  // Display critical database errors that could indicate data corruption risk
   if (dbError) {
     return (
       <div className="flex flex-col justify-center items-center w-full h-screen bg-my-black-dark text-my-white-dark p-4">
