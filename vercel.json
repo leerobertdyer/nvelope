@@ -3,11 +3,11 @@
     "rewrites": [
       {
         "source": "/__/auth/:path*",
-        "destination": "https://nvelope-3e3b.firebaseapp.com/__/auth/:path*"
+        "destination": "https://nvelope-3e93b.firebaseapp.com/__/auth/:path*"
       },
       {
         "source": "/__/firebase/:path*",
-        "destination": "https://nvelope-3e3b.firebaseapp.com/__/firebase/:path*"
+        "destination": "https://nvelope-3e93b.firebaseapp.com/__/firebase/:path*"
       },
       {
         "source": "/(.*)",

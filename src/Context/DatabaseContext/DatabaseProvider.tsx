@@ -40,6 +40,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
             return;
         }
         if (!activeBudgetId) {
+            setIsLoadingDb(false);
             return;
         }
 
