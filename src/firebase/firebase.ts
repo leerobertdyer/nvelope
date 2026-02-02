@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 
@@ -28,8 +28,9 @@ const db = getFirestore(app);
 // Initialize the Google auth provider
 const googleProvider = new GoogleAuthProvider();
 
-// Initialize Firebase Authentication
+// Initialize Firebase Authentication and persist session across refresh/tab close
 const auth = getAuth();
+setPersistence(auth, browserLocalPersistence);
 
 
 // Export Firebase services and auth for use throughout the app

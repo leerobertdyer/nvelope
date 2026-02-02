@@ -11,28 +11,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
+    let done = false;
+    const setLoadingDone = () => {
+      if (!done) {
+        done = true;
+        setIsLoadingUser(false);
+      }
+    };
 
-    // Process redirect result first (when user returns from Google sign-in on mobile).
-    // Then subscribe to auth state so we have the correct user.
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // User signed in via redirect; onAuthStateChanged will fire with the user
-        }
-      })
-      .catch((error) => {
-        console.error('Redirect sign-in error:', error.code, error.message);
-      })
-      .finally(() => {
-        unsubscribe = onAuthStateChanged(auth, (authUser) => {
-          setUser(authUser);
-          setIsLoadingUser(false);
-        });
-      });
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      setUser(authUser);
+      setLoadingDone();
+    });
+
+    // Consume redirect so Firebase can update auth state; or timeout so we never hang if it doesn't resolve.
+    getRedirectResult(auth).catch((error) => {
+      console.error('Redirect sign-in error:', error.code, error.message);
+    }).finally(setLoadingDone);
+    const timeout = setTimeout(setLoadingDone, 4000);
 
     return () => {
-      unsubscribe?.();
+      clearTimeout(timeout);
+      unsubscribe();
     };
   }, []);
 
