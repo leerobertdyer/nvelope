@@ -29,6 +29,8 @@ Safari and Chrome on iOS also block third-party storage, which would break auth 
 
 **4. Firebase Authorized domains** – In Firebase Console → Authentication → Authorized domains, keep `nvelopes.app` and `www.nvelopes.app` (you already have these).
 
+**5. Local dev** – Vite proxies `/__/auth` and `/__/firebase` to Firebase so the handler is same-origin and `getRedirectResult()` works. Add `localhost` to Firebase Authorized domains and `http://localhost:5173/__/auth/handler` to Google OAuth Authorized redirect URIs (or the port your dev server uses).
+
 ## Multi-budget & sharing
 
 - **Create budget**: Settings → Budgets → New budget name + "Create budget".
