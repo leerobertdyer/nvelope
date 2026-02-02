@@ -13,6 +13,20 @@ Live at [https://www.nvelopes.app](https://www.nvelopes.app)
 
 Firestore rules are in `firestore.rules`; deploy via Firebase Console.
 
+## Google sign-in on Safari / iOS (cookies / third-party storage)
+
+Safari and Chrome on iOS block third-party storage, which breaks redirect sign-in when the auth helper runs on `*.firebaseapp.com` and the app is on a custom domain. To fix it we proxy the auth helper under the app domain (Firebase Option 3).
+
+**1. Vercel proxy** – `vercel.json` rewrites `/__/auth/*` and `/__/firebase/*` to `https://<project>.firebaseapp.com`. If your Firebase project ID is not `nvelope-3e3b`, edit those URLs in `vercel.json`.
+
+**2. Auth domain** – In Vercel (production), set `VITE_AUTH_DOMAIN` to the domain that serves the app, e.g. `nvelopes.app` or `www.nvelopes.app`. That way the SDK uses your domain for auth (same-origin).
+
+**3. OAuth redirect URIs** – In Google Cloud Console → Credentials → your Web OAuth client, add these **Authorized redirect URIs**:
+- `https://nvelopes.app/__/auth/handler`
+- `https://www.nvelopes.app/__/auth/handler`
+
+**4. Firebase Authorized domains** – In Firebase Console → Authentication → Authorized domains, keep `nvelopes.app` and `www.nvelopes.app` (you already have these).
+
 ## Multi-budget & sharing
 
 - **Create budget**: Settings → Budgets → New budget name + "Create budget".
