@@ -13,9 +13,11 @@ Live at [https://www.nvelopes.app](https://www.nvelopes.app)
 
 Firestore rules are in `firestore.rules`; deploy via Firebase Console.
 
-## Google sign-in on Safari / iOS (cookies / third-party storage)
+## Google sign-in (redirect flow & proxy)
 
-Safari and Chrome on iOS block third-party storage, which breaks redirect sign-in when the auth helper runs on `*.firebaseapp.com` and the app is on a custom domain. To fix it we proxy the auth helper under the app domain (Firebase Option 3).
+We use **redirect flow only** (no popup) so sign-in behaves the same in every browser and device. Popup works only when the user is already logged into Google in that browser; otherwise it often hangs or is blocked (Safari, Firefox, Chrome with strict settings). Redirect is more reliable.
+
+Safari and Chrome on iOS also block third-party storage, which would break auth when the helper runs on `*.firebaseapp.com` and the app is on a custom domain. We proxy the auth helper under the app domain (Firebase Option 3).
 
 **1. Vercel proxy** – `vercel.json` rewrites `/__/auth/*` and `/__/firebase/*` to `https://<project>.firebaseapp.com`. If your Firebase project ID is not `nvelope-3e93b`, edit those URLs in `vercel.json`.
 
