@@ -4,5 +4,6 @@ import { auth, googleProvider } from "./firebase";
 
 export default async function signInWithGoogle(): Promise<User> {
   const { user } = await signInWithPopup(auth, googleProvider);
+  console.log("HOLY SHIT LOOK IS THERE IS A USER? ", {user})
   return user;
 }
