@@ -11,7 +11,7 @@ import { getFirestore } from "firebase/firestore";
 // authDomain: in dev use current host (e.g. localhost:5173) so handler is same-origin via Vite proxy; in prod use VITE_AUTH_DOMAIN.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
-  authDomain: import.meta.env.VITE_AUTH_DOMAIN ?? `${import.meta.env.VITE_PROJECT_ID}.firebaseapp.com`,
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
