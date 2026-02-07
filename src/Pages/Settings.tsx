@@ -65,6 +65,7 @@ export default function Settings() {
   const [showEditIncome, setShowEditIncome] = useState(false);
   const [providerType, setProviderType] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
+  const [showBudgets, setShowBudgets] = useState(false);
 
   // Safe backups (stored in separate collection - survives user doc corruption)
   const [safeBackups, setSafeBackups] = useState<
@@ -103,6 +104,11 @@ export default function Settings() {
   const [isDeletingBudget, setIsDeletingBudget] = useState(false);
   const [isLeavingBudget, setIsLeavingBudget] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
+  const [newBudgetPayDate, setNewBudgetPayDate] = useState<Date | null>(null);
+  const [newBudgetInterval, setNewBudgetInterval] = useState<Interval | null>(
+    null,
+  );
+  const [showCreateBudgetModal, setShowCreateBudgetModal] = useState(false);
 
   const currentProviderTypes = ["google.com"];
   const isOwner = user && budgetMeta && budgetMeta.ownerId === user.uid;
@@ -341,19 +347,28 @@ export default function Settings() {
     }
   }
 
-  async function handleCreateBudget() {
-    if (!user) return;
+  async function handleCreateBudget(): Promise<boolean> {
+    if (!user || !newBudgetPayDate || !newBudgetInterval) return false;
     const name = newBudgetName.trim() || "My Budget";
     setIsCreatingBudget(true);
     try {
-      const budgetId = await createBudget(user, name);
+      const budgetId = await createBudget(
+        user,
+        name,
+        newBudgetPayDate,
+        newBudgetInterval,
+      );
       if (budgetId) {
         setNewBudgetName("");
+        setNewBudgetPayDate(null);
+        setNewBudgetInterval(null);
         await refetchBudgets();
         setActiveBudgetId(budgetId);
         showToast(`Budget "${name}" created`);
+        return true;
       } else {
         showToast("Failed to create budget", "error");
+        return false;
       }
     } finally {
       setIsCreatingBudget(false);
@@ -361,7 +376,10 @@ export default function Settings() {
   }
 
   async function handleInvite() {
-    if (!user || !activeBudgetId || !shareEmail.trim()) return;
+    if (!user || !activeBudgetId || !shareEmail.trim()) {
+      showToast("Please enter a valid email address", "error");
+      return;
+    }
     setIsInviting(true);
     try {
       const ok = await addInviteToBudget(
@@ -372,7 +390,7 @@ export default function Settings() {
       if (ok) {
         setShareEmail("");
         showToast(
-          `Invite sent to ${shareEmail.trim()}. They'll see this budget when they sign in.`,
+          `Invite saved for ${shareEmail.trim()}. If they have an account they'll see this budget when they sign in. If not, they can sign up with that email and the budget will appear in Settings.`,
         );
       } else {
         showToast("Failed to send invite", "error");
@@ -470,6 +488,49 @@ export default function Settings() {
       </FullScreen>
     );
 
+  if (showCreateBudgetModal)
+    return (
+      <FullScreen
+        showButtons
+        onClose={() => setShowCreateBudgetModal(false)}
+        onSave={async () => {
+          const ok = await handleCreateBudget();
+          if (ok) setShowCreateBudgetModal(false);
+        }}
+        closeOnSave={false}
+        saveButtonDisabled={
+          isCreatingBudget || !newBudgetPayDate || !newBudgetInterval
+        }
+      >
+        <div className="flex flex-col items-center gap-4 max-w-[20rem] w-full text-center">
+          <TextInput
+            id="new-budget-name"
+            label="New budget name"
+            placeholder="e.g. Household"
+            value={newBudgetName}
+            onChange={(e) => setNewBudgetName(e.target.value)}
+          />
+          <IntervalSelector
+            value={newBudgetInterval}
+            onChange={(v) => setNewBudgetInterval(v)}
+            label="Pay period interval"
+          />
+          <PayDateCalendar
+            value={newBudgetPayDate}
+            onChange={(v: Value) =>
+              setNewBudgetPayDate(
+                v instanceof Date
+                  ? v
+                  : Array.isArray(v) && v[0] instanceof Date
+                    ? v[0]
+                    : null,
+              )
+            }
+          />
+        </div>
+      </FullScreen>
+    );
+
   if (showIntervalSettings) {
     return (
       <div className="absolute inset-0 w-screen h-screen z-100 select-none">
@@ -515,108 +576,106 @@ export default function Settings() {
           Log Out
         </Button>
       </div>
-      {/* Budgets: switcher, create, share, members, delete/leave */}
-      <div className="w-full flex flex-col items-center gap-2 bg-my-white-base mt-4 py-[1rem]">
-        <h2 className="text-sm font-semibold">Budgets</h2>
-        {budgets.length >= 1 && (
-          <div className="w-full flex flex-col items-center gap-2">
-            <label htmlFor="budget-switcher" className="text-xs">
-              Current budget
-            </label>
-            <select
-              id="budget-switcher"
-              value={activeBudgetId ?? ""}
-              onChange={(e) => setActiveBudgetId(e.target.value || null)}
-              className="bg-my-white-light border-2 border-my-white-dark rounded-md px-3 py-2 text-my-black-dark max-w-[20rem] w-[80%]"
-            >
-              {budgets.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        <div className="flex flex-col items-center gap-2 w-full">
-          <TextInput
-            id="new-budget-name"
-            label="New budget name"
-            placeholder="e.g. Household"
-            value={newBudgetName}
-            onChange={(e) => setNewBudgetName(e.target.value)}
-          />
-          <Button
-            color="green"
-            onClick={handleCreateBudget}
-            disabled={isCreatingBudget}
-          >
-            {isCreatingBudget ? "Creating…" : "Create budget"}
+      {/* Budgets: switcher, create button, share, members, delete/leave */}
+      {showBudgets ? (
+        <div className="w-full flex flex-col items-center gap-2 mt-4 py-[1rem]">
+          <button className="p-2 rounded-md border-2 border-my-blue-dark bg-my-black-dark cursor-pointer text-my-blue-dark" onClick={() => setShowBudgets(false)}>Close Budgets</button>
+          {budgets.length >= 1 && (
+            <div className="w-full flex flex-col items-center gap-2">
+              <label htmlFor="budget-switcher" className="text-xs">
+                Current budget
+              </label>
+              <select
+                id="budget-switcher"
+                value={activeBudgetId ?? ""}
+                onChange={(e) => setActiveBudgetId(e.target.value || null)}
+                className="bg-my-white-light border-2 border-my-white-dark rounded-md px-3 py-2 text-my-black-dark max-w-[20rem] w-[80%]"
+              >
+                {budgets.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <Button color="green" onClick={() => setShowCreateBudgetModal(true)}>
+            Create new budget
           </Button>
-        </div>
-        {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
-          <>
-            {isOwner && (
-              <div className="w-full flex flex-col gap-2 flex flex-col items-center justify-center">
-                <TextInput
-                  id="Email to share with"
-                  label="Share budget by email"
-                  placeholder="email@example.com"
-                  value={shareEmail}
-                  onChange={(e) => setShareEmail(e.target.value)}
-                />
-                <Button
-                  color="green"
-                  onClick={handleInvite}
-                  disabled={isInviting || !shareEmail.trim()}
-                >
-                  {isInviting ? "Sending…" : "Invite"}
-                </Button>
-              </div>
-            )}
-            {isOwner &&
-              budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
-                .length > 0 && (
-                <div className="w-full max-w-[20rem] flex flex-col gap-1">
-                  <p className="text-my-white-light text-xs">Members</p>
-                  <ul className="list-none">
-                    {budgetMeta.memberIds
-                      .filter((id) => id !== budgetMeta.ownerId)
-                      .map((mid) => (
-                        <li
-                          key={mid}
-                          className="flex items-center justify-between gap-2 py-1 text-my-white-dark text-sm"
-                        >
-                          <span title={mid}>{mid.slice(0, 8)}…</span>
-                          <Button
-                            color="red"
-                            onClick={() => setMemberToRemove(mid)}
-                          >
-                            Remove
-                          </Button>
-                        </li>
-                      ))}
-                  </ul>
+          {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
+            <>
+              {isOwner && (
+                <div className="w-full flex flex-col gap-2 flex flex-col items-center justify-center">
+                  <TextInput
+                    id="Email to share with"
+                    label="Share budget by email"
+                    placeholder="email@example.com"
+                    value={shareEmail}
+                    onChange={(e) => setShareEmail(e.target.value)}
+                  />
+                  <Button
+                    color="green"
+                    onClick={handleInvite}
+                    disabled={isInviting || !shareEmail.trim()}
+                  >
+                    {isInviting ? "Sending…" : "Invite"}
+                  </Button>
                 </div>
               )}
-            {isOwner && (
-              <Button
-                color="red"
-                onClick={() => setShowDeleteBudgetConfirm(true)}
-              >
-                Delete this budget
-              </Button>
-            )}
-            {isMember && (
-              <Button
-                color="red"
-                onClick={() => setShowLeaveBudgetConfirm(true)}
-              >
-                Leave this budget
-              </Button>
-            )}
-          </>
-        )}
-      </div>
+              {isOwner &&
+                budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
+                  .length > 0 && (
+                  <div className="w-full max-w-[20rem] flex flex-col gap-1">
+                    <p className="text-my-white-light text-xs">Members</p>
+                    <ul className="list-none">
+                      {budgetMeta.memberIds
+                        .filter((id) => id !== budgetMeta.ownerId)
+                        .map((mid) => (
+                          <li
+                            key={mid}
+                            className="flex items-center justify-between gap-2 py-1 text-my-white-dark text-sm"
+                          >
+                            <span title={mid}>{mid.slice(0, 8)}…</span>
+                            <Button
+                              color="red"
+                              onClick={() => setMemberToRemove(mid)}
+                            >
+                              Remove
+                            </Button>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
+              {isOwner && (
+                <Button
+                  color="red"
+                  onClick={() => setShowDeleteBudgetConfirm(true)}
+                >
+                  Delete this budget
+                </Button>
+              )}
+              {isMember && (
+                <Button
+                  color="red"
+                  onClick={() => setShowLeaveBudgetConfirm(true)}
+                >
+                  Leave this budget
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="w-full flex flex-col items-center gap-2 mt-4 py-[1rem] text-my-blue-dark">
+          <button
+            className="p-2 rounded-md border-2 border-my-blue-dark bg-my-black-dark cursor-pointer"
+            onClick={() => setShowBudgets(true)}
+          >
+            View Budgets
+          </button>
+        </div>
+      )}
       <div className="overflow-y-scroll  flex flex-col items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
         <div
           className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark animate-glow shadow-lg shadow-my-black-dark mb-4"

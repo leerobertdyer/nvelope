@@ -66,9 +66,15 @@ export async function createFirstBudget(user: User, name: string = "My Budget"):
 }
 
 /**
- * Create a new budget (from Settings). Same as createFirstBudget but isNewUser: false so user is not sent to Demo.
+ * Create a new budget (from Settings). Requires payDate and payPeriodInterval so the budget is ready to use.
+ * Same as createFirstBudget but isNewUser: false and accepts initial pay date/interval.
  */
-export async function createBudget(user: User, name: string = "My Budget"): Promise<string | null> {
+export async function createBudget(
+  user: User,
+  name: string = "My Budget",
+  payDate: Date,
+  payPeriodInterval: Interval
+): Promise<string | null> {
   if (!user) return null;
   try {
     const budgetRef = doc(collection(db, "budgets"));
@@ -83,8 +89,8 @@ export async function createBudget(user: User, name: string = "My Budget"): Prom
     };
     const initialData = {
       envelopes: [],
-      payDate: null,
-      payPeriodInterval: "MONTHLY",
+      payDate: Timestamp.fromDate(payDate),
+      payPeriodInterval: payPeriodInterval ?? MONTHLY,
       payments: [],
       income: 0,
       totalSpendingBudget: 0,
@@ -170,20 +176,23 @@ export async function removeMemberFromBudget(ownerId: string, budgetId: string, 
 
 const BUDGET_INVITES_COLLECTION = "budgetInvites";
 
-/** Owner invites by email. If user exists they can be added when they process invites on load. */
+/** Owner invites by email. Writes to budgetInvites (for query by email) and budgets/{id}/invites/{email} (for security rule). */
 export async function addInviteToBudget(budgetId: string, email: string, ownerId: string): Promise<boolean> {
   try {
     const meta = await getBudgetMeta(budgetId);
     if (!meta || meta.ownerId !== ownerId) return false;
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return false;
-    const inviteRef = doc(collection(db, BUDGET_INVITES_COLLECTION));
-    await setDoc(inviteRef, {
+    const invitePayload = {
       budgetId,
       email: normalizedEmail,
       invitedBy: ownerId,
       createdAt: Timestamp.now(),
-    });
+    };
+    const inviteRef = doc(collection(db, BUDGET_INVITES_COLLECTION));
+    await setDoc(inviteRef, invitePayload);
+    const inviteUnderBudgetRef = doc(db, "budgets", budgetId, "invites", normalizedEmail);
+    await setDoc(inviteUnderBudgetRef, invitePayload);
     return true;
   } catch (error) {
     console.error("addInviteToBudget failed:", error);
@@ -193,9 +202,7 @@ export async function addInviteToBudget(budgetId: string, email: string, ownerId
 
 /**
  * Call on app load: for current user's email, consume any invites (add user to budget, delete invite). Returns count processed.
- * Note: Firestore rules only allow budget write by owner/members, so the invited user cannot add themselves. Either deploy
- * a callable Cloud Function that uses Admin SDK to add the user and delete the invite, or add a rule that allows update
- * when an invite doc exists for this budget and request.auth.token.email (e.g. invite subcollection under budget).
+ * Firestore rule allows update on budgets/{id} when budgets/{id}/invites/{request.auth.token.email} exists.
  */
 export async function processInvitesForUser(user: User): Promise<number> {
   const email = user?.email?.trim()?.toLowerCase();
@@ -221,17 +228,32 @@ export async function processInvitesForUser(user: User): Promise<number> {
       const budgetSnap = await getDoc(budgetRef(bid));
       if (!budgetSnap.exists()) {
         await deleteDoc(inviteDoc.ref);
+        try {
+          await deleteDoc(doc(db, "budgets", bid, "invites", email));
+        } catch {
+          /* may not exist */
+        }
         continue;
       }
       const budgetData = budgetSnap.data();
       const memberIds = (budgetData.memberIds as string[]) ?? [];
       if (memberIds.includes(user.uid)) {
         await deleteDoc(inviteDoc.ref);
+        try {
+          await deleteDoc(doc(db, "budgets", bid, "invites", email));
+        } catch {
+          /* may not exist */
+        }
         continue;
       }
       await updateDoc(budgetRef(bid), { memberIds: arrayUnion(user.uid) });
       await setDoc(doc(db, "users", user.uid, "budgets", bid), { name, budgetId: bid });
       await deleteDoc(inviteDoc.ref);
+      try {
+        await deleteDoc(doc(db, "budgets", bid, "invites", email));
+      } catch {
+        /* may not exist */
+      }
       count++;
     }
     return count;
