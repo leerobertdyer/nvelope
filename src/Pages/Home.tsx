@@ -37,7 +37,9 @@ export default function Home() {
 
   if (!user) {
     return (
-      <div className="flex justify-center items-center w-full h-screen">
+      <div className="flex flex-col gap-4 justify-center items-center w-full h-screen">
+        <h1 className="text-2xl text-my-white-dark">Welcome to Nvelopes</h1>
+        <p className="text-sm text-my-white-light">Old School Budgeting for the Digital Age</p>
         <LoginOptions />
       </div>
     );
