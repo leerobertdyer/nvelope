@@ -19,9 +19,6 @@ import Nvelope from "../components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
   getVirtualPaymentsForCurrentPeriod,
-  getVirtualPaymentsForDateRange,
-  getCurrentIntervalDateRange,
-  isOnNewMonthCusp,
   recalculateBudget,
   removeVirtualIdPortion,
   resetAllNvelopes,
@@ -31,7 +28,7 @@ import ActionButtons from "../components/Buttons/ActionButtons";
 import Loading from "../components/Loading";
 import FullScreen from "../Views/FullScreen";
 import TextInput from "../components/TextInput";
-import { startOfDay, addMonths, startOfMonth, endOfMonth, isAfter } from "date-fns";
+import { startOfDay, addMonths } from "date-fns";
 import PaymentMap from "../components/Payments/PaymentMap";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
 import Summary from "../components/Payments/Summary";
@@ -83,7 +80,6 @@ export default function MainEnvelopesView() {
   const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(new Set());
 
   const [paymentsThisPeriod, setPaymentsThisPeriod] = useState(payments);
-  const [overduePayments, setOverduePayments] = useState<Payment[]>([]);
 
   // Check for due Fund (planned expense) payments
   useEffect(() => {
@@ -112,42 +108,8 @@ export default function MainEnvelopesView() {
         (p) => !(p.type === "DEBT" && p.total != null && p.total <= 0)
       );
     });
-  }, [payments, payDate, payPeriodInterval]);
+}, [payments, payDate, payPeriodInterval]);
 
-  // Overdue bucket: only on new-month cusp; unpaid bills from the *previous month slice* of the current pay period (so we don't show duplicates)
-  useEffect(() => {
-    if (!payDate || !payments || !payPeriodInterval) {
-      setOverduePayments([]);
-      return;
-    }
-    if (!isOnNewMonthCusp(payPeriodInterval, payDate)) {
-      setOverduePayments([]);
-      return;
-    }
-    const today = startOfDay(new Date());
-    const firstOfMonth = startOfMonth(today);
-    const { start: periodStart, end: periodEnd } = getCurrentIntervalDateRange(payPeriodInterval, payDate);
-    // Only the part of the current period that falls in the previous calendar month (e.g. Jan 6 - Jan 31)
-    const rangeStart = periodStart;
-    const endOfPrevMonth = endOfMonth(periodStart);
-    const rangeEnd = isAfter(endOfPrevMonth, periodEnd) ? periodEnd : endOfPrevMonth;
-    if (rangeStart >= firstOfMonth) {
-      setOverduePayments([]);
-      return;
-    }
-    const virtual = getVirtualPaymentsForDateRange(
-      payments,
-      payPeriodInterval,
-      payDate,
-      rangeStart,
-      rangeEnd
-    );
-    const unpaid = virtual.filter((p) => !p.paid);
-    const noPaidOffDebts = unpaid.filter(
-      (p) => !(p.type === "DEBT" && p.total != null && p.total <= 0)
-    );
-    setOverduePayments(noPaidOffDebts);
-  }, [payments, payDate, payPeriodInterval]);
 
   async function handleEditPayment(p: Payment) {
     setPaymentToEdit(p);
@@ -311,7 +273,7 @@ export default function MainEnvelopesView() {
         };
       }
 
-      // Non-DEBT: toggle paid/paidDates so Overdue and virtual lists stay in sync (they use paidDates)
+      // Non-DEBT: toggle paid/paidDates
       const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
       const paidDates = p.paidDates || [];
       const alreadyPaid = paidDates.some(
@@ -807,7 +769,6 @@ export default function MainEnvelopesView() {
           />
           <PaymentMap
             paymentsThisPeriod={paymentsThisPeriod}
-            overduePayments={overduePayments}
             handleUpdatePaid={handleUpdatePaid}
             handleEditBill={handleEditPayment}
           />

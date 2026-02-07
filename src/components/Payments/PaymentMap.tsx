@@ -1,92 +1,49 @@
 import type { Payment } from "../../types";
-import { format, isAfter, isBefore, startOfDay } from "date-fns";
-import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
+import { useEffect, useState } from "react";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 import { useAuth } from "../../Context/AuthContext/useAuth";
-import {
-  getCurrentIntervalDateRange,
-  getEffectivePaymentAmount,
-  removeVirtualIdPortion,
-} from "../../util";
+import { getEffectivePaymentAmount } from "../../util";
 import ShowHideButton from "../Buttons/ShowHideButton";
-import { IoIosCheckmarkCircle, IoIosCheckmarkCircleOutline } from "react-icons/io";
+import {
+  IoIosCheckmarkCircle,
+  IoIosCheckmarkCircleOutline,
+} from "react-icons/io";
 
 interface PaymentMapProps {
   handleUpdatePaid: (payment: Payment) => void;
   handleEditBill: (payment: Payment) => void;
   paymentsThisPeriod: Payment[];
-  overduePayments?: Payment[];
 }
 export default function PaymentMap({
   handleEditBill,
   handleUpdatePaid,
   paymentsThisPeriod,
-  overduePayments = [],
 }: PaymentMapProps) {
-  const { payPeriodInterval, payDate } = useDatabase();
+  const { payDate } = useDatabase();
   const { user } = useAuth();
 
-  const { start: periodStart, end: periodEnd } = useMemo(
-    () => getCurrentIntervalDateRange(payPeriodInterval, payDate!),
-    [payPeriodInterval, payDate]
-  );
+  const [currentPayments, setCurrentPayments] = useState<Payment[]>(paymentsThisPeriod);
 
-  const [pastPayments, setPastPayments] = useState<Payment[]>([]);
-  const [currentPayments, setCurrentPayments] = useState<Payment[]>([]);
-  const [futurePayments, setFuturePayments] = useState<Payment[]>([]);
-
-  const [showPast, setShowPast] = useState(false);
-  const [showOverdue, setShowOverdue] = useState(true);
   const [showCurrent, setShowCurrent] = useState(true);
-  const [showFuture, setShowFuture] = useState(false);
 
   useEffect(() => {
     if (!paymentsThisPeriod || !user || !payDate) return;
-    const today = startOfDay(new Date());
-    // Split by today: Past = already passed, Current = due today or later in period, Future = after period end
-    const rawPast = paymentsThisPeriod.filter((p) => {
-      const d = startOfDay(p.dueDate.toDate());
-      return isBefore(d, today);
-    });
-    // Don't show in Past what we already show in Overdue (same occurrence)
-    const pastPayments = rawPast.filter(
-      (p) =>
-        !overduePayments.some(
-          (o) =>
-            removeVirtualIdPortion(p) === removeVirtualIdPortion(o) &&
-            p.dueDate.toMillis() === o.dueDate.toMillis()
-        )
-    );
-    const currentPayments = paymentsThisPeriod.filter((p) => {
-      const d = startOfDay(p.dueDate.toDate());
-      return !isBefore(d, today) && !isAfter(d, periodEnd);
-    });
-    const futurePayments = paymentsThisPeriod.filter((p) =>
-      isAfter(p.dueDate.toDate(), periodEnd)
-    );
-    setPastPayments(pastPayments);
-    setCurrentPayments(currentPayments);
-    setFuturePayments(futurePayments);
-  }, [
-    paymentsThisPeriod,
-    periodEnd,
-    payDate,
-    user,
-    payPeriodInterval,
-    periodStart,
-    overduePayments,
-  ]);
+    setCurrentPayments(paymentsThisPeriod);
+  }, [paymentsThisPeriod, payDate, user]);
 
   function RenderPayment({ p, time }: { p: Payment; time: string }) {
     // Check if this is a SPLIT payment (ID contains "-SPLIT-")
     const isSplitPayment = p.id.includes("-SPLIT-");
-    const isLastPayment = p.type === "DEBT" && p.total != null && p.total <= p.amount;
+    const isLastPayment =
+      p.type === "DEBT" && p.total != null && p.total <= p.amount;
 
     let t;
     if (time === "PAST" || time === "FUTURE")
       t = "bg-my-black-light text-white";
     else if (p.type === "FUND" || isSplitPayment)
-      t = "bg-my-black-base text-my-green-light border-l-4 border-l-my-green-dark";
+      t =
+        "bg-my-black-base text-my-green-light border-l-4 border-l-my-green-dark";
     else if (p.type === "BILL") t = "bg-my-black-base text-my-red-light";
     else t = "bg-my-black-base text-my-white-dark";
 
@@ -96,25 +53,32 @@ export default function PaymentMap({
         onClick={() => handleEditBill(p)}
         className={`grid grid-cols-9 py-2 text-center border-y-1 border-my-black-dark rounded-xs w-full cursor-pointer 
           ${isLastPayment ? "border-2 border-my-white-dark" : ""}
-          ${p.paid
-            ? "bg-my-black-light text-white"
-            : p.type === "DEBT"
-              ? "text-my-blue-light bg-my-black-base"
-              : p.type === "FUND"
-                ? "text-my-green-light bg-my-black-base"
-                : t
+          ${
+            p.paid
+              ? "bg-my-black-light text-white"
+              : p.type === "DEBT"
+                ? "text-my-blue-light bg-my-black-base"
+                : p.type === "FUND"
+                  ? "text-my-green-light bg-my-black-base"
+                  : t
           } `}
       >
         <div className="flex items-center justify-start col-span-1 ml-[.75rem] ">
           {p.paid ? (
             <IoIosCheckmarkCircle
-              onClick={(e) => { e.stopPropagation(); handleUpdatePaid(p) }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUpdatePaid(p);
+              }}
               className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
               size={16}
             />
           ) : (
             <IoIosCheckmarkCircleOutline
-              onClick={(e) => { e.stopPropagation(); handleUpdatePaid(p) }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUpdatePaid(p);
+              }}
               className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
               size={16}
             />
@@ -135,7 +99,10 @@ export default function PaymentMap({
         </p>
         {p.total != null && !p.paid ? (
           <p className="flex items-center justify-end col-span-2 gap-[2px] mr-[1rem] md:mr-[2.8rem]">
-            <span className="text-sm text-my-blue-light">${getEffectivePaymentAmount(p).toFixed(2)}</span>/
+            <span className="text-sm text-my-blue-light">
+              ${getEffectivePaymentAmount(p).toFixed(2)}
+            </span>
+            /
             <span className="text-sm text-my-blue-dark">
               {Math.ceil(p.total)}
             </span>
@@ -149,20 +116,8 @@ export default function PaymentMap({
     );
   }
 
-  const pastPaymentsTotal = `$${Math.ceil(
-    pastPayments.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0)
-  ).toFixed(2)}`;
-
-  const overduePaymentsTotal = `$${overduePayments
-    .reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0)
-    .toFixed(2)}`;
-
   const currentPaymentsTotal = `$${Math.ceil(
-    currentPayments.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0)
-  ).toFixed(2)}`;
-
-  const futurePaymentsTotal = `$${Math.ceil(
-    futurePayments.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0)
+    currentPayments.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0),
   ).toFixed(2)}`;
 
   function PaymentBox({
@@ -190,39 +145,6 @@ export default function PaymentMap({
   return (
     <>
       <div className="h-fit w-screen max-w-[40.25rem] overflow-auto ">
-        {pastPayments && pastPayments.length > 0 && <>
-          <PaymentBox
-            isShown={showPast}
-            setter={() => setShowPast(!showPast)}
-            name="Past Payments"
-            total={pastPaymentsTotal}
-          />
-          {showPast && (
-            <div className=" bg-my-black-dark">
-              {pastPayments.map((p) => (
-                <RenderPayment p={p} time="PAST" />
-              ))}
-            </div>
-          )}
-        </>
-        }
-        {overduePayments.length > 0 && (
-          <div className="border-2 border-my-red-dark rounded-md overflow-hidden">
-            <PaymentBox
-              isShown={showOverdue}
-              setter={() => setShowOverdue(!showOverdue)}
-              name="Overdue"
-              total={overduePaymentsTotal}
-            />
-            {showOverdue && (
-              <div className="bg-my-black-dark">
-                {overduePayments.map((p) => (
-                  <RenderPayment key={p.id} p={p} time="PAST" />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
         <PaymentBox
           name="Current Payments"
           total={currentPaymentsTotal}
@@ -236,21 +158,6 @@ export default function PaymentMap({
             ))}
           </div>
         )}
-        {futurePayments && futurePayments.length > 0 && <>
-          <PaymentBox
-            name="Future Payments"
-            total={futurePaymentsTotal}
-            isShown={showFuture}
-            setter={() => setShowFuture(!showFuture)}
-          />
-          {showFuture && (
-            <div className=" bg-my-black-dark">
-              {futurePayments.map((p) => (
-                <RenderPayment p={p} time="FUTURE" />
-              ))}
-            </div>
-          )}
-        </>}
       </div>
     </>
   );
