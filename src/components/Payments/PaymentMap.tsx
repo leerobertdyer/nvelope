@@ -1,8 +1,6 @@
 import type { Payment } from "../../types";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
-import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
-import { useAuth } from "../../Context/AuthContext/useAuth";
+import { useState } from "react";
 import { getEffectivePaymentAmount } from "../../util";
 import ShowHideButton from "../Buttons/ShowHideButton";
 import {
@@ -20,17 +18,7 @@ export default function PaymentMap({
   handleUpdatePaid,
   paymentsThisPeriod,
 }: PaymentMapProps) {
-  const { payDate } = useDatabase();
-  const { user } = useAuth();
-
-  const [currentPayments, setCurrentPayments] = useState<Payment[]>(paymentsThisPeriod);
-
   const [showCurrent, setShowCurrent] = useState(true);
-
-  useEffect(() => {
-    if (!paymentsThisPeriod || !user || !payDate) return;
-    setCurrentPayments(paymentsThisPeriod);
-  }, [paymentsThisPeriod, payDate, user]);
 
   function RenderPayment({ p, time }: { p: Payment; time: string }) {
     // Check if this is a SPLIT payment (ID contains "-SPLIT-")
@@ -117,7 +105,7 @@ export default function PaymentMap({
   }
 
   const currentPaymentsTotal = `$${Math.ceil(
-    currentPayments.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0),
+    paymentsThisPeriod.reduce((acc, p) => getEffectivePaymentAmount(p) + acc, 0),
   ).toFixed(2)}`;
 
   function PaymentBox({
@@ -153,7 +141,7 @@ export default function PaymentMap({
         />
         {showCurrent && (
           <div className=" bg-my-black-dark">
-            {currentPayments.map((p) => (
+            {paymentsThisPeriod.map((p) => (
               <RenderPayment key={p.id} p={p} time="PRESENT" />
             ))}
           </div>

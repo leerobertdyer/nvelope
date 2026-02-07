@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Header from "../components/Nav/Header";
 import Nvelopes from "../components/Nvelopes/NvelopesContainer";
 import { type Envelope, type Payment } from "../types";
@@ -79,7 +79,15 @@ export default function MainEnvelopesView() {
   const [dueFundPayment, setDueFundPayment] = useState<Payment | null>(null);
   const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(new Set());
 
-  const [paymentsThisPeriod, setPaymentsThisPeriod] = useState(payments);
+  // Only ever show current pay period's payments (derived, never full list)
+  const paymentsThisPeriod = useMemo(() => {
+    if (!payDate || !payments?.length || !payPeriodInterval) return [];
+    const virtual = getVirtualPaymentsForCurrentPeriod(payments, payPeriodInterval, payDate);
+    // Hide paid-off debts from main payment view (they appear on Debt page)
+    return virtual.filter(
+      (p) => !(p.type === "DEBT" && p.total != null && p.total <= 0)
+    );
+  }, [payments, payDate, payPeriodInterval]);
 
   // Check for due Fund (planned expense) payments
   useEffect(() => {
@@ -98,17 +106,6 @@ export default function MainEnvelopesView() {
       setDueFundPayment(duePayment);
     }
   }, [payments, dismissedDuePayments, dueFundPayment]);
-
-  useEffect(() => {
-    if (!payDate || !payments || !payPeriodInterval) return;
-    setPaymentsThisPeriod(() => {
-      const virtual = getVirtualPaymentsForCurrentPeriod(payments, payPeriodInterval, payDate);
-      // Hide paid-off debts from main payment view (they appear on Debt page)
-      return virtual.filter(
-        (p) => !(p.type === "DEBT" && p.total != null && p.total <= 0)
-      );
-    });
-}, [payments, payDate, payPeriodInterval]);
 
 
   async function handleEditPayment(p: Payment) {

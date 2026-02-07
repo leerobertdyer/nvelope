@@ -684,9 +684,14 @@ export function getPaymentOccurrencesInRange(
   rangeStart: Date,
   rangeEnd: Date
 ): Payment[] {
-  // For monthly/yearly, return single adjusted payment
+  // For monthly/yearly: only include if the (adjusted) due date falls within this pay period
   if (payment.interval === MONTHLY || payment.interval === YEARLY) {
-    return [adjustPaymentToCurrentPeriod(payment, payPeriodInterval, payDate)];
+    const adjusted = adjustPaymentToCurrentPeriod(payment, payPeriodInterval, payDate);
+    const dueDate = startOfDay(adjusted.dueDate.toDate());
+    if (isWithinInterval(dueDate, { start: rangeStart, end: rangeEnd })) {
+      return [adjusted];
+    }
+    return [];
   }
 
   // For SPLIT payments: divide monthly amount across user's pay periods
