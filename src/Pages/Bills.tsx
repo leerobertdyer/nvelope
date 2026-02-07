@@ -26,7 +26,6 @@ export default function Bills() {
   const [showEditSnowball, setShowEditSnowball] = useState(false);
 
   const bills = (payments ?? []).filter((p) => p.type === "BILL");
-  const totalMonthly = bills.reduce((sum, p) => sum + getBillMonthlyAmount(p), 0);
 
   async function handleUpdateBudget() {
     // No-op on Bills page; budget changes are from MainView
