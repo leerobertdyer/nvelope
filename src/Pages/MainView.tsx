@@ -707,7 +707,7 @@ export default function MainEnvelopesView() {
           onClearClick={() => setShowClearNvelopes(true)}
         />
 
-        <div className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-light mt-[1.5rem] overflow-hidden">
+        <div className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
           <Nvelopes
             resetState={resetState}
             handleSetupEdit={handleSetupEdit}

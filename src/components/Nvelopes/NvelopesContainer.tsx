@@ -179,7 +179,7 @@ export default function Nvelopes({
     name: string;
   }) {
     return (
-      <div className="relative grid grid-cols-4 py-2 text-center rounded-xs bg-my-white-base text-my-black-dark">
+      <div className="relative grid grid-cols-4 py-2 text-center bg-my-white-base text-my-black-dark">
         <div className="absolute ml-2 w-fit h-full flex items-center">
           <ShowHideButton isShown={isShown} onClick={setter} />
         </div>
@@ -191,7 +191,7 @@ export default function Nvelopes({
 
   return (
     <div className="flex flex-col justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">
-      <div className="border-2 border-my-white-light w-screen max-w-[40rem]">
+      <div className="w-screen max-w-[40rem]">
         <EnvelopeBox
           name="Nvelopes"
           total={envelopesTotalStr}
@@ -200,7 +200,7 @@ export default function Nvelopes({
         />
         {showEnvelopes && (
           <>
-            <div className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold rounded-xs">
+            <div className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold ">
               <div className="col-span-3 flex justify-start items-center ml-2">
                 <p className="text-sm">Nvelope</p>
               </div>
