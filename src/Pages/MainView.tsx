@@ -27,11 +27,8 @@ import {
 import ActionButtons from "../components/Buttons/ActionButtons";
 import Loading from "../components/Loading";
 import FullScreen from "../Views/FullScreen";
-import TextInput from "../components/TextInput";
 import { startOfDay, addMonths } from "date-fns";
 import PaymentMap from "../components/Payments/PaymentMap";
-import ShowAndHide from "../components/Buttons/ShowAndHide";
-import Summary from "../components/Payments/Summary";
 import BigPayment from "../Views/BigPayment";
 import PaymentForm from "../components/Forms/PaymentForm";
 import AddIncomeForm from "../components/Forms/AddIncomeForm";
@@ -57,11 +54,9 @@ export default function MainEnvelopesView() {
     setPayments,
   } = useDatabase();
 
-  const [showSummary, setShowSummary] = useState(false);
   const [paymentToEdit, setPaymentToEdit] = useState<Payment | null>(null);
   const [showPaymentInputs, setShowPaymentInputs] = useState(false);
   const [showDeletePayment, setShowDeletePayment] = useState(false);
-  const [showEditSnowball, setShowEditSnowball] = useState(false);
 
   const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | undefined>();
   const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
@@ -574,7 +569,7 @@ export default function MainEnvelopesView() {
   if (!payDate) {
     return (
       <div className="w-full min-h-screen bg-my-blue-dark flex flex-col items-center justify-center p-6 text-center text-my-white-dark">
-        <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt" }, { label: "Feedback", href: "/feedback" }]} />
+        <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt" }, { label: "Bills", href: "/bills" }, { label: "Feedback", href: "/feedback" }]} />
         <p className="text-lg mt-8">Set your pay date in Settings to get started.</p>
         <a href="/settings" className="text-my-green-light underline mt-4">Go to Settings</a>
       </div>
@@ -616,29 +611,6 @@ export default function MainEnvelopesView() {
         />
       );
   }
-
-  async function handleEditSnowball() {
-    await editSnowball(activeBudgetId!, snowball);
-  }
-
-  if (showEditSnowball)
-    return (
-      <FullScreen
-        onClose={() => setShowEditSnowball(false)}
-        onSave={handleEditSnowball}
-        showButtons={true}
-      >
-        <div className="flex justify-center items-center text-center w-full">
-          <TextInput
-            id="newSnowballAmount"
-            placeholder={`$${snowball}`}
-            value={snowball.toString()}
-            label="New Snowball Amount"
-            onChange={(e) => setSnowball(Number(e.target.value))}
-          />
-        </div>
-      </FullScreen>
-    );
 
   if (showSpendPage && envelopes.length > 0) {
     const envelopeSent = envelopeToEdit || emptyEnvelope;
@@ -725,7 +697,7 @@ export default function MainEnvelopesView() {
     <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]">
       {showLoading && <Loading text={loadingText} />}
 
-      <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt" }, { label: "Feedback", href: "/feedback" }]} />
+      <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt" }, { label: "Bills", href: "/bills" }, { label: "Feedback", href: "/feedback" }]} />
 
       <main className="flex flex-col items-center pt-[1rem] w-full">
         <ActionButtons
@@ -736,26 +708,6 @@ export default function MainEnvelopesView() {
         />
 
         <div className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-light mt-[1.5rem] overflow-hidden">
-          {showSummary ? (
-            <div className="w-full  rounded-md ">
-              <Summary
-                setShowEditSnowball={setShowEditSnowball}
-                setShowPaymentsMenu={setShowSummary}
-                payments={paymentsThisPeriod}
-              />
-            </div>
-          ) : (
-            <div className="w-full rounded-md">
-              <ShowAndHide
-                onClick={() => setShowSummary(true)}
-                label="Show Summary"
-                colorScheme="bg-my-black-dark w-full p-0 text-my-white-dark"
-                up={false}
-                border={false}
-                iconSize={25}
-              />
-            </div>
-          )}
           <Nvelopes
             resetState={resetState}
             handleSetupEdit={handleSetupEdit}

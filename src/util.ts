@@ -331,6 +331,46 @@ export function getEffectivePaymentAmount(p: Payment): number {
   return p.amount;
 }
 
+const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+
+/**
+ * Human-readable interval label for a bill (e.g. "Weekly on Fri", "Monthly").
+ * Used on Bills page for list display.
+ */
+export function getBillIntervalLabel(p: Payment): string {
+  const interval = p.interval ?? "MONTHLY";
+  if (interval === WEEKLY) {
+    const day = p.dueDate?.toDate?.() ? getDay(p.dueDate.toDate()) : 0;
+    return `${WEEKDAY_NAMES[day]}s`;
+  }
+  if (interval === BIWEEKLY) return "Biweekly";
+  if (interval === MONTHLY) return "Monthly";
+  if (interval === YEARLY) return "Yearly";
+  if (interval === SPLIT) return "Split";
+  return "Monthly";
+}
+
+/**
+ * Approximate monthly amount for a bill (for Bills page monthly view).
+ * WEEKLY → amount * 4.33, BIWEEKLY → amount * 2, MONTHLY/SPLIT → amount, YEARLY → amount / 12.
+ */
+export function getBillMonthlyAmount(p: Payment): number {
+  const interval = p.interval ?? "MONTHLY";
+  switch (interval) {
+    case WEEKLY:
+      return p.amount * (52 / 12);
+    case BIWEEKLY:
+      return p.amount * 2;
+    case MONTHLY:
+    case SPLIT:
+      return p.amount;
+    case YEARLY:
+      return p.amount / 12;
+    default:
+      return p.amount;
+  }
+}
+
 export function paymentsTotal(
   payments: Payment[],
   payPeriodInterval: Interval,

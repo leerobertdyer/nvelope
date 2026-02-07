@@ -7,7 +7,10 @@
  */
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 import type { Envelope } from "../../types";
-import { editEnvelopes, editTotalSpendingBudget } from "../../firebase/editData";
+import {
+  editEnvelopes,
+  editTotalSpendingBudget,
+} from "../../firebase/editData";
 import { useBudget } from "../../Context/BudgetContext/useBudget";
 import { useEffect, useState } from "react";
 import GiveAndTake from "../../Views/GiveAndTake";
@@ -48,7 +51,7 @@ export default function Nvelopes({
   useEffect(() => {
     const stupidLargeNumber = 1000;
     const sorted = [...envelopes].sort(
-      (a, b) => (a.order || stupidLargeNumber) - (b.order || stupidLargeNumber)
+      (a, b) => (a.order || stupidLargeNumber) - (b.order || stupidLargeNumber),
     );
     setSortedEnvelopes(sorted);
   }, [envelopes]);
@@ -85,7 +88,7 @@ export default function Nvelopes({
     const envelopeIndex = newEnvelopes.findIndex((e) => e.id === envelope.id);
     newEnvelopes[envelopeIndex] = envelope;
     const envelopeToEditIndex = newEnvelopes.findIndex(
-      (e) => e.id === envelopeToEdit.id
+      (e) => e.id === envelopeToEdit.id,
     );
     newEnvelopes[envelopeToEditIndex] = envelopeToEdit;
     await editEnvelopes(newEnvelopes, activeBudgetId!);
@@ -146,7 +149,7 @@ export default function Nvelopes({
     const draggedEnvelopeIndex = newEnvelopes.findIndex((e) => e.id === id);
     newEnvelopes.splice(draggedEnvelopeIndex, 1); // removes the dragged envelope
     const targetEnvelopeIndex = newEnvelopes.findIndex(
-      (e) => e.id === event.currentTarget.id
+      (e) => e.id === event.currentTarget.id,
     );
     newEnvelopes.splice(targetEnvelopeIndex, 0, draggedEnvelope); // places the dragged envelope in the new position
     // set the new order by looping over the newEnvelopes
@@ -161,41 +164,67 @@ export default function Nvelopes({
     event.preventDefault();
   }
 
+  const envelopesTotal = sortedEnvelopes.reduce((sum, e) => sum + e.total, 0);
+  const envelopesTotalStr = `$${Math.ceil(envelopesTotal).toFixed(2)}`;
+
+  function EnvelopeBox({
+    name,
+    total,
+    isShown,
+    setter,
+  }: {
+    isShown: boolean;
+    setter: () => void;
+    total: string;
+    name: string;
+  }) {
+    return (
+      <div className="relative grid grid-cols-4 py-2 text-center rounded-xs bg-my-white-base text-my-black-dark">
+        <div className="absolute ml-2 w-fit h-full flex items-center">
+          <ShowHideButton isShown={isShown} onClick={setter} />
+        </div>
+        <p className="col-span-3">{name}</p>
+        <p className="col-span-1 text-my-green-dark">{total}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">
-      <div className="border-2 border-my-white-light ">
-        <div className="rounded-xs w-screen max-w-[40rem]  h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-x-2 border-my-black-dark bg-my-white-dark text-my-black-light font-bold">
-          <div className="relative col-span-3 flex justify-center items-center">
-            <div className="absolute ml-[12px] w-full h-full">
-              <ShowHideButton
-                theme="LIGHT"
-                onClick={() => setShowEnvelopes(!showEnvelopes)}
-                isShown={showEnvelopes}
-              />
+      <div className="border-2 border-my-white-light w-screen max-w-[40rem]">
+        <EnvelopeBox
+          name="Nvelopes"
+          total={envelopesTotalStr}
+          isShown={showEnvelopes}
+          setter={() => setShowEnvelopes(!showEnvelopes)}
+        />
+        {showEnvelopes && (
+          <>
+            <div className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold rounded-xs">
+              <div className="col-span-3 flex justify-start items-center ml-2">
+                <p className="text-sm">Nvelope</p>
+              </div>
+              <div className="flex justify-center items-center col-span-2">
+                <p className="text-sm">Remaining</p>
+              </div>
+              <div className="flex justify-end items-center mr-2 col-span-2">
+                <p className="text-sm">Total</p>
+              </div>
             </div>
-            <p className="text-sm">Nvelope</p>
-          </div>
-          <div className="flex justify-center items-center col-span-2">
-            <p className="text-sm">Remaining</p>
-          </div>
-          <div className="flex justify-center items-center col-span-2">
-            <p className="text-sm">Total</p>
-          </div>
-        </div>
-        {showEnvelopes &&
-          sortedEnvelopes.map((e) => (
-        <div key={e.id}>
-          <ListEnvelope
-            envelope={e}
-            onClick={() => handleSelectListEnvelope(e)}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onDragEnd={handleDragEnd}
-          />
-        </div>
-          ))}
-
+            {sortedEnvelopes.map((e) => (
+              <div key={e.id}>
+                <ListEnvelope
+                  envelope={e}
+                  onClick={() => handleSelectListEnvelope(e)}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onDragEnd={handleDragEnd}
+                />
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );

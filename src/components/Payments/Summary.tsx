@@ -16,10 +16,7 @@ export default function PaymentsSummary({ payments, setShowEditSnowball, setShow
     if (!payDate) return;
 
     return (
-        <div className="flex flex-col gap-2 items-center justify-center w-full pb-2 bg-my-black-dark">
-            <h3 className="pt-2 rounded-md text-my-white-dark w-full text-center text-xl md:text-2xl">
-                Payments
-            </h3>
+        <div className="flex flex-col gap-2 items-center justify-center w-full py-2 bg-my-black-dark">
             <div className="bg-my-black-dark border-my-black-light border-2 rounded-md p-2">
                 <div className="text-lg md:text-xl w-full flex justify-between text-my-white-light">
                     Due Monthly

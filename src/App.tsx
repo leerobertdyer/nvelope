@@ -5,6 +5,7 @@ import Settings from "./Pages/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
 import { useDisableNumberScroll } from "./hooks";
 import Debt from "./Pages/Debt";
+import Bills from "./Pages/Bills";
 import Feedback from "./Pages/Feedback";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Debt />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bills"
+          element={
+            <ProtectedRoute>
+              <Bills />
             </ProtectedRoute>
           }
         />
