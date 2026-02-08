@@ -37,7 +37,8 @@ import FundPaymentDueModal from "../components/Payments/SplitPaymentDueModal";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
-  const { activeBudgetId } = useBudget();
+  const { activeBudgetId, budgets } = useBudget();
+  const activeBudgetName = budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
   const { showToast } = useToast();
   const {
     totalSpendingBudget,
@@ -700,6 +701,7 @@ export default function MainEnvelopesView() {
       <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt" }, { label: "Bills", href: "/bills" }, { label: "Feedback", href: "/feedback" }]} />
 
       <main className="flex flex-col items-center pt-[1rem] w-full">
+        <h2 className="text-lg font-semibold text-my-white-dark mb-2">{activeBudgetName}</h2>
         <ActionButtons
           onPaymentClick={handleAddPayment}
           onCashClick={handleAddCash}

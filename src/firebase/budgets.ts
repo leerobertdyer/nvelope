@@ -14,15 +14,22 @@ export function budgetDataRef(budgetId: string) {
 
 const BUDGET_INVITES_COLLECTION = "budgetInvites";
 
+const defaultBudgetName = (user: User) =>
+  user?.email ? `${user.email}'s Budget` : "My Budget";
+
 /**
  * Creates the first budget for a user (Demo onboarding). Writes budget meta, data doc, and users/{uid}/budgets/{budgetId}.
  * Returns the new budgetId or null on failure.
  */
-export async function createFirstBudget(user: User, name: string = "My Budget"): Promise<string | null> {
+export async function createFirstBudget(
+  user: User,
+  name?: string
+): Promise<string | null> {
   if (!user) {
     console.error("createFirstBudget: No user provided");
     return null;
   }
+  const budgetName = name ?? defaultBudgetName(user);
   try {
     const newBudgetRef = doc(collection(db, "budgets"));
     const budgetId = newBudgetRef.id;
@@ -30,9 +37,10 @@ export async function createFirstBudget(user: User, name: string = "My Budget"):
     const userBudgetRef = doc(db, "users", user.uid, "budgets", budgetId);
 
     const budgetMeta = {
-      name,
+      name: budgetName,
       ownerId: user.uid,
       memberIds: [user.uid],
+      memberEmails: { [user.uid]: (user.email ?? "").trim().toLowerCase() },
       createdAt: Timestamp.now(),
     };
     const initialData = {
@@ -49,7 +57,7 @@ export async function createFirstBudget(user: User, name: string = "My Budget"):
       isNewUser: true,
       backups: null,
     };
-    const userBudgetDoc = { name, budgetId };
+    const userBudgetDoc = { name: budgetName, budgetId };
 
     await setDoc(newBudgetRef, budgetMeta);
     await setDoc(dataRef, initialData);
@@ -67,20 +75,22 @@ export async function createFirstBudget(user: User, name: string = "My Budget"):
  */
 export async function createBudget(
   user: User,
-  name: string = "My Budget",
+  name: string | undefined,
   payDate: Date,
   payPeriodInterval: Interval
 ): Promise<string | null> {
   if (!user) return null;
+  const budgetName = name?.trim() || defaultBudgetName(user);
   try {
     const newBudgetRef = doc(collection(db, "budgets"));
     const budgetId = newBudgetRef.id;
     const dataRef = budgetDataRef(budgetId);
     const userBudgetRef = doc(db, "users", user.uid, "budgets", budgetId);
     const budgetMeta = {
-      name,
+      name: budgetName,
       ownerId: user.uid,
       memberIds: [user.uid],
+      memberEmails: { [user.uid]: (user.email ?? "").trim().toLowerCase() },
       createdAt: Timestamp.now(),
     };
     const initialData = {
@@ -97,7 +107,7 @@ export async function createBudget(
       isNewUser: false,
       backups: null,
     };
-    const userBudgetDoc = { name, budgetId };
+    const userBudgetDoc = { name: budgetName, budgetId };
     await setDoc(newBudgetRef, budgetMeta);
     await setDoc(dataRef, initialData);
     await setDoc(userBudgetRef, userBudgetDoc);
@@ -108,7 +118,7 @@ export async function createBudget(
   }
 }
 
-/** Get budget metadata (ownerId, memberIds, name). */
+/** Get budget metadata (ownerId, memberIds, name, memberEmails). */
 export async function getBudgetMeta(budgetId: string) {
   const snap = await getDoc(budgetRef(budgetId));
   if (!snap.exists()) return null;
@@ -117,6 +127,7 @@ export async function getBudgetMeta(budgetId: string) {
     name: d.name ?? "Budget",
     ownerId: d.ownerId as string,
     memberIds: (d.memberIds as string[]) ?? [],
+    memberEmails: (d.memberEmails as Record<string, string>) ?? undefined,
     createdAt: d.createdAt,
   };
 }
@@ -170,10 +181,38 @@ export async function removeMemberFromBudget(ownerId: string, budgetId: string, 
   }
 }
 
+/** Update budget name and sync to all members' user budget refs. Caller must be owner or member. */
+export async function updateBudgetName(
+  budgetId: string,
+  _userId: string,
+  newName: string
+): Promise<boolean> {
+  const trimmed = newName.trim();
+  if (!trimmed) return false;
+  try {
+    const meta = await getBudgetMeta(budgetId);
+    if (!meta) return false;
+    await updateDoc(budgetRef(budgetId), { name: trimmed });
+    for (const uid of meta.memberIds) {
+      const userBudgetRef = doc(db, "users", uid, "budgets", budgetId);
+      await updateDoc(userBudgetRef, { name: trimmed });
+    }
+    return true;
+  } catch (error) {
+    console.error("updateBudgetName failed:", error);
+    return false;
+  }
+}
+
 const INVITE_DEBUG = true; // set false to reduce console noise
 
 /** Owner invites by email. Writes a single doc to budgetInvites (doc ID = budgetId_email for rule lookup). */
-export async function addInviteToBudget(budgetId: string, email: string, ownerId: string): Promise<boolean> {
+export async function addInviteToBudget(
+  budgetId: string,
+  email: string,
+  ownerId: string,
+  ownerEmail: string
+): Promise<boolean> {
   try {
     if (INVITE_DEBUG) {
       console.log("[nvelope invite] addInviteToBudget called:", { budgetId, email, ownerId });
@@ -189,10 +228,12 @@ export async function addInviteToBudget(budgetId: string, email: string, ownerId
       return false;
     }
     const inviteDocId = budgetId + "_" + normalizedEmail;
+    const inviterEmail = (ownerEmail ?? "").trim().toLowerCase();
     const invitePayload = {
       budgetId,
       email: normalizedEmail,
       invitedBy: ownerId,
+      inviterEmail: inviterEmail || undefined,
       createdAt: Timestamp.now(),
     };
     if (INVITE_DEBUG) {
@@ -232,9 +273,109 @@ function decodeIdTokenPayload(token: string): Record<string, unknown> | null {
   }
 }
 
+export interface PendingInvite {
+  inviteId: string;
+  budgetId: string;
+  budgetName: string;
+  inviterEmail: string;
+}
+
+/**
+ * Returns pending invites for the current user (by email). Does not accept or delete; for modal UX.
+ */
+export async function getPendingInvites(user: User): Promise<PendingInvite[]> {
+  let tokenEmail: string | null = null;
+  try {
+    const token = await user.getIdToken(false);
+    const payload = decodeIdTokenPayload(token);
+    tokenEmail = payload?.email != null ? String(payload.email).trim().toLowerCase() : null;
+  } catch {
+    return [];
+  }
+  if (!tokenEmail) return [];
+
+  try {
+    const q = query(
+      collection(db, BUDGET_INVITES_COLLECTION),
+      where("email", "==", tokenEmail)
+    );
+    const snap = await getDocs(q);
+    const result: PendingInvite[] = [];
+    for (const inviteDoc of snap.docs) {
+      const data = inviteDoc.data();
+      const bid = data.budgetId as string;
+      if (!bid) continue;
+      const budgetSnap = await getDoc(budgetRef(bid));
+      if (!budgetSnap.exists()) continue;
+      const budgetData = budgetSnap.data();
+      const memberIds = (budgetData.memberIds as string[]) ?? [];
+      if (memberIds.includes(user.uid)) continue; // already member
+      const name = (budgetData.name as string) ?? "Budget";
+      const inviterEmail = (data.inviterEmail as string)?.trim() || "Someone";
+      result.push({
+        inviteId: inviteDoc.id,
+        budgetId: bid,
+        budgetName: name,
+        inviterEmail,
+      });
+    }
+    return result;
+  } catch (error) {
+    console.error("[nvelope invite] getPendingInvites failed:", error);
+    return [];
+  }
+}
+
+/**
+ * Accept one invite: add user to budget (memberIds + memberEmails), create user budget ref, delete invite.
+ */
+export async function acceptInvite(user: User, budgetId: string): Promise<void> {
+  let tokenEmail: string | null = null;
+  try {
+    const token = await user.getIdToken(false);
+    const payload = decodeIdTokenPayload(token);
+    tokenEmail = payload?.email != null ? String(payload.email).trim().toLowerCase() : null;
+  } catch (e) {
+    throw new Error("Could not get email from token");
+  }
+  if (!tokenEmail) throw new Error("No email in token");
+
+  const budgetSnap = await getDoc(budgetRef(budgetId));
+  if (!budgetSnap.exists()) throw new Error("Budget not found");
+  const budgetData = budgetSnap.data();
+  const name = (budgetData.name as string) ?? "Budget";
+  const memberIds = (budgetData.memberIds as string[]) ?? [];
+  if (memberIds.includes(user.uid)) {
+    // Already member; just delete invite if exists
+    const inviteId = budgetId + "_" + tokenEmail;
+    const inviteRef = doc(db, BUDGET_INVITES_COLLECTION, inviteId);
+    await deleteDoc(inviteRef).catch(() => {});
+    return;
+  }
+
+  await updateDoc(budgetRef(budgetId), {
+    memberIds: arrayUnion(user.uid),
+    [`memberEmails.${user.uid}`]: tokenEmail,
+  });
+  await setDoc(doc(db, "users", user.uid, "budgets", budgetId), { name, budgetId });
+
+  const inviteId = budgetId + "_" + tokenEmail;
+  const inviteRef = doc(db, BUDGET_INVITES_COLLECTION, inviteId);
+  await deleteDoc(inviteRef);
+}
+
+/**
+ * Decline one invite: delete the invite doc so it is not shown again.
+ */
+export async function declineInvite(inviteId: string): Promise<void> {
+  const inviteRef = doc(db, BUDGET_INVITES_COLLECTION, inviteId);
+  await deleteDoc(inviteRef);
+}
+
 /**
  * Call on app load: for current user's email, consume any invites (add user to budget, delete invite). Returns count processed.
  * Firestore rule allows update on budgets/{id} when budgetInvites/{budgetId_email} exists.
+ * @deprecated Use getPendingInvites + acceptInvite/declineInvite for modal UX instead.
  */
 export async function processInvitesForUser(user: User): Promise<number> {
   const email = user?.email?.trim()?.toLowerCase();
@@ -323,7 +464,10 @@ export async function processInvitesForUser(user: User): Promise<number> {
       if (INVITE_DEBUG) {
         console.log("[nvelope invite] processInvitesForUser: about to update budget", bid, "memberIds (arrayUnion)", user.uid, "- rule will check exists(budgetInvites/" + bid + "_" + tokenEmail + ")");
       }
-      await updateDoc(budgetRef(bid), { memberIds: arrayUnion(user.uid) });
+      await updateDoc(budgetRef(bid), {
+        memberIds: arrayUnion(user.uid),
+        [`memberEmails.${user.uid}`]: tokenEmail,
+      });
       await setDoc(doc(db, "users", user.uid, "budgets", bid), { name, budgetId: bid });
       await deleteDoc(inviteDoc.ref);
       count++;
@@ -342,7 +486,7 @@ export async function processInvitesForUser(user: User): Promise<number> {
 
 /** @deprecated Use createFirstBudget. Kept for migration script / reference. */
 export async function createUserDocument(user: User) {
-  const budgetId = await createFirstBudget(user, "My Budget");
+  const budgetId = await createFirstBudget(user);
   return budgetId != null;
 }
 
@@ -354,7 +498,7 @@ export async function completeDemoWithDefaults(user: User): Promise<boolean> {
   try {
     const now = new Date();
     const defaultPayDate = Timestamp.fromDate(new Date(now.getFullYear(), now.getMonth(), 1));
-    const budgetId = await createFirstBudget(user, "My Budget");
+    const budgetId = await createFirstBudget(user);
     if (!budgetId) return false;
     const dataRef = budgetDataRef(budgetId);
     await updateDoc(dataRef, { isNewUser: false, payDate: defaultPayDate });

@@ -17,13 +17,11 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.ownerId
         && request.auth.uid in request.resource.data.get('memberIds', []);
-      // Invited user (not yet a member) may update ONLY to add themselves to memberIds.
+      // Invited user (not yet a member) may update ONLY to add themselves to memberIds and memberEmails.
       allow update: if request.auth != null
         && request.auth.uid != resource.data.ownerId
         && !(request.auth.uid in resource.data.get('memberIds', []))
-        // Only the memberIds field may change (e.g. arrayUnion(uid)); no name/ownerId/etc.
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
-        // Invite doc must exist for this budget + signed-in user's email (budgetInvites doc ID = budgetId_email).
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'memberEmails'])
         && exists(/databases/$(database)/documents/budgetInvites/$(budgetId + '_' + request.auth.token.email));
     }
     match /budgets/{budgetId}/data/{dataId} {

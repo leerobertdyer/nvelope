@@ -72,6 +72,8 @@ export interface Budget {
     name: string;
     ownerId: string;
     memberIds: string[];
+    /** uid -> email for display; set on create and when user accepts invite */
+    memberEmails?: Record<string, string>;
     createdAt?: Timestamp;
 }
 

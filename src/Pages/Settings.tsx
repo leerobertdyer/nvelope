@@ -22,6 +22,7 @@ import {
   leaveBudget,
   removeMemberFromBudget,
   addInviteToBudget,
+  updateBudgetName,
 } from "../firebase/budgets";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
@@ -38,6 +39,7 @@ import CreateLoginWithEmail from "../components/Forms/CreateLoginWithEmail";
 import { format } from "date-fns";
 import { useToast } from "../Context/ToastContext/useToast";
 import type { User } from "firebase/auth";
+import { IoTrash } from "react-icons/io5";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -95,7 +97,11 @@ export default function Settings() {
     name: string;
     ownerId: string;
     memberIds: string[];
+    memberEmails?: Record<string, string>;
   } | null>(null);
+  const [editingBudgetName, setEditingBudgetName] = useState(false);
+  const [budgetNameInput, setBudgetNameInput] = useState("");
+  const [isSavingBudgetName, setIsSavingBudgetName] = useState(false);
   const [newBudgetName, setNewBudgetName] = useState("");
   const [shareEmail, setShareEmail] = useState("");
   const [isLoadingBudgetMeta, setIsLoadingBudgetMeta] = useState(false);
@@ -146,6 +152,7 @@ export default function Settings() {
           name: meta.name,
           ownerId: meta.ownerId,
           memberIds: meta.memberIds,
+          memberEmails: meta.memberEmails,
         });
       else if (!cancelled) setBudgetMeta(null);
       setIsLoadingBudgetMeta(false);
@@ -387,6 +394,7 @@ export default function Settings() {
         activeBudgetId,
         shareEmail.trim(),
         user.uid,
+        user.email ?? "",
       );
       if (ok) {
         setShareEmail("");
@@ -455,6 +463,7 @@ export default function Settings() {
             name: meta.name,
             ownerId: meta.ownerId,
             memberIds: meta.memberIds,
+            memberEmails: meta.memberEmails,
           });
         showToast("Member removed");
       } else {
@@ -462,6 +471,36 @@ export default function Settings() {
       }
     } catch {
       showToast("Failed to remove member", "error");
+    }
+  }
+
+  async function handleSaveBudgetName() {
+    if (!user || !activeBudgetId || !budgetNameInput.trim()) return;
+    setIsSavingBudgetName(true);
+    try {
+      const ok = await updateBudgetName(
+        activeBudgetId,
+        user.uid,
+        budgetNameInput.trim(),
+      );
+      if (ok) {
+        const meta = await getBudgetMeta(activeBudgetId);
+        if (meta)
+          setBudgetMeta({
+            name: meta.name,
+            ownerId: meta.ownerId,
+            memberIds: meta.memberIds,
+            memberEmails: meta.memberEmails,
+          });
+        await refetchBudgets();
+        setEditingBudgetName(false);
+        setBudgetNameInput("");
+        showToast("Budget name updated");
+      } else {
+        showToast("Failed to update budget name", "error");
+      }
+    } finally {
+      setIsSavingBudgetName(false);
     }
   }
 
@@ -755,9 +794,88 @@ export default function Settings() {
         <SettingsButton text="Budgets" />
         <SettingsButton text="Account" />
       </div>
-      {/* Budgets: switcher, create button, share, members, delete/leave */}
+      {/* Budgets: name, members, switcher, create, share, edit, delete/leave */}
       {showBudgets && (
         <div className="w-full flex flex-col items-center gap-2 mt-4 py-[1rem]">
+          {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
+            <>
+              <div className="w-full flex flex-col items-center gap-1 max-w-[20rem]">
+                <p className="text-my-black-light text-xs text-center">Budget name</p>
+                {editingBudgetName ? (
+                  <div className="flex flex-row items-center gap-2 w-full">
+                    <TextInput
+                      id="budget-name-edit"
+                      label=""
+                      placeholder="Budget name"
+                      value={budgetNameInput}
+                      onChange={(e) => setBudgetNameInput(e.target.value)}
+                    />
+                    <Button
+                      color="green"
+                      onClick={handleSaveBudgetName}
+                      disabled={isSavingBudgetName || !budgetNameInput.trim()}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      color="red"
+                      onClick={() => {
+                        setEditingBudgetName(false);
+                        setBudgetNameInput("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-row items-center gap-2">
+                    <span className="text-my-black-dark font-medium">{budgetMeta.name}</span>
+                    <button
+                      type="button"
+                      className="p-1 text-my-blue-dark hover:underline text-sm"
+                      onClick={() => {
+                        setBudgetNameInput(budgetMeta.name);
+                        setEditingBudgetName(true);
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {isOwner &&
+                budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
+                  .length > 0 && (
+                  <div className="w-full max-w-[20rem] flex flex-col gap-1">
+                    <p className="text-my-black-light text-xs text-center">Members</p>
+                    <ul className="list-none">
+                      {budgetMeta.memberIds
+                        .filter((id) => id !== budgetMeta.ownerId)
+                        .map((mid) => (
+                          <li
+                            key={mid}
+                            className="flex flex-row items-center justify-between gap-2 py-1 text-my-white-dark text-sm"
+                          >
+                            <span title={mid}>
+                              {budgetMeta.memberEmails?.[mid] ?? mid.slice(0, 8) + "…"}
+                            </span>
+                            <button
+                              type="button"
+                              className="p-1.5 text-my-red-light hover:bg-my-white-dark rounded"
+                              onClick={() => setMemberToRemove(mid)}
+                              title="Remove member"
+                            >
+                              <IoTrash size={18} />
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
+            </>
+          )}
+
           {budgets.length >= 1 && (
             <div className="w-full flex flex-col items-center gap-2">
               <label htmlFor="budget-switcher" className="text-xs">
@@ -813,32 +931,6 @@ export default function Settings() {
                   </div>
                 </FullScreen>
               )}
-
-              {isOwner &&
-                budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
-                  .length > 0 && (
-                  <div className="w-full max-w-[20rem] flex flex-col gap-1">
-                    <p className="text-my-black-light text-xs text-center">Members</p>
-                    <ul className="list-none">
-                      {budgetMeta.memberIds
-                        .filter((id) => id !== budgetMeta.ownerId)
-                        .map((mid) => (
-                          <li
-                            key={mid}
-                            className="flex flex-col items-center justify-between gap-2 py-1 text-my-white-dark text-sm"
-                          >
-                            <span title={mid}>{mid.slice(0, 8)}…</span>
-                            <Button
-                              color="red"
-                              onClick={() => setMemberToRemove(mid)}
-                            >
-                              Remove
-                            </Button>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                )}
               {isOwner && (
                 <Button
                   color="red"

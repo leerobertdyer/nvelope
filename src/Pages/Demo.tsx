@@ -256,7 +256,7 @@ export default function Demo() {
 
   async function handleStep1() {
     if (documentExists === false && user) {
-      const newBudgetId = await createFirstBudget(user, "My Budget");
+      const newBudgetId = await createFirstBudget(user);
       if (newBudgetId) {
         setCreatedBudgetId(newBudgetId);
         setActiveBudgetId(newBudgetId);
