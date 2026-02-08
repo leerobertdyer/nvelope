@@ -20,17 +20,8 @@ service cloud.firestore {
         && !(request.auth.uid in resource.data.get('memberIds', []))
         // Only the memberIds field may change (e.g. arrayUnion(uid)); no name/ownerId/etc.
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
-        // Invite doc must exist for this budget + signed-in user's email (Firebase token email, lowercase).
-        && exists(/databases/$(database)/documents/budgets/$(budgetId)/invites/$(request.auth.token.email));
-    }
-    // One invite doc per (budget, email). Doc id = normalized email so rule can reference request.auth.token.email.
-    match /budgets/{budgetId}/invites/{inviteEmail} {
-      allow create: if request.auth != null
-        && get(/databases/$(database)/documents/budgets/$(budgetId)).data.ownerId == request.auth.uid;
-      // Invited user can read/delete only their own invite (inviteEmail == their token email). Owner can read/delete any invite.
-      allow read, delete: if request.auth != null
-        && (request.auth.token.email == inviteEmail
-            || get(/databases/$(database)/documents/budgets/$(budgetId)).data.ownerId == request.auth.uid);
+        // Invite doc must exist for this budget + signed-in user's email (budgetInvites doc ID = budgetId_email).
+        && exists(/databases/$(database)/documents/budgetInvites/$(budgetId + '_' + request.auth.token.email));
     }
     match /budgets/{budgetId}/data/{dataId} {
       allow read, write: if request.auth != null
@@ -40,11 +31,12 @@ service cloud.firestore {
     match /userBackups/{userId}/backups/{backupId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    // Invites by email: owner can create; invited user can read/delete (to accept)
+    // Invites by email: owner can create (doc ID must be budgetId_email); invited user can read/delete (to accept)
     match /budgetInvites/{inviteId} {
       allow read, delete: if request.auth != null && resource.data.email == request.auth.token.email;
       allow create: if request.auth != null
-        && get(/databases/$(database)/documents/budgets/$(request.resource.data.budgetId)).data.ownerId == request.auth.uid;
+        && get(/databases/$(database)/documents/budgets/$(request.resource.data.budgetId)).data.ownerId == request.auth.uid
+        && request.resource.id == request.resource.data.budgetId + '_' + request.resource.data.email;
     }
   }
 }

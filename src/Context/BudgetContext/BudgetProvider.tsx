@@ -4,7 +4,7 @@ import { db } from "../../firebase/firebase";
 import { useAuth } from "../AuthContext/useAuth";
 import { BudgetContext } from "./BudgetContext";
 import type { BudgetListItem } from "./BudgetContext";
-import { processInvitesForUser } from "../../firebase/editData";
+import { processInvitesForUser } from "../../firebase/budgets";
 
 const ACTIVE_BUDGET_KEY = "nvelope_activeBudgetId";
 

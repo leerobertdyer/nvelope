@@ -7,9 +7,8 @@ import {
   editIsNewUser,
   editPayDate,
   editTotalSpendingBudget,
-  createFirstBudget,
-  completeDemoWithDefaults,
 } from "../firebase/editData";
+import { createFirstBudget, completeDemoWithDefaults } from "../firebase/budgets";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useEffect, useState, useRef } from "react";
