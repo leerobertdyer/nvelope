@@ -42,7 +42,7 @@ export async function editPayments(p: Payment[], budgetId: string) {
   try {
     await updateDoc(budgetDataRef(budgetId), { payments: cleanedPayments });
   } catch (error) {
-    console.error("Firebase, editBills Failed", error);
+    console.error("Firebase, editPayments Failed", error);
   }
 }
 

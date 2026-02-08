@@ -14,6 +14,7 @@ import {
 } from "../../util";
 import { format, addDays } from "date-fns";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
+import { useBudget } from "../../Context/BudgetContext/useBudget";
 import { useToast } from "../../Context/ToastContext/useToast";
 import TextInput from "../TextInput";
 import PaymentTypeSelector, {
@@ -35,6 +36,7 @@ export default function PaymentForm({
   handleUpdateBudget,
   handleBack,
 }: IPaymentForm) {
+  const { activeBudgetId } = useBudget();
   const { payDate, payPeriodInterval, payments, setPayments } = useDatabase();
   const { showToast } = useToast();
 
@@ -154,7 +156,7 @@ export default function PaymentForm({
           ? { ...newPayment, id: originalPaymentToEditId }
           : p;
       });
-      editPayments(updatedPayments, user.uid);
+      if (activeBudgetId) editPayments(updatedPayments, activeBudgetId);
       return updatedPayments;
     });
     if (paymentToEdit.isInInterval && !paymentToEdit.paid) {
@@ -172,7 +174,8 @@ export default function PaymentForm({
     }
     const updatedPayments = [...payments, newPayment];
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, user.uid);
+    if (!activeBudgetId) return;
+    await editPayments(updatedPayments, activeBudgetId);
     if (
       payDate &&
       isDateInCurrentPayPeriod(

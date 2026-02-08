@@ -820,46 +820,50 @@ export default function Settings() {
             <>
               <div className="w-full flex flex-col items-center gap-1 max-w-[20rem]">
                 <p className="text-my-black-light text-xs text-center">Budget name</p>
-                {editingBudgetName ? (
-                  <div className="flex flex-row items-center gap-2 w-full">
-                    <TextInput
-                      id="budget-name-edit"
-                      label=""
-                      placeholder="Budget name"
-                      value={budgetNameInput}
-                      onChange={(e) => setBudgetNameInput(e.target.value)}
-                    />
-                    <Button
-                      color="green"
-                      onClick={handleSaveBudgetName}
-                      disabled={isSavingBudgetName || !budgetNameInput.trim()}
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      color="red"
-                      onClick={() => {
-                        setEditingBudgetName(false);
-                        setBudgetNameInput("");
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
+                {isOwner ? (
+                  editingBudgetName ? (
+                    <div className="flex flex-row items-center gap-2 w-full">
+                      <TextInput
+                        id="budget-name-edit"
+                        label=""
+                        placeholder="Budget name"
+                        value={budgetNameInput}
+                        onChange={(e) => setBudgetNameInput(e.target.value)}
+                      />
+                      <Button
+                        color="green"
+                        onClick={handleSaveBudgetName}
+                        disabled={isSavingBudgetName || !budgetNameInput.trim()}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        color="red"
+                        onClick={() => {
+                          setEditingBudgetName(false);
+                          setBudgetNameInput("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-row items-center gap-2">
+                      <span className="text-my-black-dark font-medium">{budgetMeta.name}</span>
+                      <button
+                        type="button"
+                        className="p-1 text-my-blue-dark hover:underline text-sm"
+                        onClick={() => {
+                          setBudgetNameInput(budgetMeta.name);
+                          setEditingBudgetName(true);
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  )
                 ) : (
-                  <div className="flex flex-row items-center gap-2">
-                    <span className="text-my-black-dark font-medium">{budgetMeta.name}</span>
-                    <button
-                      type="button"
-                      className="p-1 text-my-blue-dark hover:underline text-sm"
-                      onClick={() => {
-                        setBudgetNameInput(budgetMeta.name);
-                        setEditingBudgetName(true);
-                      }}
-                    >
-                      Edit
-                    </button>
-                  </div>
+                  <span className="text-my-black-dark font-medium">{budgetMeta.name}</span>
                 )}
               </div>
 
@@ -919,18 +923,22 @@ export default function Settings() {
           </Button>
           {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
             <>
-              <Button
-                color="green"
-                onClick={() => setShowShareBudgetModal(true)}
-              >
-                Share budget
-              </Button>
-              <Button
-                color="gold"
-                onClick={() => setShowEditBudgetModal(true)}
-              >
-                Edit budget
-              </Button>
+              {isOwner && (
+                <Button
+                  color="green"
+                  onClick={() => setShowShareBudgetModal(true)}
+                >
+                  Share budget
+                </Button>
+              )}
+              {isOwner && (
+                <Button
+                  color="gold"
+                  onClick={() => setShowEditBudgetModal(true)}
+                >
+                  Edit budget
+                </Button>
+              )}
               {isOwner && showShareBudgetModal && (
                 <FullScreen
                   theme="LIGHT"

@@ -6,6 +6,7 @@ import Button from "../components/Buttons/Button";
 import { useState } from "react";
 import PaymentForm from "../components/Forms/PaymentForm";
 import { useAuth } from "../Context/AuthContext/useAuth";
+import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { editPayments } from "../firebase/editData";
 import { removeVirtualIdPortion } from "../util";
@@ -39,6 +40,7 @@ export default function BigPayment({
     null,
   );
   const { user } = useAuth();
+  const { activeBudgetId } = useBudget();
   const { payments, setPayments } = useDatabase();
   function updatePaid() {
     if (!p) return;
@@ -63,7 +65,7 @@ export default function BigPayment({
       removeVirtualIdPortion(pay) === originalId ? updatedPayment : pay,
     );
     setPayments(updatedPayments);
-    editPayments(updatedPayments, user.uid);
+    if (activeBudgetId) editPayments(updatedPayments, activeBudgetId);
     setP(updatedPayment);
     onPaymentUpdated?.(updatedPayment);
   }
