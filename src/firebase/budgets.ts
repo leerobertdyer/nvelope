@@ -170,24 +170,47 @@ export async function removeMemberFromBudget(ownerId: string, budgetId: string, 
   }
 }
 
+const INVITE_DEBUG = true; // set false to reduce console noise
+
 /** Owner invites by email. Writes a single doc to budgetInvites (doc ID = budgetId_email for rule lookup). */
 export async function addInviteToBudget(budgetId: string, email: string, ownerId: string): Promise<boolean> {
   try {
+    if (INVITE_DEBUG) {
+      console.log("[nvelope invite] addInviteToBudget called:", { budgetId, email, ownerId });
+    }
     const meta = await getBudgetMeta(budgetId);
-    if (!meta || meta.ownerId !== ownerId) return false;
+    if (!meta || meta.ownerId !== ownerId) {
+      if (INVITE_DEBUG) console.log("[nvelope invite] addInviteToBudget: not owner or no meta, skipping");
+      return false;
+    }
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) return false;
+    if (!normalizedEmail) {
+      if (INVITE_DEBUG) console.log("[nvelope invite] addInviteToBudget: empty email after normalize");
+      return false;
+    }
+    const inviteDocId = budgetId + "_" + normalizedEmail;
     const invitePayload = {
       budgetId,
       email: normalizedEmail,
       invitedBy: ownerId,
       createdAt: Timestamp.now(),
     };
-    const inviteRef = doc(db, BUDGET_INVITES_COLLECTION, budgetId + "_" + normalizedEmail);
+    if (INVITE_DEBUG) {
+      console.log("[nvelope invite] addInviteToBudget: persisting", {
+        toEmail: normalizedEmail,
+        inviteDocId,
+        path: `${BUDGET_INVITES_COLLECTION}/${inviteDocId}`,
+        payload: invitePayload,
+      });
+    }
+    const inviteRef = doc(db, BUDGET_INVITES_COLLECTION, inviteDocId);
     await setDoc(inviteRef, invitePayload);
+    if (INVITE_DEBUG) {
+      console.log("[nvelope invite] addInviteToBudget: persisted OK at", inviteRef.path);
+    }
     return true;
   } catch (error) {
-    console.error("addInviteToBudget failed:", error);
+    console.error("[nvelope invite] addInviteToBudget failed:", error);
     return false;
   }
 }
@@ -198,6 +221,13 @@ export async function addInviteToBudget(budgetId: string, email: string, ownerId
  */
 export async function processInvitesForUser(user: User): Promise<number> {
   const email = user?.email?.trim()?.toLowerCase();
+  if (INVITE_DEBUG) {
+    console.log("[nvelope invite] processInvitesForUser:", {
+      uid: user?.uid,
+      emailRaw: user?.email ?? "(none)",
+      emailNormalized: email ?? "(none)",
+    });
+  }
   if (!email) return 0;
   try {
     const q = query(
@@ -205,11 +235,22 @@ export async function processInvitesForUser(user: User): Promise<number> {
       where("email", "==", email)
     );
     const snap = await getDocs(q);
+    if (INVITE_DEBUG) {
+      console.log("[nvelope invite] processInvitesForUser: query returned", snap.docs.length, "invite(s)");
+    }
     let count = 0;
     const metaCache: Record<string, { name: string }> = {};
     for (const inviteDoc of snap.docs) {
       const data = inviteDoc.data();
       const bid = data.budgetId as string;
+      if (INVITE_DEBUG) {
+        console.log("[nvelope invite] processInvitesForUser: processing invite", {
+          inviteDocId: inviteDoc.id,
+          budgetId: bid,
+          inviteEmail: data.email,
+          ruleCheckPath: `budgetInvites/${bid}_${email}`,
+        });
+      }
       if (!bid) continue;
       let name = metaCache[bid]?.name;
       if (name === undefined) {
@@ -219,14 +260,27 @@ export async function processInvitesForUser(user: User): Promise<number> {
       }
       const budgetSnap = await getDoc(budgetRef(bid));
       if (!budgetSnap.exists()) {
+        if (INVITE_DEBUG) console.log("[nvelope invite] processInvitesForUser: budget missing, deleting stale invite");
         await deleteDoc(inviteDoc.ref);
         continue;
       }
       const budgetData = budgetSnap.data();
       const memberIds = (budgetData.memberIds as string[]) ?? [];
+      if (INVITE_DEBUG) {
+        console.log("[nvelope invite] processInvitesForUser: budget meta", {
+          budgetId: bid,
+          ownerId: budgetData?.ownerId,
+          memberIds,
+          currentUserInMembers: memberIds.includes(user.uid),
+        });
+      }
       if (memberIds.includes(user.uid)) {
+        if (INVITE_DEBUG) console.log("[nvelope invite] processInvitesForUser: already member, deleting invite");
         await deleteDoc(inviteDoc.ref);
         continue;
+      }
+      if (INVITE_DEBUG) {
+        console.log("[nvelope invite] processInvitesForUser: about to update budget", bid, "memberIds (arrayUnion)", user.uid, "- rule will check exists(budgetInvites/" + bid + "_" + email + ")");
       }
       await updateDoc(budgetRef(bid), { memberIds: arrayUnion(user.uid) });
       await setDoc(doc(db, "users", user.uid, "budgets", bid), { name, budgetId: bid });
@@ -234,8 +288,13 @@ export async function processInvitesForUser(user: User): Promise<number> {
       count++;
     }
     return count;
-  } catch (error) {
-    console.error("processInvitesForUser failed:", error);
+  } catch (error: unknown) {
+    const err = error as { code?: string; message?: string };
+    console.error("[nvelope invite] processInvitesForUser failed:", {
+      message: err?.message,
+      code: err?.code,
+      fullError: error,
+    });
     return 0;
   }
 }
