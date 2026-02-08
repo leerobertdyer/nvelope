@@ -761,7 +761,7 @@ export default function Settings() {
           {budgets.length >= 1 && (
             <div className="w-full flex flex-col items-center gap-2">
               <label htmlFor="budget-switcher" className="text-xs">
-                Current budget
+                Select A Budget
               </label>
               <select
                 id="budget-switcher"
@@ -818,14 +818,14 @@ export default function Settings() {
                 budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
                   .length > 0 && (
                   <div className="w-full max-w-[20rem] flex flex-col gap-1">
-                    <p className="text-my-white-light text-xs">Members</p>
+                    <p className="text-my-black-light text-xs text-center">Members</p>
                     <ul className="list-none">
                       {budgetMeta.memberIds
                         .filter((id) => id !== budgetMeta.ownerId)
                         .map((mid) => (
                           <li
                             key={mid}
-                            className="flex items-center justify-between gap-2 py-1 text-my-white-dark text-sm"
+                            className="flex flex-col items-center justify-between gap-2 py-1 text-my-white-dark text-sm"
                           >
                             <span title={mid}>{mid.slice(0, 8)}…</span>
                             <Button
