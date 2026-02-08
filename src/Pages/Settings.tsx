@@ -26,18 +26,16 @@ import signout from "../firebase/signOut";
 import { deleteAccount } from "../firebase/deleteAccount";
 import { sendPasswordResetEmailToUser } from "../firebase/emailAndPassword";
 import { getIncomeByInterval, recalculateBudget } from "../util";
-import { IoPencil } from "react-icons/io5";
-import { GiMoneyStack } from "react-icons/gi";
 import { Timestamp } from "firebase/firestore";
 import type { Value } from "react-calendar/src/shared/types.js";
-import IntervalSelector from "../components/Forms/IntervalSelector";
-import PayDateCalendar from "../components/Forms/PayDateCalendar";
 import EditSpendingBudget from "../components/Forms/EditSpendingBudget";
+import BudgetSettingsFields from "../components/Forms/BudgetSettingsFields";
 import TextInput from "../components/TextInput";
 import FullScreen from "../Views/FullScreen";
 import CreateLoginWithEmail from "../components/Forms/CreateLoginWithEmail";
 import { format } from "date-fns";
 import { useToast } from "../Context/ToastContext/useToast";
+import type { User } from "firebase/auth";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -66,6 +64,8 @@ export default function Settings() {
   const [providerType, setProviderType] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
   const [showBudgets, setShowBudgets] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [showShareBudgetModal, setShowShareBudgetModal] = useState(false);
 
   // Safe backups (stored in separate collection - survives user doc corruption)
   const [safeBackups, setSafeBackups] = useState<
@@ -103,12 +103,12 @@ export default function Settings() {
   const [isCreatingBudget, setIsCreatingBudget] = useState(false);
   const [isDeletingBudget, setIsDeletingBudget] = useState(false);
   const [isLeavingBudget, setIsLeavingBudget] = useState(false);
-  const [isInviting, setIsInviting] = useState(false);
   const [newBudgetPayDate, setNewBudgetPayDate] = useState<Date | null>(null);
   const [newBudgetInterval, setNewBudgetInterval] = useState<Interval | null>(
     null,
   );
   const [showCreateBudgetModal, setShowCreateBudgetModal] = useState(false);
+  const [showEditBudgetModal, setShowEditBudgetModal] = useState(false);
 
   const currentProviderTypes = ["google.com"];
   const isOwner = user && budgetMeta && budgetMeta.ownerId === user.uid;
@@ -349,7 +349,7 @@ export default function Settings() {
 
   async function handleCreateBudget(): Promise<boolean> {
     if (!user || !newBudgetPayDate || !newBudgetInterval) return false;
-    const name = newBudgetName.trim() || "My Budget";
+    const name = newBudgetName.trim() || `${user.email}'s Budget`;
     setIsCreatingBudget(true);
     try {
       const budgetId = await createBudget(
@@ -380,7 +380,6 @@ export default function Settings() {
       showToast("Please enter a valid email address", "error");
       return;
     }
-    setIsInviting(true);
     try {
       const ok = await addInviteToBudget(
         activeBudgetId,
@@ -396,7 +395,7 @@ export default function Settings() {
         showToast("Failed to send invite", "error");
       }
     } finally {
-      setIsInviting(false);
+      setShowShareBudgetModal(false);
     }
   }
 
@@ -464,6 +463,158 @@ export default function Settings() {
     }
   }
 
+  function SettingsButton({ text }: { text: string }) {
+    return (
+      <button
+        className="p-2 cursor-pointer text-my-blue-dark"
+        onClick={() => {
+          switch (text.toLowerCase()) {
+            case "budgets":
+              setShowAccountSettings(false);
+              setShowBudgets(true);
+              break;
+            case "account":
+              setShowBudgets(false);
+              setShowAccountSettings(true);
+              break;
+          }
+        }}
+      >
+        {text}
+      </button>
+    );
+  }
+
+  function LogoutButton({
+    user,
+    onClick,
+  }: {
+    user: User;
+    onClick: () => void;
+  }) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center text-xs sm:text-sm md:text-lg mb-10">
+        You are logged in as{" "}
+        <span className="text-my-blue-dark">{user?.email}</span>
+        <Button color="red" onClick={onClick}>
+          Log Out
+        </Button>
+      </div>
+    );
+  }
+
+  function DeleteAccountButton() {
+    {
+      /* Delete Account — only path to account deletion: this block opens the confirm modal; confirmation is the only trigger for handleDeleteAccount. */
+    }
+    return (
+      <div
+        className="flex flex-col justify-center h-fit w-[80%] max-w-[20rem] items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8 cursor-pointer hover:opacity-90"
+        onClick={() => {
+          setShowDeleteAccountConfirm(true);
+          setDeletePasswordStep(false);
+          setDeletePassword("");
+        }}
+      >
+        <p className="text-sm font-bold text-my-red-light">Delete Account</p>
+        <p className="text-xs text-my-white-dark mt-1">
+          Permanently delete your account and all data
+        </p>
+      </div>
+    );
+  }
+
+  function BackupSelectionScreen() {
+    return (
+      <div className="flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4">
+        <p className="text-sm font-bold">⚠️ Revert To A Backup</p>
+        <p className="text-xs">Restores payments and envelopes</p>
+        <div>
+          {isLoadingSafeBackups ? (
+            <p className="text-xs py-2">Loading backups...</p>
+          ) : safeBackups.length === 0 ? (
+            <p className="text-xs py-2">No backups yet</p>
+          ) : (
+            <select
+              className="py-2 px-4 bg-white rounded-md text-my-black-dark my-2 cursor-pointer"
+              onChange={(e) => handleSelectBackup(e.target.value)}
+              defaultValue=""
+            >
+              <option value="" disabled>
+                Select A Backup
+              </option>
+              {safeBackups.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {format(b.backupTimeStamp.toDate(), "MMMM dd, yyyy hh:mm")}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function BackupSelectionConfirmScreen() {
+    if (!selectedSafeBackup) return null;
+    return (
+      <FullScreen
+        theme="DARK"
+        onClose={handleCloseBackup}
+        onSave={handleRestoreBackup}
+        showButtons
+      >
+        <div className="w-full text-center">
+          <h1 className="text-xl text-my-red-light">Are you sure?</h1>
+          <p>You can undo this restore if needed.</p>
+          <p>Your income will reset to {selectedSafeBackup.income}</p>
+          <p>
+            Your budget will reset to {selectedSafeBackup.totalSpendingBudget}
+          </p>
+          <p>
+            You will have {selectedSafeBackup.payments?.length ?? 0} payments
+            totaling $
+            {(selectedSafeBackup.payments ?? [])
+              .reduce((acc, p) => p.amount + acc, 0)
+              .toFixed(2)}
+          </p>
+          <p>
+            You will have {selectedSafeBackup.nvelopes?.length ?? 0} envelopes
+            totaling $
+            {(selectedSafeBackup.nvelopes ?? [])
+              .reduce((acc, p) => p.total + acc, 0)
+              .toFixed(2)}
+          </p>
+        </div>
+      </FullScreen>
+    );
+  }
+
+  function UndoLastRestoreScreen() {
+    if (!localStorageBackup) return null;
+    return (
+      <div
+        className="flex flex-col justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4 cursor-pointer hover:bg-my-blue-base gap-2"
+        onClick={() => setShowUndoConfirm(true)}
+      >
+        <p className="text-sm font-bold">Undo Last Restore</p>
+        <p className="text-xs">
+          Saved: {new Date(localStorageBackup.timestamp).toLocaleString()}
+        </p>
+        <p className="text-xs">
+          {localStorageBackup.data.envelopes?.length ?? 0} envelopes,{" "}
+          {localStorageBackup.data.payments?.length ?? 0} payments
+        </p>
+        <button
+          className="bg-my-white-dark rounded-md border-2 border-my-black-dark text-my-black-dark p-2 w-[80%]"
+          onClick={() => setShowUndoConfirm(true)}
+        >
+          Undo
+        </button>
+      </div>
+    );
+  }
+
   if (isEditingCash) {
     return <EditSpendingBudget handleBack={resetState} />;
   }
@@ -502,7 +653,7 @@ export default function Settings() {
           isCreatingBudget || !newBudgetPayDate || !newBudgetInterval
         }
       >
-        <div className="flex flex-col items-center gap-4 max-w-[20rem] w-full text-center">
+        <div className="flex flex-col items-center gap-4 w-full text-center">
           <TextInput
             id="new-budget-name"
             label="New budget name"
@@ -510,14 +661,12 @@ export default function Settings() {
             value={newBudgetName}
             onChange={(e) => setNewBudgetName(e.target.value)}
           />
-          <IntervalSelector
-            value={newBudgetInterval}
-            onChange={(v) => setNewBudgetInterval(v)}
-            label="Pay period interval"
-          />
-          <PayDateCalendar
-            value={newBudgetPayDate}
-            onChange={(v: Value) =>
+          <BudgetSettingsFields
+            mode="create"
+            intervalValue={newBudgetInterval}
+            onIntervalChange={(v) => setNewBudgetInterval(v)}
+            payDateValue={newBudgetPayDate}
+            onPayDateChange={(v: Value) =>
               setNewBudgetPayDate(
                 v instanceof Date
                   ? v
@@ -526,6 +675,36 @@ export default function Settings() {
                     : null,
               )
             }
+            intervalLabel="Pay period interval"
+          />
+        </div>
+      </FullScreen>
+    );
+
+  if (showEditBudgetModal)
+    return (
+      <FullScreen
+        showButtons
+        onClose={() => setShowEditBudgetModal(false)}
+        closeOnSave={true}
+        saveButtonText="Done"
+        onSave={() => setShowEditBudgetModal(false)}
+      >
+        <div className="flex flex-col items-center gap-4 w-full text-center">
+          <BudgetSettingsFields
+            mode="edit"
+            intervalValue={payPeriodInterval}
+            onIntervalChange={handleIntervalChange}
+            payDateValue={payDate?.toDate() ?? null}
+            onPayDateChange={handlePayDateChange}
+            onEditRemainingBalance={() => {
+              setShowEditBudgetModal(false);
+              setIsEditingCash(true);
+            }}
+            onEditRecurringIncome={() => {
+              setShowEditBudgetModal(false);
+              setShowEditIncome(true);
+            }}
           />
         </div>
       </FullScreen>
@@ -570,16 +749,13 @@ export default function Settings() {
       <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md ">
         Settings
       </h1>
-      <div className="w-full flex flex-col items-center justify-center text-xs sm:text-sm md:text-lg">
-        You are logged in as {user?.email}
-        <Button color="red" onClick={() => signout()}>
-          Log Out
-        </Button>
+      <div className="w-full flex justify-center items-center gap-4 mb-4">
+        <SettingsButton text="Budgets" />
+        <SettingsButton text="Account" />
       </div>
       {/* Budgets: switcher, create button, share, members, delete/leave */}
-      {showBudgets ? (
+      {showBudgets && (
         <div className="w-full flex flex-col items-center gap-2 mt-4 py-[1rem]">
-          <button className="p-2 rounded-md border-2 border-my-blue-dark bg-my-black-dark cursor-pointer text-my-blue-dark" onClick={() => setShowBudgets(false)}>Close Budgets</button>
           {budgets.length >= 1 && (
             <div className="w-full flex flex-col items-center gap-2">
               <label htmlFor="budget-switcher" className="text-xs">
@@ -599,29 +775,43 @@ export default function Settings() {
               </select>
             </div>
           )}
-          <Button color="green" onClick={() => setShowCreateBudgetModal(true)}>
+          <Button color="gold" onClick={() => setShowCreateBudgetModal(true)}>
             Create new budget
           </Button>
           {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
             <>
-              {isOwner && (
-                <div className="w-full flex flex-col gap-2 flex flex-col items-center justify-center">
-                  <TextInput
-                    id="Email to share with"
-                    label="Share budget by email"
-                    placeholder="email@example.com"
-                    value={shareEmail}
-                    onChange={(e) => setShareEmail(e.target.value)}
-                  />
-                  <Button
-                    color="green"
-                    onClick={handleInvite}
-                    disabled={isInviting || !shareEmail.trim()}
-                  >
-                    {isInviting ? "Sending…" : "Invite"}
-                  </Button>
-                </div>
+              <Button
+                color="green"
+                onClick={() => setShowShareBudgetModal(true)}
+              >
+                Share budget
+              </Button>
+              <Button
+                color="gold"
+                onClick={() => setShowEditBudgetModal(true)}
+              >
+                Edit budget
+              </Button>
+              {isOwner && showShareBudgetModal && (
+                <FullScreen
+                  theme="LIGHT"
+                  onSave={handleInvite}
+                  saveButtonText="Share"
+                  onClose={() => setShowShareBudgetModal(false)}
+                  showButtons
+                >
+                  <div className="w-full flex flex-col gap-2 flex flex-col items-center justify-center">
+                    <TextInput
+                      id="Email to share with"
+                      label="Share budget by email"
+                      placeholder="email@example.com"
+                      value={shareEmail}
+                      onChange={(e) => setShareEmail(e.target.value)}
+                    />
+                  </div>
+                </FullScreen>
               )}
+
               {isOwner &&
                 budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
                   .length > 0 && (
@@ -666,258 +856,146 @@ export default function Settings() {
             </>
           )}
         </div>
-      ) : (
-        <div className="w-full flex flex-col items-center gap-2 mt-4 py-[1rem] text-my-blue-dark">
-          <button
-            className="p-2 rounded-md border-2 border-my-blue-dark bg-my-black-dark cursor-pointer"
-            onClick={() => setShowBudgets(true)}
-          >
-            View Budgets
-          </button>
-        </div>
       )}
       <div className="overflow-y-scroll  flex flex-col items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
-        <div
-          className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark animate-glow shadow-lg shadow-my-black-dark mb-4"
-          onClick={() => setIsEditingCash(true)}
-        >
-          <IoPencil className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-dark text-my-black-dark p-[2px] border-my-black-dark" />
-          <p className="text-sm">Edit Remaining Balance</p>
-        </div>
-        <div
-          className="hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark animate-glow shadow-lg shadow-my-black-dark mb-4"
-          onClick={() => setShowEditIncome(true)}
-        >
-          <GiMoneyStack className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-green-dark text-my-white-light p-[2px] border-my-black-dark" />
-          <p className="text-sm">Edit Recurring Income</p>
-        </div>
-        <IntervalSelector
-          value={payPeriodInterval}
-          onChange={handleIntervalChange}
-        />
-        <PayDateCalendar
-          value={payDate?.toDate() || null}
-          onChange={handlePayDateChange}
-        />
+      <LogoutButton user={user!} onClick={() => signout()} />
+        
+        {showBudgets && (
+          <>
+            <BackupSelectionScreen />
+            <BackupSelectionConfirmScreen />
+            <UndoLastRestoreScreen />
 
-        {/* If the user doesn't yet have a password and has signed in with one of current provider */}
-        {currentProviderTypes.includes(providerType) && !hasPassword && (
-          <CreateLoginWithEmail onDone={() => handleAddPassword()} />
-        )}
-
-        {/* Once account is created simply display email has password */}
-        {hasPassword && (
-          <Button
-            color="red"
-            onClick={() => resetPasswordForEmail(user?.email ?? "")}
-          >
-            Reset Password
-          </Button>
-        )}
-
-        {/* Restore from backup */}
-        <div className="flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4">
-          <p className="text-sm font-bold">⚠️ Revert To A Backup</p>
-          <p className="text-xs">Restores payments and envelopes</p>
-          <div>
-            {isLoadingSafeBackups ? (
-              <p className="text-xs py-2">Loading backups...</p>
-            ) : safeBackups.length === 0 ? (
-              <p className="text-xs py-2">No backups yet</p>
-            ) : (
-              <select
-                className="py-2 px-4 bg-white rounded-md text-my-black-dark my-2 cursor-pointer"
-                onChange={(e) => handleSelectBackup(e.target.value)}
-                defaultValue=""
+            {showUndoConfirm && localStorageBackup && (
+              <FullScreen
+                theme="DARK"
+                onClose={() => setShowUndoConfirm(false)}
+                onSave={handleUndoRestore}
+                showButtons
               >
-                <option value="" disabled>
-                  Select A Backup
-                </option>
-                {safeBackups.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {format(b.backupTimeStamp.toDate(), "MMMM dd, yyyy hh:mm")}
-                  </option>
-                ))}
-              </select>
+                <div className="w-full text-center">
+                  <h1 className="text-xl text-my-blue-light">
+                    Undo Last Restore?
+                  </h1>
+                  <p className="mb-4">
+                    This will restore your data to the state before the last
+                    restore.
+                  </p>
+                  <p>
+                    Your income will reset to {localStorageBackup.data.income}
+                  </p>
+                  <p>
+                    Your budget will reset to{" "}
+                    {localStorageBackup.data.totalSpendingBudget}
+                  </p>
+                  <p>
+                    You will have{" "}
+                    {localStorageBackup.data.payments?.length ?? 0} payments
+                  </p>
+                  <p>
+                    You will have{" "}
+                    {localStorageBackup.data.envelopes?.length ?? 0} envelopes
+                  </p>
+                </div>
+              </FullScreen>
             )}
-          </div>
-        </div>
 
-        {selectedSafeBackup && (
-          <FullScreen
-            theme="DARK"
-            onClose={handleCloseBackup}
-            onSave={handleRestoreBackup}
-            showButtons
-          >
-            <div className="w-full text-center">
-              <h1 className="text-xl text-my-red-light">Are you sure?</h1>
-              <p>You can undo this restore if needed.</p>
-              <p>Your income will reset to {selectedSafeBackup.income}</p>
-              <p>
-                Your budget will reset to{" "}
-                {selectedSafeBackup.totalSpendingBudget}
-              </p>
-              <p>
-                You will have {selectedSafeBackup.payments?.length ?? 0}{" "}
-                payments totaling $
-                {(selectedSafeBackup.payments ?? [])
-                  .reduce((acc, p) => p.amount + acc, 0)
-                  .toFixed(2)}
-              </p>
-              <p>
-                You will have {selectedSafeBackup.nvelopes?.length ?? 0}{" "}
-                envelopes totaling $
-                {(selectedSafeBackup.nvelopes ?? [])
-                  .reduce((acc, p) => p.total + acc, 0)
-                  .toFixed(2)}
-              </p>
-            </div>
-          </FullScreen>
+            {showDeleteBudgetConfirm && (
+              <FullScreen
+                theme="DARK"
+                closeOnSave={false}
+                onClose={() => setShowDeleteBudgetConfirm(false)}
+                onSave={handleDeleteBudgetConfirm}
+                showButtons
+                saveButtonText="Delete budget"
+                saveButtonColor="red"
+                closeButtonText="Cancel"
+                saveButtonDisabled={isDeletingBudget}
+              >
+                <div className="text-center">
+                  <h1 className="text-xl text-my-red-light mb-2">
+                    Delete this budget?
+                  </h1>
+                  <p className="text-my-white-light">
+                    All data (envelopes, payments) will be permanently deleted.
+                    All members will lose access. This cannot be undone.
+                  </p>
+                  {isDeletingBudget && (
+                    <p className="text-my-white-dark text-sm mt-4">Deleting…</p>
+                  )}
+                </div>
+              </FullScreen>
+            )}
+
+            {showLeaveBudgetConfirm && (
+              <FullScreen
+                theme="DARK"
+                closeOnSave={false}
+                onClose={() => setShowLeaveBudgetConfirm(false)}
+                onSave={handleLeaveBudgetConfirm}
+                showButtons
+                saveButtonText="Leave budget"
+                saveButtonColor="red"
+                closeButtonText="Cancel"
+                saveButtonDisabled={isLeavingBudget}
+              >
+                <div className="text-center">
+                  <h1 className="text-xl text-my-red-light mb-2">
+                    Leave this budget?
+                  </h1>
+                  <p className="text-my-white-light">
+                    You will no longer see or edit this budget. Your data
+                    elsewhere is unaffected.
+                  </p>
+                  {isLeavingBudget && (
+                    <p className="text-my-white-dark text-sm mt-4">Leaving…</p>
+                  )}
+                </div>
+              </FullScreen>
+            )}
+
+            {memberToRemove && (
+              <FullScreen
+                theme="DARK"
+                onClose={() => setMemberToRemove(null)}
+                onSave={handleRemoveMemberConfirm}
+                showButtons
+                saveButtonText="Remove member"
+                saveButtonColor="red"
+                closeButtonText="Cancel"
+              >
+                <div className="text-center">
+                  <h1 className="text-xl text-my-red-light mb-2">
+                    Remove this member?
+                  </h1>
+                  <p className="text-my-white-light">
+                    They will lose access to this budget.
+                  </p>
+                </div>
+              </FullScreen>
+            )}
+          </>
         )}
 
-        {/* Undo Last Restore - only shown when localStorage backup exists */}
-        {localStorageBackup && (
-          <div
-            className="flex flex-col justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4 cursor-pointer hover:bg-my-blue-base gap-2"
-            onClick={() => setShowUndoConfirm(true)}
-          >
-            <p className="text-sm font-bold">Undo Last Restore</p>
-            <p className="text-xs">
-              Saved: {new Date(localStorageBackup.timestamp).toLocaleString()}
-            </p>
-            <p className="text-xs">
-              {localStorageBackup.data.envelopes?.length ?? 0} envelopes,{" "}
-              {localStorageBackup.data.payments?.length ?? 0} payments
-            </p>
-            <button
-              className="bg-my-white-dark rounded-md border-2 border-my-black-dark text-my-black-dark p-2 w-[80%]"
-              onClick={() => setShowUndoConfirm(true)}
-            >
-              Undo
-            </button>
-          </div>
-        )}
+        {user && showAccountSettings && (
+          <>
+            {/* If the user doesn't yet have a password and has signed in with one of current provider */}
+            {currentProviderTypes.includes(providerType) && !hasPassword && (
+              <CreateLoginWithEmail onDone={() => handleAddPassword()} />
+            )}
 
-        {showUndoConfirm && localStorageBackup && (
-          <FullScreen
-            theme="DARK"
-            onClose={() => setShowUndoConfirm(false)}
-            onSave={handleUndoRestore}
-            showButtons
-          >
-            <div className="w-full text-center">
-              <h1 className="text-xl text-my-blue-light">Undo Last Restore?</h1>
-              <p className="mb-4">
-                This will restore your data to the state before the last
-                restore.
-              </p>
-              <p>Your income will reset to {localStorageBackup.data.income}</p>
-              <p>
-                Your budget will reset to{" "}
-                {localStorageBackup.data.totalSpendingBudget}
-              </p>
-              <p>
-                You will have {localStorageBackup.data.payments?.length ?? 0}{" "}
-                payments
-              </p>
-              <p>
-                You will have {localStorageBackup.data.envelopes?.length ?? 0}{" "}
-                envelopes
-              </p>
-            </div>
-          </FullScreen>
+            {/* Once account is created simply display email has password */}
+            {hasPassword && (
+              <Button
+                color="red"
+                onClick={() => resetPasswordForEmail(user?.email ?? "")}
+              >
+                Reset Password
+              </Button>
+            )}
+            <DeleteAccountButton />
+          </>
         )}
-
-        {showDeleteBudgetConfirm && (
-          <FullScreen
-            theme="DARK"
-            closeOnSave={false}
-            onClose={() => setShowDeleteBudgetConfirm(false)}
-            onSave={handleDeleteBudgetConfirm}
-            showButtons
-            saveButtonText="Delete budget"
-            saveButtonColor="red"
-            closeButtonText="Cancel"
-            saveButtonDisabled={isDeletingBudget}
-          >
-            <div className="text-center">
-              <h1 className="text-xl text-my-red-light mb-2">
-                Delete this budget?
-              </h1>
-              <p className="text-my-white-light">
-                All data (envelopes, payments) will be permanently deleted. All
-                members will lose access. This cannot be undone.
-              </p>
-              {isDeletingBudget && (
-                <p className="text-my-white-dark text-sm mt-4">Deleting…</p>
-              )}
-            </div>
-          </FullScreen>
-        )}
-
-        {showLeaveBudgetConfirm && (
-          <FullScreen
-            theme="DARK"
-            closeOnSave={false}
-            onClose={() => setShowLeaveBudgetConfirm(false)}
-            onSave={handleLeaveBudgetConfirm}
-            showButtons
-            saveButtonText="Leave budget"
-            saveButtonColor="red"
-            closeButtonText="Cancel"
-            saveButtonDisabled={isLeavingBudget}
-          >
-            <div className="text-center">
-              <h1 className="text-xl text-my-red-light mb-2">
-                Leave this budget?
-              </h1>
-              <p className="text-my-white-light">
-                You will no longer see or edit this budget. Your data elsewhere
-                is unaffected.
-              </p>
-              {isLeavingBudget && (
-                <p className="text-my-white-dark text-sm mt-4">Leaving…</p>
-              )}
-            </div>
-          </FullScreen>
-        )}
-
-        {memberToRemove && (
-          <FullScreen
-            theme="DARK"
-            onClose={() => setMemberToRemove(null)}
-            onSave={handleRemoveMemberConfirm}
-            showButtons
-            saveButtonText="Remove member"
-            saveButtonColor="red"
-            closeButtonText="Cancel"
-          >
-            <div className="text-center">
-              <h1 className="text-xl text-my-red-light mb-2">
-                Remove this member?
-              </h1>
-              <p className="text-my-white-light">
-                They will lose access to this budget.
-              </p>
-            </div>
-          </FullScreen>
-        )}
-
-        {/* Delete Account — only path to account deletion: this block opens the confirm modal; confirmation is the only trigger for handleDeleteAccount. */}
-        <div
-          className="flex flex-col justify-center h-fit w-[80%] max-w-[20rem] items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8 cursor-pointer hover:opacity-90"
-          onClick={() => {
-            setShowDeleteAccountConfirm(true);
-            setDeletePasswordStep(false);
-            setDeletePassword("");
-          }}
-        >
-          <p className="text-sm font-bold text-my-red-light">Delete Account</p>
-          <p className="text-xs text-my-white-dark mt-1">
-            Permanently delete your account and all data
-          </p>
-        </div>
       </div>
 
       {showDeleteAccountConfirm && (
