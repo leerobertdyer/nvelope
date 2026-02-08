@@ -336,7 +336,7 @@ export async function acceptInvite(user: User, budgetId: string): Promise<void> 
     const payload = decodeIdTokenPayload(token);
     tokenEmail = payload?.email != null ? String(payload.email).trim().toLowerCase() : null;
   } catch (e) {
-    throw new Error("Could not get email from token");
+    throw new Error(`Could not get email from token: ${e}`);
   }
   if (!tokenEmail) throw new Error("No email in token");
 
