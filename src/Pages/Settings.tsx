@@ -41,6 +41,8 @@ import { useToast } from "../Context/ToastContext/useToast";
 import type { User } from "firebase/auth";
 import { IoTrash } from "react-icons/io5";
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "";
+
 export default function Settings() {
   const { user } = useAuth();
   const { activeBudgetId, budgets, setActiveBudgetId, refetchBudgets } =
@@ -389,17 +391,34 @@ export default function Settings() {
       showToast("Please enter a valid email address", "error");
       return;
     }
+    const toEmail = shareEmail.trim();
+    const budgetName = budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
     try {
       const ok = await addInviteToBudget(
         activeBudgetId,
-        shareEmail.trim(),
+        toEmail,
         user.uid,
         user.email ?? "",
       );
       if (ok) {
         setShareEmail("");
+        if (SERVER_URL) {
+          try {
+            await fetch(`${SERVER_URL}/nvelopes/invite`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                toEmail: toEmail.toLowerCase(),
+                inviterEmail: user.email ?? "",
+                budgetName,
+              }),
+            });
+          } catch (e) {
+            console.error("Failed to send invite email", e);
+          }
+        }
         showToast(
-          `Invite saved for ${shareEmail.trim()}. If they have an account they'll see this budget when they sign in. If not, they can sign up with that email and the budget will appear in Settings.`,
+          `Invite sent to ${toEmail}. They'll receive an email with a link to open or sign up for Nvelopes.`,
         );
       } else {
         showToast("Failed to send invite", "error");
