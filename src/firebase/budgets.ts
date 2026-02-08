@@ -216,6 +216,23 @@ export async function addInviteToBudget(budgetId: string, email: string, ownerId
 }
 
 /**
+ * Decode ID token payload (client-side, for debugging). Does not verify signature.
+ * Returns the payload object or null if decode fails.
+ */
+function decodeIdTokenPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = parts[1];
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(base64);
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Call on app load: for current user's email, consume any invites (add user to budget, delete invite). Returns count processed.
  * Firestore rule allows update on budgets/{id} when budgetInvites/{budgetId_email} exists.
  */
@@ -229,11 +246,35 @@ export async function processInvitesForUser(user: User): Promise<number> {
     });
   }
   if (!email) return 0;
+
+  // Firestore rule allows read only when resource.data.email == request.auth.token.email.
+  // If the ID token has no email claim, the query would get permission-denied. Skip the query in that case.
+  let tokenEmail: string | null = null;
+  try {
+    const token = await user.getIdToken(false);
+    const payload = decodeIdTokenPayload(token);
+    tokenEmail = payload?.email != null ? String(payload.email).trim().toLowerCase() : null;
+    if (INVITE_DEBUG) {
+      console.log("[nvelope invite] processInvitesForUser: ID token email claim:", tokenEmail ?? "(missing)");
+    }
+  } catch (e) {
+    if (INVITE_DEBUG) console.warn("[nvelope invite] processInvitesForUser: could not get/decode ID token", e);
+  }
+  if (tokenEmail == null || tokenEmail === "") {
+    if (INVITE_DEBUG) {
+      console.log("[nvelope invite] processInvitesForUser: skipping invite query (no email in ID token; rule would deny). Sign in with a provider that includes email (e.g. Google).");
+    }
+    return 0;
+  }
+
   try {
     const q = query(
       collection(db, BUDGET_INVITES_COLLECTION),
-      where("email", "==", email)
+      where("email", "==", tokenEmail)
     );
+    if (INVITE_DEBUG) {
+      console.log("[nvelope invite] processInvitesForUser: running query where email ==", tokenEmail);
+    }
     const snap = await getDocs(q);
     if (INVITE_DEBUG) {
       console.log("[nvelope invite] processInvitesForUser: query returned", snap.docs.length, "invite(s)");
@@ -248,7 +289,7 @@ export async function processInvitesForUser(user: User): Promise<number> {
           inviteDocId: inviteDoc.id,
           budgetId: bid,
           inviteEmail: data.email,
-          ruleCheckPath: `budgetInvites/${bid}_${email}`,
+          ruleCheckPath: `budgetInvites/${bid}_${tokenEmail}`,
         });
       }
       if (!bid) continue;
@@ -280,7 +321,7 @@ export async function processInvitesForUser(user: User): Promise<number> {
         continue;
       }
       if (INVITE_DEBUG) {
-        console.log("[nvelope invite] processInvitesForUser: about to update budget", bid, "memberIds (arrayUnion)", user.uid, "- rule will check exists(budgetInvites/" + bid + "_" + email + ")");
+        console.log("[nvelope invite] processInvitesForUser: about to update budget", bid, "memberIds (arrayUnion)", user.uid, "- rule will check exists(budgetInvites/" + bid + "_" + tokenEmail + ")");
       }
       await updateDoc(budgetRef(bid), { memberIds: arrayUnion(user.uid) });
       await setDoc(doc(db, "users", user.uid, "budgets", bid), { name, budgetId: bid });
