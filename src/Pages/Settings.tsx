@@ -822,7 +822,7 @@ export default function Settings() {
                 <p className="text-my-black-light text-xs text-center">Budget name</p>
                 {isOwner ? (
                   editingBudgetName ? (
-                    <div className="flex flex-row items-center gap-2 w-full">
+                    <div className="flex flex-col items-center gap-2 w-full">
                       <TextInput
                         id="budget-name-edit"
                         label=""
@@ -870,8 +870,8 @@ export default function Settings() {
               {isOwner &&
                 budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
                   .length > 0 && (
-                  <div className="w-full max-w-[20rem] flex flex-col gap-1">
-                    <p className="text-my-black-light text-xs text-center">Members</p>
+                  <div className="w-full max-w-[20rem] flex flex-col gap-1 bg-my-black-base rounded-md p-2 text-my-white-light">
+                    <p className="text-xs text-center">{budgetMeta.name} Members</p>
                     <ul className="list-none">
                       {budgetMeta.memberIds
                         .filter((id) => id !== budgetMeta.ownerId)
