@@ -140,6 +140,12 @@ export default function Settings() {
     setLocalStorageBackup(lsBackup);
   }, [user, activeBudgetId]);
 
+  // Fresh fetch of available budgets when Settings is shown so "Select A Budget" dropdown is current (e.g. after being removed from a shared budget)
+  useEffect(() => {
+    refetchBudgets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Load budget meta for active budget (for share/delete/members)
   useEffect(() => {
     if (!activeBudgetId) {

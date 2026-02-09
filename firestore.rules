@@ -4,7 +4,6 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    // User's budget list: owner can read/write own refs; budget owner can update/delete members' refs (remove member, rename, delete budget)
     match /users/{userId}/budgets/{budgetId} {
       allow read, write: if request.auth != null && (
         request.auth.uid == userId

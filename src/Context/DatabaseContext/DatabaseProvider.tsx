@@ -10,7 +10,7 @@ const BUDGET_DATA_DOC_ID = "main";
 
 export default function DatabaseProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const { activeBudgetId, hasBudgets } = useBudget();
+    const { activeBudgetId, hasBudgets, handleRemovedFromBudget } = useBudget();
 
     const [isLoadingDb, setIsLoadingDb] = useState(true);
     const [snowball, setSnowball] = useState<number>(0);
@@ -74,7 +74,18 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
             },
             (error) => {
                 console.error("❌ Firebase listener error:", error);
-                setDbError(`Database error: ${error.message}. Please refresh the page.`);
+                const isPermissionDenied =
+                    (error as { code?: string }).code === "permission-denied" ||
+                    (error as { code?: string }).code === "permission_denied" ||
+                    /permission|insufficient/i.test(String(error?.message ?? ""));
+                if (isPermissionDenied && handleRemovedFromBudget) {
+                    setDbError(null);
+                    setIsNewUser(false);
+                    setDocumentExists(true);
+                    handleRemovedFromBudget();
+                } else {
+                    setDbError(`Database error: ${error.message}. Please refresh the page.`);
+                }
                 setIsLoadingDb(false);
             }
         );

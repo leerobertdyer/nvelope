@@ -5,7 +5,8 @@ import { useAuth } from "../AuthContext/useAuth";
 import { BudgetContext } from "./BudgetContext";
 import type { BudgetListItem } from "./BudgetContext";
 import type { PendingInvite } from "../../firebase/budgets";
-import { getPendingInvites, acceptInvite as acceptInviteApi, declineInvite as declineInviteApi } from "../../firebase/budgets";
+import { getPendingInvites, acceptInvite as acceptInviteApi, declineInvite as declineInviteApi, createFirstBudget } from "../../firebase/budgets";
+import { editIsNewUser } from "../../firebase/editData";
 
 const ACTIVE_BUDGET_KEY = "nvelope_activeBudgetId";
 
@@ -16,13 +17,13 @@ export default function BudgetProvider({ children }: { children: React.ReactNode
   const [isLoadingBudgets, setIsLoadingBudgets] = useState(true);
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
 
-  const loadBudgets = useCallback(async () => {
+  const loadBudgets = useCallback(async (): Promise<BudgetListItem[]> => {
     if (!user) {
       setBudgets([]);
       setActiveBudgetIdState(null);
       setPendingInvites([]);
       setIsLoadingBudgets(false);
-      return;
+      return [];
     }
     setIsLoadingBudgets(true);
     try {
@@ -50,15 +51,32 @@ export default function BudgetProvider({ children }: { children: React.ReactNode
         setActiveBudgetIdState(null);
         if (typeof window !== "undefined") localStorage.removeItem(ACTIVE_BUDGET_KEY);
       }
+      return list;
     } catch (e) {
       console.error("BudgetProvider: failed to load budgets", e);
       setBudgets([]);
       setActiveBudgetIdState(null);
       setPendingInvites([]);
+      return [];
     } finally {
       setIsLoadingBudgets(false);
     }
   }, [user]);
+
+  /** Call when user was removed from the current budget: refetch list and switch to another budget, or create one if none left. */
+  const handleRemovedFromBudget = useCallback(async () => {
+    if (!user) return;
+    const list = await loadBudgets();
+    if (list.length === 0) {
+      const newId = await createFirstBudget(user);
+      if (newId) {
+        await editIsNewUser(false, newId);
+        setActiveBudgetIdState(newId);
+        if (typeof window !== "undefined") localStorage.setItem(ACTIVE_BUDGET_KEY, newId);
+        await loadBudgets();
+      }
+    }
+  }, [user, loadBudgets]);
 
   useEffect(() => {
     loadBudgets();
@@ -98,10 +116,11 @@ export default function BudgetProvider({ children }: { children: React.ReactNode
     setActiveBudgetId,
     isLoadingBudgets,
     hasBudgets: budgets.length > 0,
-    refetchBudgets: loadBudgets,
+    refetchBudgets: () => loadBudgets().then(() => {}),
     pendingInvites,
     acceptInvite,
     declineInvite,
+    handleRemovedFromBudget,
   };
 
   return (
