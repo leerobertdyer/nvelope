@@ -391,8 +391,25 @@ export function getBillMonthlyAmount(p: Payment): number {
 export function paymentsTotal(
   payments: Payment[],
   payPeriodInterval: Interval,
-  payDate: Timestamp
+  payDate: Timestamp | null
 ) {
+  const remainingDebt = payments.reduce((acc, p: Payment) => {
+    return p.type === "DEBT" && p.total ? acc + p.total : acc;
+  }, 0);
+
+  if (payDate == null) {
+    return {
+      currentBills: 0,
+      totalBills: 0,
+      currentDebts: 0,
+      currentFunds: 0,
+      monthlyDebts: 0,
+      totalFunds: 0,
+      remainingDebt,
+      totalMonthlyPayments: 0,
+    };
+  }
+
   // Get all virtual payments for the month, then filter for current period totals
   const virtualPayments = getVirtualPaymentsForCurrentPeriod(
     payments,
@@ -441,10 +458,6 @@ export function paymentsTotal(
   }, 0);
   const totalFunds = virtualPayments.reduce((acc, p: Payment) => {
     return p.type === "FUND" ? acc + p.amount : acc;
-  }, 0);
-  const remainingDebt = payments.reduce((acc, p: Payment) => {
-    // remainingDebt uses payments array instead of virtualPayments because this is the remaining balance not the payment due.
-    return p.type === "DEBT" && p.total ? acc + p.total : acc;
   }, 0);
   return {
     currentBills,

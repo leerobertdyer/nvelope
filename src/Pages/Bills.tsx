@@ -6,10 +6,10 @@ import { useToast } from "../Context/ToastContext/useToast";
 import Header from "../components/Nav/Header";
 import type { Payment } from "../types";
 import { editPayments, editSnowball } from "../firebase/editData";
-import { getBillIntervalLabel, getBillMonthlyAmount, removeVirtualIdPortion } from "../util";
+import { getBillIntervalLabel, removeVirtualIdPortion } from "../util";
 import BigPayment from "../Views/BigPayment";
 import { Timestamp } from "firebase/firestore";
-import { startOfDay } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import Summary from "../components/Payments/Summary";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
 import FullScreen from "../Views/FullScreen";
@@ -26,6 +26,7 @@ export default function Bills() {
   const [showEditSnowball, setShowEditSnowball] = useState(false);
 
   const bills = (payments ?? []).filter((p) => p.type === "BILL");
+  bills.sort((a, b) => a.dueDate.toDate().getDate() - b.dueDate.toDate().getDate());
 
   async function handleUpdateBudget() {
     // No-op on Bills page; budget changes are from MainView
@@ -152,7 +153,7 @@ export default function Bills() {
           <span className="col-span-5 text-left">Name</span>
           <span className="col-span-3 text-left">Schedule</span>
           <span className="col-span-2 text-right">Amount</span>
-          <span className="col-span-2 text-right">/mo</span>
+          <span className="col-span-2 text-right">Day</span>
         </div>
         {bills.length === 0 ? (
           <p className="text-my-white-light text-sm">No bills yet.</p>
@@ -170,11 +171,11 @@ export default function Bills() {
               <span className="col-span-3 text-left text-my-white-base">
                 {getBillIntervalLabel(bill)}
               </span>
-              <span className="col-span-2 text-right">
+              <span className="col-span-2 text-right text-my-red-light">
                 ${bill.amount.toFixed(2)}
               </span>
-              <span className="col-span-2 text-right text-my-green-dark">
-                ${getBillMonthlyAmount(bill).toFixed(2)}
+              <span className="col-span-2 text-right text-my-green-light">
+                {format(bill.dueDate.toDate(), "do")}
               </span>
             </div>
           ))

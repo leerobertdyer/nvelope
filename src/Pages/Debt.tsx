@@ -19,7 +19,7 @@ export default function Debt() {
     const { activeBudgetId } = useBudget();
     const { showToast } = useToast();
     const { payments, setPayments, payPeriodInterval, payDate, snowball, snowballTargetPaymentId, setSnowballTargetPaymentId } = useDatabase();
-    const { remainingDebt } = paymentsTotal(payments, payPeriodInterval, payDate!)
+    const { remainingDebt } = paymentsTotal(payments, payPeriodInterval, payDate ?? null)
 
     const [isLoading, setIsLoading] = useState(true);
     const [debtsMissingInfo, setDebtsMissingInfo] = useState<Payment[]>([])
