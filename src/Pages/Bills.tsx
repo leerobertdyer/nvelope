@@ -5,25 +5,19 @@ import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useToast } from "../Context/ToastContext/useToast";
 import Header from "../components/Nav/Header";
 import type { Payment } from "../types";
-import { editPayments, editSnowball } from "../firebase/editData";
-import { getBillIntervalLabel, removeVirtualIdPortion } from "../util";
+import { editPayments } from "../firebase/editData";
+import { getBillIntervalLabel, paymentsTotal, removeVirtualIdPortion } from "../util";
 import BigPayment from "../Views/BigPayment";
 import { Timestamp } from "firebase/firestore";
 import { format, startOfDay } from "date-fns";
-import Summary from "../components/Payments/Summary";
-import ShowAndHide from "../components/Buttons/ShowAndHide";
-import FullScreen from "../Views/FullScreen";
-import MoneyInput from "../components/MoneyInput";
 
 export default function Bills() {
   const { user } = useAuth();
   const { activeBudgetId } = useBudget();
   const { showToast } = useToast();
-  const { payments, setPayments, snowball, setSnowball } = useDatabase();
+  const { payments, setPayments, payPeriodInterval, payDate } = useDatabase();
 
   const [editingBill, setEditingBill] = useState<Payment | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
-  const [showEditSnowball, setShowEditSnowball] = useState(false);
 
   const bills = (payments ?? []).filter((p) => p.type === "BILL");
   bills.sort((a, b) => a.dueDate.toDate().getDate() - b.dueDate.toDate().getDate());
@@ -76,34 +70,6 @@ export default function Bills() {
     showToast("Bill deleted");
   }
 
-  async function handleEditSnowball() {
-    await editSnowball(activeBudgetId!, snowball);
-  }
-
-  if (showEditSnowball) {
-    return (
-      <FullScreen
-        theme="DARK"
-        onClose={() => setShowEditSnowball(false)}
-        onSave={handleEditSnowball}
-        showButtons={true}
-        saveButtonColor="gold"
-        saveButtonText="Save"
-        closeButtonText="Back"
-      >
-        <div className="flex justify-center items-center text-center w-full">
-          <MoneyInput
-            id="newSnowballAmount"
-            label="New Snowball Amount"
-            value={snowball}
-            onChange={setSnowball}
-            placeholder={`$${snowball.toFixed(2)}`}
-          />
-        </div>
-      </FullScreen>
-    );
-  }
-
   if (editingBill && user) {
     return (
       <BigPayment
@@ -129,25 +95,14 @@ export default function Bills() {
     <div className="flex flex-col items-center justify-start py-[5rem] w-full min-h-screen bg-my-blue-dark text-my-white-dark">
       <Header links={defaultLinks} />
       <h1 className="text-3xl mb-4">Bills</h1>
-      <div className="w-full max-w-[40rem] rounded-md border-2 border-my-white-light overflow-hidden mb-4">
-        {showSummary ? (
-          <Summary
-            payments={payments ?? []}
-            setShowPaymentsMenu={setShowSummary}
-            setShowEditSnowball={setShowEditSnowball}
-          />
-        ) : (
-          <ShowAndHide
-            onClick={() => setShowSummary(true)}
-            label="Show Summary"
-            colorScheme="bg-my-black-dark w-full p-0 text-my-white-dark"
-            up={false}
-            border={false}
-            iconSize={25}
-          />
-        )}
-      </div>
-      <p className="text-my-white-light text-sm mb-2">Click a bill to edit</p>
+      {payDate && payPeriodInterval && (
+        <div className="flex gap-2 justify-center w-fit max-w-[20rem] text-my-white-light rounded-md border-2 border-my-white-light bg-my-black-dark border-my-black-light p-3 mb-4">
+            Due monthly
+            <span className="text-my-red-base">
+              ${Math.ceil(paymentsTotal(payments ?? [], payPeriodInterval, payDate).totalMonthlyPayments)}
+            </span>
+        </div>
+      )}
       <div className="bg-my-black-base p-4 rounded-md w-[20rem] md:w-[30rem]">
         <div className="grid grid-cols-12 gap-2 text-xs md:text-sm text-my-white-dark mb-2 font-medium">
           <span className="col-span-5 text-left">Name</span>

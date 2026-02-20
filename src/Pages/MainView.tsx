@@ -18,6 +18,8 @@ import Button from "../components/Buttons/Button";
 import Nvelope from "../components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
+  applyPayoffRoll,
+  getCurrentIntervalDateRange,
   getVirtualPaymentsForCurrentPeriod,
   randomUUID,
   recalculateBudget,
@@ -35,6 +37,7 @@ import PaymentForm from "../components/Forms/PaymentForm";
 import AddIncomeForm from "../components/Forms/AddIncomeForm";
 import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
 import FundPaymentDueModal from "../components/Payments/SplitPaymentDueModal";
+import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
@@ -75,6 +78,7 @@ export default function MainEnvelopesView() {
   const [showClearEnvelopes, setShowClearNvelopes] = useState(false);
   const [dueFundPayment, setDueFundPayment] = useState<Payment | null>(null);
   const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(new Set());
+  const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
 
   // Only ever show current pay period's payments (derived, never full list)
   const paymentsThisPeriod = useMemo(() => {
@@ -238,8 +242,31 @@ export default function MainEnvelopesView() {
           };
         }
 
+        const isVirtualOccurrence =
+          payment.id.includes("-SPLIT-") ||
+          payment.id.includes("-WEEKLY-") ||
+          payment.id.includes("-BIWEEKLY-");
+        const occurrenceAmount = isVirtualOccurrence ? payment.amount : p.amount;
+        const isSnowballTarget = p.id === snowballTargetPaymentId;
+        const addSnowballToThisOccurrence =
+          isSnowballTarget &&
+          (p.interval !== "SPLIT" ||
+            (payDate &&
+              payPeriodInterval &&
+              (() => {
+                const { start: periodStart } = getCurrentIntervalDateRange(
+                  payPeriodInterval,
+                  payDate
+                );
+                const occurrenceTime = startOfDay(
+                  payment.dueDate.toDate()
+                ).getTime();
+                const periodStartTime = startOfDay(periodStart).getTime();
+                const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+                return occurrenceTime <= periodStartTime + oneWeekMs;
+              })()));
         const periodPayment =
-          p.amount + (p.id === snowballTargetPaymentId ? snowball : 0);
+          occurrenceAmount + (addSnowballToThisOccurrence ? snowball : 0);
         const amountToApply = Math.min(periodPayment, p.total ?? 0);
         const newTotal = Math.max(0, (p.total ?? 0) - amountToApply);
         paidAmounts[occurrenceKey] = amountToApply;
@@ -306,25 +333,21 @@ export default function MainEnvelopesView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
 
-    // Roll snowball when a debt is paid off (total hit 0)
+    // Roll snowball when a debt is paid off (total hit 0): add rolled amount to next target's payment amount, then zero snowball
     const paidOffPayment = updatedPayments.find(
       (p) => p.id === originalId && p.type === "DEBT" && p.total != null && p.total <= 0
     );
     if (paidOffPayment && paidOffPayment.amount != null) {
+      setPaidOffDebtName(paidOffPayment.name);
       showToast(`${paidOffPayment.name} paid off!`);
-      const newSnowball = snowball + paidOffPayment.amount;
-      setSnowball(newSnowball);
-      await editSnowball(activeBudgetId!, newSnowball);
-      const remainingDebts = updatedPayments.filter(
-        (p) => p.type === "DEBT" && p.total != null && p.total > 0
-      );
-      const nextTarget =
-        remainingDebts.length > 0
-          ? remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0]
-          : null;
-      const nextId = nextTarget?.id ?? null;
+      const { updatedPayments: paymentsWithBakedSnowball, nextTargetId: nextId } =
+        applyPayoffRoll(updatedPayments, paidOffPayment, snowball);
       setSnowballTargetPaymentId(nextId);
       await editSnowballTargetPaymentId(activeBudgetId!, nextId);
+      setPayments(paymentsWithBakedSnowball);
+      await editPayments(paymentsWithBakedSnowball, activeBudgetId!);
+      setSnowball(0);
+      await editSnowball(activeBudgetId!, 0);
     }
 
     return updatedPayment;
@@ -605,15 +628,23 @@ export default function MainEnvelopesView() {
   if (showPaymentInputs) {
     if (paymentToEdit) {
       return (
-        <BigPayment
-          handleUpdatePaid={handleUpdatePaid}
-          resetState={resetPaymentState}
-          handleBack={resetPaymentState}
-          paymentToEdit={paymentToEdit}
-          handleUpdateBudget={handleUpdateBudget}
-          handleDeleteBill={handleDeleteBill}
-          onPaymentUpdated={setPaymentToEdit}
-        />
+        <>
+          <BigPayment
+            handleUpdatePaid={handleUpdatePaid}
+            resetState={resetPaymentState}
+            handleBack={resetPaymentState}
+            paymentToEdit={paymentToEdit}
+            handleUpdateBudget={handleUpdateBudget}
+            handleDeleteBill={handleDeleteBill}
+            onPaymentUpdated={setPaymentToEdit}
+          />
+          {paidOffDebtName && (
+            <CongratsPaidOffModal
+              debtName={paidOffDebtName}
+              onClose={() => setPaidOffDebtName(null)}
+            />
+          )}
+        </>
       );
     } else if (user)
       return (
@@ -708,36 +739,44 @@ export default function MainEnvelopesView() {
   }
 
   return (
-    <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]">
-      {showLoading && <Loading text={loadingText} />}
+    <>
+      <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]">
+        {showLoading && <Loading text={loadingText} />}
 
-      <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt" }, { label: "Bills", href: "/bills" }, { label: "Feedback", href: "/feedback" }]} />
+        <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt" }, { label: "Bills", href: "/bills" }, { label: "Feedback", href: "/feedback" }]} />
 
-      <main className="flex flex-col items-center pt-[1rem] w-full">
-        <h2 className="text-lg font-semibold text-my-white-dark mb-2">{activeBudgetName}</h2>
-        <ActionButtons
-          onPaymentClick={handleAddPayment}
-          onCashClick={handleAddCash}
-          onEnvelopeClick={handleSetupNewEnvelope}
-          onClearClick={() => setShowClearNvelopes(true)}
+        <main className="flex flex-col items-center pt-[1rem] w-full">
+          <h2 className="text-lg font-semibold text-my-white-dark mb-2">{activeBudgetName}</h2>
+          <ActionButtons
+            onPaymentClick={handleAddPayment}
+            onCashClick={handleAddCash}
+            onEnvelopeClick={handleSetupNewEnvelope}
+            onClearClick={() => setShowClearNvelopes(true)}
+          />
+
+          <div className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
+            <Nvelopes
+              resetState={resetState}
+              handleSetupEdit={handleSetupEdit}
+              editEnvelope={editEnvelopeAndBudget}
+              handleSetShowSpendingPage={handleSetShowSpendingPage}
+              handleDeleteEnvelope={handleSetupDelete}
+              handleAddCashToEnvelope={handleAddCashToEnvelope}
+            />
+            <PaymentMap
+              paymentsThisPeriod={paymentsThisPeriod}
+              handleUpdatePaid={handleUpdatePaid}
+              handleEditBill={handleEditPayment}
+            />
+          </div>
+        </main>
+      </div>
+      {paidOffDebtName && (
+        <CongratsPaidOffModal
+          debtName={paidOffDebtName}
+          onClose={() => setPaidOffDebtName(null)}
         />
-
-        <div className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
-          <Nvelopes
-            resetState={resetState}
-            handleSetupEdit={handleSetupEdit}
-            editEnvelope={editEnvelopeAndBudget}
-            handleSetShowSpendingPage={handleSetShowSpendingPage}
-            handleDeleteEnvelope={handleSetupDelete}
-            handleAddCashToEnvelope={handleAddCashToEnvelope}
-          />
-          <PaymentMap
-            paymentsThisPeriod={paymentsThisPeriod}
-            handleUpdatePaid={handleUpdatePaid}
-            handleEditBill={handleEditPayment}
-          />
-        </div>
-      </main>
-    </div>
+      )}
+    </>
   );
 }

@@ -645,6 +645,37 @@ export function calculateSnowballPayoffDate(
   return months >= maxMonths ? currentDate : null;
 }
 
+/**
+ * When a debt is paid off: compute next target (lowest remaining balance),
+ * bake (snowball + paid-off amount) into that target's payment amount, and return updated payments.
+ * Caller should set snowball to 0 after using this.
+ */
+export function applyPayoffRoll(
+  payments: Payment[],
+  paidOffPayment: Payment,
+  snowball: number
+): { updatedPayments: Payment[]; nextTargetId: string | null } {
+  const paidAmount = paidOffPayment.amount ?? 0;
+  const newSnowball = snowball + paidAmount;
+  const remainingDebts = payments.filter(
+    (p) => p.type === "DEBT" && p.total != null && p.total > 0
+  );
+  const nextTarget =
+    remainingDebts.length > 0
+      ? remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0]
+      : null;
+  const nextId = nextTarget?.id ?? null;
+  const updatedPayments =
+    nextTarget != null
+      ? payments.map((p) =>
+          p.id === nextTarget.id
+            ? { ...p, amount: (p.amount ?? 0) + newSnowball }
+            : p
+        )
+      : payments;
+  return { updatedPayments, nextTargetId: nextId };
+}
+
 export function transformIntervalMidSentence(i: Interval) {
   switch (i) {
     case "WEEKLY":

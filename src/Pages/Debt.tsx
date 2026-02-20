@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { calculatePayoffDate, calculateSnowballPayoffDate, paymentsTotal } from "../util";
+import { applyPayoffRoll, calculatePayoffDate, calculateSnowballPayoffDate, paymentsTotal } from "../util";
 import Loading from "../components/Loading";
 import type { Payment } from "../types";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
 import Header from "../components/Nav/Header";
-import { editPayments, editSnowballTargetPaymentId } from "../firebase/editData";
+import { editPayments, editSnowball, editSnowballTargetPaymentId } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useToast } from "../Context/ToastContext/useToast";
@@ -13,12 +13,16 @@ import { format, parse } from "date-fns";
 import { IoWarning } from "react-icons/io5";
 import PaymentForm from "../components/Forms/PaymentForm";
 import TextInput from "../components/TextInput";
+import FullScreen from "../Views/FullScreen";
+import MoneyInput from "../components/MoneyInput";
+import Button from "../components/Buttons/Button";
+import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
 
 export default function Debt() {
     const { user } = useAuth();
     const { activeBudgetId } = useBudget();
     const { showToast } = useToast();
-    const { payments, setPayments, payPeriodInterval, payDate, snowball, snowballTargetPaymentId, setSnowballTargetPaymentId } = useDatabase();
+    const { payments, setPayments, payPeriodInterval, payDate, snowball, setSnowball, snowballTargetPaymentId, setSnowballTargetPaymentId } = useDatabase();
     const { remainingDebt } = paymentsTotal(payments, payPeriodInterval, payDate ?? null)
 
     const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +33,11 @@ export default function Debt() {
     const [interestRate, setInterestRate] = useState<number>();
     const [editingDebt, setEditingDebt] = useState<Payment | null>(null);
     const [extraMonthlyInput, setExtraMonthlyInput] = useState("");
+    const [showEditSnowball, setShowEditSnowball] = useState(false);
+    const [debtMenuOpen, setDebtMenuOpen] = useState<Payment | null>(null);
+    const [additionalPaymentDebt, setAdditionalPaymentDebt] = useState<Payment | null>(null);
+    const [additionalPaymentAmount, setAdditionalPaymentAmount] = useState(0);
+    const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
 
     function debtHasAllValues(d: Payment) {
         return (typeof d.total === "number" && typeof d.amount === "number" && typeof d.interestRate === "number")
@@ -130,8 +139,136 @@ export default function Debt() {
         showToast("Snowball target updated");
     }
 
+    async function handleEditSnowball() {
+        await editSnowball(activeBudgetId!, snowball);
+        setShowEditSnowball(false);
+        showToast("Snowball updated");
+    }
+
+    async function handleApplyAdditionalPayment() {
+        const debt = additionalPaymentDebt;
+        if (!debt || !activeBudgetId) return;
+        const amount = additionalPaymentAmount;
+        if (amount <= 0) {
+            showToast("Enter a valid amount", "error");
+            return;
+        }
+        const currentTotal = debt.total ?? 0;
+        const newTotal = Math.max(0, currentTotal - amount);
+        const updatedPayments = (payments ?? []).map((p) =>
+            p.id === debt.id ? { ...p, total: newTotal } : p
+        );
+        setPayments(updatedPayments);
+        await editPayments(updatedPayments, activeBudgetId);
+        setAdditionalPaymentDebt(null);
+        setAdditionalPaymentAmount(0);
+        if (newTotal <= 0 && debt.amount != null) {
+            const paidOffPayment = updatedPayments.find((p) => p.id === debt.id)!;
+            const { updatedPayments: withBakedSnowball, nextTargetId: nextId } =
+                applyPayoffRoll(updatedPayments, paidOffPayment, snowball);
+            setSnowballTargetPaymentId(nextId);
+            await editSnowballTargetPaymentId(activeBudgetId, nextId);
+            setPayments(withBakedSnowball);
+            await editPayments(withBakedSnowball, activeBudgetId);
+            setSnowball(0);
+            await editSnowball(activeBudgetId, 0);
+            setPaidOffDebtName(debt.name);
+        }
+        showToast("Payment applied");
+    }
 
     if (isLoading) return <Loading text="Crunching Numbers" />;
+
+    if (showEditSnowball) {
+        return (
+            <FullScreen
+                theme="DARK"
+                onClose={() => setShowEditSnowball(false)}
+                onSave={handleEditSnowball}
+                showButtons={true}
+                saveButtonColor="gold"
+                saveButtonText="Save"
+                closeButtonText="Back"
+            >
+                <div className="flex justify-center items-center text-center w-full">
+                    <MoneyInput
+                        id="newSnowballAmount"
+                        label="Snowball amount (extra toward target each period)"
+                        value={snowball}
+                        onChange={setSnowball}
+                        placeholder={`$${snowball.toFixed(2)}`}
+                    />
+                </div>
+            </FullScreen>
+        );
+    }
+
+    if (additionalPaymentDebt) {
+        const debt = additionalPaymentDebt;
+        const maxPay = debt.total ?? 0;
+        return (
+            <FullScreen
+                theme="DARK"
+                onClose={() => {
+                    setAdditionalPaymentDebt(null);
+                    setAdditionalPaymentAmount(0);
+                }}
+                onSave={handleApplyAdditionalPayment}
+                showButtons={true}
+                saveButtonColor="green"
+                saveButtonText="Apply"
+                closeButtonText="Cancel"
+            >
+                <div className="flex flex-col items-center justify-center text-center w-full px-4">
+                    <p className="text-my-white-light mb-2">Additional payment</p>
+                    <p className="text-my-white-dark text-sm mb-4">{debt.name}</p>
+                    <p className="text-my-white-dark text-xs mb-2">Remaining: ${maxPay.toFixed(2)}</p>
+                    <MoneyInput
+                        id="additional-payment-amount"
+                        label="Amount"
+                        value={additionalPaymentAmount}
+                        onChange={setAdditionalPaymentAmount}
+                        placeholder="$0"
+                    />
+                </div>
+            </FullScreen>
+        );
+    }
+
+    if (debtMenuOpen) {
+        const d = debtMenuOpen;
+        return (
+            <FullScreen theme="DARK" onClose={() => setDebtMenuOpen(null)} showButtons={false}>
+                <div className="flex flex-col items-center justify-center text-center w-full px-4 gap-4">
+                    <p className="text-my-white-light font-medium">{d.name}</p>
+                    <p className="text-my-white-dark text-sm">What would you like to do?</p>
+                    <div className="flex flex-col gap-2 w-full max-w-[16rem]">
+                        <Button
+                            color="green"
+                            onClick={() => {
+                                setAdditionalPaymentDebt(d);
+                                setDebtMenuOpen(null);
+                            }}
+                        >
+                            Make additional payment
+                        </Button>
+                        <Button
+                            color="gold"
+                            onClick={() => {
+                                setEditingDebt(d);
+                                setDebtMenuOpen(null);
+                            }}
+                        >
+                            Edit debt
+                        </Button>
+                        <Button color="red" onClick={() => setDebtMenuOpen(null)}>
+                            Cancel
+                        </Button>
+                    </div>
+                </div>
+            </FullScreen>
+        );
+    }
 
     if (editingDebt && user) {
         return (
@@ -191,11 +328,19 @@ export default function Debt() {
     const snowballWithExtraDateStr = snowballWithExtraDate ? format(snowballWithExtraDate, "MMM yyyy") : null;
 
     return (
+        <>
         <div className="flex flex-col items-center justify-start py-[5rem] w-full h-full bg-my-blue-dark text-my-white-dark">
             <Header links={[{ label: "Home", href: "/" }, { label: "Settings", href: "/settings" }, { label: "Bills", href: "/bills" }, { label: "Feedback", href: "/feedback" }]} />
             <h1 className="text-3xl">Debt</h1>
             <p className="bg-my-black-base p-2 rounded-md text-my-red-light mb-[1rem] w-[20rem] text-center "><span className="text-my-white-light">TOTAL:</span> ${remainingDebt.toFixed(2)}</p>
             <div className="bg-my-black-base p-2 rounded-md text-my-blue-base mb-[1rem] w-[20rem] text-center "><span className="text-my-white-light">Final Payoff Date:</span> {finalPaymentDateStr}
+            </div>
+            <div className="bg-my-black-base p-2 rounded-md text-my-blue-light mb-[1rem] w-[20rem] flex flex-col items-center justify-between gap-2 px-3 py-2">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-my-white-light">Snowball ❄️</span>
+                    <span className="text-my-white-dark">${snowball.toFixed(2)}</span>
+                </div>
+                <button className="text-xs text-my-blue-light cursor-pointer" onClick={() => setShowEditSnowball(true)}>Edit</button>
             </div>
             {snowballPayoffDateStr && (
                 <div className="bg-my-black-base p-2 rounded-md text-my-green-light mb-[1rem] w-[20rem] text-center">
@@ -272,7 +417,7 @@ export default function Debt() {
                             ))}
                         </select>
                     </div>
-                    <p className="text-xs text-my-white-dark mb-1">Click a debt to edit</p>
+                    <p className="text-xs text-my-white-dark mb-1">Click a debt for options</p>
                     <DebtGrid name="Name" interest="Interest" owed="Owed" color="my-white-dark" paymentsLeft="Payments" payOffDate="Final" />
                     {debtsByLowestOwed.map((d: Payment) => {
                         const cannotPayOff = d.paymentsLeft == null || d.payOffDate == null;
@@ -281,8 +426,8 @@ export default function Debt() {
                             key={d.id}
                             role="button"
                             tabIndex={0}
-                            onClick={() => setEditingDebt(d)}
-                            onKeyDown={(e) => e.key === "Enter" && setEditingDebt(d)}
+                            onClick={() => setDebtMenuOpen(d)}
+                            onKeyDown={(e) => e.key === "Enter" && setDebtMenuOpen(d)}
                             className={`cursor-pointer hover:bg-my-black-light rounded px-1 -mx-1 flex items-center gap-1 ${d.id === effectiveSnowballTargetId ? "ring-2 ring-my-white-dark rounded px-1 -mx-1" : ""}`}
                         >
                             <div className="flex-1 min-w-0">
@@ -321,5 +466,12 @@ export default function Debt() {
                 </div>
             )}
         </div>
+        {paidOffDebtName && (
+            <CongratsPaidOffModal
+                debtName={paidOffDebtName}
+                onClose={() => setPaidOffDebtName(null)}
+            />
+        )}
+        </>
     )
 }
