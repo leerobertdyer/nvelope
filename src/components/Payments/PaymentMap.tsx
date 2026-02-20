@@ -51,23 +51,23 @@ export default function PaymentMap({
                   : t
           } `}
       >
-        <div className="flex items-center justify-start col-span-1 ml-[.75rem] ">
+        <div
+          className="flex items-center justify-start col-span-1 ml-[.75rem] min-h-[2rem] cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleUpdatePaid(p);
+          }}
+          role="button"
+          aria-label={p.paid ? "Mark as not paid" : "Mark as paid"}
+        >
           {p.paid ? (
             <IoIosCheckmarkCircle
-              onClick={(e) => {
-                e.stopPropagation();
-                handleUpdatePaid(p);
-              }}
-              className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+              className="text-my-green-dark bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
               size={16}
             />
           ) : (
             <IoIosCheckmarkCircleOutline
-              onClick={(e) => {
-                e.stopPropagation();
-                handleUpdatePaid(p);
-              }}
-              className="text-my-green-dark bg-my-white-dark cursor-pointer hover:text-my-green-dark hover:bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+              className="text-my-green-dark bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
               size={16}
             />
           )}

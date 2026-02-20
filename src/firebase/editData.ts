@@ -35,7 +35,7 @@ export async function editEnvelopes(envelopes: Envelope[], budgetId: string) {
 }
 
 export async function editPayments(p: Payment[], budgetId: string) {
-  const sortedPayments = p.sort(
+  const sortedPayments = [...p].sort(
     (a, b) => a.dueDate!.seconds! - b.dueDate!.seconds!
   );
   const cleanedPayments = cleanPaymentsForFirebase(sortedPayments);

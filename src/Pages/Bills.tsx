@@ -57,11 +57,11 @@ export default function Bills() {
     });
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
+    const updated = updatedPayments.find((p) => p.id === originalId);
     setEditingBill((prev) =>
-      prev?.id === originalId
-        ? updatedPayments.find((p) => p.id === originalId) ?? null
-        : prev
+      prev?.id === originalId ? updated ?? null : prev
     );
+    return updated;
   }
 
   async function handleDeleteBill(p: Payment) {

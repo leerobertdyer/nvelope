@@ -1,16 +1,19 @@
 import { Timestamp, doc, onSnapshot } from "firebase/firestore";
 import { DatabaseContext } from "./DatabaseContext";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type Backup, type Envelope, type Interval, type OneTimeAmount, type Payment } from "../../types";
 import { useAuth } from "../AuthContext/useAuth";
 import { useBudget } from "../BudgetContext/useBudget";
 import { db } from "../../firebase/firebase";
 
 const BUDGET_DATA_DOC_ID = "main";
+/** After a local payments write, ignore snapshot payments for this long so we don't overwrite with stale cache. */
+const PAYMENTS_WRITE_GUARD_MS = 2000;
 
 export default function DatabaseProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const { activeBudgetId, hasBudgets, handleRemovedFromBudget } = useBudget();
+    const lastPaymentsWriteAtRef = useRef(0);
 
     const [isLoadingDb, setIsLoadingDb] = useState(true);
     const [snowball, setSnowball] = useState<number>(0);
@@ -18,7 +21,11 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [payDate, setPayDate] = useState<Timestamp|null>(null);
     const [payPeriodInterval, setPayPeriodInterval] = useState<Interval>("MONTHLY");
     const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
-    const [payments, setPayments] = useState<Payment[]>([]);
+    const [payments, setPaymentsState] = useState<Payment[]>([]);
+    const setPayments = (next: Payment[] | ((prev: Payment[]) => Payment[])) => {
+        lastPaymentsWriteAtRef.current = Date.now();
+        setPaymentsState(next);
+    };
     const [income, setIncome] = useState<number>(0);
     const [isNewUser, setIsNewUser] = useState<boolean>(false);
     const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
@@ -60,7 +67,10 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setEnvelopes(data.envelopes ?? []);
                     setPayDate(data.payDate ?? null);
                     setPayPeriodInterval(data.payPeriodInterval ?? "MONTHLY");
-                    setPayments(data.payments ?? []);
+                    const snapshotPayments = data.payments ?? [];
+                    if (Date.now() - lastPaymentsWriteAtRef.current >= PAYMENTS_WRITE_GUARD_MS) {
+                        setPaymentsState(snapshotPayments);
+                    }
                     setIncome(data.income ?? 0);
                     setIsNewUser(data.isNewUser ?? false);
                     setTotalSpendingBudget(data.totalSpendingBudget ?? 0);

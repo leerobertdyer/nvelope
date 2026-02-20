@@ -267,7 +267,16 @@ export default function MainEnvelopesView() {
       }
 
       // Non-DEBT: toggle paid/paidDates
-      const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
+      // YEARLY: use stored payment's month/day in the displayed year so we never store the wrong date
+      const occurrenceDate =
+        p.interval === "YEARLY"
+          ? new Date(
+              payment.dueDate.toDate().getFullYear(),
+              p.dueDate.toDate().getMonth(),
+              p.dueDate.toDate().getDate()
+            )
+          : payment.dueDate.toDate();
+      const occurrenceTime = startOfDay(occurrenceDate).getTime();
       const paidDates = p.paidDates || [];
       const alreadyPaid = paidDates.some(
         (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
@@ -279,19 +288,20 @@ export default function MainEnvelopesView() {
         return {
           ...p,
           paidDates: newPaidDates,
-          paid: newPaidDates.length > 0,
+          paid: false,
         };
       }
       return {
         ...p,
         paidDates: [
           ...paidDates,
-          Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
+          Timestamp.fromDate(startOfDay(occurrenceDate)),
         ],
         paid: true,
       };
     });
 
+    const updatedPayment = updatedPayments.find((x) => x.id === originalId);
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
 
@@ -315,6 +325,8 @@ export default function MainEnvelopesView() {
       setSnowballTargetPaymentId(nextId);
       await editSnowballTargetPaymentId(activeBudgetId!, nextId);
     }
+
+    return updatedPayment;
   }
 
   const emptyEnvelope = {

@@ -687,8 +687,16 @@ export function adjustPaymentToCurrentPeriod(
     isOnCusp;
   // console.log("current payperiod dates: ", { periodStart, periodEnd, payment: { ...payment, dueDate: payment.dueDate.toDate() }, payPeriodCrossesMonths, paymentDayNumber, periodEndDayNumber, shouldMoveToNextMonth, isOnCusp })
 
-  const targetMonth = shouldMoveToNextMonth ? today.getMonth() + 1 : today.getMonth();
-  const targetYear = today.getFullYear();
+  // YEARLY: only show in the payment's due month (e.g. Jan 16 → Jan 16 of period year, not every month)
+  let targetMonth: number;
+  let targetYear: number;
+  if (payment.interval === YEARLY) {
+    targetMonth = payment.dueDate.toDate().getMonth();
+    targetYear = periodStart.getFullYear();
+  } else {
+    targetMonth = shouldMoveToNextMonth ? today.getMonth() + 1 : today.getMonth();
+    targetYear = today.getFullYear();
+  }
   const dayOfMonth = payment.dueDate.toDate().getDate();
   // Clamp to last day of month when day doesn't exist (e.g. 31st in February)
   const lastDay = lastDayOfMonth(new Date(targetYear, targetMonth, 1));

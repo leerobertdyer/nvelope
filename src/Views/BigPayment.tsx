@@ -19,7 +19,7 @@ interface IProps {
   paymentToEdit: Payment | null;
   resetState: () => void;
   handleUpdateBudget: (n: number) => Promise<void>;
-  handleUpdatePaid: (payment: Payment) => Promise<void>;
+  handleUpdatePaid: (payment: Payment) => Promise<Payment | undefined>;
   handleDeleteBill: (p: Payment) => void;
   onPaymentUpdated?: (payment: Payment) => void;
 }
@@ -42,10 +42,11 @@ export default function BigPayment({
   const { user } = useAuth();
   const { activeBudgetId } = useBudget();
   const { payments, setPayments } = useDatabase();
-  function updatePaid() {
+  async function updatePaid() {
     if (!p) return;
     setP((prev) => prev && { ...prev, paid: !prev.paid });
-    handleUpdatePaid(p);
+    const updated = await handleUpdatePaid(p);
+    if (updated) setP(updated);
   }
 
   function handlePaymentUpdated(updated: Payment) {
