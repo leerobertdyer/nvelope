@@ -1,6 +1,7 @@
 import { useState, useCallback, type ReactNode } from "react";
 import { ToastContext, type Toast, type ToastType } from "./ToastContext";
 import ToastContainer from "../../components/Notifications/Toast";
+import { randomUUID } from "../../util";
 
 const TOAST_DURATION = 3000; // 3 seconds
 
@@ -8,7 +9,7 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((message: string, type: ToastType = "success") => {
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     const newToast: Toast = { id, message, type };
     
     setToasts((prev) => [...prev, newToast]);

@@ -12,7 +12,7 @@ import { editPayments } from "../firebase/editData";
 import { removeVirtualIdPortion } from "../util";
 import { format } from "date-fns";
 import FullScreen from "./FullScreen";
-import TextInput from "../components/TextInput";
+import MoneyInput from "../components/MoneyInput";
 
 interface IProps {
   handleBack: () => void;
@@ -35,7 +35,7 @@ export default function BigPayment({
   const [showForm, setShowForm] = useState(false);
   const [p, setP] = useState<Payment | null>(paymentToEdit);
   const [showExtraPaymentForm, setShowExtraPaymentForm] = useState(false);
-  const [extraPaymentAmount, setExtraPaymentAmount] = useState("");
+  const [extraPaymentAmount, setExtraPaymentAmount] = useState(0);
   const [extraPaymentError, setExtraPaymentError] = useState<string | null>(
     null,
   );
@@ -75,18 +75,17 @@ export default function BigPayment({
     if (!p || p.type !== "DEBT") return;
     const currentTotal = p.total ?? 0;
     if (currentTotal <= 0) return;
-    const extra = Number(extraPaymentAmount);
-    if (Number.isNaN(extra) || extra <= 0) {
+    if (extraPaymentAmount <= 0) {
       setExtraPaymentError("Enter a positive amount");
       return;
     }
-    if (extra > currentTotal) {
+    if (extraPaymentAmount > currentTotal) {
       setExtraPaymentError(`Remaining balance is $${currentTotal.toFixed(2)}`);
       return;
     }
     setExtraPaymentError(null);
-    applyExtraToDebt(extra);
-    setExtraPaymentAmount("");
+    applyExtraToDebt(extraPaymentAmount);
+    setExtraPaymentAmount(0);
     setShowExtraPaymentForm(false);
   }
 
@@ -96,7 +95,7 @@ export default function BigPayment({
     if (currentTotal <= 0) return;
     applyExtraToDebt(currentTotal);
     setShowExtraPaymentForm(false);
-    setExtraPaymentAmount("");
+    setExtraPaymentAmount(0);
     setExtraPaymentError(null);
     handleBack();
   }
@@ -191,7 +190,7 @@ export default function BigPayment({
               onClick={() => {
                 setShowExtraPaymentForm(true);
                 setExtraPaymentError(null);
-                setExtraPaymentAmount("");
+                setExtraPaymentAmount(0);
               }}
             >
               <IoAddCircle
@@ -224,15 +223,15 @@ export default function BigPayment({
               <p className="text-xs text-my-white-dark mb-2">
                 Remaining: ${(p.total ?? 0).toFixed(2)}
               </p>
-              <Button color="green" onClick={handlePayAll}>
+              <Button color="gold" onClick={handlePayAll}>
                 Pay All
               </Button>
-              <TextInput
+              <MoneyInput
                 id="extraPaymentAmount"
                 label=""
                 value={extraPaymentAmount}
-                onChange={(e) => {
-                  setExtraPaymentAmount(e.target.value);
+                onChange={(d) => {
+                  setExtraPaymentAmount(d);
                   setExtraPaymentError(null);
                 }}
                 placeholder="Amount"
@@ -249,7 +248,7 @@ export default function BigPayment({
                 color="red"
                 onClick={() => {
                   setShowExtraPaymentForm(false);
-                  setExtraPaymentAmount("");
+                  setExtraPaymentAmount(0);
                   setExtraPaymentError(null);
                 }}
               >

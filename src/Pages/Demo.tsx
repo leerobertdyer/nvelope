@@ -25,6 +25,7 @@ import SpendBtn from "../components/Buttons/SpendBtn";
 import {
   getIncomeByInterval,
   isDateInCurrentPayPeriod,
+  randomUUID,
   recalculateBudget,
   transformIntervalMidSentence,
 } from "../util";
@@ -38,6 +39,7 @@ import PaymentTypeSelector, {
 } from "../components/Forms/PaymentTypeSelector";
 import { useToast } from "../Context/ToastContext/useToast";
 import DemoTooltip from "../components/Demo/DemoTooltip";
+import MoneyInput from "../components/MoneyInput";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
@@ -167,7 +169,7 @@ export default function Demo() {
 
     // Build payment with common base, type-specific additions via ternary
     const newPayment: Payment = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       name: newPaymentName,
       amount: newPaymentAmount,
       dueDate: Timestamp.fromDate(dueDate),
@@ -523,12 +525,11 @@ export default function Demo() {
               You will have the ability to add more income later. This is best for recurring income.
             </p>
             <p className="text-sm sm:text-lg">If your income changes week to week, estimate as best you can.</p>
-            <input
-              className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem]"
-              type="number"
+            <MoneyInput
+              value={newIncome ?? 0}
+              onChange={(d) => setNewIncome(d)}
               placeholder="Estimated Income"
-              value={newIncome?.toString() || ""}
-              onChange={(e) => setNewIncome(Number(e.target.value))}
+              id="demo-estimated-income"
             />
           </DemoStep>
         ) : step === 6 ? (
@@ -579,24 +580,22 @@ export default function Demo() {
                     setNewPaymentName(e.target.value.toLowerCase())
                   }
                 />
-                <input
-                  className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
-                  type="number"
+                <MoneyInput
+                  value={newPaymentAmount ?? 0}
+                  onChange={(d) => setNewPaymentAmount(d)}
                   placeholder={
                     selectedPaymentType === "FUND" ? "Target Amount" : "Amount"
                   }
-                  value={newPaymentAmount || ""}
-                  onChange={(e) => setNewPaymentAmount(Number(e.target.value))}
+                  id="demo-payment-amount"
                 />
 
                 {/* Show total field for DEBT type */}
                 {selectedPaymentType === "DEBT" && (
-                  <input
-                    className="bg-white border-2 border-white text-black p-2 rounded-md w-[80%] max-w-[30rem] text-center"
-                    type="number"
+                  <MoneyInput
+                    value={newPaymentTotal ?? 0}
+                    onChange={(d) => setNewPaymentTotal(d)}
                     placeholder="Total Balance Owed"
-                    value={newPaymentTotal || ""}
-                    onChange={(e) => setNewPaymentTotal(Number(e.target.value))}
+                    id="demo-payment-total"
                   />
                 )}
 

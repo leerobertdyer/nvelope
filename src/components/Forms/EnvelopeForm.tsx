@@ -2,6 +2,7 @@ import Button from "../Buttons/Button";
 import type { Envelope } from "../../types";
 import FullScreen from "../../Views/FullScreen";
 import TextInput from "../TextInput";
+import { randomUUID } from "../../util";
 
 interface IProps {
   newEnvelopeName: string;
@@ -85,7 +86,7 @@ export default function EnvelopeForm(props: IProps) {
                   }
                 : () => {
                     handleSaveEnvelope?.({
-                      id: crypto.randomUUID(),
+                      id: randomUUID(),
                       name: newEnvelopeName,
                       total: Number(newEnvelopeTotal),
                       spent: 0,

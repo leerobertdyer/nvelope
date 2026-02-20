@@ -19,6 +19,7 @@ import Nvelope from "../components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
   getVirtualPaymentsForCurrentPeriod,
+  randomUUID,
   recalculateBudget,
   removeVirtualIdPortion,
   resetAllNvelopes,
@@ -479,7 +480,7 @@ export default function MainEnvelopesView() {
     if (!cashAmount || !cashName || !user) return;
     setLoadingText("Adding Cash...");
     setShowLoading(true);
-    const randomId = crypto.randomUUID();
+    const randomId = randomUUID();
     const date = Timestamp.fromDate(new Date());
     const newOneTimeCash = {
       id: randomId,

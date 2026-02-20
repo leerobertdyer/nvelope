@@ -8,7 +8,7 @@ import { doc, updateDoc, Timestamp, getDoc, collection, query, orderBy, getDocs,
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
 import { MONTHLY } from "../constants";
-import { cleanPaymentsForFirebase } from "../util";
+import { cleanPaymentsForFirebase, randomUUID } from "../util";
 import { budgetDataRef } from "./budgets";
 
 export async function editResetBudgetTimestamp(
@@ -174,7 +174,7 @@ function transformBillsToPayments(bills: Bill[]): Payment[] {
       ? (b.interval.toUpperCase() as Interval)
       : "MONTHLY";
     paymentsMap.push({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       interval: i,
       paid: b.paid,
       dueDate: b.originalDate,

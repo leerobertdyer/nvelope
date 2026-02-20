@@ -21,7 +21,8 @@ export default function PaymentTypeSelector({
     justify-center
     items-center 
     gap-4 
-    w-full`}
+    w-full
+    shrink-0`}
     >
       <button
         type="button"

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import Button from "../components/Buttons/Button";
+import MoneyInput from "../components/MoneyInput";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import type { Envelope } from "../types";
-import TextInput from "../components/TextInput";
 
 interface NvelopeCalculatorProps {
   handleEnterAmount: (amount: number, envelope: Envelope) => void;
@@ -18,34 +18,20 @@ export default function NvelopeCalculator({
 }: NvelopeCalculatorProps) {
   const { envelopes } = useDatabase();
 
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(0);
   const [selectedEnvelope, setSelectedEnvelope] = useState<
     Envelope | undefined
   >(undefined);
 
-  function handleSetAmount(amount: string) {
-    if (!amount || Number(amount) <= 0) return;
-    if (selectedEnvelope) {
-      const envelope = envelopes.find((e) => e.id === selectedEnvelope.id);
-      if (envelope && Number(amount) > 0 && Number(amount) <= envelope.total) {
-        setAmount(amount);
-      } else {
-        setAmount("");
-        return;
-      }
-    } else {
-      if (envelope && Number(amount) > 0 && Number(amount) <= envelope.total) {
-        setAmount(amount);
-      } else {
-        setAmount("");
-        return;
-      }
-    }
+  function handleSetAmount(dollars: number) {
+    const env = selectedEnvelope || envelope;
+    if (env && dollars > env.total) return;
+    setAmount(dollars);
   }
 
   function handleSetEnvelope(id: string) {
-    const envelope = envelopes.find((e) => e.id === id);
-    setSelectedEnvelope(envelope || undefined);
+    const env = envelopes.find((e) => e.id === id);
+    setSelectedEnvelope(env || undefined);
   }
 
   function spendAll() {
@@ -53,34 +39,32 @@ export default function NvelopeCalculator({
   }
 
   return (
-    <div className="absolute inset-0 bg-my-black-base text-my-white-light flex items-center justify-center flex-col gap-5">
+    <div className="absolute inset-0 bg-my-black-base text-my-white-dark flex items-center justify-center flex-col gap-5">
       <div className="w-full max-w-[20rem] flex flex-col justify-center items-center gap-2">
         {envelope && (
-          <p className="w-full text-center">
+          <p className="w-full text-center text-my-white-light">
             <span className="text-my-white-dark">"{envelope.name}"</span>{" "}
             balance:
             <span className="text-my-green-light ml-2">
               $
-              {Number(envelope?.total) -
+              {(Number(envelope?.total) -
                 Number(envelope?.spent) -
-                Number(amount)}
+                amount).toFixed(2)}
             </span>
           </p>
         )}
 
         <div className="w-full flex flex-col justify-center items-center gap-4">
-
-          <TextInput
+          <Button onClick={spendAll} color="gold">
+            Spend All
+          </Button>
+          <MoneyInput
             id="newAmountForEnvelope"
             label="Amount To Spend"
-            numeric
-            onChange={(e) => handleSetAmount(e.target.value)}
             value={amount}
+            onChange={handleSetAmount}
             placeholder={`$5 from ${envelope?.name ?? ""}`}
           />
-          <button onClick={() => spendAll()} className="box-border rounded-md h-[2.5rem] w-full p-2 cursor-pointer border-2 bg-my-white-dark text-my-black-dark hover:text-my-white-dark hover:bg-my-black-dark hover:border-my-white-light">
-            Spend All
-          </button>
         </div>
         {selectEnvelope && (
           <select
@@ -101,7 +85,7 @@ export default function NvelopeCalculator({
       </div>
       <Button
         onClick={() => {
-          handleEnterAmount(Number(amount), selectedEnvelope || envelope!);
+          handleEnterAmount(amount, selectedEnvelope || envelope!);
         }}
         color="green"
       >

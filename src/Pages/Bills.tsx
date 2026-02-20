@@ -13,7 +13,7 @@ import { startOfDay } from "date-fns";
 import Summary from "../components/Payments/Summary";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
 import FullScreen from "../Views/FullScreen";
-import TextInput from "../components/TextInput";
+import MoneyInput from "../components/MoneyInput";
 
 export default function Bills() {
   const { user } = useAuth();
@@ -82,17 +82,21 @@ export default function Bills() {
   if (showEditSnowball) {
     return (
       <FullScreen
+        theme="DARK"
         onClose={() => setShowEditSnowball(false)}
         onSave={handleEditSnowball}
         showButtons={true}
+        saveButtonColor="gold"
+        saveButtonText="Save"
+        closeButtonText="Back"
       >
         <div className="flex justify-center items-center text-center w-full">
-          <TextInput
+          <MoneyInput
             id="newSnowballAmount"
-            placeholder={`$${snowball}`}
-            value={snowball.toString()}
             label="New Snowball Amount"
-            onChange={(e) => setSnowball(Number(e.target.value))}
+            value={snowball}
+            onChange={setSnowball}
+            placeholder={`$${snowball.toFixed(2)}`}
           />
         </div>
       </FullScreen>

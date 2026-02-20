@@ -8,7 +8,7 @@ interface IFullScreen {
   showButtons?: boolean;
   theme?: "LIGHT" | "DARK";
   saveButtonText?: string;
-  saveButtonColor?: "green" | "red";
+  saveButtonColor?: "green" | "red" | "gold";
   closeButtonText?: string;
   /** When true, the save/confirm button is disabled (e.g. to prevent double-submit on delete account). */
   saveButtonDisabled?: boolean;

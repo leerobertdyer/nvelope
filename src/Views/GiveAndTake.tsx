@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Button from "../components/Buttons/Button";
+import MoneyInput from "../components/MoneyInput";
 import type { Envelope } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 
@@ -11,7 +12,7 @@ interface GiveAndTakeProps {
 }
 
 export default function GiveAndTake({ envelope, handleBack, takeAndGive, takeFromEnvelope }: GiveAndTakeProps) {
-    const [amountToGiveOrTake, setAmountToGiveOrTake] = useState('');
+    const [amountToGiveOrTake, setAmountToGiveOrTake] = useState(0);
     const [isGiving, setIsGiving] = useState(false);
     const [envelopeToGiveTo, setEnvelopeToGiveTo] = useState<Envelope | null>(null);
     const { envelopes } = useDatabase();
@@ -20,15 +21,13 @@ export default function GiveAndTake({ envelope, handleBack, takeAndGive, takeFro
         <div className="absolute z-[9999] inset-0 w-full h-screen flex flex-col items-center justify-center bg-my-black-base text-my-white-dark">
             <h3 className="text-2xl font-bold mb-4">Give and Take</h3>
             <div className="flex flex-col items-center gap-2">
-                <label htmlFor="amount">Enter amount to <span className="text-my-red-light">take</span> from {envelope.name}</label>
-                <input 
-                    className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-[80%] max-w-[20rem] text-my-black-dark"
-                    id="amount" 
-                    max={envelope.total - envelope.spent} 
-                    type="number" 
-                    placeholder="Enter amount" 
-                    onChange={(e) => setAmountToGiveOrTake(e.target.value)} 
-                    value={amountToGiveOrTake} 
+                <label htmlFor="amount" className="text-my-white-light">Enter amount to <span className="text-my-red-light">take</span> from {envelope.name}</label>
+                <MoneyInput
+                    id="amount"
+                    value={amountToGiveOrTake}
+                    onChange={setAmountToGiveOrTake}
+                    placeholder="Enter amount"
+                    allowNegative
                 />
                 <label htmlFor="giveOrTake" className="text-my-white-light">Where do you want to put the $$$?</label>
                 <div className="flex justify-center w-full gap-2 items-center">
@@ -54,20 +53,20 @@ export default function GiveAndTake({ envelope, handleBack, takeAndGive, takeFro
                 )}
                 {isGiving && envelopeToGiveTo !== null 
                     ? <Button
-                        onClick={() => takeAndGive(envelopeToGiveTo, Number(amountToGiveOrTake))}
+                        onClick={() => takeAndGive(envelopeToGiveTo, amountToGiveOrTake)}
                         color="green"
                     >
                         Give
                     </Button>
                     : !isGiving &&<>
                         <Button
-                            onClick={() => (amountToGiveOrTake === '' || amountToGiveOrTake === '0') ? takeFromEnvelope(Number(0)) : takeFromEnvelope(Number(amountToGiveOrTake))}
+                            onClick={() => takeFromEnvelope(amountToGiveOrTake)}
                             color="gold"
                             >
                             Take
                         </Button>
                         <Button
-                            onClick={() => takeFromEnvelope(Number(envelope.total - envelope.spent))}
+                            onClick={() => takeFromEnvelope(envelope.total - envelope.spent)}
                             color="green"
                             >
                             Take All

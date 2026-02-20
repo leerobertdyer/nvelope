@@ -57,7 +57,7 @@ export default function Home() {
           </p>
           <button 
             onClick={() => window.location.reload()} 
-            className="bg-my-blue-base text-my-white-dark px-6 py-2 rounded-md hover:bg-my-blue-light"
+            className="bg-my-red-base text-my-white-dark px-6 py-2 rounded-md hover:bg-my-blue-light"
           >
             Refresh Page
           </button>

@@ -51,6 +51,23 @@ export function capitalizeFirstLetter(str: string | null): string {
   return str.slice(0, 1).toUpperCase() + str.slice(1).toLowerCase();
 }
 
+/** UUID v4. Uses crypto.randomUUID() when available (e.g. modern browsers), else a fallback for older iOS Safari/WebViews. */
+export function randomUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < 16; i++) bytes[i] = (Math.random() * 256) | 0;
+  }
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 export async function resetAllNvelopes(
   nvelopes: Envelope[],
   setEnvelopes: (e: Envelope[]) => void,
@@ -652,7 +669,7 @@ export function cleanPaymentsForFirebase(payments: Payment[]): Record<string, un
 
 export const generateFreshPayment = () => {
   return {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     name: "",
     type: undefined,
     amount: 0,

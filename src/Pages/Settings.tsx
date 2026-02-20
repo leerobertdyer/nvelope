@@ -31,6 +31,7 @@ import { sendPasswordResetEmailToUser } from "../firebase/emailAndPassword";
 import { getIncomeByInterval, recalculateBudget } from "../util";
 import { Timestamp } from "firebase/firestore";
 import type { Value } from "react-calendar/src/shared/types.js";
+import MoneyInput from "../components/MoneyInput";
 import EditSpendingBudget from "../components/Forms/EditSpendingBudget";
 import BudgetSettingsFields from "../components/Forms/BudgetSettingsFields";
 import TextInput from "../components/TextInput";
@@ -693,12 +694,11 @@ export default function Settings() {
         onSave={updateIncome}
       >
         <div className="flex flex-col items-center justify-center gap-2 max-w-[20rem] m-auto text-center">
-          <TextInput
+          <MoneyInput
             id="newIncome"
             label="Paycheck Amount"
-            value={newIncome}
-            onChange={(e) => setNewIncome(e.target.value)}
-            numeric
+            value={Number(newIncome) || 0}
+            onChange={(d) => setNewIncome(d.toString())}
             placeholder="Enter new income"
           />
         </div>
@@ -783,11 +783,11 @@ export default function Settings() {
           <p className="p-4 rounded-md text-my-white-dark w-full text-center">
             What will your new {newInterval} total budget be?
           </p>
-          <input
-            type="number"
-            className="w-[85%] max-w-[20rem] border p-2 rounded-md my-4 border-my-white-dark bg-my-white-light text-my-black-dark"
-            value={newIncome}
-            onChange={(e) => setNewIncome(e.target.value)}
+          <MoneyInput
+            id="newIncomeInterval"
+            label=""
+            value={Number(newIncome) || 0}
+            onChange={(d) => setNewIncome(d.toString())}
             placeholder="Enter new income"
           />
           <div className="flex flex-col items-center gap-4 w-full">

@@ -16,6 +16,7 @@ import { format, addDays } from "date-fns";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 import { useBudget } from "../../Context/BudgetContext/useBudget";
 import { useToast } from "../../Context/ToastContext/useToast";
+import MoneyInput from "../MoneyInput";
 import TextInput from "../TextInput";
 import PaymentTypeSelector, {
   type PaymentTypeOption,
@@ -227,13 +228,13 @@ export default function PaymentForm({
 
   return (
     <div className="h-screen absolute inset-0 z-9999 flex flex-col justify-center items-center m-auto overflow-y-scroll w-full overflow-x-hidden">
-      <div className="flex flex-col gap-2 items-center  h-[100vh] overflow-y-auto text-my-white-dark bg-my-green-dark w-full text-center rounded-md">
+      <div className="flex flex-col gap-2 items-center md:h-[100vh] overflow-y-auto text-my-white-dark bg-my-green-dark w-full text-center rounded-md">
         <h1 className="text-center w-full text-my-white-light p-2 text-3xl">
           {paymentToEdit ? "Edit Payment" : "Add Payment"}
         </h1>
         {/* Step 1: Payment Type Selection (for new payments only) */}
         {!selectedPaymentType && !paymentToEdit ? (
-          <div className="w-full">
+          <div className="w-full flex-1 min-h-0 flex flex-col justify-center px-2">
             <PaymentTypeSelector
               onSelect={handleSelectPaymentType}
               onBack={handleClickBack}
@@ -275,27 +276,17 @@ export default function PaymentForm({
             {/* Payment Amount */}
             {newPayment.name && (
               <div className="flex flex-col items-center w-full mb-4">
-                <label className="text-sm mb-1">
-                  {selectedPaymentType === "FUND" ? "Target Amount" : "Amount"}
-                </label>
-                <input
+                <MoneyInput
                   id="amount"
-                  type="number"
-                  min={0}
-                  className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                  value={newPayment?.amount || ""}
-                  onChange={(e) => {
-                    const amount = Number(e.target.value);
+                  label={selectedPaymentType === "FUND" ? "Target Amount" : "Amount"}
+                  value={newPayment?.amount ?? 0}
+                  onChange={(amount) => {
                     setNewPayment({
                       ...newPayment,
                       amount,
-                      // Sync total for Fund payments
-                      ...(selectedPaymentType === "FUND"
-                        ? { total: amount }
-                        : {}),
+                      ...(selectedPaymentType === "FUND" ? { total: amount } : {}),
                     });
                   }}
-                  onWheel={(e) => e.currentTarget.blur()}
                   placeholder={
                     selectedPaymentType === "FUND"
                       ? "Target amount to save"
@@ -367,17 +358,14 @@ export default function PaymentForm({
               newPayment.name &&
               newPayment.amount > 0 && (
                 <div className="flex flex-col items-center w-full mt-4">
-                  <label htmlFor="total">Total Owed</label>
-                  <input
+                  <MoneyInput
                     id="total"
-                    type="number"
-                    min={0}
-                    className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                    value={newPayment?.total || ""}
-                    onChange={(e) =>
+                    label="Total Owed"
+                    value={newPayment?.total ?? 0}
+                    onChange={(total) =>
                       setNewPayment({
                         ...newPayment,
-                        total: Number(e.target.value),
+                        total,
                       })
                     }
                     placeholder="Total remaining balance"
@@ -481,12 +469,12 @@ export default function PaymentForm({
                 )}
               </div>
             </div>
-            <div className="flex gap-4 items-center justify-center w-full">
+            <div className="flex flex-col gap-4 items-center justify-center w-full">
+              <Button color="gold" onClick={handleSavePayment}>
+                Save
+              </Button>
               <Button color="red" onClick={() => handleClickBack()}>
                 Cancel
-              </Button>
-              <Button color="green" onClick={handleSavePayment}>
-                Save
               </Button>
             </div>
           </div>
