@@ -228,7 +228,7 @@ export default function PaymentForm({
 
   return (
     <div className="h-screen absolute inset-0 z-9999 flex flex-col justify-center items-center m-auto overflow-y-scroll w-full overflow-x-hidden">
-      <div className="flex flex-col gap-2 items-center md:h-[100vh] overflow-y-auto text-my-white-dark bg-my-green-dark w-full text-center rounded-md">
+      <div className="flex flex-col gap-2 items-center md:h-[100vh] overflow-y-auto text-my-white-dark bg-my-green-dark w-full text-center rounded-md p-2 pb-8">
         <h1 className="text-center w-full text-my-white-light p-2 text-3xl">
           {paymentToEdit ? "Edit Payment" : "Add Payment"}
         </h1>
