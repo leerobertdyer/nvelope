@@ -14,14 +14,14 @@ interface ActionButtonsProps {
   highlightCash?: boolean;
   highlightEnvelope?: boolean;
   highlightClear?: boolean;
-  /** When true, disables hover effects (useful for demo/spotlight mode) */
+  /** When true, disables hover effects */
   disableHover?: boolean;
   className?: string;
 }
 
 /**
  * Reusable action buttons bar for Payment, Cash, Nvelope, and Clear actions.
- * Used in MainView and Demo pages.
+ * Used in MainView.
  */
 export default function ActionButtons({
   onPaymentClick,

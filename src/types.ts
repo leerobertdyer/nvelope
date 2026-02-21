@@ -1,5 +1,4 @@
 import type { Timestamp } from "firebase/firestore";
-import type { Value } from "react-calendar/src/shared/types.js";
 
 export interface Envelope {
     id: string
@@ -39,8 +38,6 @@ export interface OneTimeAmount {
 // PreviousIntervalDetails removed - see FUTURE FEATURE comment in editData.ts
 
 export type Interval = "WEEKLY" | "BIWEEKLY" | "MONTHLY" | "YEARLY" | "SPLIT" | undefined;
-
-export type ChangeValue = boolean | string | null | Value | number | Payment[]
 
 export type IntervalDates = {
     start: Date;

@@ -11,7 +11,7 @@ interface IntervalSelectorProps {
 
 /**
  * Reusable interval selector component for pay period selection.
- * Used in both Settings and Demo for consistent UI and spotlight targeting.
+ * Used in Settings and FirstTimeSetup.
  */
 const IntervalSelector = forwardRef<HTMLDivElement, IntervalSelectorProps>(
   ({ value, onChange, label = "Change Budget Interval", className = "" }, ref) => {

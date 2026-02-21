@@ -18,7 +18,7 @@ const defaultBudgetName = (user: User) =>
   user?.email ? `${user.email}'s Budget` : "My Budget";
 
 /**
- * Creates the first budget for a user (Demo onboarding). Writes budget meta, data doc, and users/{uid}/budgets/{budgetId}.
+ * Creates the first budget for a user (first-time setup). Writes budget meta, data doc, and users/{uid}/budgets/{budgetId}.
  * Returns the new budgetId or null on failure.
  */
 export async function createFirstBudget(
@@ -489,7 +489,7 @@ export async function createUserDocument(user: User) {
 }
 
 /**
- * Skip demo: create first budget with defaults so MainView can render.
+ * Create first budget with defaults so MainView can render (e.g. when user skips first-time setup).
  */
 export async function completeDemoWithDefaults(user: User): Promise<boolean> {
   if (!user) return false;

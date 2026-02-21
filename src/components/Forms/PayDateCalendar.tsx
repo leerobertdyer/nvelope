@@ -14,7 +14,7 @@ interface PayDateCalendarProps {
 
 /**
  * Reusable pay date calendar component.
- * Used in both Settings and Demo for consistent UI and spotlight targeting.
+ * Used in Settings and FirstTimeSetup.
  */
 const PayDateCalendar = forwardRef<HTMLDivElement, PayDateCalendarProps>(
   (
