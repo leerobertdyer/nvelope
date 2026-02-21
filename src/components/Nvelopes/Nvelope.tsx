@@ -50,21 +50,17 @@ export default function Nvelope({
   const [newEnvelopeName, setNewEnvelopeName] = useState<string>(
     envelope.name || ""
   );
-  const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<string>(
-    envelope.total.toString() || ""
+  const [newEnvelopeTotal, setNewEnvelopeTotal] = useState<number>(
+    envelope.total ?? 0
   );
-  const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<string>(
-    envelope.spent.toString() || ""
+  const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<number>(
+    envelope.spent ?? 0
   );
 
   useEffect(() => {
     setNewEnvelopeName(envelope.name || "");
-    setNewEnvelopeTotal(
-      (envelope.total !== 0 && envelope.total?.toString()) || ""
-    );
-    setNewEnvelopeSpent(
-      (envelope.spent !== 0 && envelope.spent?.toString()) || ""
-    );
+    setNewEnvelopeTotal(envelope.total ?? 0);
+    setNewEnvelopeSpent(envelope.spent ?? 0);
   }, [envelope]);
 
   const dottedWidth = 150;

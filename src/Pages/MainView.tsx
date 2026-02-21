@@ -70,7 +70,7 @@ export default function MainEnvelopesView() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBudgetWarning, setShowBudgetWarning] = useState(false);
   const [cashName, setCashName] = useState("");
-  const [cashAmount, setCashAmount] = useState("");
+  const [cashAmount, setCashAmount] = useState(0);
   const [showSpendPage, setShowSpendPage] = useState(false);
   const [loadingText, setLoadingText] = useState("");
   const [showLoading, setShowLoading] = useState(false);
@@ -470,7 +470,7 @@ export default function MainEnvelopesView() {
     setIsEditingEnvelope(false);
     setIsDeleting(false);
     setEnvelopeToEdit(undefined);
-    setCashAmount("");
+    setCashAmount(0);
     setCashName("");
     setIsAddingCash(false);
     setShowSpendPage(false);
@@ -500,7 +500,7 @@ export default function MainEnvelopesView() {
   }
 
   async function addCashToDb() {
-    if (!cashAmount || !cashName || !user) return;
+    if (cashAmount <= 0 || !cashName || !user) return;
     setLoadingText("Adding Cash...");
     setShowLoading(true);
     const randomId = randomUUID();
@@ -508,7 +508,7 @@ export default function MainEnvelopesView() {
     const newOneTimeCash = {
       id: randomId,
       name: cashName,
-      amount: Number(cashAmount),
+      amount: cashAmount,
       date,
     };
     await editOneTimeCashAndBudget(
@@ -516,7 +516,7 @@ export default function MainEnvelopesView() {
       activeBudgetId!,
       totalSpendingBudget
     );
-    setTotalSpendingBudget(totalSpendingBudget + Number(cashAmount));
+    setTotalSpendingBudget(totalSpendingBudget + cashAmount);
     resetState();
     showToast("Cash added to budget");
   }
@@ -528,14 +528,14 @@ export default function MainEnvelopesView() {
 
   async function addCashToEnvelope() {
     const n = envelopes.find((e) => e.id === envelopeToEdit?.id);
-    if (!n || !cashAmount || !user) return;
+    if (!n || cashAmount <= 0 || !user) return;
     setLoadingText("Filling Nvelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes].map((e) =>
-      e.id === n.id ? { ...n, total: n.total + Number(cashAmount) } : e
+      e.id === n.id ? { ...n, total: n.total + cashAmount } : e
     );
     await updateBudgetStateAndDBB(
-      Number(cashAmount) * -1,
+      cashAmount * -1,
       activeBudgetId!,
       totalSpendingBudget,
       setTotalSpendingBudget

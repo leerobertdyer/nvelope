@@ -1,21 +1,22 @@
 import Button from "../Buttons/Button";
 import type { Envelope } from "../../types";
 import FullScreen from "../../Views/FullScreen";
+import MoneyInput from "../MoneyInput";
 import TextInput from "../TextInput";
 import { randomUUID } from "../../util";
 
 interface IProps {
   newEnvelopeName: string;
   setNewEnvelopeName: (s: string) => void;
-  newEnvelopeTotal: string;
-  setNewEnvelopeTotal: (s: string) => void;
+  newEnvelopeTotal: number;
+  setNewEnvelopeTotal: (n: number) => void;
   isEditing: boolean;
   handleBack?: () => void;
   handleSaveEnvelope?: (envelope: Envelope) => Promise<void>;
   editEnvelope?: (envelope: Envelope) => Promise<void>;
   envelope?: Envelope;
-  newEnvelopeSpent?: string;
-  setNewEnvelopeSpent?: (s: string) => void;
+  newEnvelopeSpent?: number;
+  setNewEnvelopeSpent?: (n: number) => void;
 }
 
 export default function EnvelopeForm(props: IProps) {
@@ -49,29 +50,28 @@ export default function EnvelopeForm(props: IProps) {
         />
         {newEnvelopeName && (
           <>
-            <TextInput
+            <MoneyInput
               id="newTotal"
               label="How much do you want to add?"
               placeholder="Envelope Amount"
               value={newEnvelopeTotal}
-              onChange={(e) => setNewEnvelopeTotal(e.target.value)}
+              onChange={setNewEnvelopeTotal}
             />
-            {setNewEnvelopeSpent && (
+            {setNewEnvelopeSpent != null && (
               <>
                 {/* This is for editing envelope */}
-                <TextInput
-                  placeholder="Spent"
+                <MoneyInput
                   id="newSpent"
-                  numeric
                   label="How much is already spent?"
-                  value={newEnvelopeSpent ?? ""}
-                  onChange={(e) => setNewEnvelopeSpent(e.target.value)}
+                  placeholder="Spent"
+                  value={newEnvelopeSpent ?? 0}
+                  onChange={(n) => setNewEnvelopeSpent(n)}
                 />
               </>
             )}
           </>
         )}
-        {newEnvelopeName && Number(newEnvelopeTotal) > 0 && (
+        {newEnvelopeName && newEnvelopeTotal > 0 && (
           <Button
             onClick={
               isEditing && envelope
@@ -79,8 +79,8 @@ export default function EnvelopeForm(props: IProps) {
                     editEnvelope?.({
                       id: envelope!.id,
                       name: newEnvelopeName,
-                      total: Number(newEnvelopeTotal),
-                      spent: Number(newEnvelopeSpent || envelope.spent),
+                      total: newEnvelopeTotal,
+                      spent: newEnvelopeSpent ?? envelope.spent,
                       order: envelope.order || 1000,
                     });
                   }
@@ -88,7 +88,7 @@ export default function EnvelopeForm(props: IProps) {
                     handleSaveEnvelope?.({
                       id: randomUUID(),
                       name: newEnvelopeName,
-                      total: Number(newEnvelopeTotal),
+                      total: newEnvelopeTotal,
                       spent: 0,
                       order: 0,
                     });

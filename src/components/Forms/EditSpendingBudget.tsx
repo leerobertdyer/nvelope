@@ -3,26 +3,26 @@ import { editTotalSpendingBudget } from "../../firebase/editData";
 import { useBudget } from "../../Context/BudgetContext/useBudget";
 import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 import FullScreen from "../../Views/FullScreen";
-import TextInput from "../TextInput";
+import MoneyInput from "../MoneyInput";
 
 interface IProps {
   handleBack: () => void;
 }
 
 export default function EditSpendingBudget({ handleBack }: IProps) {
-  const [cashAmount, setCashAmount] = useState("");
+  const [cashAmount, setCashAmount] = useState(0);
   const { activeBudgetId } = useBudget();
   const { setTotalSpendingBudget } = useDatabase();
 
   function resetState() {
-    setCashAmount("");
+    setCashAmount(0);
     handleBack();
   }
 
   async function manuallySetBudgetInDB() {
-    if (!cashAmount || !activeBudgetId) return;
-    await editTotalSpendingBudget(Number(cashAmount), activeBudgetId);
-    setTotalSpendingBudget(Number(cashAmount));
+    if (cashAmount <= 0 || !activeBudgetId) return;
+    await editTotalSpendingBudget(cashAmount, activeBudgetId);
+    setTotalSpendingBudget(cashAmount);
     handleBack();
   }
 
@@ -32,13 +32,13 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
       onSave={manuallySetBudgetInDB}
       onClose={resetState}>
       <div className="flex flex-col items-center justify-center gap-2 max-w-[20rem] m-auto">
-        <TextInput
+        <MoneyInput
           label="Manually Adjust Your Remaining Budget"
           id="newBudgetAmount"
           value={cashAmount}
-          onChange={(e) => setCashAmount(e.target.value)}
-          numeric
-          placeholder="Amount" />
+          onChange={setCashAmount}
+          placeholder="Amount"
+        />
       </div>
     </FullScreen>
   );

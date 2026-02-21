@@ -40,7 +40,7 @@ export default function NvelopeCalculator({
 
   return (
     <div className="absolute inset-0 bg-my-black-base text-my-white-dark flex items-center justify-center flex-col gap-5">
-      <div className="w-full max-w-[20rem] flex flex-col justify-center items-center gap-2">
+      <div className="w-full flex flex-col justify-center items-center gap-2">
         {envelope && (
           <p className="w-full text-center text-my-white-light">
             <span className="text-my-white-dark">"{envelope.name}"</span>{" "}
@@ -54,10 +54,10 @@ export default function NvelopeCalculator({
           </p>
         )}
 
-        <div className="w-full flex flex-col justify-center items-center gap-4">
           <Button onClick={spendAll} color="gold">
             Spend All
           </Button>
+        <div className="w-full max-w-[20rem] flex flex-col justify-center items-center gap-4">
           <MoneyInput
             id="newAmountForEnvelope"
             label="Amount To Spend"
@@ -89,7 +89,7 @@ export default function NvelopeCalculator({
         }}
         color="green"
       >
-        Save
+        Spend
       </Button>
       <Button onClick={() => handleBack?.()} color="red">
         {selectEnvelope ? "View Nvelopes" : "Cancel"}

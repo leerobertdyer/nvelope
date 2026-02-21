@@ -12,7 +12,6 @@ import { useToast } from "../Context/ToastContext/useToast";
 import { format, parse } from "date-fns";
 import { IoWarning } from "react-icons/io5";
 import PaymentForm from "../components/Forms/PaymentForm";
-import TextInput from "../components/TextInput";
 import FullScreen from "../Views/FullScreen";
 import MoneyInput from "../components/MoneyInput";
 import Button from "../components/Buttons/Button";
@@ -32,7 +31,7 @@ export default function Debt() {
     const [showMissingInfoDebts, setShowMissingInfoDebts] = useState(false)
     const [interestRate, setInterestRate] = useState<number>();
     const [editingDebt, setEditingDebt] = useState<Payment | null>(null);
-    const [extraMonthlyInput, setExtraMonthlyInput] = useState("");
+    const [extraMonthly, setExtraMonthly] = useState(0);
     const [showEditSnowball, setShowEditSnowball] = useState(false);
     const [debtMenuOpen, setDebtMenuOpen] = useState<Payment | null>(null);
     const [additionalPaymentDebt, setAdditionalPaymentDebt] = useState<Payment | null>(null);
@@ -320,7 +319,6 @@ export default function Debt() {
             : new Date();
     const finalPaymentDateStr = format(finalPaymentDate, "MMM yyyy");
 
-    const extraMonthly = Number(extraMonthlyInput) || 0;
     const snowballPayoffDate = calculateSnowballPayoffDate(debts, snowball, effectiveSnowballTargetId, new Date(), extraMonthly || undefined);
     const snowballPayoffDateStr = snowballPayoffDate ? format(snowballPayoffDate, "MMM yyyy") : null;
 
@@ -352,13 +350,12 @@ export default function Debt() {
                 <div className="bg-my-black-base p-2 rounded-md text-my-white-light mb-[2rem] w-[20rem] md:w-[24rem]">
                     <p className="text-my-white-dark text-sm font-medium mb-2 text-center">What if I pay an extra amount each month?</p>
                     <div className="flex flex-col items-center gap-2 mb-2">
-                        <TextInput
+                        <MoneyInput
                             id="extra-monthly"
                             label="Extra per month ($)"
                             placeholder="e.g. 400"
-                            value={extraMonthlyInput}
-                            onChange={(e) => setExtraMonthlyInput(e.target.value)}
-                            numeric
+                            value={extraMonthly}
+                            onChange={setExtraMonthly}
                         />
                     </div>
                     {snowballWithExtraDateStr && extraMonthly > 0 && (
