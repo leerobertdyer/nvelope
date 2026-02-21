@@ -5,7 +5,6 @@ import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { type BackupData, type Interval } from "../types";
 import {
-  editIncome,
   editPayPeriodInterval,
   editPayDate,
   editTotalSpendingBudget,
@@ -28,7 +27,6 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
 import { deleteAccount } from "../firebase/deleteAccount";
 import { sendPasswordResetEmailToUser } from "../firebase/emailAndPassword";
-import { getIncomeByInterval, recalculateBudget } from "../util";
 import { Timestamp } from "firebase/firestore";
 import type { Value } from "react-calendar/src/shared/types.js";
 import MoneyInput from "../components/MoneyInput";
@@ -41,6 +39,7 @@ import { format } from "date-fns";
 import { useToast } from "../Context/ToastContext/useToast";
 import type { User } from "firebase/auth";
 import { IoTrash } from "react-icons/io5";
+import PageTour from "../components/PageTour";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "";
 
@@ -51,11 +50,9 @@ export default function Settings() {
   const { showToast } = useToast();
   const {
     payPeriodInterval,
-    setIncome,
     setTotalSpendingBudget,
     setPayPeriodInterval,
     totalSpendingBudget,
-    income,
     payDate,
     setPayDate,
     setPayments,
@@ -64,10 +61,9 @@ export default function Settings() {
 
   const [showIntervalSettings, setShowIntervalSettings] =
     useState<boolean>(false);
-  const [newIncome, setNewIncome] = useState<string>("");
+  const [newIntervalBudgetAmount, setNewIntervalBudgetAmount] = useState<string>("");
   const [newInterval, setNewInterval] = useState<Interval | null>(null);
   const [isEditingCash, setIsEditingCash] = useState(false);
-  const [showEditIncome, setShowEditIncome] = useState(false);
   const [providerType, setProviderType] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
   const [showBudgets, setShowBudgets] = useState(false);
@@ -184,66 +180,33 @@ export default function Settings() {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (income) setNewIncome(income.toString());
-  }, [income]);
-
   function resetState() {
     setShowIntervalSettings(false);
-    setNewIncome("");
+    setNewIntervalBudgetAmount("");
     setNewInterval(null);
     setIsEditingCash(false);
-    setShowEditIncome(false);
   }
 
   function handleIntervalChange(interval: Interval) {
     setShowIntervalSettings(true);
     setNewInterval(interval);
+    setNewIntervalBudgetAmount(totalSpendingBudget.toString());
   }
 
   async function handleUpdateInterval() {
-    if (!newIncome || !newInterval) return;
+    if (!newIntervalBudgetAmount || !newInterval) return;
     try {
-      const diffAmount = getIncomeByInterval(
-        payPeriodInterval,
-        newInterval,
-        Number(newIncome),
-      );
-      setIncome(Number(newIncome));
+      const nextBudget = Number(newIntervalBudgetAmount);
       setPayPeriodInterval(newInterval);
       if (!activeBudgetId) return;
       await editPayPeriodInterval(newInterval, activeBudgetId);
-      const nextBudget = recalculateBudget({
-        currentAvailableBudget: totalSpendingBudget,
-        diffAmount,
-      });
-      await editTotalSpendingBudget(nextBudget, activeBudgetId!);
+      await editTotalSpendingBudget(nextBudget, activeBudgetId);
       setTotalSpendingBudget(nextBudget);
       setShowIntervalSettings(false);
       showToast("Budget interval updated");
     } catch (e) {
       console.error("Error updating budget interval", e);
       showToast("Failed to update budget interval", "error");
-    }
-  }
-
-  async function updateIncome() {
-    if (!newIncome || !income) return;
-    try {
-      const diffAmount = Number(newIncome) - Number(income);
-      const newBal = recalculateBudget({
-        currentAvailableBudget: totalSpendingBudget,
-        diffAmount,
-      });
-      await editTotalSpendingBudget(newBal, activeBudgetId!);
-      await editIncome(Number(newIncome), activeBudgetId!);
-      setTotalSpendingBudget(newBal);
-      setIncome(Number(newIncome));
-      setShowEditIncome(false);
-      showToast("Income updated");
-    } catch (e) {
-      console.error("Error updating income", e);
-      showToast("Failed to update income", "error");
     }
   }
 
@@ -291,7 +254,6 @@ export default function Settings() {
     if (result) {
       setPayments(result.payments ?? []);
       setEnvelopes(result.nvelopes ?? []);
-      setIncome(Number(result.income));
       setTotalSpendingBudget(Number(result.totalSpendingBudget));
       handleCloseBackup();
       // After restore, update localStorage backup state (now available for undo)
@@ -311,7 +273,6 @@ export default function Settings() {
       const { data } = localStorageBackup;
       setPayments(data.payments ?? []);
       setEnvelopes(data.envelopes ?? []);
-      setIncome(Number(data.income));
       setTotalSpendingBudget(Number(data.totalSpendingBudget));
       // Clear the localStorage backup state
       setLocalStorageBackup(null);
@@ -634,7 +595,6 @@ export default function Settings() {
         <div className="w-full text-center">
           <h1 className="text-xl text-my-red-light">Are you sure?</h1>
           <p>You can undo this restore if needed.</p>
-          <p>Your income will reset to {selectedSafeBackup.income}</p>
           <p>
             Your budget will reset to {selectedSafeBackup.totalSpendingBudget}
           </p>
@@ -685,25 +645,6 @@ export default function Settings() {
   if (isEditingCash) {
     return <EditSpendingBudget handleBack={resetState} />;
   }
-
-  if (showEditIncome)
-    return (
-      <FullScreen
-        showButtons
-        onClose={() => setShowEditIncome(false)}
-        onSave={updateIncome}
-      >
-        <div className="flex flex-col items-center justify-center gap-2 max-w-[20rem] m-auto text-center">
-          <MoneyInput
-            id="newIncome"
-            label="Paycheck Amount"
-            value={Number(newIncome) || 0}
-            onChange={(d) => setNewIncome(d.toString())}
-            placeholder="Enter new income"
-          />
-        </div>
-      </FullScreen>
-    );
 
   if (showCreateBudgetModal)
     return (
@@ -767,10 +708,6 @@ export default function Settings() {
               setShowEditBudgetModal(false);
               setIsEditingCash(true);
             }}
-            onEditRecurringIncome={() => {
-              setShowEditBudgetModal(false);
-              setShowEditIncome(true);
-            }}
           />
         </div>
       </FullScreen>
@@ -784,11 +721,11 @@ export default function Settings() {
             What will your new {newInterval} total budget be?
           </p>
           <MoneyInput
-            id="newIncomeInterval"
+            id="newIntervalBudgetAmount"
             label=""
-            value={Number(newIncome) || 0}
-            onChange={(d) => setNewIncome(d.toString())}
-            placeholder="Enter new income"
+            value={Number(newIntervalBudgetAmount) || 0}
+            onChange={(d) => setNewIntervalBudgetAmount(d.toString())}
+            placeholder="New budget amount"
           />
           <div className="flex flex-col items-center gap-4 w-full">
             <Button color="red" onClick={() => setShowIntervalSettings(false)}>
@@ -805,10 +742,16 @@ export default function Settings() {
 
   return (
     <div className="w-full h-screen overflow-y-scroll bg-my-white-light">
+      <PageTour tourId="settings">
+        <p>
+          Set pay date and budget interval here when you want to adjust. You can also manage budgets, backups, and account options.
+        </p>
+      </PageTour>
       <Header
         links={[
           { label: "Home", href: "/" },
           { label: "Debt", href: "/debt" },
+          { label: "Bills", href: "/bills" },
           { label: "Feedback", href: "/feedback" },
         ]}
       />
@@ -1007,9 +950,6 @@ export default function Settings() {
                   <p className="mb-4">
                     This will restore your data to the state before the last
                     restore.
-                  </p>
-                  <p>
-                    Your income will reset to {localStorageBackup.data.income}
                   </p>
                   <p>
                     Your budget will reset to{" "}

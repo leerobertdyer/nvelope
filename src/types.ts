@@ -51,7 +51,6 @@ export type BackupData = {
     backupTimeStamp: Timestamp;
     cash?: OneTimeAmount[];
     expenses?: OneTimeAmount[];
-    income: string;
     nvelopes: Envelope[];
     payDate: Timestamp;
     payPeriodInterval: Interval;
@@ -87,7 +86,6 @@ export interface UserBudgetRef {
 export type BudgetDataDoc = {
     envelopes: Envelope[];
     payments: Payment[];
-    income: number;
     payDate: Timestamp | null;
     payPeriodInterval: Interval;
     totalSpendingBudget: number;

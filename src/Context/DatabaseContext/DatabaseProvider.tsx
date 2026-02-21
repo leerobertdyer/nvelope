@@ -26,7 +26,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         lastPaymentsWriteAtRef.current = Date.now();
         setPaymentsState(next);
     };
-    const [income, setIncome] = useState<number>(0);
     const [isNewUser, setIsNewUser] = useState<boolean>(false);
     const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
     const [resetBudgetTimestamp, setResetBudgetTimestamp] = useState<Timestamp | null>(null);
@@ -71,7 +70,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     if (Date.now() - lastPaymentsWriteAtRef.current >= PAYMENTS_WRITE_GUARD_MS) {
                         setPaymentsState(snapshotPayments);
                     }
-                    setIncome(data.income ?? 0);
                     setIsNewUser(data.isNewUser ?? false);
                     setTotalSpendingBudget(data.totalSpendingBudget ?? 0);
                     setOneTimeCash(data.oneTimeCash ?? null);
@@ -120,8 +118,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         setEnvelopes,
         payments,
         setPayments,
-        income,
-        setIncome,
         isNewUser,
         setIsNewUser,
         totalSpendingBudget,

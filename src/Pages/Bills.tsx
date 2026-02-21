@@ -10,6 +10,7 @@ import { getBillIntervalLabel, paymentsTotal, removeVirtualIdPortion } from "../
 import BigPayment from "../Views/BigPayment";
 import { Timestamp } from "firebase/firestore";
 import { format, startOfDay } from "date-fns";
+import PageTour from "../components/PageTour";
 
 export default function Bills() {
   const { user } = useAuth();
@@ -93,6 +94,11 @@ export default function Bills() {
 
   return (
     <div className="flex flex-col items-center justify-start py-[5rem] w-full min-h-screen bg-my-blue-dark text-my-white-dark">
+      <PageTour tourId="bills">
+        <p>
+          Your recurring <span className="text-my-red-light">bills</span> appear here. Tap a bill to mark it paid for a given due date or to edit it. Add new bills from Home using the Payment button.
+        </p>
+      </PageTour>
       <Header links={defaultLinks} />
       <h1 className="text-3xl mb-4">Bills</h1>
       {payDate && payPeriodInterval && (

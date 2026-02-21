@@ -5,13 +5,13 @@ import LoginOptions from "../components/Auth/LoginOptions";
 import MainView from "./MainView";
 import Loading from "../components/Loading";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import Demo from "./Demo";
+import FirstTimeSetup from "./FirstTimeSetup";
 import { shouldBackupUserDataSafe, backupUserDataSafe } from "../firebase/editData";
 
 export default function Home() {
   const { user, isLoadingUser } = useAuth();
   const { isLoadingBudgets, activeBudgetId } = useBudget();
-  const { isNewUser, isLoadingDb, dbError, documentExists } = useDatabase();
+  const { isLoadingDb, dbError, documentExists } = useDatabase();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -66,17 +66,10 @@ export default function Home() {
     );
   }
 
-  // No document exists = new user (or returning user who never completed setup)
-  // Show Demo which will create their document through intentional user action
+  // No document exists = new user. Show minimal first-time setup (pay date + interval only).
   if (documentExists === false) {
-    return <Demo />;
+    return <FirstTimeSetup />;
   }
-  
-  // Document exists but user still in onboarding flow
-  if (isNewUser) {
-    return <Demo />;
-  }
-  
-  // Document exists and user has completed onboarding
+
   return <MainView />;
 }

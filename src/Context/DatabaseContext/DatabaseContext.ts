@@ -18,8 +18,6 @@ interface IDatabaseContext {
     setEnvelopes: (envelopes: Envelope[]) => void
     payments: Payment[]
     setPayments: React.Dispatch<React.SetStateAction<Payment[]>>
-    income: number
-    setIncome: (income: number) => void
     oneTimeCash: OneTimeAmount[] | null
     setOneTimeCash: (oneTimeCash: OneTimeAmount[] | null) => void
     isNewUser: boolean

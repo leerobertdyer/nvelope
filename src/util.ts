@@ -297,34 +297,6 @@ export function getCurrentIntervalDateRange(
   return { start, end };
 }
 
-export function getIncomeByInterval(
-  oldInterval: Interval,
-  newInterval: Interval,
-  income: number
-): number {
-  // First convert the income to monthly so we can calculate the new income
-  let monthlyIncome = 0;
-  if (oldInterval === MONTHLY) {
-    monthlyIncome = income;
-  } else if (oldInterval === BIWEEKLY) {
-    monthlyIncome = income * 2;
-  } else if (oldInterval === WEEKLY) {
-    monthlyIncome = income * 4;
-  }
-  // Now use the new interval to calculate the new income
-  switch (newInterval) {
-    case MONTHLY:
-      return monthlyIncome;
-    case WEEKLY:
-      return monthlyIncome / 4;
-    case BIWEEKLY:
-      return monthlyIncome / 2;
-    default:
-      // If no viable option do nothing...
-      return income;
-  }
-}
-
 export async function updateBudgetStateAndDBB(
   amount: number,
   budgetId: string,

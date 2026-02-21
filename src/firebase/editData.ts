@@ -46,14 +46,6 @@ export async function editPayments(p: Payment[], budgetId: string) {
   }
 }
 
-export async function editIncome(income: number, budgetId: string) {
-  try {
-    await updateDoc(budgetDataRef(budgetId), { income });
-  } catch (error) {
-    console.error("Firebase, editIncome Failed", error);
-  }
-}
-
 export async function editPayPeriodInterval(i: Interval, budgetId: string) {
   try {
     await updateDoc(budgetDataRef(budgetId), { payPeriodInterval: i });
@@ -259,8 +251,7 @@ export async function backupUserDataSafe(user: User, budgetId: string) {
     const data = docSnap.data();
     const hasEnvelopes = Array.isArray(data.envelopes) && data.envelopes.length > 0;
     const hasPayments = Array.isArray(data.payments) && data.payments.length > 0;
-    const hasIncome = typeof data.income === "number" && data.income > 0;
-    if (!hasEnvelopes && !hasPayments && !hasIncome) return;
+    if (!hasEnvelopes && !hasPayments) return;
     const newTime = Timestamp.fromDate(new Date());
     const backupData = {
       backupTimeStamp: newTime,
@@ -270,7 +261,6 @@ export async function backupUserDataSafe(user: User, budgetId: string) {
       cash: data.oneTimeCash ?? [],
       payDate: data.payDate ?? null,
       payPeriodInterval: data.payPeriodInterval ?? "MONTHLY",
-      income: data.income ?? 0,
       shouldReset: data.shouldReset ?? false,
       snowball: data.snowball ?? 0,
       snowballTargetPaymentId: data.snowballTargetPaymentId ?? null,
@@ -309,7 +299,6 @@ export async function restoreFromSafeBackup(backupId: string, user: User, budget
       saveToLocalStorageBackup({
         envelopes: currentData.envelopes ?? [],
         payments: currentData.payments ?? [],
-        income: currentData.income ?? 0,
         totalSpendingBudget: currentData.totalSpendingBudget ?? 0,
         payDate: currentData.payDate ?? null,
         payPeriodInterval: currentData.payPeriodInterval ?? "MONTHLY",
@@ -320,7 +309,6 @@ export async function restoreFromSafeBackup(backupId: string, user: User, budget
     if (!backupSnap.exists()) return null;
     const b = backupSnap.data();
     await editTotalSpendingBudget(Number(b.totalSpendingBudget), budgetId);
-    await editIncome(Number(b.income), budgetId);
     await editEnvelopes(b.nvelopes ?? [], budgetId);
     await editPayments(b.payments ?? [], budgetId);
     return b;
@@ -364,7 +352,6 @@ export interface LocalStorageBackup {
   data: {
     envelopes: Envelope[];
     payments: Payment[];
-    income: number;
     totalSpendingBudget: number;
     payDate: unknown;
     payPeriodInterval: string;
@@ -379,7 +366,6 @@ export interface LocalStorageBackup {
 export function saveToLocalStorageBackup(userData: {
   envelopes: Envelope[];
   payments: Payment[];
-  income: number;
   totalSpendingBudget: number;
   payDate: unknown;
   payPeriodInterval: string;
@@ -452,7 +438,6 @@ export async function restoreFromLocalStorageBackup(user: User, budgetId: string
       paidDates: (p.paidDates ?? []).map((pd) => toTimestamp(pd)).filter((t): t is Timestamp => t !== null) ?? [],
     }));
     await editTotalSpendingBudget(Number(data.totalSpendingBudget), budgetId);
-    await editIncome(Number(data.income), budgetId);
     await editEnvelopes(data.envelopes ?? [], budgetId);
     await editPayments(restoredPayments, budgetId);
     clearLocalStorageBackup();

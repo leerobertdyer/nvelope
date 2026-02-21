@@ -16,6 +16,7 @@ import FullScreen from "../Views/FullScreen";
 import MoneyInput from "../components/MoneyInput";
 import Button from "../components/Buttons/Button";
 import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
+import PageTour from "../components/PageTour";
 
 export default function Debt() {
     const { user } = useAuth();
@@ -327,6 +328,11 @@ export default function Debt() {
 
     return (
         <>
+        <PageTour tourId="debt">
+            <p>
+                Track your <span className="text-my-red-light">debts</span> and payoff dates here. Set a <span className="text-my-blue-light">snowball</span> amount to add extra toward one target debt each period. Tap a debt to edit or make an additional payment.
+            </p>
+        </PageTour>
         <div className="flex flex-col items-center justify-start py-[5rem] w-full h-full bg-my-blue-dark text-my-white-dark">
             <Header links={[{ label: "Home", href: "/" }, { label: "Settings", href: "/settings" }, { label: "Bills", href: "/bills" }, { label: "Feedback", href: "/feedback" }]} />
             <h1 className="text-3xl">Debt</h1>

@@ -38,11 +38,13 @@ import AddIncomeForm from "../components/Forms/AddIncomeForm";
 import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
 import FundPaymentDueModal from "../components/Payments/SplitPaymentDueModal";
 import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
+import PageTour from "../components/PageTour";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();
   const { activeBudgetId, budgets } = useBudget();
-  const activeBudgetName = budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
+  const activeBudgetName =
+    budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
   const { showToast } = useToast();
   const {
     totalSpendingBudget,
@@ -77,16 +79,22 @@ export default function MainEnvelopesView() {
   const [isAddingCashToEnvelope, setIsAddingCashToEnvelope] = useState(false);
   const [showClearEnvelopes, setShowClearNvelopes] = useState(false);
   const [dueFundPayment, setDueFundPayment] = useState<Payment | null>(null);
-  const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(new Set());
+  const [dismissedDuePayments, setDismissedDuePayments] = useState<Set<string>>(
+    new Set(),
+  );
   const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
 
   // Only ever show current pay period's payments (derived, never full list)
   const paymentsThisPeriod = useMemo(() => {
     if (!payDate || !payments?.length || !payPeriodInterval) return [];
-    const virtual = getVirtualPaymentsForCurrentPeriod(payments, payPeriodInterval, payDate);
+    const virtual = getVirtualPaymentsForCurrentPeriod(
+      payments,
+      payPeriodInterval,
+      payDate,
+    );
     // Hide paid-off debts from main payment view (they appear on Debt page)
     return virtual.filter(
-      (p) => !(p.type === "DEBT" && p.total != null && p.total <= 0)
+      (p) => !(p.type === "DEBT" && p.total != null && p.total <= 0),
     );
   }, [payments, payDate, payPeriodInterval]);
 
@@ -94,7 +102,7 @@ export default function MainEnvelopesView() {
   useEffect(() => {
     if (!payments) return;
     const today = startOfDay(new Date());
-    
+
     // Find Fund payments that are due (dueDate <= today) and not fully paid
     const duePayment = payments.find((p) => {
       if (p.type !== "FUND") return false;
@@ -102,12 +110,11 @@ export default function MainEnvelopesView() {
       const dueDate = startOfDay(p.dueDate.toDate());
       return dueDate <= today && !p.paid;
     });
-    
+
     if (duePayment && !dueFundPayment) {
       setDueFundPayment(duePayment);
     }
   }, [payments, dismissedDuePayments, dueFundPayment]);
-
 
   async function handleEditPayment(p: Payment) {
     setPaymentToEdit(p);
@@ -118,7 +125,7 @@ export default function MainEnvelopesView() {
   async function handleMarkFundPaid(payment: Payment) {
     if (!user) return;
     const updatedPayments = payments.map((p) =>
-      p.id === payment.id ? { ...p, paid: true } : p
+      p.id === payment.id ? { ...p, paid: true } : p,
     );
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
@@ -134,7 +141,7 @@ export default function MainEnvelopesView() {
     const updatedPayments = payments.map((p) =>
       p.id === payment.id
         ? { ...p, dueDate: Timestamp.fromDate(newDueDate) }
-        : p
+        : p,
     );
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
@@ -202,7 +209,9 @@ export default function MainEnvelopesView() {
       // DEBT: mark paid subtracts from total; mark unpaid adds it back (store amount in paidAmounts)
       if (p.type === "DEBT") {
         const occurrenceKey =
-          p.interval === "WEEKLY" || p.interval === "BIWEEKLY" || p.interval === "SPLIT"
+          p.interval === "WEEKLY" ||
+          p.interval === "BIWEEKLY" ||
+          p.interval === "SPLIT"
             ? startOfDay(payment.dueDate.toDate()).getTime().toString()
             : "monthly";
         const paidDates = p.paidDates || [];
@@ -214,21 +223,26 @@ export default function MainEnvelopesView() {
         const alreadyPaid =
           occurrenceKey === "monthly"
             ? p.paid
-            : paidDates.some((pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime);
+            : paidDates.some(
+                (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
+              );
 
         if (alreadyPaid) {
           const amountToAddBack = paidAmounts[occurrenceKey] ?? 0;
           delete paidAmounts[occurrenceKey];
           const newTotal = Math.max(0, (p.total ?? 0) + amountToAddBack);
           if (occurrenceKey === "monthly") {
-            const monthlyOccurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
+            const monthlyOccurrenceTime = startOfDay(
+              payment.dueDate.toDate(),
+            ).getTime();
             return {
               ...p,
               total: newTotal,
               paid: false,
               paidAmounts,
               paidDates: paidDates.filter(
-                (pd) => startOfDay(pd.toDate()).getTime() !== monthlyOccurrenceTime
+                (pd) =>
+                  startOfDay(pd.toDate()).getTime() !== monthlyOccurrenceTime,
               ),
             };
           }
@@ -236,7 +250,7 @@ export default function MainEnvelopesView() {
             ...p,
             total: newTotal,
             paidDates: paidDates.filter(
-              (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime
+              (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime,
             ),
             paidAmounts,
           };
@@ -246,7 +260,9 @@ export default function MainEnvelopesView() {
           payment.id.includes("-SPLIT-") ||
           payment.id.includes("-WEEKLY-") ||
           payment.id.includes("-BIWEEKLY-");
-        const occurrenceAmount = isVirtualOccurrence ? payment.amount : p.amount;
+        const occurrenceAmount = isVirtualOccurrence
+          ? payment.amount
+          : p.amount;
         const isSnowballTarget = p.id === snowballTargetPaymentId;
         const addSnowballToThisOccurrence =
           isSnowballTarget &&
@@ -256,10 +272,10 @@ export default function MainEnvelopesView() {
               (() => {
                 const { start: periodStart } = getCurrentIntervalDateRange(
                   payPeriodInterval,
-                  payDate
+                  payDate,
                 );
                 const occurrenceTime = startOfDay(
-                  payment.dueDate.toDate()
+                  payment.dueDate.toDate(),
                 ).getTime();
                 const periodStartTime = startOfDay(periodStart).getTime();
                 const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
@@ -301,17 +317,17 @@ export default function MainEnvelopesView() {
           ? new Date(
               payment.dueDate.toDate().getFullYear(),
               p.dueDate.toDate().getMonth(),
-              p.dueDate.toDate().getDate()
+              p.dueDate.toDate().getDate(),
             )
           : payment.dueDate.toDate();
       const occurrenceTime = startOfDay(occurrenceDate).getTime();
       const paidDates = p.paidDates || [];
       const alreadyPaid = paidDates.some(
-        (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
+        (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
       );
       if (alreadyPaid) {
         const newPaidDates = paidDates.filter(
-          (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime
+          (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime,
         );
         return {
           ...p,
@@ -335,13 +351,19 @@ export default function MainEnvelopesView() {
 
     // Roll snowball when a debt is paid off (total hit 0): add rolled amount to next target's payment amount, then zero snowball
     const paidOffPayment = updatedPayments.find(
-      (p) => p.id === originalId && p.type === "DEBT" && p.total != null && p.total <= 0
+      (p) =>
+        p.id === originalId &&
+        p.type === "DEBT" &&
+        p.total != null &&
+        p.total <= 0,
     );
     if (paidOffPayment && paidOffPayment.amount != null) {
       setPaidOffDebtName(paidOffPayment.name);
       showToast(`${paidOffPayment.name} paid off!`);
-      const { updatedPayments: paymentsWithBakedSnowball, nextTargetId: nextId } =
-        applyPayoffRoll(updatedPayments, paidOffPayment, snowball);
+      const {
+        updatedPayments: paymentsWithBakedSnowball,
+        nextTargetId: nextId,
+      } = applyPayoffRoll(updatedPayments, paidOffPayment, snowball);
       setSnowballTargetPaymentId(nextId);
       await editSnowballTargetPaymentId(activeBudgetId!, nextId);
       setPayments(paymentsWithBakedSnowball);
@@ -379,7 +401,7 @@ export default function MainEnvelopesView() {
       Number(e.total) * -1,
       activeBudgetId!,
       totalSpendingBudget,
-      setTotalSpendingBudget
+      setTotalSpendingBudget,
     );
     resetState();
     showToast("Envelope created");
@@ -395,7 +417,7 @@ export default function MainEnvelopesView() {
       setLoadingText("Deleting Envelope...");
       setShowLoading(true);
       const newEnvelopes = [...envelopes].filter(
-        (e) => e.id !== envelopeToEdit?.id
+        (e) => e.id !== envelopeToEdit?.id,
       );
       setEnvelopes(newEnvelopes);
       await editEnvelopes(newEnvelopes, activeBudgetId!);
@@ -420,14 +442,14 @@ export default function MainEnvelopesView() {
           Number(originalEnvelope.total - n.total),
           activeBudgetId!,
           totalSpendingBudget,
-          setTotalSpendingBudget
+          setTotalSpendingBudget,
         );
       } else if (originalEnvelope.total < n.total) {
         await updateBudgetStateAndDBB(
           Number(n.total - originalEnvelope.total) * -1,
           activeBudgetId!,
           totalSpendingBudget,
-          setTotalSpendingBudget
+          setTotalSpendingBudget,
         );
       }
       const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
@@ -477,7 +499,6 @@ export default function MainEnvelopesView() {
     setShowBudgetWarning(false);
     setShowLoading(false);
     setIsAddingCashToEnvelope(false);
-
   }
 
   function handleSetupDelete(id?: string) {
@@ -514,7 +535,7 @@ export default function MainEnvelopesView() {
     await editOneTimeCashAndBudget(
       newOneTimeCash,
       activeBudgetId!,
-      totalSpendingBudget
+      totalSpendingBudget,
     );
     setTotalSpendingBudget(totalSpendingBudget + cashAmount);
     resetState();
@@ -532,13 +553,13 @@ export default function MainEnvelopesView() {
     setLoadingText("Filling Nvelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes].map((e) =>
-      e.id === n.id ? { ...n, total: n.total + cashAmount } : e
+      e.id === n.id ? { ...n, total: n.total + cashAmount } : e,
     );
     await updateBudgetStateAndDBB(
       cashAmount * -1,
       activeBudgetId!,
       totalSpendingBudget,
-      setTotalSpendingBudget
+      setTotalSpendingBudget,
     );
     await editEnvelopes(newEnvelopes, activeBudgetId!);
     setEnvelopes(newEnvelopes);
@@ -606,9 +627,20 @@ export default function MainEnvelopesView() {
   if (!payDate) {
     return (
       <div className="w-full min-h-screen bg-my-blue-dark flex flex-col items-center justify-center p-6 text-center text-my-white-dark">
-        <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt" }, { label: "Bills", href: "/bills" }, { label: "Feedback", href: "/feedback" }]} />
-        <p className="text-lg mt-8">Set your pay date in Settings to get started.</p>
-        <a href="/settings" className="text-my-green-light underline mt-4">Go to Settings</a>
+        <Header
+          links={[
+            { label: "Settings", href: "/settings" },
+            { label: "Debt", href: "/debt" },
+            { label: "Bills", href: "/bills" },
+            { label: "Feedback", href: "/feedback" },
+          ]}
+        />
+        <p className="text-lg mt-8">
+          Set your pay date in Settings to get started.
+        </p>
+        <a href="/settings" className="text-my-green-light underline mt-4">
+          Go to Settings
+        </a>
       </div>
     );
   }
@@ -731,22 +763,82 @@ export default function MainEnvelopesView() {
   }
 
   if (isAddingCash) {
-    return <AddIncomeForm showLoading={showLoading} loadingText={loadingText} setIsAddingCash={setIsAddingCash} addCashToDb={addCashToDb} cashAmount={cashAmount} setCashAmount={setCashAmount} cashName={cashName} setCashName={setCashName} />
+    return (
+      <AddIncomeForm
+        showLoading={showLoading}
+        loadingText={loadingText}
+        setIsAddingCash={setIsAddingCash}
+        addCashToDb={addCashToDb}
+        cashAmount={cashAmount}
+        setCashAmount={setCashAmount}
+        cashName={cashName}
+        setCashName={setCashName}
+      />
+    );
   }
 
   if (isAddingCashToEnvelope) {
-    return <AddCashToEnvelopeForm showLoading={showLoading} loadingText={loadingText} cashAmount={cashAmount} setCashAmount={setCashAmount} addCashToEnvelope={addCashToEnvelope} envelopeToEdit={envelopeToEdit} setIsAddingCashToEnvelope={setIsAddingCashToEnvelope} />
+    return (
+      <AddCashToEnvelopeForm
+        showLoading={showLoading}
+        loadingText={loadingText}
+        cashAmount={cashAmount}
+        setCashAmount={setCashAmount}
+        addCashToEnvelope={addCashToEnvelope}
+        envelopeToEdit={envelopeToEdit}
+        setIsAddingCashToEnvelope={setIsAddingCashToEnvelope}
+      />
+    );
   }
 
   return (
     <>
+      <PageTour tourId="main">
+        <div className="flex flex-col items-start gap-2">
+          <p>This is your current budget.</p>
+          <p>
+            Click <span className="text-my-red-light">Payment</span> for
+            bills/debts.
+          </p>
+          <p>
+            <span className="text-my-green-light">Cash</span> when money comes
+            in.
+          </p>
+          <p>
+            <span className="text-my-blue-light">Nvelope</span> to create
+            nvelopes for spending categories.
+          </p>
+          <p>
+            <span className="text-my-white-dark">Clear</span> to clear all
+            envelopes.
+          </p>
+          Useful when starting a new period.
+          <div>
+            See your days left in current interval, and your balance in top
+            menu. Tap the balance to edit it. You can also adjust your pay date
+            and budget interval in{" "}
+            <a href="/settings" className="text-my-blue-light underline inline">
+              Settings
+            </a>
+          </div>
+        </div>
+      </PageTour>
       <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]">
         {showLoading && <Loading text={loadingText} />}
 
-        <Header links={[{ label: "Settings", href: "/settings" }, { label: "Debt", href: "/debt" }, { label: "Bills", href: "/bills" }, { label: "Feedback", href: "/feedback" }]} />
+        <Header
+          links={[
+            { label: "Settings", href: "/settings" },
+            { label: "Debt", href: "/debt" },
+            { label: "Bills", href: "/bills" },
+            { label: "Feedback", href: "/feedback" },
+          ]}
+        />
 
         <main className="flex flex-col items-center pt-[1rem] w-full">
-          <h2 className="text-lg font-semibold text-my-white-dark mb-2">{activeBudgetName}</h2>
+          <h2 className="text-lg font-semibold text-my-white-dark mb-2">
+            {activeBudgetName}
+          </h2>
           <ActionButtons
             onPaymentClick={handleAddPayment}
             onCashClick={handleAddCash}
