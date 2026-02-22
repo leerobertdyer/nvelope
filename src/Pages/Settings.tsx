@@ -5,6 +5,7 @@ import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { type BackupData, type Interval } from "../types";
 import {
+  editIsNewUser,
   editPayPeriodInterval,
   editPayDate,
   editTotalSpendingBudget,
@@ -57,6 +58,8 @@ export default function Settings() {
     setPayDate,
     setPayments,
     setEnvelopes,
+    isNewUser,
+    setIsNewUser,
   } = useDatabase();
 
   const [showIntervalSettings, setShowIntervalSettings] =
@@ -742,7 +745,15 @@ export default function Settings() {
 
   return (
     <div className="w-full h-screen overflow-y-scroll bg-my-white-light">
-      <PageTour tourId="settings">
+      <PageTour
+        visible={isNewUser}
+        onDismiss={async () => {
+          if (activeBudgetId) {
+            await editIsNewUser(false, activeBudgetId);
+            setIsNewUser(false);
+          }
+        }}
+      >
         <p>
           Set pay date and budget interval here when you want to adjust. You can also manage budgets, backups, and account options.
         </p>

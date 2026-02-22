@@ -5,6 +5,7 @@ import { type Envelope, type Payment } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
   editEnvelopes,
+  editIsNewUser,
   editOneTimeCashAndBudget,
   editPayments,
   editSnowball,
@@ -51,6 +52,8 @@ export default function MainEnvelopesView() {
     setTotalSpendingBudget,
     envelopes,
     setEnvelopes,
+    isNewUser,
+    setIsNewUser,
     payDate,
     payPeriodInterval,
     snowball,
@@ -793,7 +796,15 @@ export default function MainEnvelopesView() {
 
   return (
     <>
-      <PageTour tourId="main">
+      <PageTour
+        visible={isNewUser}
+        onDismiss={async () => {
+          if (activeBudgetId) {
+            await editIsNewUser(false, activeBudgetId);
+            setIsNewUser(false);
+          }
+        }}
+      >
         <div className="flex flex-col items-start gap-2">
           <p>This is your current budget.</p>
           <p>

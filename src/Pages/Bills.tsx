@@ -5,7 +5,7 @@ import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useToast } from "../Context/ToastContext/useToast";
 import Header from "../components/Nav/Header";
 import type { Payment } from "../types";
-import { editPayments } from "../firebase/editData";
+import { editIsNewUser, editPayments } from "../firebase/editData";
 import { getBillIntervalLabel, paymentsTotal, removeVirtualIdPortion } from "../util";
 import BigPayment from "../Views/BigPayment";
 import { Timestamp } from "firebase/firestore";
@@ -16,7 +16,7 @@ export default function Bills() {
   const { user } = useAuth();
   const { activeBudgetId } = useBudget();
   const { showToast } = useToast();
-  const { payments, setPayments, payPeriodInterval, payDate } = useDatabase();
+  const { payments, setPayments, payPeriodInterval, payDate, isNewUser, setIsNewUser } = useDatabase();
 
   const [editingBill, setEditingBill] = useState<Payment | null>(null);
 
@@ -94,7 +94,15 @@ export default function Bills() {
 
   return (
     <div className="flex flex-col items-center justify-start py-[5rem] w-full min-h-screen bg-my-blue-dark text-my-white-dark">
-      <PageTour tourId="bills">
+      <PageTour
+        visible={isNewUser}
+        onDismiss={async () => {
+          if (activeBudgetId) {
+            await editIsNewUser(false, activeBudgetId);
+            setIsNewUser(false);
+          }
+        }}
+      >
         <p>
           Your recurring <span className="text-my-red-light">bills</span> appear here. Tap a bill to mark it paid for a given due date or to edit it. Add new bills from Home using the Payment button.
         </p>

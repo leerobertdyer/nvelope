@@ -5,7 +5,7 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { createFirstBudget, completeDemoWithDefaults } from "../firebase/budgets";
-import { editPayDate, editPayPeriodInterval, editIsNewUser } from "../firebase/editData";
+import { editPayDate, editPayPeriodInterval } from "../firebase/editData";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../Context/ToastContext/useToast";
 import Header from "../components/Nav/Header";
@@ -21,7 +21,6 @@ export default function FirstTimeSetup() {
   const {
     setPayDate,
     setPayPeriodInterval,
-    setIsNewUser,
     setDocumentExists,
   } = useDatabase();
   const navigate = useNavigate();
@@ -44,7 +43,6 @@ export default function FirstTimeSetup() {
     const defaultPayDate = new Date(now.getFullYear(), now.getMonth(), 1);
     setPayDate(Timestamp.fromDate(defaultPayDate));
     setPayPeriodInterval(MONTHLY);
-    setIsNewUser(false);
     setDocumentExists(true);
     await refetchBudgets();
     setIsSubmitting(false);
@@ -68,7 +66,6 @@ export default function FirstTimeSetup() {
     try {
       await editPayDate(date, budgetId);
       await editPayPeriodInterval(interval, budgetId);
-      await editIsNewUser(false, budgetId);
     } catch (e) {
       console.error("FirstTimeSetup save failed:", e);
       showToast("Something went wrong. Please try again.", "error");
@@ -78,7 +75,6 @@ export default function FirstTimeSetup() {
     setActiveBudgetId(budgetId);
     setPayDate(Timestamp.fromDate(date));
     setPayPeriodInterval(interval);
-    setIsNewUser(false);
     setDocumentExists(true);
     refetchBudgets();
     setIsSubmitting(false);

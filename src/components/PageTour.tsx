@@ -1,40 +1,17 @@
-import { useEffect, useState } from "react";
-
-const STORAGE_PREFIX = "nvelope_tour_";
-
-export type PageTourId = "main" | "debt" | "bills" | "settings";
-
-function hasSeenTour(tourId: PageTourId): boolean {
-  if (typeof window === "undefined") return true;
-  return localStorage.getItem(STORAGE_PREFIX + tourId) === "1";
-}
-
-function markTourSeen(tourId: PageTourId): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_PREFIX + tourId, "1");
-}
-
 interface PageTourProps {
-  tourId: PageTourId;
+  /** Show the tour only when true (e.g. isNewUser from budget data). */
+  visible: boolean;
+  /** Called when user clicks "Got it"; parent should set isNewUser to false in DB and context. */
+  onDismiss: () => void;
   children: React.ReactNode;
 }
 
 /**
- * Shows a one-time dismissible popup per page. Once the user clicks "Got it", the tour is not shown again for that page (persisted in localStorage).
+ * Shows a one-time dismissible popup when visible (e.g. isNewUser). On "Got it", calls onDismiss
+ * so the parent can persist that the user has seen the tour (e.g. editIsNewUser(false)).
  */
-export default function PageTour({ tourId, children }: PageTourProps) {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    setShow(!hasSeenTour(tourId));
-  }, [tourId]);
-
-  function handleDismiss() {
-    markTourSeen(tourId);
-    setShow(false);
-  }
-
-  if (!show) return null;
+export default function PageTour({ visible, onDismiss, children }: PageTourProps) {
+  if (!visible) return null;
 
   return (
     <div
@@ -49,7 +26,7 @@ export default function PageTour({ tourId, children }: PageTourProps) {
         <div className="flex justify-end">
           <button
             type="button"
-            onClick={handleDismiss}
+            onClick={onDismiss}
             className="px-4 py-2 rounded-md bg-my-green-dark text-my-white-light hover:bg-my-green-base font-medium"
           >
             Got it

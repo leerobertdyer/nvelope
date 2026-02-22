@@ -5,7 +5,7 @@ import Loading from "../components/Loading";
 import type { Payment } from "../types";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
 import Header from "../components/Nav/Header";
-import { editPayments, editSnowball, editSnowballTargetPaymentId } from "../firebase/editData";
+import { editIsNewUser, editPayments, editSnowball, editSnowballTargetPaymentId } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useToast } from "../Context/ToastContext/useToast";
@@ -22,7 +22,7 @@ export default function Debt() {
     const { user } = useAuth();
     const { activeBudgetId } = useBudget();
     const { showToast } = useToast();
-    const { payments, setPayments, payPeriodInterval, payDate, snowball, setSnowball, snowballTargetPaymentId, setSnowballTargetPaymentId } = useDatabase();
+    const { payments, setPayments, payPeriodInterval, payDate, snowball, setSnowball, snowballTargetPaymentId, setSnowballTargetPaymentId, isNewUser, setIsNewUser } = useDatabase();
     const { remainingDebt } = paymentsTotal(payments, payPeriodInterval, payDate ?? null)
 
     const [isLoading, setIsLoading] = useState(true);
@@ -328,7 +328,15 @@ export default function Debt() {
 
     return (
         <>
-        <PageTour tourId="debt">
+        <PageTour
+            visible={isNewUser}
+            onDismiss={async () => {
+                if (activeBudgetId) {
+                    await editIsNewUser(false, activeBudgetId);
+                    setIsNewUser(false);
+                }
+            }}
+        >
             <p>
                 Track your <span className="text-my-red-light">debts</span> and payoff dates here. Set a <span className="text-my-blue-light">snowball</span> amount to add extra toward one target debt each period. Tap a debt to edit or make an additional payment.
             </p>
