@@ -627,27 +627,6 @@ export default function MainEnvelopesView() {
     );
   }
 
-  if (!payDate) {
-    return (
-      <div className="w-full min-h-screen bg-my-blue-dark flex flex-col items-center justify-center p-6 text-center text-my-white-dark">
-        <Header
-          links={[
-            { label: "Settings", href: "/settings" },
-            { label: "Debt", href: "/debt" },
-            { label: "Bills", href: "/bills" },
-            { label: "Feedback", href: "/feedback" },
-          ]}
-        />
-        <p className="text-lg mt-8">
-          Set your pay date in Settings to get started.
-        </p>
-        <a href="/settings" className="text-my-green-light underline mt-4">
-          Go to Settings
-        </a>
-      </div>
-    );
-  }
-
   // Show modal for due Fund (planned expense) payments
   if (dueFundPayment) {
     return (
@@ -850,6 +829,14 @@ export default function MainEnvelopesView() {
           <h2 className="text-lg font-semibold text-my-white-dark mb-2">
             {activeBudgetName}
           </h2>
+          {!payDate && (
+            <p className="text-sm text-my-white-light mb-2">
+              <a href="/settings" className="text-my-green-light underline">
+                Set your pay date in Settings
+              </a>{" "}
+              to see your pay period in the header.
+            </p>
+          )}
           <ActionButtons
             onPaymentClick={handleAddPayment}
             onCashClick={handleAddCash}

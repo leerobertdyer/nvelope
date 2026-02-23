@@ -10,8 +10,8 @@ interface IDatabaseContext {
     setSnowball: (n: number) => void;
     snowballTargetPaymentId: string | null;
     setSnowballTargetPaymentId: (id: string | null) => void;
-    payDate: Timestamp | null
-    setPayDate: (payDate: Timestamp | null) => void
+    payDate: Timestamp | null | undefined
+    setPayDate: (payDate: Timestamp | null | undefined) => void
     payPeriodInterval: Interval
     setPayPeriodInterval: (i: Interval) => void
     envelopes: Envelope[]

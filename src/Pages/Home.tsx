@@ -10,8 +10,8 @@ import { shouldBackupUserDataSafe, backupUserDataSafe } from "../firebase/editDa
 
 export default function Home() {
   const { user, isLoadingUser } = useAuth();
-  const { isLoadingBudgets, activeBudgetId } = useBudget();
-  const { isLoadingDb, dbError, documentExists } = useDatabase();
+  const { isLoadingBudgets, activeBudgetId, hasBudgets } = useBudget();
+  const { isLoadingDb, dbError, documentExists, payDate } = useDatabase();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -66,9 +66,24 @@ export default function Home() {
     );
   }
 
-  // No document exists = new user. Show minimal first-time setup (pay date + interval only).
-  if (documentExists === false) {
+  // Still resolving doc for this budget (e.g. budgets just loaded, snapshot pending).
+  if (user && documentExists === null && hasBudgets) {
+    return <Loading text="Welcome to Nvelopes..." />;
+  }
+
+  // No document exists = new user. Show first-time setup only when we've determined that:
+  // - we have a budget but its data doc doesn't exist (documentExists === false), or
+  // - we've finished loading and the user has no budgets (documentExists === null, !hasBudgets).
+  const isNewUser =
+    documentExists === false ||
+    (documentExists === null && !hasBudgets && !isLoadingBudgets);
+  if (isNewUser) {
     return <FirstTimeSetup />;
+  }
+
+  // Only show MainView once we've received the budget doc snapshot (payDate is set or explicitly null).
+  if (documentExists === true && payDate === undefined) {
+    return <Loading text="Welcome to Nvelopes..." />;
   }
 
   return <MainView />;

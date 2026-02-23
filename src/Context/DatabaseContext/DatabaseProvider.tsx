@@ -18,7 +18,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const [isLoadingDb, setIsLoadingDb] = useState(true);
     const [snowball, setSnowball] = useState<number>(0);
     const [snowballTargetPaymentId, setSnowballTargetPaymentId] = useState<string | null>(null);
-    const [payDate, setPayDate] = useState<Timestamp|null>(null);
+    const [payDate, setPayDate] = useState<Timestamp | null | undefined>(undefined);
     const [payPeriodInterval, setPayPeriodInterval] = useState<Interval>("MONTHLY");
     const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
     const [payments, setPaymentsState] = useState<Payment[]>([]);
@@ -37,19 +37,23 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     useEffect(() => {
         if (!user) {
             setDocumentExists(null);
+            setPayDate(undefined);
             setIsLoadingDb(false);
             return;
         }
         if (!hasBudgets) {
-            setDocumentExists(false);
+            setDocumentExists(null);
+            setPayDate(undefined);
             setIsLoadingDb(false);
             return;
         }
         if (!activeBudgetId) {
+            setPayDate(undefined);
             setIsLoadingDb(false);
             return;
         }
 
+        setPayDate(undefined);
         setIsLoadingDb(true);
         const dataRef = doc(db, "budgets", activeBudgetId, "data", BUDGET_DATA_DOC_ID);
 
@@ -77,6 +81,7 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setBackups(data.backups ?? null);
                 } else {
                     setDocumentExists(false);
+                    setPayDate(undefined);
                     setIsLoadingDb(false);
                 }
             },
