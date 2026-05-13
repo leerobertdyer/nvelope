@@ -219,7 +219,7 @@ export default function Debt() {
                 saveButtonText="Apply"
                 closeButtonText="Cancel"
             >
-                <div className="flex flex-col items-center justify-center text-center w-full px-4">
+                <div className="flex flex-col items-center justify-center text-center w-full">
                     <p className="text-my-white-light mb-2">Additional payment</p>
                     <p className="text-my-white-dark text-sm mb-4">{debt.name}</p>
                     <p className="text-my-white-dark text-xs mb-2">Remaining: ${maxPay.toFixed(2)}</p>
@@ -239,10 +239,10 @@ export default function Debt() {
         const d = debtMenuOpen;
         return (
             <FullScreen theme="DARK" onClose={() => setDebtMenuOpen(null)} showButtons={false}>
-                <div className="flex flex-col items-center justify-center text-center w-full px-4 gap-4">
+                <div className="flex flex-col items-center justify-center text-center w-full gap-4">
                     <p className="text-my-white-light font-medium">{d.name}</p>
                     <p className="text-my-white-dark text-sm">What would you like to do?</p>
-                    <div className="flex flex-col gap-2 w-full max-w-[16rem]">
+                    <div className="flex flex-col gap-2 w-full max-w-[16rem] items-center">
                         <Button
                             color="green"
                             onClick={() => {

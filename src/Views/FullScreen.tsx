@@ -50,7 +50,7 @@ export default function FullScreen({
         z-[10100] 
         w-full h-full 
         flex 
-        justify-center align-center 
+        justify-center items-center 
         ${theme === "LIGHT" ? "bg-my-blue-dark text-my-white-dark" : "bg-my-black-base text-my-white-light"} 
         `}
     >
