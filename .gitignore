@@ -1,8 +1,55 @@
-node_modules
-.env
-dist
-.temp*
-*.log
-.DS_Store
-*/.DS_Store
-*-firebase-admin-key.json
+# /web
+web/node_modules
+web/.env
+web/dist
+web/.temp*
+web/*.log
+web/.DS_Store
+web/*/.DS_Store
+web/*-firebase-admin-key.json
+web/.vite/
+web/deps/
+
+# /mobile
+
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+mobile/node_modules/
+
+# Expo
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/expo-env.d.ts
+
+# Native
+mobile/.kotlin/
+mobile/*.orig.*
+mobile/*.jks
+mobile/*.p8
+mobile/*.p12
+mobile/*.key
+mobile/*.mobileprovision
+
+# Metro
+mobile/.metro-health-check*
+
+# debug
+mobile/npm-debug.*
+mobile/yarn-debug.*
+mobile/yarn-error.*
+
+# macOS
+mobile/.DS_Store
+mobile/*.pem
+
+# local env files
+mobile/.env*.local
+
+# typescript
+mobile/*.tsbuildinfo
+
+# generated native folders
+mobile/ios
+mobile/android
