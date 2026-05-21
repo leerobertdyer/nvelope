@@ -11,11 +11,12 @@ web/.vite/
 web/deps/
 
 # /mobile
-
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+mobile/.env
 
 # dependencies
 mobile/node_modules/
+
+*/.env
 
 # Expo
 mobile/.expo/

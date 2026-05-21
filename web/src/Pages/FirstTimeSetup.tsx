@@ -12,8 +12,8 @@ import Header from "../components/Nav/Header";
 import Button from "../components/Buttons/Button";
 import PayDateCalendar from "../components/Forms/PayDateCalendar";
 import IntervalSelector from "../components/Forms/IntervalSelector";
-import type { Interval } from "../types";
 import { MONTHLY } from "../constants";
+import type { Interval } from "../types";
 
 export default function FirstTimeSetup() {
   const { user } = useAuth();
