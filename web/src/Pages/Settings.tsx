@@ -11,8 +11,8 @@ import {
   editTotalSpendingBudget,
   getSafeBackups,
   restoreFromSafeBackup,
-  getLocalStorageBackup,
-  restoreFromLocalStorageBackup,
+  getAsyncStorageBackup,
+  restoreFromAsyncStorageBackup,
   type LocalStorageBackup,
 } from "../firebase/editData";
 import {
@@ -136,7 +136,7 @@ export default function Settings() {
       setIsLoadingSafeBackups(false);
     }
     loadSafeBackups();
-    const lsBackup = getLocalStorageBackup();
+    const lsBackup = getAsyncStorageBackup();
     setLocalStorageBackup(lsBackup);
   }, [user, activeBudgetId]);
 
@@ -260,7 +260,7 @@ export default function Settings() {
       setTotalSpendingBudget(Number(result.totalSpendingBudget));
       handleCloseBackup();
       // After restore, update localStorage backup state (now available for undo)
-      const lsBackup = getLocalStorageBackup();
+      const lsBackup = getAsyncStorageBackup();
       setLocalStorageBackup(lsBackup);
       showToast("Backup restored successfully");
     } else {
@@ -270,7 +270,7 @@ export default function Settings() {
 
   async function handleUndoRestore() {
     if (!user || !localStorageBackup || !activeBudgetId) return;
-    const success = await restoreFromLocalStorageBackup(user, activeBudgetId);
+    const success = await restoreFromAsyncStorageBackup(user, activeBudgetId);
     if (success) {
       // Update local state with restored values
       const { data } = localStorageBackup;

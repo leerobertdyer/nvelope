@@ -296,7 +296,7 @@ export async function restoreFromSafeBackup(backupId: string, user: User, budget
     const currentDataSnap = await getDoc(dataRef);
     if (currentDataSnap.exists()) {
       const currentData = currentDataSnap.data();
-      saveToLocalStorageBackup({
+      saveToAsyncStorageBackup({
         envelopes: currentData.envelopes ?? [],
         payments: currentData.payments ?? [],
         totalSpendingBudget: currentData.totalSpendingBudget ?? 0,
@@ -346,7 +346,7 @@ async function pruneOldBackups(userId: string, keepCount: number) {
  * This provides an "undo last restore" feature without consuming Firestore backups.
  * Only the most recent pre-restore state is kept (auto-overwrites).
  */
-const LOCALSTORAGE_BACKUP_KEY = 'nvelope_pre_restore_backup';
+const ASYNCSTORAGE_BACKUP_KEY = 'nvelope_pre_restore_backup';
 
 export interface LocalStorageBackup {
   data: {
@@ -363,7 +363,7 @@ export interface LocalStorageBackup {
 /**
  * Save current user data to localStorage before restore
  */
-export function saveToLocalStorageBackup(userData: {
+export function saveToAsyncStorageBackup(userData: {
   envelopes: Envelope[];
   payments: Payment[];
   totalSpendingBudget: number;
@@ -377,7 +377,7 @@ export function saveToLocalStorageBackup(userData: {
       reason: 'pre-restore-backup'
     };
     // Overwrite any existing backup (only keep most recent)
-    localStorage.setItem(LOCALSTORAGE_BACKUP_KEY, JSON.stringify(backup));
+    localStorage.setItem(ASYNCSTORAGE_BACKUP_KEY, JSON.stringify(backup));
   } catch (error) {
     console.error("Error saving to localStorage:", error);
   }
@@ -386,9 +386,9 @@ export function saveToLocalStorageBackup(userData: {
 /**
  * Get the localStorage backup if it exists
  */
-export function getLocalStorageBackup(): LocalStorageBackup | null {
+export function getAsyncStorageBackup(): LocalStorageBackup | null {
   try {
-    const stored = localStorage.getItem(LOCALSTORAGE_BACKUP_KEY);
+    const stored = localStorage.getItem(ASYNCSTORAGE_BACKUP_KEY);
     if (!stored) return null;
     return JSON.parse(stored) as LocalStorageBackup;
   } catch (error) {
@@ -400,9 +400,9 @@ export function getLocalStorageBackup(): LocalStorageBackup | null {
 /**
  * Clear the localStorage backup after successful undo
  */
-export function clearLocalStorageBackup(): void {
+export function clearAsyncStorageBackup(): void {
   try {
-    localStorage.removeItem(LOCALSTORAGE_BACKUP_KEY);
+    localStorage.removeItem(ASYNCSTORAGE_BACKUP_KEY);
     console.log("🗑️ Cleared localStorage backup");
   } catch (error) {
     console.error("Error clearing localStorage backup:", error);
@@ -426,9 +426,9 @@ function toTimestamp(obj: unknown): Timestamp | null {
 /**
  * Restore from localStorage backup (undo last restore) into the given budget.
  */
-export async function restoreFromLocalStorageBackup(user: User, budgetId: string): Promise<boolean> {
+export async function restoreFromAsyncStorageBackup(user: User, budgetId: string): Promise<boolean> {
   if (!user) return false;
-  const backup = getLocalStorageBackup();
+  const backup = getAsyncStorageBackup();
   if (!backup) return false;
   try {
     const { data } = backup;
@@ -440,7 +440,7 @@ export async function restoreFromLocalStorageBackup(user: User, budgetId: string
     await editTotalSpendingBudget(Number(data.totalSpendingBudget), budgetId);
     await editEnvelopes(data.envelopes ?? [], budgetId);
     await editPayments(restoredPayments, budgetId);
-    clearLocalStorageBackup();
+    clearAsyncStorageBackup();
     return true;
   } catch (error) {
     console.error("Error restoring from localStorage backup:", error);

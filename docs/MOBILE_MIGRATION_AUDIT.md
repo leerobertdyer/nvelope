@@ -197,13 +197,13 @@ src/Context/BudgetContext/BudgetProvider.tsx:      else localStorage.removeItem(
 src/Context/BudgetContext/BudgetProvider.tsx:      if (typeof window !== "undefined") localStorage.setItem(ACTIVE_BUDGET_KEY, budgetId);
 src/firebase/editData.ts: * Saves the current user data to localStorage before a restore operation.
 src/firebase/editData.ts: * Save current user data to localStorage before restore
-src/firebase/editData.ts:    localStorage.setItem(LOCALSTORAGE_BACKUP_KEY, JSON.stringify(backup));
+src/firebase/editData.ts:    localStorage.setItem(ASYNCSTORAGE_BACKUP_KEY, JSON.stringify(backup));
 src/firebase/editData.ts:    console.error("Error saving to localStorage:", error);
 src/firebase/editData.ts: * Get the localStorage backup if it exists
-src/firebase/editData.ts:    const stored = localStorage.getItem(LOCALSTORAGE_BACKUP_KEY);
+src/firebase/editData.ts:    const stored = localStorage.getItem(ASYNCSTORAGE_BACKUP_KEY);
 src/firebase/editData.ts:    console.error("Error reading localStorage backup:", error);
 src/firebase/editData.ts: * Clear the localStorage backup after successful undo
-src/firebase/editData.ts:    localStorage.removeItem(LOCALSTORAGE_BACKUP_KEY);
+src/firebase/editData.ts:    localStorage.removeItem(ASYNCSTORAGE_BACKUP_KEY);
 src/firebase/editData.ts:    console.log("🗑️ Cleared localStorage backup");
 src/firebase/editData.ts:    console.error("Error clearing localStorage backup:", error);
 src/firebase/editData.ts: * Restore from localStorage backup (undo last restore) into the given budget.
