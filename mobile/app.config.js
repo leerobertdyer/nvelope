@@ -1,23 +1,42 @@
 import "dotenv/config";
-import appJson from "./app.json";
 
 export default {
-  ...appJson.expo,
-  android: {
-    ...appJson.expo.android,
-    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
+  name: "mobile",
+  slug: "mobile",
+  version: "1.0.0",
+  orientation: "portrait",
+  icon: "./assets/icon.png",
+  userInterfaceStyle: "light",
+  newArchEnabled: true,
+  splash: {
+    image: "./assets/splash-icon.png",
+    resizeMode: "contain",
+    backgroundColor: "#ffffff",
   },
   ios: {
-    ...appJson.expo.ios,
-    googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST ?? './GoogleService-Info.plist',
+    supportsTablet: true,
+    bundleIdentifier: "com.anonymous.mobile",
+    googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist",
+  },
+  android: {
+    adaptiveIcon: {
+      foregroundImage: "./assets/adaptive-icon.png",
+      backgroundColor: "#ffffff",
+    },
+    edgeToEdgeEnabled: true,
+    predictiveBackGestureEnabled: false,
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
+  },
+  web: {
+    favicon: "./assets/favicon.png",
   },
   plugins: [
-    '@react-native-firebase/app',
-    '@react-native-firebase/auth',
-    ['expo-build-properties', { ios: { useFrameworks: 'static' } }],
-    ['@react-native-google-signin/google-signin', {
-      iosUrlScheme: process.env.REVERSED_CLIENT_ID
-    }]
+    "@react-native-firebase/app",
+    "@react-native-firebase/auth",
+    ["expo-build-properties", { ios: { useFrameworks: "static" } }],
+    ["@react-native-google-signin/google-signin", {
+      iosUrlScheme: process.env.REVERSED_CLIENT_ID,
+    }],
   ],
   extra: {
     apiUrl: process.env.API_URL,
