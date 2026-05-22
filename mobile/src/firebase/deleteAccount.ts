@@ -1,30 +1,19 @@
-import {
-  deleteUser,
-  reauthenticateWithPopup,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-} from "firebase/auth";
-import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
-import { auth, db, googleProvider } from "./firebase";
+import auth from "@react-native-firebase/auth";
+import firestore from "@react-native-firebase/firestore";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 export type DeleteAccountResult =
   | { success: true }
   | { success: false; error: string }
   | { success: false; error: string; needPassword: true };
 
-/**
- * Re-authenticates the current user (required by Firebase before deleteUser).
- * Uses only auth.currentUser — no external userId.
- * - Google: opens popup.
- * - Email/password: requires password (caller must pass it).
- */
 type ReauthResult =
   | { success: true }
   | { success: false; error: string }
   | { success: false; needPassword: true; error: string };
 
 async function reauthenticateUser(password?: string): Promise<ReauthResult> {
-  const user = auth.currentUser;
+  const user = auth().currentUser;
   if (!user) return { success: false, error: "Not signed in" };
 
   const hasGoogle = user.providerData.some((p) => p.providerId === "google.com");
@@ -32,7 +21,12 @@ async function reauthenticateUser(password?: string): Promise<ReauthResult> {
 
   if (hasGoogle) {
     try {
-      await reauthenticateWithPopup(user, googleProvider);
+      await GoogleSignin.hasPlayServices();
+      const { data } = await GoogleSignin.signIn();
+      const idToken = data?.idToken;
+      if (!idToken) return { success: false, error: "Google sign-in failed" };
+      const credential = auth.GoogleAuthProvider.credential(idToken);
+      await user.reauthenticateWithCredential(credential);
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Sign-in was cancelled or failed";
@@ -48,8 +42,8 @@ async function reauthenticateUser(password?: string): Promise<ReauthResult> {
       return { success: false, error: "No email on account" };
     }
     try {
-      const credential = EmailAuthProvider.credential(user.email, password.trim());
-      await reauthenticateWithCredential(user, credential);
+      const credential = auth.EmailAuthProvider.credential(user.email, password.trim());
+      await user.reauthenticateWithCredential(credential);
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Wrong password or sign-in failed";
@@ -60,16 +54,9 @@ async function reauthenticateUser(password?: string): Promise<ReauthResult> {
   return { success: false, error: "Unsupported sign-in method" };
 }
 
-/**
- * Deletes the current user's Firebase Auth account and all Firestore data.
- * Re-authenticates first (Google popup or email/password with optional password).
- * Uses only auth.currentUser.uid — there is no API to delete another user's data.
- */
 export async function deleteAccount(options?: { password?: string }): Promise<DeleteAccountResult> {
-  const user = auth.currentUser;
-  if (!user) {
-    return { success: false, error: "Not signed in" };
-  }
+  const user = auth().currentUser;
+  if (!user) return { success: false, error: "Not signed in" };
   const uid = user.uid;
 
   const reauth = await reauthenticateUser(options?.password);
@@ -81,13 +68,13 @@ export async function deleteAccount(options?: { password?: string }): Promise<De
   }
 
   try {
-    const backupsRef = collection(db, "userBackups", uid, "backups");
-    const snapshot = await getDocs(backupsRef);
+    const backupsRef = firestore().collection(`userBackups/${uid}/backups`);
+    const snapshot = await backupsRef.get();
     for (const d of snapshot.docs) {
-      await deleteDoc(doc(db, "userBackups", uid, "backups", d.id));
+      await d.ref.delete();
     }
-    await deleteDoc(doc(db, "users", uid));
-    await deleteUser(user);
+    await firestore().doc(`users/${uid}`).delete();
+    await user.delete();
     return { success: true };
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Failed to delete account";

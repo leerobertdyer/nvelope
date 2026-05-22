@@ -1,8 +1,7 @@
-import {  signOut } from "firebase/auth";
-import { auth } from "./firebase";
+import auth from "@react-native-firebase/auth";
 
 export default async function signout() {
-    return signOut(auth).then(() => {
+    return auth().signOut().then(() => {
         console.log('User signed out successfully');
     }).catch((e) => {
         console.error(e)

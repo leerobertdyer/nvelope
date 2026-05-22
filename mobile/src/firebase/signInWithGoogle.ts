@@ -1,9 +1,17 @@
-import type { User } from "firebase/auth";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "./firebase";
+import auth from "@react-native-firebase/auth";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import constants from "../../app.config"
 
-export default async function signInWithGoogle(): Promise<User> {
-  const { user } = await signInWithPopup(auth, googleProvider);
-  console.log("HOLY SHIT LOOK IS THERE IS A USER? ", {user})
-  return user;
+// Configure once at app startup (App.tsx or similar)
+GoogleSignin.configure({
+  webClientId: constants.extra.firebaseWebId,
+});
+
+// Sign-in function
+export async function signInWithGoogle() {
+  await GoogleSignin.hasPlayServices();
+  const response = await GoogleSignin.signIn();
+  const idToken = response.data?.idToken;
+  const credential = auth.GoogleAuthProvider.credential(idToken ?? '');
+  return auth().signInWithCredential(credential);
 }

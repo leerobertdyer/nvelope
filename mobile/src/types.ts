@@ -1,4 +1,5 @@
-import type { Timestamp } from "firebase/firestore";
+import { FirebaseFirestoreTypes} from "@react-native-firebase/firestore"
+type Timestamp = FirebaseFirestoreTypes.Timestamp
 
 export interface Envelope {
     id: string
