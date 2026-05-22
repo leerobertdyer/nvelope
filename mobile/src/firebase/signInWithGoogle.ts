@@ -4,7 +4,7 @@ import constants from "../../app.config"
 
 // Configure once at app startup (App.tsx or similar)
 GoogleSignin.configure({
-  webClientId: constants.extra.firebaseWebId,
+  webClientId: constants.expo.extra.firebaseWebId,
 });
 
 // Sign-in function
