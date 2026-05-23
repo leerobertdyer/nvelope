@@ -2,7 +2,7 @@ import "dotenv/config";
 
 export default {
   expo: {
-    name: "mobile",
+    name: "Nvelopes",
     slug: "mobile",
     version: "1.0.0",
     orientation: "portrait",
