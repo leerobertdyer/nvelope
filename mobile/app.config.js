@@ -17,6 +17,7 @@ export default {
     ios: {
       supportsTablet: true,
       buildReactNativeFromSource: true,
+      bundleIdentifier: "com.ldyer.nvelopes",
       googleServicesFile:
         process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist",
     },
