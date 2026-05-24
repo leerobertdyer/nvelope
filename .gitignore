@@ -10,6 +10,10 @@ web/*-firebase-admin-key.json
 web/.vite/
 web/deps/
 
+GoogleService-Info.plist
+google-services.json
+
+
 # /mobile
 mobile/.env
 
