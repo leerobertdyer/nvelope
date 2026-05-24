@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Header from "../components/Nav/Header";
-import Nvelopes from "../components/Nvelopes/NvelopesContainer";
+import Nvelopes from "../../../mobile/src/components/Nvelopes/NvelopesContainer";
 import { type Envelope, type Payment } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
@@ -16,7 +16,7 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useToast } from "../Context/ToastContext/useToast";
 import Button from "../components/Buttons/Button";
-import Nvelope from "../components/Nvelopes/Nvelope";
+import Nvelope from "../../../mobile/src/components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
   applyPayoffRoll,

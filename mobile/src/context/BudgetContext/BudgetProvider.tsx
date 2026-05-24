@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../firebase/firebase";
 import { useAuth } from "../AuthContext/useAuth";
 import { BudgetContext } from "./BudgetContext";
 import type { BudgetListItem } from "./BudgetContext";
 import type { PendingInvite } from "../../firebase/budgets";
 import { getPendingInvites, acceptInvite as acceptInviteApi, declineInvite as declineInviteApi, createFirstBudget } from "../../firebase/budgets";
 import { editIsNewUser } from "../../firebase/editData";
+import firestore from '@react-native-firebase/firestore';
 
 const ACTIVE_BUDGET_KEY = "nvelope_activeBudgetId";
 
@@ -29,7 +28,7 @@ export default function BudgetProvider({ children }: { children: React.ReactNode
     try {
       const [invites, budgetSnap] = await Promise.all([
         getPendingInvites(user),
-        getDocs(collection(db, "users", user.uid, "budgets")),
+        firestore().collection(`users/${user.uid}/budgets`).get(),
       ]);
       setPendingInvites(invites);
 

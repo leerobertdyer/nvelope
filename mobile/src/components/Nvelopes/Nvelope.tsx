@@ -13,12 +13,12 @@ import {
   BsEnvelopePaperFill,
   BsEnvelopeX,
 } from "react-icons/bs";
-import Button from "../Buttons/Button";
-import type { Envelope } from "../../types";
+import Button from "../../../../web/src/components/Buttons/Button";
+import type { Envelope } from "../../../../web/src/types";
 import { IoIosRepeat } from "react-icons/io";
 import { IoAddCircle } from "react-icons/io5";
-import NvelopeCalculator from "../../Views/NvelopeCalculator";
-import EnvelopeForm from "../Forms/EnvelopeForm";
+import NvelopeCalculator from "../../../../web/src/Views/NvelopeCalculator";
+import EnvelopeForm from "../../../../web/src/components/Forms/EnvelopeForm";
 
 interface NvelopeProps {
   kind:

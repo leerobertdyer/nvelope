@@ -5,18 +5,18 @@
  * selected envelope in BigEnvelope (Views). Parent of ListEnvelope; coordinates
  * drag-and-drop reorder and selection state.
  */
-import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
-import type { Envelope } from "../../types";
+import { useDatabase } from "../../../../web/src/Context/DatabaseContext/useDatabase";
+import type { Envelope } from "../../../../web/src/types";
 import {
   editEnvelopes,
   editTotalSpendingBudget,
-} from "../../firebase/editData";
-import { useBudget } from "../../Context/BudgetContext/useBudget";
+} from "../../../../web/src/firebase/editData";
+import { useBudget } from "../../../../web/src/Context/BudgetContext/useBudget";
 import { useEffect, useState } from "react";
-import GiveAndTake from "../../Views/GiveAndTake";
+import GiveAndTake from "../../../../web/src/Views/GiveAndTake";
 import ListEnvelope from "./NvelopeListRow";
-import BigEnvelope from "../../Views/BigEnvelope";
-import ShowHideButton from "../Buttons/ShowHideButton";
+import BigEnvelope from "../../../../web/src/Views/BigEnvelope";
+import ShowHideButton from "../../../../web/src/components/Buttons/ShowHideButton";
 
 interface NvelopeProps {
   resetState: () => void;

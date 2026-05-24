@@ -1,9 +1,7 @@
-import FullScreen from "../Views/FullScreen";
-import Nvelope from "../../../mobile/src/components/Nvelopes/Nvelope";
+import Nvelope from "./Nvelopes/Nvelope";
 
 export default function Loading({ text }: { text: string }) {
   return (
-    <FullScreen theme="DARK">
       <div className="flex flex-col gap-2 justify-center items-center w-full h-screen text-my-black-dark">
         <Nvelope
           envelope={{
@@ -16,6 +14,5 @@ export default function Loading({ text }: { text: string }) {
         />
         <p className="text-my-white-dark animate-pulse">{text}</p>
       </div>
-    </FullScreen>
   );
 }

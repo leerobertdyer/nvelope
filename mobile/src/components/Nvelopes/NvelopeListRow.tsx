@@ -5,7 +5,7 @@
  * reordering. Child of NvelopesContainer; does not use Nvelope (that’s for detail/edit views).
  */
 import { BiEnvelope } from "react-icons/bi";
-import type { Envelope } from "../../types";
+import type { Envelope } from "../../../../web/src/types";
 
 interface IListEnvelopeProps {
     envelope: Envelope;
