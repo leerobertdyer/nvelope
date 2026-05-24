@@ -9,13 +9,13 @@ import type { Envelope } from "../../../../web/src/types";
 
 interface IListEnvelopeProps {
     envelope: Envelope;
-    onClick: () => void;
+    onPress: () => void;
     onDragStart?: (event: React.DragEvent<HTMLDivElement>) => void;
     onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void;
     onDrop?: (event: React.DragEvent<HTMLDivElement>) => void;
     onDragEnd?: (event: React.DragEvent<HTMLDivElement>) => void;
 }
-export default function ListEnvelope({ envelope, onClick, onDragStart, onDragOver, onDrop, onDragEnd }: IListEnvelopeProps) {
+export default function ListEnvelope({ envelope, onPress, onDragStart, onDragOver, onDrop, onDragEnd }: IListEnvelopeProps) {
     return (
         <div draggable={true} id={envelope.id} className={`
             ${envelope.spent >= (envelope.total * 0.75)
@@ -25,7 +25,7 @@ export default function ListEnvelope({ envelope, onClick, onDragStart, onDragOve
                     : 'bg-my-green-dark text-my-white-dark'}
             w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark
             border-2 border-my-black-dark cursor-pointer`}
-            onClick={onClick}
+            onPress={onPress}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}

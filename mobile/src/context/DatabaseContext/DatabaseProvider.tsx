@@ -3,8 +3,8 @@ import { DatabaseContext } from "./DatabaseContext";
 import { useEffect, useRef, useState } from "react";
 import { type Backup, type Envelope, type Interval, type OneTimeAmount, type Payment } from "../../types";
 import { useAuth } from "../AuthContext/useAuth";
-import { db } from "../../firebase/firebase";
 import { useBudget } from "../BudgetContext/useBudget";
+import firestore from "@react-native-firebase/firestore";
 
 const BUDGET_DATA_DOC_ID = "main";
 /** After a local payments write, ignore snapshot payments for this long so we don't overwrite with stale cache. */
@@ -55,13 +55,12 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
 
         setPayDate(undefined);
         setIsLoadingDb(true);
-        const dataRef = doc(db, "budgets", activeBudgetId, "data", BUDGET_DATA_DOC_ID);
+        const dataRef = firestore().doc(`budgets/${activeBudgetId}/data/${BUDGET_DATA_DOC_ID}`);
 
-        const unsubscribe = onSnapshot(
-            dataRef,
+        const unsubscribe = dataRef.onSnapshot(
             (docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const data = docSnapshot.data();
+                const data = docSnapshot.data();
+                if (data) {
                     setDbError(null);
                     setDocumentExists(true);
                     setIsLoadingDb(false);

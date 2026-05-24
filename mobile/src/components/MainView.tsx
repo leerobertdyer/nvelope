@@ -1,127 +1,7 @@
-import { StatusBar } from "expo-status-bar";
-import { Button, StyleSheet, Text, TextInput, View } from "react-native";
-import { useAuth } from "../context/AuthContext/useAuth";
-import { loginWithEmailAndPassword } from "../firebase/emailAndPassword";
-import { useEffect, useState } from "react";
-import { useBudget } from "../context/BudgetContext/useBudget";
-import { useDatabase } from "../context/DatabaseContext/useDatabase";
-import MainView from "../components/MainView";
-
-export default function Home() {
-  const { user, isLoadingUser } = useAuth();
-  const { isLoadingBudgets, activeBudgetId, hasBudgets } = useBudget();
-  const { isLoadingDb, dbError, documentExists, payDate } = useDatabase();
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    if (!isLoadingUser && !isLoadingBudgets && !isLoadingDb) {
-      setIsLoading(false);
-    }
-  }, [isLoadingUser, isLoadingBudgets, isLoadingDb]);
-
-  // Run backup check for authenticated users with active budget
-  // useEffect(() => {
-  //   if (!user || !activeBudgetId || documentExists !== true) return;
-  //   async function checkAndBackup() {
-  //     const shouldBackup = await shouldBackupUserDataSafe(
-  //       user!,
-  //       activeBudgetId!,
-  //     );
-  //     if (shouldBackup) await backupUserDataSafe(user!, activeBudgetId!);
-  //   }
-  //   checkAndBackup();
-  // }, [user, activeBudgetId, documentExists]);
-
-  if (isLoading)
-    return (
-      // <Loading text="Welcome to Nvelopes..." />
-      <Text>Welcome to Nvelopes...</Text>
-    );
-
-  if (!user) {
-    return (
-      <div className="flex flex-col gap-4 justify-center items-center w-full h-screen">
-        <h1 className="text-2xl text-my-white-dark">Welcome to Nvelopes</h1>
-        <p className="text-sm text-my-white-light">
-          Old School Budgeting for the Digital Age
-        </p>
-        {/* <LoginOptions /> */}
-        <Text>Todo: Login</Text>
-      </div>
-    );
-  }
-
-  // Display critical database errors that could indicate data corruption risk
-  if (dbError) {
-    return (
-      <Text>Todo: DB Error</Text>
-      // <div className="flex flex-col justify-center items-center w-full h-screen bg-my-black-dark text-my-white-dark p-4">
-      //   <div className="max-w-md text-center">
-      //     <h1 className="text-2xl text-my-red-light mb-4">⚠️ Database Error</h1>
-      //     <p className="mb-4 text-my-white-light">{dbError}</p>
-      //     <p className="text-sm text-my-white-base mb-6">
-      //       This error occurred to protect your data. Please do not continue
-      //       until this is resolved.
-      //     </p>
-      //     <button
-      //       onPress={() => window.location.reload()}
-      //       className="bg-my-red-base text-my-white-dark px-6 py-2 rounded-md hover:bg-my-blue-light"
-      //     >
-      //       Refresh Page
-      //     </button>
-      //   </div>
-      // </div>
-    );
-  }
-
-  // Still resolving doc for this budget (e.g. budgets just loaded, snapshot pending).
-  if (user && documentExists === null && hasBudgets) {
-    // return <Loading text="Welcome to Nvelopes..." />;
-    return <Text>Todo: Loading</Text>;
-  }
-
-  // No document exists = new user. Show first-time setup only when we've determined that:
-  // - we have a budget but its data doc doesn't exist (documentExists === false), or
-  // - we've finished loading and the user has no budgets (documentExists === null, !hasBudgets).
-  const isNewUser =
-    documentExists === false ||
-    (documentExists === null && !hasBudgets && !isLoadingBudgets);
-  if (isNewUser) {
-    // return <FirstTimeSetup />;
-    return <Text>Todo: New User</Text>;
-  }
-
-  // Only show MainView once we've received the budget doc snapshot (payDate is set or explicitly null).
-  if (documentExists === true && payDate === undefined) {
-    // return <Loading text="Welcome to Nvelopes..." />;
-    return <Text>Todo: Loading</Text>;
-  }
-
-  return (
-    <View style={styles.container}>
-      <Text>HOME</Text>
-      <MainView />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
-
-/*
-MAIN VIEW:
-
 import { useEffect, useMemo, useState } from "react";
-import Header from "../components/Nav/Header";
+// import Header from "../components/Nav/Header";
 import Nvelopes from "../../../mobile/src/components/Nvelopes/NvelopesContainer";
 import { type Envelope, type Payment } from "../types";
-import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
   editEnvelopes,
   editIsNewUser,
@@ -131,10 +11,7 @@ import {
   editSnowballTargetPaymentId,
   editTotalSpendingBudget,
 } from "../firebase/editData";
-import { useAuth } from "../Context/AuthContext/useAuth";
-import { useBudget } from "../Context/BudgetContext/useBudget";
-import { useToast } from "../Context/ToastContext/useToast";
-import Button from "../components/Buttons/Button";
+// import { useToast } from "../Context/ToastContext/useToast";
 import Nvelope from "../../../mobile/src/components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
@@ -147,25 +24,28 @@ import {
   resetAllNvelopes,
   updateBudgetStateAndDBB,
 } from "../util";
-import ActionButtons from "../components/Buttons/ActionButtons";
+// import ActionButtons from "../components/Buttons/ActionButtons";
 import Loading from "../components/Loading";
-import FullScreen from "../Views/FullScreen";
 import { startOfDay, addMonths } from "date-fns";
-import PaymentMap from "../components/Payments/PaymentMap";
-import BigPayment from "../Views/BigPayment";
-import PaymentForm from "../components/Forms/PaymentForm";
-import AddIncomeForm from "../components/Forms/AddIncomeForm";
-import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
-import FundPaymentDueModal from "../components/Payments/SplitPaymentDueModal";
-import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
-import PageTour from "../components/PageTour";
+// import PaymentMap from "../components/Payments/PaymentMap";
+// import BigPayment from "../Views/BigPayment";
+// import PaymentForm from "../components/Forms/PaymentForm";
+// import AddIncomeForm from "../components/Forms/AddIncomeForm";
+// import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
+// import FundPaymentDueModal from "../components/Payments/SplitPaymentDueModal";
+// import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
+// import PageTour from "../components/PageTour";
+import { useDatabase } from "../context/DatabaseContext/useDatabase";
+import { useAuth } from "../context/AuthContext/useAuth";
+import { useBudget } from "../context/BudgetContext/useBudget";
+import { Button, Text, View } from "react-native";
 
-export default function MainEnvelopesView() {
+export default function MainView() {
   const { user } = useAuth();
   const { activeBudgetId, budgets } = useBudget();
   const activeBudgetName =
     budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
-  const { showToast } = useToast();
+  //   const { showToast } = useToast();
   const {
     totalSpendingBudget,
     setTotalSpendingBudget,
@@ -223,16 +103,17 @@ export default function MainEnvelopesView() {
   // Check for due Fund (planned expense) payments
   useEffect(() => {
     if (!payments) return;
+    
     const today = startOfDay(new Date());
-
+    
     // Find Fund payments that are due (dueDate <= today) and not fully paid
     const duePayment = payments.find((p) => {
-      if (p.type !== "FUND") return false;
-      if (dismissedDuePayments.has(p.id)) return false;
-      const dueDate = startOfDay(p.dueDate.toDate());
-      return dueDate <= today && !p.paid;
+        if (p.type !== "FUND") return false;
+        if (dismissedDuePayments.has(p.id)) return false;
+        const dueDate = startOfDay(p.dueDate.toDate());
+        return dueDate <= today && !p.paid;
     });
-
+    
     if (duePayment && !dueFundPayment) {
       setDueFundPayment(duePayment);
     }
@@ -252,7 +133,9 @@ export default function MainEnvelopesView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
     setDueFundPayment(null);
-    showToast(`${payment.name} marked as paid!`);
+    // showToast(`${payment.name} marked as paid!`);
+    //TODO: Notification
+    console.warn("TODO: Use Notifications");
   }
 
   // Handler for extending a Fund payment's target date
@@ -268,7 +151,9 @@ export default function MainEnvelopesView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
     setDueFundPayment(null);
-    showToast(`${payment.name} extended by 1 month`);
+    // showToast(`${payment.name} extended by 1 month`);
+    //TODO: Notification
+    console.warn("TODO: Use Notifications");
   }
 
   // Handler for dismissing the Fund due modal (remind later)
@@ -303,7 +188,9 @@ export default function MainEnvelopesView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
     resetPaymentState();
-    showToast("Payment deleted");
+    // showToast("Payment deleted");
+    //TODO: Notification
+    console.warn("TODO: Use Notifications");
   }
 
   function handleAddPayment() {
@@ -481,7 +368,9 @@ export default function MainEnvelopesView() {
     );
     if (paidOffPayment && paidOffPayment.amount != null) {
       setPaidOffDebtName(paidOffPayment.name);
-      showToast(`${paidOffPayment.name} paid off!`);
+      //   showToast(`${paidOffPayment.name} paid off!`);
+      //TODO: Notification
+      console.warn("TODO: Use Notifications");
       const {
         updatedPayments: paymentsWithBakedSnowball,
         nextTargetId: nextId,
@@ -526,7 +415,9 @@ export default function MainEnvelopesView() {
       setTotalSpendingBudget,
     );
     resetState();
-    showToast("Envelope created");
+    // showToast("Envelope created");
+    //TODO: Notification
+    console.warn("TODO: Use Notifications");
   }
 
   async function handleSetShowSpendingPage(e: Envelope) {
@@ -544,11 +435,15 @@ export default function MainEnvelopesView() {
       setEnvelopes(newEnvelopes);
       await editEnvelopes(newEnvelopes, activeBudgetId!);
       resetState();
-      showToast("Envelope deleted");
+      //   showToast("Envelope deleted");
+      //TODO: Notification
+      console.warn("TODO: Use Notifications");
     } catch (error) {
       console.error("Error deleting envelope:", error);
       setShowLoading(false);
-      showToast("Failed to delete envelope", "error");
+      //   showToast("Failed to delete envelope", "error");
+      //TODO: Notification
+      console.warn("TODO: Use Notifications");
     }
   }
 
@@ -578,11 +473,15 @@ export default function MainEnvelopesView() {
       setEnvelopes(newEnvelopes);
       await editEnvelopes(newEnvelopes, activeBudgetId!);
       resetState();
-      showToast("Envelope updated");
+      //   showToast("Envelope updated");
+      //TODO: Notification
+      console.warn("TODO: Use Notifications");
     } catch (error) {
       console.error("Error editing envelope:", error);
       setShowLoading(false);
-      showToast("Failed to update envelope", "error");
+      //   showToast("Failed to update envelope", "error");
+      //TODO: Notification
+      console.warn("TODO: Use Notifications");
     }
   }
 
@@ -639,7 +538,9 @@ export default function MainEnvelopesView() {
   async function handleResetNvelopes() {
     if (!activeBudgetId) return;
     await resetAllNvelopes(envelopes, setEnvelopes, activeBudgetId);
-    showToast("Envelopes cleared");
+    // showToast("Envelopes cleared");
+    //TODO: Notification
+    console.warn("TODO: Use Notifications");
   }
 
   async function addCashToDb() {
@@ -661,7 +562,9 @@ export default function MainEnvelopesView() {
     );
     setTotalSpendingBudget(totalSpendingBudget + cashAmount);
     resetState();
-    showToast("Cash added to budget");
+    // showToast("Cash added to budget");
+    //TODO: Notification
+    console.warn("TODO: Use Notifications");
   }
 
   function handleAddCashToEnvelope(envelope: Envelope) {
@@ -685,110 +588,130 @@ export default function MainEnvelopesView() {
     );
     await editEnvelopes(newEnvelopes, activeBudgetId!);
     setEnvelopes(newEnvelopes);
-    showToast(`${cashAmount} added to ${n.name}`);
+    // showToast(`${cashAmount} added to ${n.name}`);
+    //TODO: Notification
+    console.warn("TODO: Use Notifications");
     resetState();
   }
 
   if (showClearEnvelopes)
     return (
-      <FullScreen
-        theme="DARK"
-        onSave={handleResetNvelopes}
-        onClose={() => setShowClearNvelopes(false)}
-        showButtons
+      //   <FullScreen
+      //     theme="DARK"
+      //     onSave={handleResetNvelopes}
+      //     onClose={() => setShowClearNvelopes(false)}
+      //     showButtons
+      //   >
+      <View
+      // className="flex flex-col items-center"
       >
-        <div className="flex flex-col items-center">
-          <h1 className="text-xl text-my-red-light">⚠️ Are you sure? ⚠️</h1>
-          <p>
-            This will set{" "}
-            <span className="text-my-blue-light">ALL Nvelopes</span>{" "}
-            totals/spent to <span className="text-my-green-base">$0.00</span>,
-          </p>
-          <p>and set them all to "unpaid" status.</p>
-          <p>Your budget total will be unaffected.</p>
-        </div>
-      </FullScreen>
+        <Text
+        //   className="text-xl text-my-red-light"
+        >
+          ⚠️ Are you sure? ⚠️
+        </Text>
+        <Text>
+          This will set <Text 
+        //   className="text-my-blue-light"
+          >ALL Nvelopes</Text>{" "}
+          totals/spent to <Text 
+        //   className="text-my-green-base"
+          >$0.00</Text>,
+        </Text>
+        <Text>and set them all to "unpaid" status.</Text>
+        <Text>Your budget total will be unaffected.</Text>
+      </View>
+      //   </FullScreen>
     );
 
   if (showDeletePayment && payDate && paymentToEdit) {
     return (
-      <div className="absolute inset-0 w-screen h-screen z-100 select-none">
-        <div className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
-          <p className="p-4 rounded-md text-my-white-dark w-full text-center">
+      <View
+      //   className="absolute inset-0 w-screen h-screen z-100 select-none"
+      >
+        <View
+        // className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center "
+        >
+          <Text
+          //   className="p-4 rounded-md text-my-white-dark w-full text-center"
+          >
             Are you sure you want to delete "{paymentToEdit.name}"?
-          </p>
-          <p className="text-xs text-my-white-light text-center mb-4">
+          </Text>
+          <Text
+          //   className="text-xs text-my-white-light text-center mb-4"
+          >
             Removing this payment will not change your available budget.
-          </p>
-          <div className="flex gap-2 items-center justify-center w-[95%]">
+          </Text>
+          <View
+          //   className="flex gap-2 items-center justify-center w-[95%]"
+          >
             <Button
+              title="No"
               color="red"
               onPress={() => {
                 setShowDeletePayment(false);
                 resetPaymentState();
               }}
-            >
-              No
-            </Button>
+            />
+
             <Button
+              title="Yes"
               color="green"
               onPress={() => {
                 deleteBill();
                 setShowDeletePayment(false);
                 resetPaymentState();
               }}
-            >
-              Yes
-            </Button>
-          </div>
-        </div>
-      </div>
+            />
+          </View>
+        </View>
+      </View>
     );
   }
 
   // Show modal for due Fund (planned expense) payments
-  if (dueFundPayment) {
-    return (
-      <FundPaymentDueModal
-        payment={dueFundPayment}
-        onMarkPaid={handleMarkFundPaid}
-        onExtendDate={handleExtendFundDate}
-        onDismiss={handleDismissFundModal}
-      />
-    );
-  }
+//   if (dueFundPayment) {
+//     return (
+//       <FundPaymentDueModal
+//         payment={dueFundPayment}
+//         onMarkPaid={handleMarkFundPaid}
+//         onExtendDate={handleExtendFundDate}
+//         onDismiss={handleDismissFundModal}
+//       />
+//     );
+//   }
 
-  if (showPaymentInputs) {
-    if (paymentToEdit) {
-      return (
-        <>
-          <BigPayment
-            handleUpdatePaid={handleUpdatePaid}
-            resetState={resetPaymentState}
-            handleBack={resetPaymentState}
-            paymentToEdit={paymentToEdit}
-            handleUpdateBudget={handleUpdateBudget}
-            handleDeleteBill={handleDeleteBill}
-            onPaymentUpdated={setPaymentToEdit}
-          />
-          {paidOffDebtName && (
-            <CongratsPaidOffModal
-              debtName={paidOffDebtName}
-              onClose={() => setPaidOffDebtName(null)}
-            />
-          )}
-        </>
-      );
-    } else if (user)
-      return (
-        <PaymentForm
-          paymentToEdit={null}
-          user={user}
-          handleBack={resetPaymentState}
-          handleUpdateBudget={handleUpdateBudget}
-        />
-      );
-  }
+//   if (showPaymentInputs) {
+//     if (paymentToEdit) {
+//       return (
+//         <>
+//           <BigPayment
+//             handleUpdatePaid={handleUpdatePaid}
+//             resetState={resetPaymentState}
+//             handleBack={resetPaymentState}
+//             paymentToEdit={paymentToEdit}
+//             handleUpdateBudget={handleUpdateBudget}
+//             handleDeleteBill={handleDeleteBill}
+//             onPaymentUpdated={setPaymentToEdit}
+//           />
+//           {paidOffDebtName && (
+//             <CongratsPaidOffModal
+//               debtName={paidOffDebtName}
+//               onClose={() => setPaidOffDebtName(null)}
+//             />
+//           )}
+//         </>
+//       );
+//     } else if (user)
+//       return (
+//         <PaymentForm
+//           paymentToEdit={null}
+//           user={user}
+//           handleBack={resetPaymentState}
+//           handleUpdateBudget={handleUpdateBudget}
+//         />
+//       );
+//   }
 
   if (showSpendPage && envelopes.length > 0) {
     const envelopeSent = envelopeToEdit || emptyEnvelope;
@@ -853,44 +776,161 @@ export default function MainEnvelopesView() {
 
   if (showBudgetWarning) {
     return (
-      <div className="flex flex-col items-center gap-2">
-        <p>You have nothing left in your budget!</p>
-        <p>Try moving some money from another envelope</p>
-        <Button onPress={() => setShowBudgetWarning(false)} color="green">
-          Go Back
-        </Button>
-      </div>
+      <View 
+    //   className="flex flex-col items-center gap-2"
+      >
+        <Text>You have nothing left in your budget!</Text>
+        <Text>Try moving some money from another envelope</Text>
+        <Button
+          title="Go Back"
+          onPress={() => setShowBudgetWarning(false)}
+          color="green"
+        />
+      </View>
     );
   }
 
-  if (isAddingCash) {
-    return (
-      <AddIncomeForm
-        showLoading={showLoading}
-        loadingText={loadingText}
-        setIsAddingCash={setIsAddingCash}
-        addCashToDb={addCashToDb}
-        cashAmount={cashAmount}
-        setCashAmount={setCashAmount}
-        cashName={cashName}
-        setCashName={setCashName}
-      />
-    );
-  }
+//   if (isAddingCash) {
+//     return (
+//       <AddIncomeForm
+//         showLoading={showLoading}
+//         loadingText={loadingText}
+//         setIsAddingCash={setIsAddingCash}
+//         addCashToDb={addCashToDb}
+//         cashAmount={cashAmount}
+//         setCashAmount={setCashAmount}
+//         cashName={cashName}
+//         setCashName={setCashName}
+//       />
+//     );
+//   }
 
-  if (isAddingCashToEnvelope) {
-    return (
-      <AddCashToEnvelopeForm
-        showLoading={showLoading}
-        loadingText={loadingText}
-        cashAmount={cashAmount}
-        setCashAmount={setCashAmount}
-        addCashToEnvelope={addCashToEnvelope}
-        envelopeToEdit={envelopeToEdit}
-        setIsAddingCashToEnvelope={setIsAddingCashToEnvelope}
-      />
-    );
-  }
+//   if (isAddingCashToEnvelope) {
+//     return (
+//       <AddCashToEnvelopeForm
+//         showLoading={showLoading}
+//         loadingText={loadingText}
+//         cashAmount={cashAmount}
+//         setCashAmount={setCashAmount}
+//         addCashToEnvelope={addCashToEnvelope}
+//         envelopeToEdit={envelopeToEdit}
+//         setIsAddingCashToEnvelope={setIsAddingCashToEnvelope}
+//       />
+//     );
+//   }
+
+//   return (
+//     <>
+//       <PageTour
+//         visible={isNewUser}
+//         onDismiss={async () => {
+//           if (activeBudgetId) {
+//             await editIsNewUser(false, activeBudgetId);
+//             setIsNewUser(false);
+//           }
+//         }}
+//       >
+//         <View 
+//         // className="flex flex-col items-start gap-2"
+//         >
+//           <Text>This is your current budget.</Text>
+//           <Text>
+//             Click <Text 
+//             // className="text-my-red-light"
+//             >Payment</Text> for
+//             bills/debts.
+//           </Text>
+//           <Text>
+//             <Text 
+//             // className="text-my-green-light"
+//             >Cash</Text> when money comes
+//             in.
+//           </Text>
+//           <Text>
+//             <Text 
+//             // className="text-my-blue-light"
+//             >Nvelope</Text> to create
+//             nvelopes for spending categories.
+//           </Text>
+//           <Text>
+//             <Text 
+//             // className="text-my-white-dark"
+//             >Clear</Text> to clear all
+//             envelopes.
+//           </Text>
+//           Useful when starting a new period.
+//           <View>
+//             See your days left in current interval, and your balance in top
+//             menu. Tap the balance to edit it. You can also adjust your pay date
+//             and budget interval in{" "}
+//             <a href="/settings" className="text-my-blue-light underline inline">
+//               Settings
+//             </a>
+//           </View>
+//         </View>
+//       </PageTour>
+//       <View 
+//     //   className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]"
+//       >
+//         {showLoading && <Loading text={loadingText} />}
+
+//         {/* <Header
+//           links={[
+//             { label: "Settings", href: "/settings" },
+//             { label: "Debt", href: "/debt" },
+//             { label: "Bills", href: "/bills" },
+//             { label: "Feedback", href: "/feedback" },
+//           ]} //TODO: Header
+//         /> */}
+
+//         <View 
+//         // className="flex flex-col items-center pt-[1rem] w-full"
+//         >
+//           <Text 
+//         //   className="text-lg font-semibold text-my-white-dark mb-2"
+//           >
+//             {activeBudgetName}
+//           </Text>
+//           {!payDate && (
+//             <Text className="text-sm text-my-white-light mb-2">
+//               <a href="/settings" className="text-my-green-light underline">
+//                 Set your pay date in Settings
+//               </a>{" "}
+//               to see your pay period in the header.
+//             </Text>
+//           )}
+//           <ActionButtons
+//             onPaymentClick={handleAddPayment}
+//             onCashClick={handleAddCash}
+//             onEnvelopeClick={handleSetupNewEnvelope}
+//             onClearClick={() => setShowClearNvelopes(true)}
+//           />
+
+//           <View className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
+//             <Nvelopes
+//               resetState={resetState}
+//               handleSetupEdit={handleSetupEdit}
+//               editEnvelope={editEnvelopeAndBudget}
+//               handleSetShowSpendingPage={handleSetShowSpendingPage}
+//               handleDeleteEnvelope={handleSetupDelete}
+//               handleAddCashToEnvelope={handleAddCashToEnvelope}
+//             />
+//             <PaymentMap
+//               paymentsThisPeriod={paymentsThisPeriod}
+//               handleUpdatePaid={handleUpdatePaid}
+//               handleEditBill={handleEditPayment}
+//             />
+//           </View>
+//         </main>
+//       </View>
+//       {paidOffDebtName && (
+//         <CongratsPaidOffModal
+//           debtName={paidOffDebtName}
+//           onClose={() => setPaidOffDebtName(null)}
+//         />
+//       )}
+//     </>
+//   );
 
   return (
     <>
@@ -988,6 +1028,6 @@ export default function MainEnvelopesView() {
       )}
     </>
   );
+
 }
 
-*/

@@ -3,16 +3,28 @@ import { useAuth } from "../AuthContext/useAuth";
 import { BudgetContext } from "./BudgetContext";
 import type { BudgetListItem } from "./BudgetContext";
 import type { PendingInvite } from "../../firebase/budgets";
-import { getPendingInvites, acceptInvite as acceptInviteApi, declineInvite as declineInviteApi, createFirstBudget } from "../../firebase/budgets";
+import {
+  getPendingInvites,
+  acceptInvite as acceptInviteApi,
+  declineInvite as declineInviteApi,
+  createFirstBudget,
+} from "../../firebase/budgets";
 import { editIsNewUser } from "../../firebase/editData";
-import firestore from '@react-native-firebase/firestore';
+import firestore from "@react-native-firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ACTIVE_BUDGET_KEY = "nvelope_activeBudgetId";
 
-export default function BudgetProvider({ children }: { children: React.ReactNode }) {
+export default function BudgetProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user } = useAuth();
   const [budgets, setBudgets] = useState<BudgetListItem[]>([]);
-  const [activeBudgetId, setActiveBudgetIdState] = useState<string | null>(null);
+  const [activeBudgetId, setActiveBudgetIdState] = useState<string | null>(
+    null,
+  );
   const [isLoadingBudgets, setIsLoadingBudgets] = useState(true);
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
 
@@ -38,17 +50,17 @@ export default function BudgetProvider({ children }: { children: React.ReactNode
       }));
       setBudgets(list);
 
-      const stored = typeof window !== "undefined" ? localStorage.getItem(ACTIVE_BUDGET_KEY) : null;
+      const stored = await AsyncStorage.getItem(ACTIVE_BUDGET_KEY);
       const validStored = list.some((b) => b.id === stored);
       if (list.length > 0) {
         const nextActive = validStored && stored ? stored : list[0].id;
         setActiveBudgetIdState(nextActive);
-        if (typeof window !== "undefined" && nextActive !== stored) {
-          localStorage.setItem(ACTIVE_BUDGET_KEY, nextActive);
+        if (nextActive !== stored) {
+          await AsyncStorage.setItem(ACTIVE_BUDGET_KEY, nextActive);
         }
       } else {
         setActiveBudgetIdState(null);
-        if (typeof window !== "undefined") localStorage.removeItem(ACTIVE_BUDGET_KEY);
+        await AsyncStorage.removeItem(ACTIVE_BUDGET_KEY);
       }
       return list;
     } catch (e) {
@@ -71,7 +83,7 @@ export default function BudgetProvider({ children }: { children: React.ReactNode
       if (newId) {
         await editIsNewUser(false, newId);
         setActiveBudgetIdState(newId);
-        if (typeof window !== "undefined") localStorage.setItem(ACTIVE_BUDGET_KEY, newId);
+        await AsyncStorage.setItem(ACTIVE_BUDGET_KEY, newId);
         await loadBudgets();
       }
     }
@@ -81,12 +93,10 @@ export default function BudgetProvider({ children }: { children: React.ReactNode
     loadBudgets();
   }, [loadBudgets]);
 
-  const setActiveBudgetId = useCallback((id: string | null) => {
+  const setActiveBudgetId = useCallback(async (id: string | null) => {
     setActiveBudgetIdState(id);
-    if (typeof window !== "undefined") {
-      if (id) localStorage.setItem(ACTIVE_BUDGET_KEY, id);
-      else localStorage.removeItem(ACTIVE_BUDGET_KEY);
-    }
+    if (id) await AsyncStorage.setItem(ACTIVE_BUDGET_KEY, id);
+    else await AsyncStorage.removeItem(ACTIVE_BUDGET_KEY);
   }, []);
 
   const acceptInvite = useCallback(
@@ -95,10 +105,10 @@ export default function BudgetProvider({ children }: { children: React.ReactNode
       await acceptInviteApi(user, budgetId);
       setPendingInvites((prev) => prev.filter((i) => i.budgetId !== budgetId));
       setActiveBudgetIdState(budgetId);
-      if (typeof window !== "undefined") localStorage.setItem(ACTIVE_BUDGET_KEY, budgetId);
+        await AsyncStorage.setItem(ACTIVE_BUDGET_KEY, budgetId);
       await loadBudgets();
     },
-    [user, loadBudgets]
+    [user, loadBudgets],
   );
 
   const declineInvite = useCallback(async (inviteId: string) => {
@@ -123,8 +133,6 @@ export default function BudgetProvider({ children }: { children: React.ReactNode
   };
 
   return (
-    <BudgetContext.Provider value={value}>
-      {children}
-    </BudgetContext.Provider>
+    <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>
   );
 }

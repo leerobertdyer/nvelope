@@ -181,7 +181,7 @@ export default function Nvelopes({
     return (
       <div className="relative grid grid-cols-4 p-2 text-center bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
         <div className="absolute ml-2 w-fit h-full flex items-center">
-          <ShowHideButton isShown={isShown} onClick={setter} />
+          <ShowHideButton isShown={isShown} onPress={setter} />
         </div>
         <p className="col-span-3">{name}</p>
         <p className="col-span-1 text-my-green-dark">{total}</p>
@@ -215,7 +215,7 @@ export default function Nvelopes({
               <div key={e.id}>
                 <ListEnvelope
                   envelope={e}
-                  onClick={() => handleSelectListEnvelope(e)}
+                  onPress={() => handleSelectListEnvelope(e)}
                   onDragStart={handleDragStart}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
