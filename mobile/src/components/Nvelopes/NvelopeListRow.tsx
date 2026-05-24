@@ -1,48 +1,60 @@
-/**
- * NvelopeView – One envelope as a row in the main envelope view.
- * Shows name, remaining (total − spent), and total; color reflects spend level.
- * Used only by NvelopesContainer to render each envelope; supports drag-and-drop for
- * reordering. Child of NvelopesContainer; does not use Nvelope (that’s for detail/edit views).
- */
-import { BiEnvelope } from "react-icons/bi";
-import type { Envelope } from "../../../../web/src/types";
+import React from 'react';
+import { View, Text, Pressable } from 'react-native';
+import { Envelope } from "../../types";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 interface IListEnvelopeProps {
-    envelope: Envelope;
-    onPress: () => void;
-    onDragStart?: (event: React.DragEvent<HTMLDivElement>) => void;
-    onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void;
-    onDrop?: (event: React.DragEvent<HTMLDivElement>) => void;
-    onDragEnd?: (event: React.DragEvent<HTMLDivElement>) => void;
+  envelope: Envelope;
+  onPress: () => void;
 }
-export default function ListEnvelope({ envelope, onPress, onDragStart, onDragOver, onDrop, onDragEnd }: IListEnvelopeProps) {
-    return (
-        <div draggable={true} id={envelope.id} className={`
-            ${envelope.spent >= (envelope.total * 0.75)
-                ? 'bg-my-red-dark text-my-white-light'
-                : envelope.spent >= (envelope.total * 0.5)
-                    ? 'bg-my-white-dark text-my-black-dark'
-                    : 'bg-my-green-dark text-my-white-dark'}
-            w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark
-            border-2 border-my-black-dark cursor-pointer`}
-            onPress={onPress}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onDragEnd={onDragEnd}>
 
-            <div className="col-span-3 flex justify-start items-center ml-2 gap-10 relative text-xs">
-                <div className="w-[1.85rem] h-[70%] flex justify-start items-center bg-white rounded-sm">
-                    <BiEnvelope className="w-[2rem] h-[2rem] text-my-black-dark " />
-                </div>
-                <p className="absolute left-[3rem]">{envelope.name}</p>
-            </div>
-            <div className="flex justify-center items-center col-span-2">
-                <p className="text-sm">${(envelope.total - envelope.spent).toFixed(2)}</p>
-            </div>
-            <div className="flex justify-end items-center mr-2 gap-4 col-span-2">
-                <p className="text-sm">${envelope.total.toFixed(2)}</p>
-            </div>
-        </div>
-    )
+export default function ListEnvelope({ envelope, onPress }: IListEnvelopeProps) {
+  // 1. Calculate color logic dynamically
+  const isHighSpend = envelope.spent >= envelope.total * 0.75;
+  const isMidSpend = envelope.spent >= envelope.total * 0.5;
+
+  const bgClass = isHighSpend
+    ? 'bg-my-red-dark'
+    : isMidSpend
+    ? 'bg-my-white-dark'
+    : 'bg-my-green-dark';
+
+  const textClass = isHighSpend
+    ? 'text-my-white-light'
+    : isMidSpend
+    ? 'text-my-black-dark'
+    : 'text-my-white-dark';
+
+  return (
+    // Pressable replaces onClick/onPress for web elements in RN
+    <Pressable 
+      onPress={onPress}
+      className={`${bgClass} w-full max-w-[40rem] h-12 flex flex-row border-2 border-my-black-dark self-center`}
+    >
+      {/* Column 1: Icon and Name (Taking up roughly 3/7 of space -> ~43%) */}
+      <View className="w-[43%] flex flex-row items-center pl-2 border-r-2 border-my-black-dark">
+        <View className="w-8 h-8 justify-center items-center bg-white rounded-sm mr-3">
+          {/* Note: Vector icons use native color/size props, not className for dimensions */}
+          <FontAwesome name="envelope" size={20} color="#1A1A1A" />
+        </View>
+        <Text className={`${textClass} text-xs font-semibold numberOfLines={1}`}>
+          {envelope.name}
+        </Text>
+      </View>
+
+      {/* Column 2: Remaining Amount (Taking up roughly 2/7 of space -> ~28.5%) */}
+      <View className="w-[28.5%] justify-center items-center border-r-2 border-my-black-dark">
+        <Text className={`${textClass} text-sm font-medium`}>
+          ${(envelope.total - envelope.spent).toFixed(2)}
+        </Text>
+      </View>
+
+      {/* Column 3: Total Amount (Taking up roughly 2/7 of space -> ~28.5%) */}
+      <View className="w-[28.5%] justify-center items-end pr-2">
+        <Text className={`${textClass} text-sm font-medium`}>
+          ${envelope.total.toFixed(2)}
+        </Text>
+      </View>
+    </Pressable>
+  );
 }

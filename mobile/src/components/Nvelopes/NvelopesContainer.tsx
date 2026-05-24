@@ -5,18 +5,14 @@
  * selected envelope in BigEnvelope (Views). Parent of ListEnvelope; coordinates
  * drag-and-drop reorder and selection state.
  */
-import { useDatabase } from "../../../../web/src/Context/DatabaseContext/useDatabase";
-import type { Envelope } from "../../../../web/src/types";
-import {
-  editEnvelopes,
-  editTotalSpendingBudget,
-} from "../../../../web/src/firebase/editData";
-import { useBudget } from "../../../../web/src/Context/BudgetContext/useBudget";
 import { useEffect, useState } from "react";
-import GiveAndTake from "../../../../web/src/Views/GiveAndTake";
+import { Envelope } from "../../types";
+import { useDatabase } from "../../context/DatabaseContext/useDatabase";
+import { useBudget } from "../../context/BudgetContext/useBudget";
+import { editEnvelopes, editTotalSpendingBudget } from "../../firebase/editData";
+import ShowHideButton from "../Buttons/ShowHideButton";
 import ListEnvelope from "./NvelopeListRow";
-import BigEnvelope from "../../../../web/src/Views/BigEnvelope";
-import ShowHideButton from "../../../../web/src/components/Buttons/ShowHideButton";
+import { Text, View } from "react-native";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -106,31 +102,31 @@ export default function Nvelopes({
     setEnvelopeToEdit(envelope);
   }
 
-  if (showGiveAndTake && envelopeToEdit) {
-    return (
-      <GiveAndTake
-        envelope={envelopeToEdit}
-        handleBack={handleBack}
-        takeAndGive={takeAndGive}
-        takeFromEnvelope={takeBalanceFromEnvelope}
-      />
-    );
-  }
+  // if (showGiveAndTake && envelopeToEdit) {
+  //   return (
+  //     <GiveAndTake
+  //       envelope={envelopeToEdit}
+  //       handleBack={handleBack}
+  //       takeAndGive={takeAndGive}
+  //       takeFromEnvelope={takeBalanceFromEnvelope}
+  //     />
+  //   );
+  // }
 
-  if (isEnvelopeSelected) {
-    return (
-      <BigEnvelope
-        handleAddCashToEnvelope={handleAddCashToEnvelope}
-        handleBack={() => setIsEnvelopeSelected(false)}
-        envelope={envelopeToEdit!}
-        resetState={resetState}
-        handleSetShowSpendingPage={handleSetShowSpendingPage}
-        handleSetupEdit={handleSetupEdit}
-        setUpShowGiveAndTake={setUpShowGiveAndTake}
-        handleDeleteEnvelope={handleDeleteEnvelope}
-      />
-    );
-  }
+  // if (isEnvelopeSelected) {
+  //   return (
+  //     <BigEnvelope
+  //       handleAddCashToEnvelope={handleAddCashToEnvelope}
+  //       handleBack={() => setIsEnvelopeSelected(false)}
+  //       envelope={envelopeToEdit!}
+  //       resetState={resetState}
+  //       handleSetShowSpendingPage={handleSetShowSpendingPage}
+  //       handleSetupEdit={handleSetupEdit}
+  //       setUpShowGiveAndTake={setUpShowGiveAndTake}
+  //       handleDeleteEnvelope={handleDeleteEnvelope}
+  //     />
+  //   );
+  // }
 
   function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
     event.dataTransfer.setData("text/plain", event.currentTarget.id);
@@ -179,19 +175,19 @@ export default function Nvelopes({
     name: string;
   }) {
     return (
-      <div className="relative grid grid-cols-4 p-2 text-center bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
-        <div className="absolute ml-2 w-fit h-full flex items-center">
+      <View className="relative grid grid-cols-4 p-2 text-center bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
+        <View className="absolute ml-2 w-fit h-full flex items-center">
           <ShowHideButton isShown={isShown} onPress={setter} />
-        </div>
-        <p className="col-span-3">{name}</p>
-        <p className="col-span-1 text-my-green-dark">{total}</p>
-      </div>
+        </View>
+        <Text className="col-span-3">{name}</Text>
+        <Text className="col-span-1 text-my-green-dark">{total}</Text>
+      </View>
     );
   }
 
   return (
-    <div className="flex flex-col justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">
-      <div className="w-screen max-w-[40rem]">
+    <View className="flex flex-col justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">
+      <View className="w-screen max-w-[40rem]">
         <EnvelopeBox
           name="Nvelopes"
           total={envelopesTotalStr}
@@ -200,32 +196,32 @@ export default function Nvelopes({
         />
         {showEnvelopes && (
           <>
-            <div className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold">
-              <div className="col-span-3 flex justify-start items-center ml-2">
-                <p className="text-sm">Nvelope</p>
-              </div>
-              <div className="flex justify-center items-center col-span-2">
-                <p className="text-sm">Remaining</p>
-              </div>
-              <div className="flex justify-end items-center mr-2 col-span-2">
-                <p className="text-sm">Total</p>
-              </div>
-            </div>
+            <View className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold">
+              <View className="col-span-3 flex justify-start items-center ml-2">
+                <Text className="text-sm">Nvelope</Text>
+              </View>
+              <View className="flex justify-center items-center col-span-2">
+                <Text className="text-sm">Remaining</Text>
+              </View>
+              <View className="flex justify-end items-center mr-2 col-span-2">
+                <Text className="text-sm">Total</Text>
+              </View>
+            </View>
             {sortedEnvelopes.map((e) => (
-              <div key={e.id}>
+              <View key={e.id}>
                 <ListEnvelope
                   envelope={e}
                   onPress={() => handleSelectListEnvelope(e)}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onDragEnd={handleDragEnd}
+                  // onDragStart={handleDragStart}
+                  // onDragOver={handleDragOver}
+                  // onDrop={handleDrop}
+                  // onDragEnd={handleDragEnd}
                 />
-              </div>
+              </View>
             ))}
           </>
         )}
-      </div>
-    </div>
+      </View>
+    </View>
   );
 }

@@ -4,10 +4,11 @@
 import { useEffect, useState } from "react";
 
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-//<FontAwesome name="envelope" size={24} color="black" /> // <------ BsEnvelopeFill
 import Feather from "@expo/vector-icons/Feather";
-import { Button, Text, View } from "react-native";
+import { Button, Pressable, Text, View } from "react-native";
 import { Envelope } from "../../types";
+import NvelopeCalculator from "./NvelopeCalculator";
+import EnvelopeForm from "../Forms/EnvelopeForm";
 
 interface NvelopeProps {
   kind:
@@ -26,7 +27,7 @@ interface NvelopeProps {
 export default function Nvelope({
   kind,
   envelope,
-  // onPress,
+  onPress,
   handleBack,
   handleSaveEnvelope,
   editEnvelope,
@@ -63,29 +64,29 @@ export default function Nvelope({
     case "deleteEnvelope":
       return (
         <View
-        // className="absolute inset-0 w-screen h-screen z-100 select-none"
+        className="absolute inset-0 w-screen h-screen z-100 select-none"
         >
           <View
-          // className="flex flex-col bg-my-red-dark w-screen h-screen justify-center items-center "
+          className="flex flex-col bg-my-red-dark w-screen h-screen justify-center items-center "
           >
             <Text
-            // className="p-4 rounded-md text-my-white-dark w-full text-center"
+            className="p-4 rounded-md text-my-white-dark w-full text-center"
             >
               Are you sure you want to delete {envelope.name}?
             </Text>
             <Text
-            // className="text-xs w-[85%] text-center text-white"
+            className="text-xs w-[85%] text-center text-white"
             >
               This will not affect your available budget.
             </Text>
             <View
-            // className="w-[30rem] h-[50rem] rounded-md py-[1rem] px-[3.5rem] flex justify-center items-center flex-col gap-8"
+            className="w-[30rem] h-[50rem] rounded-md py-[1rem] px-[3.5rem] flex justify-center items-center flex-col gap-8"
             >
               <Feather
                 name="delete"
                 size={24}
                 color="red"
-                // className="w-[12rem] h-[12rem] text-my-white-light"
+                className="w-[12rem] h-[12rem] text-my-white-light"
               />
               <Button
                 title="Delete"
@@ -139,12 +140,12 @@ export default function Nvelope({
       );
     case "dash":
       return (
-        <View
-        // className={`w-fit relative  cursor-pointer bg-white border hover:bg-my-white-dark hover:text-my-green-dark rounded-sm `}
-        // onPress={() => onPress?.()}
+        <Pressable
+        className={`w-fit relative  cursor-pointer bg-white border hover:bg-my-white-dark hover:text-my-green-dark rounded-sm `}
+        onPress={() => onPress?.()}
         >
           <Text
-          // className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center text-sm"
+          className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center text-sm"
           >
             {envelope.name}
           </Text>
@@ -216,28 +217,28 @@ export default function Nvelope({
               strokeWidth={dottedStrokeWidth * 0.35}
             />
           </svg>
-        </View>
+        </Pressable>
       );
     default:
       return (
         <View
-        // className="w-[35vw] h-[35vw] relative"
+        className="w-[35vw] h-[35vw] relative"
         >
           <Text
-          // className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-2 text-[.6rem]"
+          className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-2 text-[.6rem]"
           >
             {envelope.name}
           </Text>
           <Text
-          // className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-10 text-[.65rem]"
+          className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-10 text-[.65rem]"
           >
             ${envelope.spent}
           </Text>
           <hr
-          // className="absolute w-full h-[2px] bg-black top-12"
+          className="absolute w-full h-[2px] bg-black top-12"
           />
           <Text
-          // className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-14 text-[.65rem]"
+          className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-14 text-[.65rem]"
           >
             ${envelope.total}
           </Text>
@@ -245,7 +246,7 @@ export default function Nvelope({
             name="envelope-o"
             size={24}
             color="black"
-            // className="w-full h-full"
+            className="w-full h-full"
           />
         </View>
       );

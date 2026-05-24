@@ -39,6 +39,7 @@ import { useDatabase } from "../context/DatabaseContext/useDatabase";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
 import { Button, Text, View } from "react-native";
+import PageTour from "./PageTour";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -943,67 +944,67 @@ export default function MainView() {
           }
         }}
       >
-        <div className="flex flex-col items-start gap-2">
-          <p>This is your current budget.</p>
-          <p>
-            Click <span className="text-my-red-light">Payment</span> for
+        <View className="flex flex-col items-start gap-2">
+          <Text>This is your current budget.</Text>
+          <Text>
+            Click <Text className="text-my-red-light">Payment</Text> for
             bills/debts.
-          </p>
-          <p>
-            <span className="text-my-green-light">Cash</span> when money comes
+          </Text>
+          <Text>
+            <Text className="text-my-green-light">Cash</Text> when money comes
             in.
-          </p>
-          <p>
-            <span className="text-my-blue-light">Nvelope</span> to create
+          </Text>
+          <Text>
+            <Text className="text-my-blue-light">Nvelope</Text> to create
             nvelopes for spending categories.
-          </p>
-          <p>
-            <span className="text-my-white-dark">Clear</span> to clear all
+          </Text>
+          <Text>
+            <Text className="text-my-white-dark">Clear</Text> to clear all
             envelopes.
-          </p>
+          </Text>
           Useful when starting a new period.
-          <div>
+          <View>
             See your days left in current interval, and your balance in top
             menu. Tap the balance to edit it. You can also adjust your pay date
             and budget interval in{" "}
-            <a href="/settings" className="text-my-blue-light underline inline">
-              Settings
-            </a>
-          </div>
-        </div>
+            <Text className="text-my-blue-light underline inline">
+              LINK:Settings
+            </Text>
+          </View>
+        </View>
       </PageTour>
-      <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]">
+      <View className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]">
         {showLoading && <Loading text={loadingText} />}
 
-        <Header
+        {/* <Header
           links={[
             { label: "Settings", href: "/settings" },
             { label: "Debt", href: "/debt" },
             { label: "Bills", href: "/bills" },
             { label: "Feedback", href: "/feedback" },
           ]}
-        />
+        /> */}
 
-        <main className="flex flex-col items-center pt-[1rem] w-full">
-          <h2 className="text-lg font-semibold text-my-white-dark mb-2">
+        <View className="flex flex-col items-center pt-[1rem] w-full">
+          <Text className="text-lg font-semibold text-my-white-dark mb-2">
             {activeBudgetName}
-          </h2>
+          </Text>
           {!payDate && (
-            <p className="text-sm text-my-white-light mb-2">
-              <a href="/settings" className="text-my-green-light underline">
-                Set your pay date in Settings
-              </a>{" "}
+            <Text className="text-sm text-my-white-light mb-2">
+              <Text className="text-my-green-light underline">
+                LINK:Set your pay date in Settings
+              </Text>{" "}
               to see your pay period in the header.
-            </p>
+            </Text>
           )}
-          <ActionButtons
+          {/* <ActionButtons
             onPaymentClick={handleAddPayment}
             onCashClick={handleAddCash}
             onEnvelopeClick={handleSetupNewEnvelope}
             onClearClick={() => setShowClearNvelopes(true)}
-          />
+          /> */}
 
-          <div className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
+          <View className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
             <Nvelopes
               resetState={resetState}
               handleSetupEdit={handleSetupEdit}
@@ -1012,20 +1013,20 @@ export default function MainView() {
               handleDeleteEnvelope={handleSetupDelete}
               handleAddCashToEnvelope={handleAddCashToEnvelope}
             />
-            <PaymentMap
+            {/* <PaymentMap
               paymentsThisPeriod={paymentsThisPeriod}
               handleUpdatePaid={handleUpdatePaid}
               handleEditBill={handleEditPayment}
-            />
-          </div>
-        </main>
-      </div>
-      {paidOffDebtName && (
+            /> */}
+          </View>
+        </View>
+      </View>
+      {/* {paidOffDebtName && (
         <CongratsPaidOffModal
           debtName={paidOffDebtName}
           onClose={() => setPaidOffDebtName(null)}
         />
-      )}
+      )} */}
     </>
   );
 

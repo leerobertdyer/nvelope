@@ -102,7 +102,7 @@ export default function Home() {
       <Text
       className="text-blue-400"
       >HOME</Text>
-      {/* <MainView /> */}
+      <MainView />
     </View>
   );
 }
