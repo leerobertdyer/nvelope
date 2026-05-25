@@ -1,4 +1,4 @@
-import Calendar from "react-calendar";
+import { Calendar } from 'react-native-calendars';
 import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../../constants";
 import type { Interval, Payment } from "../../types";
 import Button from "../../../../mobile/src/components/Buttons/Btn";
@@ -21,6 +21,7 @@ import TextInput from "../Input";
 import PaymentTypeSelector, {
   type PaymentTypeOption,
 } from "./PaymentTypeSelector";
+import { Text, View } from 'react-native';
 
 interface IPaymentForm {
   paymentToEdit: Payment | null;
@@ -330,13 +331,13 @@ export default function PaymentForm({
 
             {/* Due/Target Date */}
             {newPayment.name && newPayment.amount > 0 && (
-              <div className="flex flex-col items-center w-full">
-                <label htmlFor="dayOfMonth">
+              <View className="flex flex-col items-center w-full">
+                <Text>
                   {selectedPaymentType === "FUND"
                     ? "Target Date (when you need the money)"
                     : "Due Date"}
-                </label>
-                <div className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2">
+                </Text>
+                <View className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2">
                   <Calendar
                     calendarType="gregory"
                     onChange={handleCalendarChange}
@@ -349,8 +350,8 @@ export default function PaymentForm({
                         : undefined
                     }
                   />
-                </div>
-              </div>
+                </View>
+              </View>
             )}
 
             {/* Total Owed (for DEBT type only) */}

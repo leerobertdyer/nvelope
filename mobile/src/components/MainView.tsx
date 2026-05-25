@@ -40,6 +40,8 @@ import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
 import { Button, Text, View } from "react-native";
 import PageTour from "./PageTour";
+import SplitPaymentDueModal from "./Payments/SplitPaymentDueModal";
+import CongratsPaidOffModal from "./Payments/CongratsPaidOffModal";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -671,48 +673,48 @@ export default function MainView() {
   }
 
   // Show modal for due Fund (planned expense) payments
-//   if (dueFundPayment) {
-//     return (
-//       <FundPaymentDueModal
-//         payment={dueFundPayment}
-//         onMarkPaid={handleMarkFundPaid}
-//         onExtendDate={handleExtendFundDate}
-//         onDismiss={handleDismissFundModal}
-//       />
-//     );
-//   }
+  if (dueFundPayment) {
+    return (
+      <SplitPaymentDueModal
+        payment={dueFundPayment}
+        onMarkPaid={handleMarkFundPaid}
+        onExtendDate={handleExtendFundDate}
+        onDismiss={handleDismissFundModal}
+      />
+    );
+  }
 
-//   if (showPaymentInputs) {
-//     if (paymentToEdit) {
-//       return (
-//         <>
-//           <BigPayment
-//             handleUpdatePaid={handleUpdatePaid}
-//             resetState={resetPaymentState}
-//             handleBack={resetPaymentState}
-//             paymentToEdit={paymentToEdit}
-//             handleUpdateBudget={handleUpdateBudget}
-//             handleDeleteBill={handleDeleteBill}
-//             onPaymentUpdated={setPaymentToEdit}
-//           />
-//           {paidOffDebtName && (
-//             <CongratsPaidOffModal
-//               debtName={paidOffDebtName}
-//               onClose={() => setPaidOffDebtName(null)}
-//             />
-//           )}
-//         </>
-//       );
-//     } else if (user)
-//       return (
-//         <PaymentForm
-//           paymentToEdit={null}
-//           user={user}
-//           handleBack={resetPaymentState}
-//           handleUpdateBudget={handleUpdateBudget}
-//         />
-//       );
-//   }
+  if (showPaymentInputs) {
+    if (paymentToEdit) {
+      return (
+        <>
+          <BigPayment
+            handleUpdatePaid={handleUpdatePaid}
+            resetState={resetPaymentState}
+            handleBack={resetPaymentState}
+            paymentToEdit={paymentToEdit}
+            handleUpdateBudget={handleUpdateBudget}
+            handleDeleteBill={handleDeleteBill}
+            onPaymentUpdated={setPaymentToEdit}
+          />
+          {paidOffDebtName && (
+            <CongratsPaidOffModal
+              debtName={paidOffDebtName}
+              onClose={() => setPaidOffDebtName(null)}
+            />
+          )}
+        </>
+      );
+    } else if (user)
+      return (
+        <PaymentForm
+          paymentToEdit={null}
+          user={user}
+          handleBack={resetPaymentState}
+          handleUpdateBudget={handleUpdateBudget}
+        />
+      );
+  }
 
   if (showSpendPage && envelopes.length > 0) {
     const envelopeSent = envelopeToEdit || emptyEnvelope;
