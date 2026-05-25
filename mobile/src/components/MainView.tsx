@@ -10,6 +10,8 @@ import {
   editSnowball,
   editSnowballTargetPaymentId,
   editTotalSpendingBudget,
+  resetAllNvelopes,
+  updateBudgetStateAndDBB,
 } from "../firebase/editData";
 // import { useToast } from "../Context/ToastContext/useToast";
 import Nvelope from "../../../mobile/src/components/Nvelopes/Nvelope";
@@ -21,8 +23,6 @@ import {
   randomUUID,
   recalculateBudget,
   removeVirtualIdPortion,
-  resetAllNvelopes,
-  updateBudgetStateAndDBB,
 } from "../util";
 // import ActionButtons from "../components/Buttons/ActionButtons";
 import Loading from "../components/Loading";
@@ -42,6 +42,8 @@ import { Button, Text, View } from "react-native";
 import PageTour from "./PageTour";
 import SplitPaymentDueModal from "./Payments/SplitPaymentDueModal";
 import CongratsPaidOffModal from "./Payments/CongratsPaidOffModal";
+import BigPayment from "./Payments/BigPayment";
+import PaymentForm from "./Forms/PaymentForm";
 
 export default function MainView() {
   const { user } = useAuth();

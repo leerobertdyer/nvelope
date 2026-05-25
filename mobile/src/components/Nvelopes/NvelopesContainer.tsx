@@ -13,6 +13,7 @@ import { editEnvelopes, editTotalSpendingBudget } from "../../firebase/editData"
 import ShowHideButton from "../Buttons/ShowHideButton";
 import ListEnvelope from "./NvelopeListRow";
 import { Text, View } from "react-native";
+import GiveAndTake from "../Payments/GiveAndTake";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -102,16 +103,16 @@ export default function Nvelopes({
     setEnvelopeToEdit(envelope);
   }
 
-  // if (showGiveAndTake && envelopeToEdit) {
-  //   return (
-  //     <GiveAndTake
-  //       envelope={envelopeToEdit}
-  //       handleBack={handleBack}
-  //       takeAndGive={takeAndGive}
-  //       takeFromEnvelope={takeBalanceFromEnvelope}
-  //     />
-  //   );
-  // }
+  if (showGiveAndTake && envelopeToEdit) {
+    return (
+      <GiveAndTake
+        envelope={envelopeToEdit}
+        handleBack={handleBack}
+        takeAndGive={takeAndGive}
+        takeFromEnvelope={takeBalanceFromEnvelope}
+      />
+    );
+  }
 
   // if (isEnvelopeSelected) {
   //   return (

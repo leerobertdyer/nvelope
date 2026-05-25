@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { Text, View } from "react-native";
 import Nvelope from "./Nvelopes/Nvelope";
 
 export default function Loading({ text }: { text: string }) {
@@ -13,7 +13,8 @@ export default function Loading({ text }: { text: string }) {
           }}
           kind="dash"
         />
-        <p className="text-my-white-dark animate-pulse">{text}</p>
+        <Text className="text-my-white-dark">{text}</Text>
+        {/* animate-pulse in class above will break right now for some reason to do with babel.config.js reanimate */}
       </View>
   );
 }

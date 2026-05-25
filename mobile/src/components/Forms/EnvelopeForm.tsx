@@ -1,9 +1,9 @@
 import Button from "../../../../mobile/src/components/Buttons/Btn";
 import type { Envelope } from "../../types";
-import MoneyInput from "../MoneyInput";
 import { randomUUID } from "../../util";
 import { Text, View } from "react-native";
 import Input from "../Input";
+import MoneyInput from "../Payments/MoneyInput";
 
 interface IProps {
   newEnvelopeName: string;
@@ -39,7 +39,7 @@ export default function EnvelopeForm(props: IProps) {
       <Text className="text-my-white-base p-2 text-3xl text-center w-full">
         {isEditing ? "Edit Envelope" : "Add New Nvelope"}
       </Text>
-      <div className="md:rounded-md bg-my-white-base text-my-black-dark flex flex-col items-center justify-start gap-2 max-w-[40rem] p-4 gap-4 m-auto">
+      <View className="md:rounded-md bg-my-white-base text-my-black-dark flex flex-col items-center justify-start gap-2 max-w-[40rem] p-4 gap-4 m-auto">
         <Input
           id="newEnvelopeName"
           label="What is the name of the envelope?"
@@ -110,7 +110,7 @@ export default function EnvelopeForm(props: IProps) {
         >
           Back
         </Button>
-      </div>
+      </View>
     </View>
   );
 }

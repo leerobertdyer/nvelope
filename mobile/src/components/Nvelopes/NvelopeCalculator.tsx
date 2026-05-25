@@ -4,7 +4,7 @@ import { Envelope } from "../../types";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import MoneyInput from "../MoneyInput";
+import MoneyInput from "../Payments/MoneyInput";
 
 interface NvelopeCalculatorProps {
   handleEnterAmount: (amount: number, envelope: Envelope) => void;

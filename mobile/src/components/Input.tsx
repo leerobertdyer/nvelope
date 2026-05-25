@@ -6,7 +6,7 @@ interface ITextInput {
   placeholder: string
   onChange: (text: string) => void 
   value: string
-  label: string
+  label?: string
   numeric?: boolean
   maxLength?: number
 }

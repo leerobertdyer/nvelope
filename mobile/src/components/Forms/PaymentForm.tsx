@@ -1,11 +1,9 @@
-import { Calendar } from 'react-native-calendars';
+import { Calendar, DateData } from "react-native-calendars";
+import { Checkbox } from "expo-checkbox";
 import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../../constants";
 import type { Interval, Payment } from "../../types";
-import Button from "../../../../mobile/src/components/Buttons/Btn";
-import type { Value } from "react-calendar/src/shared/types.js";
 import { Timestamp } from "firebase/firestore";
 import { useState } from "react";
-import type { User } from "firebase/auth";
 import { editPayments } from "../../firebase/editData";
 import {
   generateFreshPayment,
@@ -13,15 +11,19 @@ import {
   removeVirtualIdPortion,
 } from "../../util";
 import { format, addDays } from "date-fns";
-import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
-import { useBudget } from "../../Context/BudgetContext/useBudget";
-import { useToast } from "../../Context/ToastContext/useToast";
-import MoneyInput from "../MoneyInput";
-import TextInput from "../Input";
+// import { useToast } from "../../Context/ToastContext/useToast";
 import PaymentTypeSelector, {
   type PaymentTypeOption,
 } from "./PaymentTypeSelector";
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from "react-native";
+import Input from "../Input";
+import { useBudget } from "../../context/BudgetContext/useBudget";
+import { useDatabase } from "../../context/DatabaseContext/useDatabase";
+import MoneyInput from "../Payments/MoneyInput";
+import Btn from "../../../../mobile/src/components/Buttons/Btn";
+import { Picker } from "@react-native-picker/picker";
+import { FirebaseAuthTypes } from "@react-native-firebase/auth";
+type User = FirebaseAuthTypes.User
 
 interface IPaymentForm {
   paymentToEdit: Payment | null;
@@ -40,24 +42,26 @@ export default function PaymentForm({
 }: IPaymentForm) {
   const { activeBudgetId } = useBudget();
   const { payDate, payPeriodInterval, payments, setPayments } = useDatabase();
-  const { showToast } = useToast();
+  // const { showToast } = useToast();
 
-  const [newPaymentDate, setNewPaymentDate] = useState<Value | null>(
-    paymentToEdit?.dueDate.toDate() ?? null
+  const [newPaymentDate, setNewPaymentDate] = useState<string>(
+    paymentToEdit?.dueDate.toDate()
+      ? format(paymentToEdit.dueDate.toDate(), "yyyy-MM-dd")
+      : format(new Date(), "yyyy-MM-dd"), // Default to today's date string if it's a brand new payment
   );
   const [newPayment, setNewPayment] = useState<Payment>(
-    paymentToEdit ?? generateFreshPayment()
+    paymentToEdit ?? generateFreshPayment(),
   );
 
   // For new payments, start with type selection
   const [selectedPaymentType, setSelectedPaymentType] =
     useState<PaymentTypeOption | null>(
-      paymentToEdit ? getPaymentTypeFromPayment(paymentToEdit) : null
+      paymentToEdit ? getPaymentTypeFromPayment(paymentToEdit) : null,
     );
 
   // Track if user wants to split bill across pay periods (for BILL type only)
   const [splitBillAcrossPayPeriods, setSplitBillAcrossPayPeriods] = useState(
-    paymentToEdit?.interval === SPLIT && paymentToEdit?.recurring === true
+    paymentToEdit?.interval === SPLIT && paymentToEdit?.recurring === true,
   );
 
   // Helper to determine PaymentTypeOption from existing Payment
@@ -135,15 +139,18 @@ export default function PaymentForm({
       recurring: undefined, // Clear recurring for non-SPLIT intervals
     });
   }
+  function handleCalendarChange(d: DateData) {
+    const dateString = d.dateString;
+    setNewPaymentDate(dateString);
 
-  function handleCalendarChange(value: Value) {
-    setNewPaymentDate(value);
-    if (value instanceof Date) {
-      setNewPayment({
-        ...newPayment,
-        dueDate: Timestamp.fromDate(value),
-      });
-    }
+    // Split the string into numbers to avoid the UTC timezone shift bug
+    const [year, month, day] = dateString.split("-").map(Number);
+    const localDate = new Date(year, month - 1, day);
+
+    setNewPayment({
+      ...newPayment,
+      dueDate: Timestamp.fromDate(localDate),
+    });
   }
 
   async function editPayment() {
@@ -165,13 +172,15 @@ export default function PaymentForm({
       await handleUpdateBudget(diffAmount);
     }
     resetForm();
-    showToast("Payment updated");
+    // showToast("Payment updated");
+    console.warn("TODO: Notifications");
   }
 
   async function addPayment() {
     if (!user || !newPayment) return;
     if (payments.some((p) => p.id === newPayment.id)) {
-      showToast("Payment name already exists", "error");
+      // showToast("Payment name already exists", "error");
+      console.warn("TODO: Notifications");
       return;
     }
     const updatedPayments = [...payments, newPayment];
@@ -183,13 +192,14 @@ export default function PaymentForm({
       isDateInCurrentPayPeriod(
         payPeriodInterval,
         payDate.toDate(),
-        newPayment.dueDate.toDate()
+        newPayment.dueDate.toDate(),
       ) &&
       !newPayment.paid
     ) {
       await handleUpdateBudget(newPayment.amount * -1);
     }
-    showToast("Payment added");
+    // showToast("Payment added");
+    console.warn("TODO: Notifications");
     resetForm();
   }
 
@@ -227,65 +237,73 @@ export default function PaymentForm({
     newPayment.interval &&
     newPaymentDate;
 
+  // If type is FUND, minDate is tomorrow. Otherwise, there is no minimum date constraint.
+  const minDateString =
+    selectedPaymentType === "FUND"
+      ? format(addDays(new Date(), 1), "yyyy-MM-dd")
+      : undefined;
+
   return (
-    <div className="h-screen absolute inset-0 z-9999 flex flex-col justify-center items-center m-auto overflow-y-scroll w-full overflow-x-hidden">
-      <div className="flex flex-col gap-2 items-center md:h-[100vh] overflow-y-auto text-my-white-dark bg-my-green-dark w-full text-center rounded-md p-2 pb-8">
-        <h1 className="text-center w-full text-my-white-light p-2 text-3xl">
+    <ScrollView className="h-screen absolute inset-0 z-9999 flex flex-col justify-center items-center m-auto overflow-y-scroll w-full overflow-x-hidden">
+      <View className="flex flex-col gap-2 items-center md:h-[100vh] overflow-y-auto text-my-white-dark bg-my-green-dark w-full text-center rounded-md p-2 pb-8">
+        <Text className="text-center w-full text-my-white-light p-2 text-3xl">
           {paymentToEdit ? "Edit Payment" : "Add Payment"}
-        </h1>
+        </Text>
         {/* Step 1: Payment Type Selection (for new payments only) */}
         {!selectedPaymentType && !paymentToEdit ? (
-          <div className="w-full flex-1 min-h-0 flex flex-col justify-center px-2">
+          <View className="w-full flex-1 min-h-0 flex flex-col justify-center px-2">
             <PaymentTypeSelector
               onSelect={handleSelectPaymentType}
               onBack={handleClickBack}
             />
-          </div>
+          </View>
         ) : (
           <>
             {/* Show current type with option to change */}
             {!paymentToEdit && (
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm text-my-white-light">
+              <View className="flex items-center gap-2 mb-2">
+                <Text className="text-sm text-my-white-light">
                   Type:{" "}
-                  <span className="font-bold">{getPaymentTypeLabel()}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPaymentType(null)}
-                  className="text-xs text-my-blue-base underline cursor-pointer"
-                >
-                  Change
-                </button>
-              </div>
+                  <Text className="font-bold">{getPaymentTypeLabel()}</Text>
+                </Text>
+
+                <Btn color="red" onPress={() => setSelectedPaymentType(null)}>
+                  <View className="text-xs text-my-blue-base underline cursor-pointer">
+                    Change
+                  </View>
+                </Btn>
+              </View>
             )}
 
             {/* Payment Name */}
-            <TextInput
+            <Input
               id="name"
-              label=""
               value={newPayment?.name.toLowerCase()}
               placeholder="Enter payment name"
               onChange={(e) =>
                 setNewPayment({
                   ...newPayment,
-                  name: e.target.value.toLowerCase(),
+                  name: e.toLowerCase(),
                 })
               }
             />
 
             {/* Payment Amount */}
             {newPayment.name && (
-              <div className="flex flex-col items-center w-full mb-4">
+              <View className="flex flex-col items-center w-full mb-4">
                 <MoneyInput
                   id="amount"
-                  label={selectedPaymentType === "FUND" ? "Target Amount" : "Amount"}
+                  label={
+                    selectedPaymentType === "FUND" ? "Target Amount" : "Amount"
+                  }
                   value={newPayment?.amount ?? 0}
                   onChange={(amount) => {
                     setNewPayment({
                       ...newPayment,
                       amount,
-                      ...(selectedPaymentType === "FUND" ? { total: amount } : {}),
+                      ...(selectedPaymentType === "FUND"
+                        ? { total: amount }
+                        : {}),
                     });
                   }}
                   placeholder={
@@ -295,38 +313,33 @@ export default function PaymentForm({
                   }
                 />
                 {selectedPaymentType === "FUND" && (
-                  <p className="text-xs text-my-white-light mt-1">
+                  <Text className="text-xs text-my-white-light mt-1">
                     This amount will be split across your pay periods until the
                     target date
-                  </p>
+                  </Text>
                 )}
                 {splitBillAcrossPayPeriods && (
-                  <p className="text-xs text-my-white-light mt-1">
+                  <Text className="text-xs text-my-white-light mt-1">
                     This monthly amount will be split across your pay periods
-                  </p>
+                  </Text>
                 )}
-              </div>
+              </View>
             )}
 
             {/* Split toggle for BILL type only */}
             {selectedPaymentType === "BILL" &&
               newPayment.name &&
               newPayment.amount > 0 && (
-                <div className="flex items-center gap-3 mb-4">
-                  <label
-                    htmlFor="splitToggle"
-                    className="text-sm cursor-pointer"
-                  >
+                <Text className="flex items-center gap-3 mb-4">
+                  <Text className="text-sm cursor-pointer">
                     Split across pay periods (for rent, mortgage, etc.)
-                  </label>
-                  <input
-                    id="splitToggle"
-                    type="checkbox"
-                    checked={splitBillAcrossPayPeriods}
-                    onChange={(e) => handleToggleSplitBill(e.target.checked)}
+                  </Text>
+                  <Checkbox
                     className="w-5 h-5 cursor-pointer accent-my-green-light"
+                    value={splitBillAcrossPayPeriods}
+                    onValueChange={(e) => handleToggleSplitBill(e)}
                   />
-                </div>
+                </Text>
               )}
 
             {/* Due/Target Date */}
@@ -339,16 +352,10 @@ export default function PaymentForm({
                 </Text>
                 <View className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2">
                   <Calendar
-                    calendarType="gregory"
-                    onChange={handleCalendarChange}
-                    value={newPaymentDate}
-                    selectRange={false}
+                    onDayPress={handleCalendarChange}
+                    date={newPaymentDate}
                     className="cursor-pointer-calendar"
-                    minDate={
-                      selectedPaymentType === "FUND"
-                        ? addDays(new Date(), 1)
-                        : undefined
-                    }
+                    minDate={minDateString}
                   />
                 </View>
               </View>
@@ -381,18 +388,15 @@ export default function PaymentForm({
             {selectedPaymentType === "DEBT" &&
               newPayment.name &&
               newPayment.amount > 0 && (
-                <div className="flex flex-col items-center w-full mt-4">
-                  <label htmlFor="interestRate">Interest rate (%) – optional</label>
-                  <input
+                <View className="flex flex-col items-center w-full mt-4">
+                  <Text>Interest rate (%) – optional</Text>
+                  <Input
                     id="interestRate"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
-                    value={newPayment?.interestRate ?? ""}
+                    numeric
+                    // className="w-[80%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
+                    value={newPayment?.interestRate?.toString() ?? ""}
                     onChange={(e) => {
-                      const val = e.target.value;
+                      const val = e;
                       setNewPayment({
                         ...newPayment,
                         interestRate: val === "" ? undefined : Number(val),
@@ -400,7 +404,7 @@ export default function PaymentForm({
                     }}
                     placeholder="e.g. 5.5"
                   />
-                </div>
+                </View>
               )}
 
             {/* Interval selector for BILL (non-split) and DEBT */}
@@ -408,85 +412,77 @@ export default function PaymentForm({
               selectedPaymentType === "DEBT") &&
               newPayment.name &&
               newPayment.amount > 0 && (
-                <div className="flex flex-col items-center w-full mt-4">
-                  <label>Payment Frequency</label>
-                  <select
-                    value={newPayment.interval || ""}
-                    onChange={(e) =>
-                      handleSetNewInterval(
-                        e.target.value.toUpperCase() as Interval
-                      )
+                <View className="flex flex-col items-center w-full mt-4">
+                  <Text>Payment Frequency</Text>
+                  <Picker
+                    selectedValue={newPayment.interval || ""}
+                    onValueChange={(e) =>
+                      handleSetNewInterval(e.toUpperCase() as Interval)
                     }
                     className="w-full max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark"
                   >
-                    <option value="" disabled>
-                      -- Select Frequency --
-                    </option>
-                    <option value={MONTHLY} className="text-center">
-                      Monthly
-                    </option>
-                    <option value={WEEKLY} className="text-center">
-                      Weekly
-                    </option>
-                    <option value={BIWEEKLY} className="text-center">
-                      Bi-Weekly
-                    </option>
-                    <option value={YEARLY} className="text-center">
-                      Yearly
-                    </option>
-                  </select>
-                </div>
+                    <Picker.Item
+                      value=""
+                      enabled={false}
+                      label="-- Select Frequency --"
+                    />
+                    <Picker.Item value={MONTHLY} label="Monthly" />
+                    <Picker.Item value={WEEKLY} label="Weekly" />
+                    <Picker.Item value={BIWEEKLY} label="Bi-Weekly" />
+                    <Picker.Item value={YEARLY} label="Yearly" />
+                  </Picker>
+                </View>
               )}
           </>
         )}
         {/* Save/Back buttons - show when we have enough info */}
         {canSave ? (
-          <div className="text-my-black-base pb-8 w-full mt-4">
-            <div className="text-center mb-4 p-3 bg-my-white-light rounded-md mx-4">
-              <span className="text-my-green-dark font-bold">
+          <View className="text-my-black-base pb-8 w-full mt-4">
+            <View className="text-center mb-4 p-3 bg-my-white-light rounded-md mx-4">
+              <Text className="text-my-green-dark font-bold">
                 {newPayment?.name}
-              </span>{" "}
+              </Text>{" "}
               -{" "}
-              <span className="text-my-red-dark">
+              <Text className="text-my-red-dark">
                 ${newPayment?.amount.toFixed(2)}
-              </span>
-              <div className="text-sm mt-1">
+              </Text>
+              <View className="text-sm mt-1">
                 {splitBillAcrossPayPeriods ? (
                   <>Monthly amount split across your pay periods</>
                 ) : selectedPaymentType === "FUND" ? (
                   <>
                     Planned expense due{" "}
-                    <span className="text-my-blue-dark">
+                    <Text className="text-my-blue-dark">
                       {format(newPayment.dueDate.toDate(), "MMM do, yyyy")}
-                    </span>
+                    </Text>
                   </>
                 ) : (
                   <>
                     Due {newPayment.interval?.toLowerCase()} on the{" "}
-                    <span className="text-my-blue-dark">
+                    <Text className="text-my-blue-dark">
                       {format(newPayment.dueDate.toDate(), "do")}
-                    </span>
+                    </Text>
                   </>
                 )}
-              </div>
-            </div>
-            <div className="flex flex-col gap-4 items-center justify-center w-full">
-              <Button color="gold" onClick={handleSavePayment}>
+              </View>
+            </View>
+            <View className="flex flex-col gap-4 items-center justify-center w-full">
+              <Btn color="gold" onPress={handleSavePayment}>
                 Save
-              </Button>
-              <Button color="red" onClick={() => handleClickBack()}>
+              </Btn>
+              <Btn color="red" onPress={() => handleClickBack()}>
                 Cancel
-              </Button>
-            </div>
-          </div>
+              </Btn>
+            </View>
+          </View>
         ) : selectedPaymentType ? (
-          <div className="mt-4 w-full flex justify-center items-center">
-            <Button color="red" onClick={() => handleClickBack()}>
+          <View className="mt-4 w-full flex justify-center items-center">
+            <Btn color="red" onPress={() => handleClickBack()}>
               Cancel
-            </Button>
-          </div>
+            </Btn>
+          </View>
         ) : null}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 }

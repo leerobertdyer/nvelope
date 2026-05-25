@@ -22,6 +22,29 @@ export async function editResetBudgetTimestamp(
   }
 }
 
+export async function updateBudgetStateAndDBB(
+  amount: number,
+  budgetId: string,
+  totalSpendingBudget: number,
+  setTotalSpendingBudget: (totalSpendingBudget: number) => void
+) {
+  const newBudget = totalSpendingBudget + amount;
+  await editTotalSpendingBudget(newBudget, budgetId);
+  setTotalSpendingBudget(newBudget);
+}
+
+export async function resetAllNvelopes(
+  nvelopes: Envelope[],
+  setEnvelopes: (e: Envelope[]) => void,
+  budgetId: string
+) {
+  const updatedNvelopes = [...nvelopes].map((n) => {
+    return { ...n, spent: 0, total: 0, paid: false };
+  });
+  await editEnvelopes(updatedNvelopes, budgetId);
+  setEnvelopes(updatedNvelopes);
+}
+
 export async function editEnvelopes(envelopes: Envelope[], budgetId: string) {
   const toFixedEnvelopes = envelopes.map((e: Envelope) => ({
     ...e,

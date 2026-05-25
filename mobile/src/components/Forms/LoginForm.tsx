@@ -2,13 +2,15 @@ import { useState, useRef, useEffect } from "react";
 import {
   createUserEmailPass,
   loginWithEmailAndPassword,
-  getSignInMethodsForEmail,
   sendPasswordResetEmailToUser,
 } from "../../firebase/emailAndPassword";
 import Button from "../../../../mobile/src/components/Buttons/Btn";
-import { useAuth } from "../../Context/AuthContext/useAuth";
-import { useToast } from "../../Context/ToastContext/useToast";
-import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
+import { useDatabase } from "../../context/DatabaseContext/useDatabase";
+import { useAuth } from "../../context/AuthContext/useAuth";
+import Btn from "../../../../mobile/src/components/Buttons/Btn";
+import { View } from "react-native";
+import Input from "../Input";
+// import { useToast } from "../../Context/ToastContext/useToast";
 
 interface LoginError {
   code: string;
@@ -18,7 +20,7 @@ interface LoginError {
 export default function LoginForm() {
   const { isNewUser } = useDatabase();
   const { setUser } = useAuth();
-  const { showToast } = useToast();
+  // const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -55,7 +57,8 @@ export default function LoginForm() {
 
   async function loginOrSignup() {
     if (!email.trim() || !password) {
-      showToast("Please enter email and password", "error");
+      // showToast("Please enter email and password", "error");
+      console.warn("TODO: Notifications");
       return;
     }
     setIsLoading(true);
@@ -67,7 +70,8 @@ export default function LoginForm() {
       if (loggedInUser) {
         setUser(loggedInUser);
         if (!isNewUser) {
-          showToast("Welcome back");
+          // showToast("Welcome back");
+          console.warn("TODO: Notifications");
         }
       }
     } catch (error: unknown) {
@@ -76,33 +80,26 @@ export default function LoginForm() {
         code === "auth/invalid-credential" ||
         code === "auth/user-not-found"
       ) {
-        const methods = await getSignInMethodsForEmail(email.trim());
-        const hasPassword = methods.includes("password");
-        if (hasPassword) {
-          showToast(
-            "Wrong password. Check your password or use Forgot password below.",
-            "error",
-          );
-          setIsLoading(false);
-          return;
-        }
         try {
           const newUser = await createUserEmailPass(email.trim(), password);
           if (newUser) {
             setUser(newUser);
-            showToast("Welcome back");
+            // showToast("Welcome back");
+            console.warn("TODO: Notifications");
           }
         } catch (signupError: unknown) {
           const signupCode = (signupError as LoginError).code;
-          showToast(
-            signupCode === "auth/email-already-in-use"
-              ? "An account with this email already exists. Sign in with your password or use Forgot password."
-              : "Something went wrong. Please try again.",
-            "error",
-          );
+          // showToast(
+          //   signupCode === "auth/email-already-in-use"
+          //     ? "An account with this email already exists. Sign in with your password or use Forgot password."
+          //     : "Something went wrong. Please try again.",
+          //   "error",
+          // );
+          console.warn("TODO: Notifications");
         }
       } else {
-        showToast("Something went wrong. Please try again.", "error");
+        // showToast("Something went wrong. Please try again.", "error");
+        console.warn("TODO: Notifications");
       }
     } finally {
       setIsLoading(false);
@@ -112,23 +109,27 @@ export default function LoginForm() {
   async function handleForgotPassword() {
     const emailToUse = showForgotPassword ? forgotEmail.trim() : email.trim();
     if (!emailToUse) {
-      showToast("Please enter an email address", "error");
+      // showToast("Please enter an email address", "error");
+      console.warn("TODO: Notifications");
+
       return;
     }
     setIsSendingReset(true);
     try {
       await sendPasswordResetEmailToUser(emailToUse);
-      showToast(
-        "If an account exists for this email, check your inbox and spam folder for the reset link.",
-      );
+      // showToast(
+      //   "If an account exists for this email, check your inbox and spam folder for the reset link.",
+      // );
+      console.warn("TODO: Notifications");
       setShowForgotPassword(false);
       setForgotEmail("");
     } catch (err: unknown) {
       console.error("Password reset failed:", err);
-      showToast(
-        "Could not send reset email. Check the email address and try again.",
-        "error",
-      );
+      // showToast(
+      //   "Could not send reset email. Check the email address and try again.",
+      //   "error",
+      // );
+      console.warn("TODO: Notifications");
     } finally {
       setIsSendingReset(false);
     }
@@ -144,87 +145,85 @@ export default function LoginForm() {
       }}
     >
       {/* Forgot password section – kept in DOM when hidden; inert set via ref */}
-      <div
-        ref={forgotSectionRef}
+      <View
+        // ref={forgotSectionRef}
         className="flex flex-col justify-center items-center gap-6 w-full"
-        hidden={!showForgotPassword}
+        // hidden={!showForgotPassword}
       >
-        <input
-          ref={forgotEmailInputRef}
+        <Input
+          // ref={forgotEmailInputRef}
           id="forgot-email"
-          type="email"
-          autoComplete="email"
           placeholder="Email for reset link"
           value={forgotEmail}
-          onChange={(e) => setForgotEmail(e.target.value)}
-          className="w-[80%] max-w-[20rem] p-2 border rounded-lg bg-my-white-dark"
+          onChange={(e) => setForgotEmail(e)}
+          // className="w-[80%] max-w-[20rem] p-2 border rounded-lg bg-my-white-dark"
         />
-        <div className="flex flex-col items-center gap-2 w-[80%] max-w-[20rem]">
-          <Button
+        <View className="flex flex-col items-center gap-2 w-[80%] max-w-[20rem]">
+          <Btn
             type="submit"
             color="red"
-            onClick={() => {}}
+            onPress={() => {
+              console.error("You haven't set it up yet dum dum");
+            }}
             disabled={isSendingReset || !forgotEmail.trim()}
           >
             {isSendingReset ? "Sending…" : "Send reset link"}
-          </Button>
-          <button
-            type="button"
-            className="text-sm text-my-white-dark underline hover:no-underline"
-            onClick={() => {
-              setShowForgotPassword(false);
-              setForgotEmail("");
-            }}
-          >
-            Back to login
-          </button>
-        </div>
-      </div>
+          </Btn>
+          <View className="text-sm text-my-white-dark underline hover:no-underline">
+            <Btn
+              color="green"
+              onPress={() => {
+                setShowForgotPassword(false);
+                setForgotEmail("");
+              }}
+            >
+              Back to login
+            </Btn>
+          </View>
+        </View>
+      </View>
 
       {/* Login section – kept in DOM when hidden; inert set via ref */}
-      <div
-        ref={loginSectionRef}
+      <View
+        // ref={loginSectionRef}
         className="flex flex-col justify-center items-center gap-6 w-full"
-        hidden={showForgotPassword}
+        // hidden={showForgotPassword}
       >
-        <input
-          ref={loginEmailInputRef}
+        <Input
+          // ref={loginEmailInputRef}
           id="login-email"
-          type="email"
-          autoComplete="email"
           placeholder="Email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-[80%] max-w-[20rem] p-2 border rounded-lg bg-my-white-dark"
+          onChange={(e) => setEmail(e)}
+          // className="w-[80%] max-w-[20rem] p-2 border rounded-lg bg-my-white-dark"
         />
-        <input
+        <Input
           id="login-password"
-          type="password"
-          autoComplete="current-password"
           placeholder="Password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-[80%] max-w-[20rem] p-2 border rounded-lg bg-my-white-dark"
+          onChange={(e) => setPassword(e)}
+          // className="w-[80%] max-w-[20rem] p-2 border rounded-lg bg-my-white-dark"
         />
         <Button
           type="submit"
           color="red"
-          onClick={() => {}}
+          onPress={loginOrSignup}
           disabled={isLoading}
         >
           {isLoading ? "Signing in…" : "Login / Sign up"}
         </Button>
-        <button
-          type="button"
-          className="text-sm text-my-white-dark underline hover:no-underline"
-          onClick={() => {
-            setShowForgotPassword(true);
-            setForgotEmail(email);
-          }}
-        >
-          Forgot password?
-        </button>
-      </div>
+        <View className="text-sm text-my-white-dark underline hover:no-underline">
+          <Btn
+            color="red"
+            onPress={() => {
+              setShowForgotPassword(true);
+              setForgotEmail(email);
+            }}
+          >
+            Forgot password?
+          </Btn>
+        </View>
+      </View>
     </form>
   );
 }

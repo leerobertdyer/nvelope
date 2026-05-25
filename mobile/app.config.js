@@ -43,20 +43,9 @@ export default {
       [
         "@react-native-google-signin/google-signin",
         {
-          iosUrlScheme: process.env.REVERSED_CLIENT_ID,
+          iosUrlScheme: process.env.EXPO_PUBLIC_REVERSED_CLIENT_ID,
         },
       ],
     ],
-    extra: {
-      apiUrl: process.env.API_URL,
-      apiKey: process.env.API_KEY,
-      authDomain: process.env.AUTH_DOMAIN,
-      projectId: process.env.PROJECT_ID,
-      storageBucket: process.env.STORAGE_BUCKET,
-      messagingSenderId: process.env.MESSAGING_SENDER_ID,
-      appId: process.env.APP_ID,
-      measurementId: process.env.MEASUREMENT_ID,
-      firebaseWebId: process.env.FIREBASE_WEB_ID,
-    },
   },
 };

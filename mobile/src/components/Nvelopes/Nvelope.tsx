@@ -9,6 +9,8 @@ import { Button, Pressable, Text, View } from "react-native";
 import { Envelope } from "../../types";
 import NvelopeCalculator from "./NvelopeCalculator";
 import EnvelopeForm from "../Forms/EnvelopeForm";
+import Svg, { Line } from 'react-native-svg'
+import Hr from "../Hr";
 
 interface NvelopeProps {
   kind:
@@ -149,10 +151,10 @@ export default function Nvelope({
           >
             {envelope.name}
           </Text>
-          <svg width={dottedWidth} height={dottedHeight}>
+          <Svg width={dottedWidth} height={dottedHeight}>
             {/* Bottom Line */}
-            <line
-              className="animate-march"
+            <Line
+              // className="animate-march"
               x1="0"
               y1={dottedHeight}
               x2={dottedWidth}
@@ -162,8 +164,8 @@ export default function Nvelope({
               strokeWidth={dottedStrokeWidth}
             />
             {/* Top Line */}
-            <line
-              className="animate-march"
+            <Line
+              // className="animate-march"
               x1="0"
               y1="0"
               x2={dottedWidth}
@@ -173,8 +175,8 @@ export default function Nvelope({
               strokeWidth={dottedStrokeWidth}
             />
             {/* Left Line */}
-            <line
-              className="animate-march"
+            <Line
+              // className="animate-march"
               x1="0"
               y1={dottedHeight}
               x2="0"
@@ -184,8 +186,8 @@ export default function Nvelope({
               strokeWidth={dottedStrokeWidth}
             />
             {/* Right Line */}
-            <line
-              className="animate-march"
+            <Line
+              // className="animate-march"
               x1={dottedWidth}
               y1={dottedHeight}
               x2={dottedWidth}
@@ -195,8 +197,8 @@ export default function Nvelope({
               strokeWidth={dottedStrokeWidth}
             />
             {/* Left Diagnal */}
-            <line
-              className="animate-march"
+            <Line
+              // className="animate-march"
               x1="0"
               y1="0"
               x2={dottedWidth * 0.5}
@@ -206,8 +208,8 @@ export default function Nvelope({
               strokeWidth={dottedStrokeWidth * 0.35}
             />
             {/* Right Diagnal */}
-            <line
-              className="animate-march"
+            <Line
+              // className="animate-march"
               x1={dottedWidth}
               y1="0"
               x2={dottedWidth * 0.5}
@@ -216,7 +218,7 @@ export default function Nvelope({
               strokeDasharray="8, 2"
               strokeWidth={dottedStrokeWidth * 0.35}
             />
-          </svg>
+          </Svg>
         </Pressable>
       );
     default:
@@ -234,9 +236,7 @@ export default function Nvelope({
           >
             ${envelope.spent}
           </Text>
-          <hr
-          className="absolute w-full h-[2px] bg-black top-12"
-          />
+          <Hr/>
           <Text
           className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-14 text-[.65rem]"
           >

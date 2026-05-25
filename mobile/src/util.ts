@@ -5,7 +5,6 @@ import type {
   IntervalDates,
   Backup,
 } from "./types";
-import { editTotalSpendingBudget, editEnvelopes } from "./firebase/editData";
 import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "./constants";
 import {
   addMonths,
@@ -66,18 +65,6 @@ export function randomUUID(): string {
   bytes[8] = (bytes[8]! & 0x3f) | 0x80;
   const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-export async function resetAllNvelopes(
-  nvelopes: Envelope[],
-  setEnvelopes: (e: Envelope[]) => void,
-  budgetId: string
-) {
-  const updatedNvelopes = [...nvelopes].map((n) => {
-    return { ...n, spent: 0, total: 0, paid: false };
-  });
-  await editEnvelopes(updatedNvelopes, budgetId);
-  setEnvelopes(updatedNvelopes);
 }
 
 export function resetEnvelopesSpentToZero(envelopes: Envelope[]) {
@@ -295,17 +282,6 @@ export function getCurrentIntervalDateRange(
   const start = calculateCurrentIntervalStart(originalDate, payPeriodInterval);
   const { end } = getIntervalDateRange(payPeriodInterval, start);
   return { start, end };
-}
-
-export async function updateBudgetStateAndDBB(
-  amount: number,
-  budgetId: string,
-  totalSpendingBudget: number,
-  setTotalSpendingBudget: (totalSpendingBudget: number) => void
-) {
-  const newBudget = totalSpendingBudget + amount;
-  await editTotalSpendingBudget(newBudget, budgetId);
-  setTotalSpendingBudget(newBudget);
 }
 
 /**
