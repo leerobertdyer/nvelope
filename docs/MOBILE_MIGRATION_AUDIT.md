@@ -179,7 +179,7 @@ original response:
 ```
 src/firebase/emailAndPassword.ts:    typeof window !== "undefined" ? window.location.origin : "";
 src/Pages/Settings.tsx:        window.location.href = "/";
-src/Pages/Home.tsx:            onClick={() => window.location.reload()} 
+src/Pages/Home.tsx:            onPress={() => window.location.reload()} 
 src/main.tsx:createRoot(document.getElementById("root")!).render(
 src/components/MoneyInput.tsx:    if (el && document.activeElement === el) {
 src/Views/FullScreen.tsx:    const originalOverflow = document.body.style.overflow;

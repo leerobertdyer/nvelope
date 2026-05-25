@@ -1,5 +1,5 @@
 import signInWithGoogle from "../../../../mobile/src/firebase/signInWithGoogle";
-import Button from "../Buttons/Button";
+import Button from "../../../../mobile/src/components/Buttons/Btn";
 
 export default function LoginProvider({src, text}: {src: string, text: string}) {
   return (

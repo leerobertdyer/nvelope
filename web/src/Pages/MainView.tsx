@@ -15,7 +15,7 @@ import {
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useToast } from "../Context/ToastContext/useToast";
-import Button from "../components/Buttons/Button";
+import Button from "../../../mobile/src/components/Buttons/Btn";
 import Nvelope from "../../../mobile/src/components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
@@ -39,7 +39,7 @@ import AddIncomeForm from "../components/Forms/AddIncomeForm";
 import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
 import FundPaymentDueModal from "../components/Payments/SplitPaymentDueModal";
 import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
-import PageTour from "../components/PageTour";
+import PageTour from "../../../mobile/src/components/PageTour";
 
 export default function MainEnvelopesView() {
   const { user } = useAuth();

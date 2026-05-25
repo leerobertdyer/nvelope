@@ -2,7 +2,7 @@ import { GiMoneyStack } from "react-icons/gi";
 import { IoPencil, IoTrash } from "react-icons/io5";
 import { IoAddCircle } from "react-icons/io5";
 import type { Payment } from "../types";
-import Button from "../components/Buttons/Button";
+import Button from "../../../mobile/src/components/Buttons/Btn";
 import { useState } from "react";
 import PaymentForm from "../components/Forms/PaymentForm";
 import { useAuth } from "../Context/AuthContext/useAuth";

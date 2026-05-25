@@ -3,7 +3,7 @@ import { IoPencil, IoTrash } from "react-icons/io5";
 import { IoIosHand } from "react-icons/io";
 import type { Envelope } from "../types";
 import SpendBtn from "../components/Buttons/SpendBtn";
-import Button from "../components/Buttons/Button";
+import Button from "../../../mobile/src/components/Buttons/Btn";
 
 interface IBigEnvelope {
     handleBack: () => void,

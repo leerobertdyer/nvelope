@@ -1,7 +1,7 @@
 import Calendar from "react-calendar";
 import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../../constants";
 import type { Interval, Payment } from "../../types";
-import Button from "../Buttons/Button";
+import Button from "../../../../mobile/src/components/Buttons/Btn";
 import type { Value } from "react-calendar/src/shared/types.js";
 import { Timestamp } from "firebase/firestore";
 import { useState } from "react";
@@ -17,7 +17,7 @@ import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
 import { useBudget } from "../../Context/BudgetContext/useBudget";
 import { useToast } from "../../Context/ToastContext/useToast";
 import MoneyInput from "../MoneyInput";
-import TextInput from "../TextInput";
+import TextInput from "../../../../mobile/src/components/Input";
 import PaymentTypeSelector, {
   type PaymentTypeOption,
 } from "./PaymentTypeSelector";

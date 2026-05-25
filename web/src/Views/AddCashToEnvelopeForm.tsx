@@ -1,4 +1,4 @@
-import Button from "../components/Buttons/Button";
+import Button from "../../../mobile/src/components/Buttons/Btn";
 import Loading from "../components/Loading";
 import MoneyInput from "../components/MoneyInput";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";

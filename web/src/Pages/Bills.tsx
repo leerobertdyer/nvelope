@@ -10,7 +10,7 @@ import { getBillIntervalLabel, paymentsTotal, removeVirtualIdPortion } from "../
 import BigPayment from "../Views/BigPayment";
 import { Timestamp } from "firebase/firestore";
 import { format, startOfDay } from "date-fns";
-import PageTour from "../components/PageTour";
+import PageTour from "../../../mobile/src/components/PageTour";
 
 export default function Bills() {
   const { user } = useAuth();

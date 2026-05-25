@@ -1,7 +1,7 @@
-import Button from "../Buttons/Button";
+import Button from "../../../../mobile/src/components/Buttons/Btn";
 import Loading from "../Loading";
 import MoneyInput from "../MoneyInput";
-import TextInput from "../TextInput";
+import TextInput from "../../../../mobile/src/components/Input";
 import FullScreen from "../../Views/FullScreen";
 
 interface IAddIncomeForm {

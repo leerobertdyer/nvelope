@@ -1,10 +1,33 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   // NOTE: Update this to include the paths to all files that contain Nativewind classes.
-  content: ["./App.tsx", "./index.ts", "./src/**/*.{js,jsx,ts,tsx}"],
+  content: [
+    "./App.tsx",
+    "./index.ts",
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "./global.css",
+  ],
   presets: [require("nativewind/preset")],
-  theme: {
-    extend: {},
+theme: {
+    extend: {
+      colors: {
+        'my-white-light': '#fff2d9',
+        'my-white-base': '#ffe0a3',
+        'my-white-dark': '#fcca68',
+        'my-red-light': '#f54263',
+        'my-red-base': '#f2055c',
+        'my-red-dark': '#ad0241',
+        'my-green-light': '#3be3ad',
+        'my-green-base': '#00cf8d',
+        'my-green-dark': '#076346',
+        'my-blue-light': '#69f2ff',
+        'my-blue-base': '#0edbed',
+        'my-blue-dark': '#038894',
+        'my-black-light': '#484848',
+        'my-black-base': '#242424',
+        'my-black-dark': '#121212'
+      },
+    },
   },
   plugins: [],
 };

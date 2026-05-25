@@ -2,7 +2,7 @@ import type { Payment } from "../../types";
 import { format } from "date-fns";
 import { useState } from "react";
 import { getEffectivePaymentAmount } from "../../util";
-import ShowHideButton from "../Buttons/ShowHideButton";
+import ShowHideButton from "../../../../mobile/src/components/Buttons/ShowHideButton";
 import {
   IoIosCheckmarkCircle,
   IoIosCheckmarkCircleOutline,

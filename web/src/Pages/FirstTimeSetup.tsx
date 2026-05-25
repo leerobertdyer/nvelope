@@ -9,7 +9,7 @@ import { editPayDate, editPayPeriodInterval } from "../firebase/editData";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../Context/ToastContext/useToast";
 import Header from "../components/Nav/Header";
-import Button from "../components/Buttons/Button";
+import Button from "../../../mobile/src/components/Buttons/Btn";
 import PayDateCalendar from "../components/Forms/PayDateCalendar";
 import IntervalSelector from "../components/Forms/IntervalSelector";
 import { MONTHLY } from "../constants";

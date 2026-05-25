@@ -1,8 +1,8 @@
-import Button from "../Buttons/Button";
+import Button from "../../../../mobile/src/components/Buttons/Btn";
 import type { Envelope } from "../../types";
 import FullScreen from "../../Views/FullScreen";
 import MoneyInput from "../MoneyInput";
-import TextInput from "../TextInput";
+import TextInput from "../../../../mobile/src/components/Input";
 import { randomUUID } from "../../util";
 
 interface IProps {

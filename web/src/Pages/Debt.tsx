@@ -14,9 +14,9 @@ import { IoWarning } from "react-icons/io5";
 import PaymentForm from "../components/Forms/PaymentForm";
 import FullScreen from "../Views/FullScreen";
 import MoneyInput from "../components/MoneyInput";
-import Button from "../components/Buttons/Button";
+import Button from "../../../mobile/src/components/Buttons/Btn";
 import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
-import PageTour from "../components/PageTour";
+import PageTour from "../../../mobile/src/components/PageTour";
 
 export default function Debt() {
     const { user } = useAuth();

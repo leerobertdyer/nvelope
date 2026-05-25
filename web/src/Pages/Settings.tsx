@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Button from "../components/Buttons/Button";
+import Button from "../../../mobile/src/components/Buttons/Btn";
 import Header from "../components/Nav/Header";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { useBudget } from "../Context/BudgetContext/useBudget";
@@ -33,14 +33,14 @@ import type { Value } from "react-calendar/src/shared/types.js";
 import MoneyInput from "../components/MoneyInput";
 import EditSpendingBudget from "../components/Forms/EditSpendingBudget";
 import BudgetSettingsFields from "../components/Forms/BudgetSettingsFields";
-import TextInput from "../components/TextInput";
+import TextInput from "../../../mobile/src/components/Input";
 import FullScreen from "../Views/FullScreen";
 import CreateLoginWithEmail from "../components/Forms/CreateLoginWithEmail";
 import { format } from "date-fns";
 import { useToast } from "../Context/ToastContext/useToast";
 import type { User } from "firebase/auth";
 import { IoTrash } from "react-icons/io5";
-import PageTour from "../components/PageTour";
+import PageTour from "../../../mobile/src/components/PageTour";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "";
 
@@ -498,7 +498,7 @@ export default function Settings() {
     return (
       <button
         className="p-2 cursor-pointer text-my-blue-dark"
-        onClick={() => {
+        onPress={() => {
           switch (text.toLowerCase()) {
             case "budgets":
               setShowAccountSettings(false);
@@ -518,16 +518,16 @@ export default function Settings() {
 
   function LogoutButton({
     user,
-    onClick,
+    onPress,
   }: {
     user: User;
-    onClick: () => void;
+    onPress: () => void;
   }) {
     return (
       <div className="w-full flex flex-col items-center justify-center text-xs sm:text-sm md:text-lg mb-10">
         You are logged in as{" "}
         <span className="text-my-blue-dark">{user?.email}</span>
-        <Button color="red" onClick={onClick}>
+        <Button color="red" onPress={onPress}>
           Log Out
         </Button>
       </div>
@@ -541,7 +541,7 @@ export default function Settings() {
     return (
       <div
         className="flex flex-col justify-center h-fit w-[80%] max-w-[20rem] items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8 cursor-pointer hover:opacity-90"
-        onClick={() => {
+        onPress={() => {
           setShowDeleteAccountConfirm(true);
           setDeletePasswordStep(false);
           setDeletePassword("");
@@ -625,7 +625,7 @@ export default function Settings() {
     return (
       <div
         className="flex flex-col justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4 cursor-pointer hover:bg-my-blue-base gap-2"
-        onClick={() => setShowUndoConfirm(true)}
+        onPress={() => setShowUndoConfirm(true)}
       >
         <p className="text-sm font-bold">Undo Last Restore</p>
         <p className="text-xs">
@@ -637,7 +637,7 @@ export default function Settings() {
         </p>
         <button
           className="bg-my-white-dark rounded-md border-2 border-my-black-dark text-my-black-dark p-2 w-[80%]"
-          onClick={() => setShowUndoConfirm(true)}
+          onPress={() => setShowUndoConfirm(true)}
         >
           Undo
         </button>
@@ -731,10 +731,10 @@ export default function Settings() {
             placeholder="New budget amount"
           />
           <div className="flex flex-col items-center gap-4 w-full">
-            <Button color="red" onClick={() => setShowIntervalSettings(false)}>
+            <Button color="red" onPress={() => setShowIntervalSettings(false)}>
               Cancel
             </Button>
-            <Button color="green" onClick={() => handleUpdateInterval()}>
+            <Button color="green" onPress={() => handleUpdateInterval()}>
               Save
             </Button>
           </div>
@@ -792,14 +792,14 @@ export default function Settings() {
                       />
                       <Button
                         color="green"
-                        onClick={handleSaveBudgetName}
+                        onPress={handleSaveBudgetName}
                         disabled={isSavingBudgetName || !budgetNameInput.trim()}
                       >
                         Save
                       </Button>
                       <Button
                         color="red"
-                        onClick={() => {
+                        onPress={() => {
                           setEditingBudgetName(false);
                           setBudgetNameInput("");
                         }}
@@ -813,7 +813,7 @@ export default function Settings() {
                       <button
                         type="button"
                         className="p-1 text-my-blue-dark hover:underline text-sm"
-                        onClick={() => {
+                        onPress={() => {
                           setBudgetNameInput(budgetMeta.name);
                           setEditingBudgetName(true);
                         }}
@@ -846,7 +846,7 @@ export default function Settings() {
                             <button
                               type="button"
                               className="p-1.5 text-my-red-light hover:bg-my-white-dark rounded"
-                              onClick={() => setMemberToRemove(mid)}
+                              onPress={() => setMemberToRemove(mid)}
                               title="Remove member"
                             >
                               <IoTrash size={18} />
@@ -878,7 +878,7 @@ export default function Settings() {
               </select>
             </div>
           )}
-          <Button color="gold" onClick={() => setShowCreateBudgetModal(true)}>
+          <Button color="gold" onPress={() => setShowCreateBudgetModal(true)}>
             Create new budget
           </Button>
           {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
@@ -886,7 +886,7 @@ export default function Settings() {
               {isOwner && (
                 <Button
                   color="green"
-                  onClick={() => setShowShareBudgetModal(true)}
+                  onPress={() => setShowShareBudgetModal(true)}
                 >
                   Share budget
                 </Button>
@@ -894,7 +894,7 @@ export default function Settings() {
               {isOwner && (
                 <Button
                   color="gold"
-                  onClick={() => setShowEditBudgetModal(true)}
+                  onPress={() => setShowEditBudgetModal(true)}
                 >
                   Edit budget
                 </Button>
@@ -921,7 +921,7 @@ export default function Settings() {
               {isOwner && (
                 <Button
                   color="red"
-                  onClick={() => setShowDeleteBudgetConfirm(true)}
+                  onPress={() => setShowDeleteBudgetConfirm(true)}
                 >
                   Delete this budget
                 </Button>
@@ -929,7 +929,7 @@ export default function Settings() {
               {isMember && (
                 <Button
                   color="red"
-                  onClick={() => setShowLeaveBudgetConfirm(true)}
+                  onPress={() => setShowLeaveBudgetConfirm(true)}
                 >
                   Leave this budget
                 </Button>
@@ -939,7 +939,7 @@ export default function Settings() {
         </div>
       )}
       <div className="overflow-y-scroll  flex flex-col items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
-      <LogoutButton user={user!} onClick={() => signout()} />
+      <LogoutButton user={user!} onPress={() => signout()} />
         
         {showBudgets && (
           <>
@@ -1066,7 +1066,7 @@ export default function Settings() {
             {hasPassword && (
               <Button
                 color="red"
-                onClick={() => resetPasswordForEmail(user?.email ?? "")}
+                onPress={() => resetPasswordForEmail(user?.email ?? "")}
               >
                 Reset Password
               </Button>

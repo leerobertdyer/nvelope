@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Button from "../components/Buttons/Button";
+import Button from "../../../mobile/src/components/Buttons/Btn";
 import MoneyInput from "../components/MoneyInput";
 import type { Envelope } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
