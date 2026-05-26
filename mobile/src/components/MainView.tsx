@@ -44,6 +44,7 @@ import SplitPaymentDueModal from "./Payments/SplitPaymentDueModal";
 import CongratsPaidOffModal from "./Payments/CongratsPaidOffModal";
 import BigPayment from "./Payments/BigPayment";
 import PaymentForm from "./Forms/PaymentForm";
+import ActionButtons from "./Buttons/ActionButtons";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -1001,12 +1002,12 @@ export default function MainView() {
               to see your pay period in the header.
             </Text>
           )}
-          {/* <ActionButtons
+          <ActionButtons
             onPaymentClick={handleAddPayment}
             onCashClick={handleAddCash}
             onEnvelopeClick={handleSetupNewEnvelope}
             onClearClick={() => setShowClearNvelopes(true)}
-          /> */}
+          />
 
           <View className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
             <Nvelopes

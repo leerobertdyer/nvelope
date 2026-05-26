@@ -9,11 +9,15 @@ import { useEffect, useState } from "react";
 import { Envelope } from "../../types";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { useBudget } from "../../context/BudgetContext/useBudget";
-import { editEnvelopes, editTotalSpendingBudget } from "../../firebase/editData";
+import {
+  editEnvelopes,
+  editTotalSpendingBudget,
+} from "../../firebase/editData";
 import ShowHideButton from "../Buttons/ShowHideButton";
 import ListEnvelope from "./NvelopeListRow";
 import { Text, View } from "react-native";
 import GiveAndTake from "../Payments/GiveAndTake";
+import BigEnvelope from "./BigEnvelope";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -114,20 +118,20 @@ export default function Nvelopes({
     );
   }
 
-  // if (isEnvelopeSelected) {
-  //   return (
-  //     <BigEnvelope
-  //       handleAddCashToEnvelope={handleAddCashToEnvelope}
-  //       handleBack={() => setIsEnvelopeSelected(false)}
-  //       envelope={envelopeToEdit!}
-  //       resetState={resetState}
-  //       handleSetShowSpendingPage={handleSetShowSpendingPage}
-  //       handleSetupEdit={handleSetupEdit}
-  //       setUpShowGiveAndTake={setUpShowGiveAndTake}
-  //       handleDeleteEnvelope={handleDeleteEnvelope}
-  //     />
-  //   );
-  // }
+  if (isEnvelopeSelected) {
+    return (
+      <BigEnvelope
+        handleAddCashToEnvelope={handleAddCashToEnvelope}
+        handleBack={() => setIsEnvelopeSelected(false)}
+        envelope={envelopeToEdit!}
+        resetState={resetState}
+        handleSetShowSpendingPage={handleSetShowSpendingPage}
+        handleSetupEdit={handleSetupEdit}
+        setUpShowGiveAndTake={setUpShowGiveAndTake}
+        handleDeleteEnvelope={handleDeleteEnvelope}
+      />
+    );
+  }
 
   function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
     event.dataTransfer.setData("text/plain", event.currentTarget.id);
@@ -197,15 +201,17 @@ export default function Nvelopes({
         />
         {showEnvelopes && (
           <>
-            <View className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold">
-              <View className="col-span-3 flex justify-start items-center ml-2">
-                <Text className="text-sm">Nvelope</Text>
+            <View className="w-screen max-w-[40rem] h-[2rem] flex-row divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold">
+              <View className="flex-[3] flex-row justify-start items-center pl-2">
+                <Text className="text-sm font-bold">Nvelope</Text>
               </View>
-              <View className="flex justify-center items-center col-span-2">
-                <Text className="text-sm">Remaining</Text>
+
+              <View className="flex-[2] flex-row justify-center items-center">
+                <Text className="text-sm font-bold">Remaining</Text>
               </View>
-              <View className="flex justify-end items-center mr-2 col-span-2">
-                <Text className="text-sm">Total</Text>
+
+              <View className="flex-[2] flex-row justify-end items-center pr-2">
+                <Text className="text-sm font-bold">Total</Text>
               </View>
             </View>
             {sortedEnvelopes.map((e) => (
