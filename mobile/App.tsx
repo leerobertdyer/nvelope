@@ -9,10 +9,27 @@ import {
   initialWindowMetrics,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 import "./global.css";
+
+SplashScreen.preventAutoHideAsync(); // for fonts
 
 // 1. Create a wrapper component inside App.js (or in its own file)
 function GlobalLayout() {
+  const [loaded, error] = useFonts({
+    myFont: require("./src/assets/fonts/posten.ttf"),
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) return null;
+
   const insets = useSafeAreaInsets();
 
   return (

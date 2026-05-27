@@ -38,13 +38,15 @@ import { startOfDay, addMonths } from "date-fns";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
-import { Button, Text, View } from "react-native";
+import { Button, ScrollView, Text, View } from "react-native";
 import PageTour from "./PageTour";
 import SplitPaymentDueModal from "./Payments/SplitPaymentDueModal";
 import CongratsPaidOffModal from "./Payments/CongratsPaidOffModal";
 import BigPayment from "./Payments/BigPayment";
 import PaymentForm from "./Forms/PaymentForm";
 import ActionButtons from "./Buttons/ActionButtons";
+import PaymentMap from "./Payments/PaymentMap";
+import { MyText } from "./MyText";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -609,23 +611,23 @@ export default function MainView() {
       //     showButtons
       //   >
       <View
-      // className="flex flex-col items-center"
+      className="flex flex-col items-center"
       >
-        <Text
-        //   className="text-xl text-my-red-light"
+        <MyText
+          className="text-xl text-my-red-light"
         >
           ⚠️ Are you sure? ⚠️
-        </Text>
-        <Text>
-          This will set <Text 
-        //   className="text-my-blue-light"
-          >ALL Nvelopes</Text>{" "}
-          totals/spent to <Text 
-        //   className="text-my-green-base"
-          >$0.00</Text>,
-        </Text>
-        <Text>and set them all to "unpaid" status.</Text>
-        <Text>Your budget total will be unaffected.</Text>
+        </MyText>
+        <MyText>
+          This will set <MyText 
+          className="text-my-blue-light"
+          >ALL Nvelopes</MyText>{" "}
+          totals/spent to <MyText 
+          className="text-my-green-base"
+          >$0.00</MyText>,
+        </MyText>
+        <MyText>and set them all to "unpaid" status.</MyText>
+        <MyText>Your budget total will be unaffected.</MyText>
       </View>
       //   </FullScreen>
     );
@@ -990,17 +992,17 @@ export default function MainView() {
           ]}
         /> */}
 
-        <View className="flex flex-col items-center pt-[1rem] w-full">
-          <Text className="text-lg font-semibold text-my-white-dark mb-2">
+        <ScrollView className="pt-[1rem] w-full" contentContainerClassName="flex flex-col items-center">
+          <MyText className="text-lg font-semibold text-my-white-dark mb-2">
             {activeBudgetName}
-          </Text>
+          </MyText>
           {!payDate && (
-            <Text className="text-sm text-my-white-light mb-2">
-              <Text className="text-my-green-light underline">
+            <MyText className="text-sm text-my-white-light mb-2">
+              <MyText className="text-my-green-light underline">
                 LINK:Set your pay date in Settings
-              </Text>{" "}
+              </MyText>{" "}
               to see your pay period in the header.
-            </Text>
+            </MyText>
           )}
           <ActionButtons
             onPaymentClick={handleAddPayment}
@@ -1018,13 +1020,13 @@ export default function MainView() {
               handleDeleteEnvelope={handleSetupDelete}
               handleAddCashToEnvelope={handleAddCashToEnvelope}
             />
-            {/* <PaymentMap
+            <PaymentMap
               paymentsThisPeriod={paymentsThisPeriod}
               handleUpdatePaid={handleUpdatePaid}
               handleEditBill={handleEditPayment}
-            /> */}
+            />
           </View>
-        </View>
+        </ScrollView>
       </View>
       {/* {paidOffDebtName && (
         <CongratsPaidOffModal

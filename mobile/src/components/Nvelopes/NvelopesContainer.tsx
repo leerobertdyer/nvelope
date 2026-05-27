@@ -20,6 +20,7 @@ import GiveAndTake from "../Payments/GiveAndTake";
 import BigEnvelope from "./BigEnvelope";
 import { Pressable } from "react-native-gesture-handler";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import { MyText } from "../MyText";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -33,33 +34,31 @@ interface NvelopeProps {
 function EnvelopeBox({
   name,
   total,
-  isShown,
   setter,
 }: {
-  isShown: boolean;
   setter: () => void;
   total: string;
   name: string;
 }) {
   return (
     <Pressable onPress={setter}>
-        <View className="flex-row p-2 w-full h-[3rem] bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
+      <View className="flex-row p-2 w-full h-[3rem] bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
         <View className="ml-8 w-fit h-fit items-center justify-center border-2 bg-my-black-dark rounded-md">
           <FontAwesome6
-            name={isShown ? "arrow-up" : "arrow-down"}
+            name={"arrows-up-down"}
             size={13}
             color="#fcca68"
             className="px-2"
-            />
+          />
         </View>
         <View className="flex-1 flex-row">
-          <Text className="flex-[3] text-center">{name}</Text>
-          <Text className="flex-[1] text-center text-my-green-dark">
+          <MyText className="flex-[3] text-center">{name}</MyText>
+          <MyText className="flex-[1] text-center text-my-green-dark">
             {total}
-          </Text>
+          </MyText>
         </View>
-    </View>
-      </Pressable>
+      </View>
+    </Pressable>
   );
 }
 
@@ -209,22 +208,21 @@ export default function Nvelopes({
         <EnvelopeBox
           name="Nvelopes"
           total={envelopesTotalStr}
-          isShown={showEnvelopes}
           setter={() => setShowEnvelopes(!showEnvelopes)}
         />
         {showEnvelopes && (
           <>
             <View className="w-screen max-w-[40rem] h-[2rem] flex-row divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold">
               <View className="flex-[3] flex-row justify-start items-center pl-2">
-                <Text className="text-sm font-bold">Nvelope</Text>
+                <MyText className="text-sm font-bold">Nvelope</MyText>
               </View>
 
               <View className="flex-[2] flex-row justify-center items-center">
-                <Text className="text-sm font-bold">Remaining</Text>
+                <MyText className="text-sm font-bold">Remaining</MyText>
               </View>
 
               <View className="flex-[2] flex-row justify-end items-center pr-2">
-                <Text className="text-sm font-bold">Total</Text>
+                <MyText className="text-sm font-bold">Total</MyText>
               </View>
             </View>
             {sortedEnvelopes.map((e) => (

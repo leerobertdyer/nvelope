@@ -1,5 +1,4 @@
-import { StatusBar } from "expo-status-bar";
-import { Button, StyleSheet, Text, TextInput, View } from "react-native";
+import {  View } from "react-native";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { loginWithEmailAndPassword } from "../firebase/emailAndPassword";
 import { useEffect, useState } from "react";
@@ -13,6 +12,7 @@ import {
 import Loading from "../components/Loading";
 import Btn from "../components/Buttons/Btn";
 import LoginOptions from "../components/Auth/LoginOptions";
+import { MyText } from "../components/MyText";
 
 export default function Home() {
   const { user, isLoadingUser } = useAuth();
@@ -44,10 +44,10 @@ export default function Home() {
   if (!user) {
     return (
       <View className="flex flex-col gap-4 justify-center items-center w-full h-screen">
-        <Text className="text-2xl text-my-white-dark">Welcome to Nvelopes</Text>
-        <Text className="text-sm text-my-white-light">
+        <MyText className="text-2xl text-my-white-dark">Welcome to Nvelopes</MyText>
+        <MyText className="text-sm text-my-white-light">
           Old School Budgeting for the Digital Age
-        </Text>
+        </MyText>
         <LoginOptions />
       </View>
     );
@@ -58,14 +58,14 @@ export default function Home() {
     return (
       <View className="flex flex-col justify-center items-center w-full h-screen bg-my-black-dark text-my-white-dark p-4">
         <View className="max-w-md text-center">
-          <Text className="text-2xl text-my-red-light mb-4">
+          <MyText className="text-2xl text-my-red-light mb-4">
             ⚠️ Database Error
-          </Text>
-          <Text className="mb-4 text-my-white-light">{dbError}</Text>
-          <Text className="text-sm text-my-white-base mb-6">
+          </MyText>
+          <MyText className="mb-4 text-my-white-light">{dbError}</MyText>
+          <MyText className="text-sm text-my-white-base mb-6">
             This error occurred to protect your data. Please do not continue
             until this is resolved.
-          </Text>
+          </MyText>
           <View className="bg-my-red-base text-my-white-dark px-6 py-2 rounded-md hover:bg-my-blue-light">
             <Btn color="gold" onPress={() => window.location.reload()}>Refresh Page</Btn>
           </View>
@@ -87,7 +87,7 @@ export default function Home() {
     (documentExists === null && !hasBudgets && !isLoadingBudgets);
   if (isNewUser) {
     // return <FirstTimeSetup />;
-    return <Text>Todo: New User</Text>;
+    return <MyText>Todo: New User</MyText>;
   }
 
   // Only show MainView once we've received the budget doc snapshot (payDate is set or explicitly null).

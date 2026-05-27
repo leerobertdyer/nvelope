@@ -3,6 +3,7 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import type { RefObject } from "react";
 import { Pressable, Text, View } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { MyText } from "../MyText";
 
 interface ActionButtonsProps {
   onPaymentClick?: () => void;
@@ -42,7 +43,7 @@ export default function ActionButtons({
         <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-white-base items-center justify-center">
           <FontAwesome6 name="money-bill-wave" color="#ad0241" size={18} />
         </View>
-        <Text className="text-xs">Payment</Text>
+        <MyText className="text-xs text-my-red-dark">Payment</MyText>
       </Pressable>
 
       {/* Cash Button */}
@@ -54,7 +55,7 @@ export default function ActionButtons({
         <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-white-base items-center justify-center">
           <FontAwesome6 name="sack-dollar" color="green" size={18} />
         </View>
-        <Text className="text-xs">Cash</Text>
+        <MyText className="text-xs text-my-green-dark">Cash</MyText>
       </Pressable>
 
       {/* Nvelope Button */}
@@ -66,7 +67,7 @@ export default function ActionButtons({
         <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-white-base items-center justify-center">
           <FontAwesome name="envelope" color="green" size={18} />
         </View>
-        <Text className="text-xs">Nvelope</Text>
+        <MyText className="text-xs text-my-green-dark">Nvelope</MyText>
       </Pressable>
 
       {/* Clear Button */}
@@ -78,7 +79,7 @@ export default function ActionButtons({
         <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-white-base items-center justify-center">
           <FontAwesome name="envelope" color="#ad0241" size={18} />
         </View>
-        <Text className="text-xs">Clear</Text>
+        <MyText className="text-xs text-my-red-dark">Clear</MyText>
       </Pressable>
     </View>
   );
