@@ -18,6 +18,8 @@ import ListEnvelope from "./NvelopeListRow";
 import { Text, View } from "react-native";
 import GiveAndTake from "../Payments/GiveAndTake";
 import BigEnvelope from "./BigEnvelope";
+import { Pressable } from "react-native-gesture-handler";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -26,6 +28,39 @@ interface NvelopeProps {
   handleSetShowSpendingPage: (envelope: Envelope) => void;
   handleDeleteEnvelope: (id?: string) => void;
   handleAddCashToEnvelope: (envelope: Envelope) => void;
+}
+
+function EnvelopeBox({
+  name,
+  total,
+  isShown,
+  setter,
+}: {
+  isShown: boolean;
+  setter: () => void;
+  total: string;
+  name: string;
+}) {
+  return (
+    <Pressable onPress={setter}>
+        <View className="flex-row p-2 w-full h-[3rem] bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
+        <View className="ml-8 w-fit h-fit items-center justify-center border-2 bg-my-black-dark rounded-md">
+          <FontAwesome6
+            name={isShown ? "arrow-up" : "arrow-down"}
+            size={13}
+            color="#fcca68"
+            className="px-2"
+            />
+        </View>
+        <View className="flex-1 flex-row">
+          <Text className="flex-[3] text-center">{name}</Text>
+          <Text className="flex-[1] text-center text-my-green-dark">
+            {total}
+          </Text>
+        </View>
+    </View>
+      </Pressable>
+  );
 }
 
 export default function Nvelopes({
@@ -167,28 +202,6 @@ export default function Nvelopes({
 
   const envelopesTotal = sortedEnvelopes.reduce((sum, e) => sum + e.total, 0);
   const envelopesTotalStr = `$${Math.ceil(envelopesTotal).toFixed(2)}`;
-
-  function EnvelopeBox({
-    name,
-    total,
-    isShown,
-    setter,
-  }: {
-    isShown: boolean;
-    setter: () => void;
-    total: string;
-    name: string;
-  }) {
-    return (
-      <View className="relative grid grid-cols-4 p-2 text-center bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
-        <View className="absolute ml-2 w-fit h-full flex items-center">
-          <ShowHideButton isShown={isShown} onPress={setter} />
-        </View>
-        <Text className="col-span-3">{name}</Text>
-        <Text className="col-span-1 text-my-green-dark">{total}</Text>
-      </View>
-    );
-  }
 
   return (
     <View className="flex flex-col justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">

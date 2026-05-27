@@ -6,11 +6,11 @@ export default {
     slug: "mobile",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/icon.png",
+    icon: "./src/assets/icon.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
     splash: {
-      image: "./assets/splash-icon.png",
+      image: "./src/assets/splash-icon.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff",
     },
@@ -24,7 +24,7 @@ export default {
     android: {
       package: "com.ldyer.nvelopes",
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./src/assets/adaptive-icon.png",
         backgroundColor: "#ffffff",
       },
       edgeToEdgeEnabled: true,
@@ -33,12 +33,13 @@ export default {
         process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
     },
     web: {
-      favicon: "./assets/favicon.png",
+      favicon: "./src/assets/favicon.png",
       bundler: "metro"
     },
     plugins: [
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
+      "expo-font",
       ["expo-build-properties", { ios: { useFrameworks: "static" } }],
       [
         "@react-native-google-signin/google-signin",

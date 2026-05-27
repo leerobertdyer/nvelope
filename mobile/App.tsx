@@ -1,6 +1,7 @@
 import { AuthProvider } from "./src/context/AuthContext/AuthProvider";
 import BudgetProvider from "./src/context/BudgetContext/BudgetProvider";
 import DatabaseProvider from "./src/context/DatabaseContext/DatabaseProvider";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Home from "./src/screens/Home";
 import {
   SafeAreaProvider,
@@ -15,7 +16,7 @@ function GlobalLayout() {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView 
+    <SafeAreaView
       className="flex-1 bg-my-white-dark"
       style={{
         paddingTop: insets.top,
@@ -36,8 +37,10 @@ export default function App() {
         <DatabaseProvider>
           {/* SafeAreaProvider stays at the root to calculate the measurements */}
           <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-            {/* GlobalLayout consumes those measurements and forces the whole app into the safe zone */}
-            <GlobalLayout />
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              {/* GlobalLayout consumes those measurements and forces the whole app into the safe zone */}
+              <GlobalLayout />
+            </GestureHandlerRootView>
           </SafeAreaProvider>
         </DatabaseProvider>
       </BudgetProvider>
