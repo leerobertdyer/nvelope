@@ -21,6 +21,7 @@ import BigEnvelope from "./BigEnvelope";
 import { Pressable } from "react-native-gesture-handler";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { MyText } from "../MyText";
+import Entypo from "@expo/vector-icons/Entypo";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -33,30 +34,37 @@ interface NvelopeProps {
 
 function EnvelopeBox({
   name,
+  isShown,
   total,
   setter,
 }: {
+  name: string;
+  isShown: boolean;
   setter: () => void;
   total: string;
-  name: string;
 }) {
   return (
     <Pressable onPress={setter}>
-      <View className="flex-row p-2 w-full h-[3rem] bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
-        <View className="ml-8 w-fit h-fit items-center justify-center border-2 bg-my-black-dark rounded-md">
-          <FontAwesome6
-            name={"arrows-up-down"}
-            size={13}
-            color="#fcca68"
-            className="px-2"
-          />
-        </View>
-        <View className="flex-1 flex-row">
-          <MyText className="flex-[3] text-center">{name}</MyText>
-          <MyText className="flex-[1] text-center text-my-green-dark">
-            {total}
-          </MyText>
-        </View>
+      <View className="flex-row p-2 w-full h-[3rem] justify-between bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
+            {isShown ? (
+              <Entypo
+                name={"chevron-up"}
+                size={20}
+                color="#000"
+                className="px-2"
+              />
+            ) : (
+              <Entypo
+                name={"chevron-down"}
+                size={20}
+                color="#000"
+                className="px-2"
+              />
+            )}
+        <MyText className="text-center">{name}</MyText>
+        <MyText className="text-center text-my-green-dark">
+          {total}
+        </MyText>
       </View>
     </Pressable>
   );
@@ -204,8 +212,9 @@ export default function Nvelopes({
 
   return (
     <View className="flex flex-col justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">
-      <View className="w-screen max-w-[40rem]">
+      <View className="w-full">
         <EnvelopeBox
+          isShown={showEnvelopes}
           name="Nvelopes"
           total={envelopesTotalStr}
           setter={() => setShowEnvelopes(!showEnvelopes)}

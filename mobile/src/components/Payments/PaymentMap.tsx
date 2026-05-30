@@ -1,11 +1,12 @@
 import { format } from "date-fns";
 import { useState } from "react";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import Entypo from "@expo/vector-icons/Entypo";
 import { Pressable, View } from "react-native";
 import { Payment } from "../../types";
 import { getEffectivePaymentAmount } from "../../util";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { MyText } from "../MyText";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 interface PaymentMapProps {
   handleUpdatePaid: (payment: Payment) => void;
@@ -125,23 +126,24 @@ export default function PaymentMap({
   }) {
     return (
       <Pressable onPress={setter}>
-        <View className="flex-row p-2 w-full h-[3rem] bg-my-black-dark border-b-2 border-my-black-dark">
-          <View className="ml-[1.8rem] w-fit h-fit items-center justify-center border-2 border-my-white-light bg-my-white-light rounded-md overflow-hidden">
-              <FontAwesome6
-                name={"arrows-up-down"}
-                size={13}
-                color="#121212"
+        <View className="flex-row items-center justify-between p-2 w-full h-[3rem] bg-my-black-dark text-my-black-dark border-b-2 border-my-black-dark">
+            {isShown ? (
+              <Entypo
+                name={"chevron-up"}
+                size={20}
+                color="#fff"
                 className="px-2"
               />
-          </View>
-          <View className="flex-1 flex-row items-center">
-            <MyText className="flex-[3] text-center text-my-white-dark">
-              {name}
-            </MyText>
-            <MyText className="flex-[1] text-center text-my-blue-light">
-              {total}
-            </MyText>
-          </View>
+            ) : (
+              <Entypo
+                name={"chevron-down"}
+                size={20}
+                color="#fff"
+                className="px-2"
+              />
+            )}
+          <MyText className="text-my-white-dark">{name}</MyText>
+          <MyText className="text-my-blue-light">{total}</MyText>
         </View>
       </Pressable>
     );
