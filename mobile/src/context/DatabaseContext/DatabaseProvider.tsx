@@ -1,145 +1,186 @@
-import { Timestamp, doc, onSnapshot } from "firebase/firestore";
 import { DatabaseContext } from "./DatabaseContext";
 import { useEffect, useRef, useState } from "react";
-import { type Backup, type Envelope, type Interval, type OneTimeAmount, type Payment } from "../../types";
+import {
+  type Backup,
+  type Envelope,
+  type Interval,
+  type OneTimeAmount,
+  type Payment,
+} from "../../types";
 import { useAuth } from "../AuthContext/useAuth";
 import { useBudget } from "../BudgetContext/useBudget";
 import firestore from "@react-native-firebase/firestore";
+import { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
+
+type Timestamp = FirebaseFirestoreTypes.Timestamp;
 
 const BUDGET_DATA_DOC_ID = "main";
 /** After a local payments write, ignore snapshot payments for this long so we don't overwrite with stale cache. */
 const PAYMENTS_WRITE_GUARD_MS = 2000;
 
-export default function DatabaseProvider({ children }: { children: React.ReactNode }) {
-    const { user } = useAuth();
-    const { activeBudgetId, hasBudgets, handleRemovedFromBudget } = useBudget();
-    const lastPaymentsWriteAtRef = useRef(0);
+export default function DatabaseProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { user } = useAuth();
+  const { activeBudgetId, hasBudgets, handleRemovedFromBudget } = useBudget();
+  const lastPaymentsWriteAtRef = useRef(0);
 
-    const [isLoadingDb, setIsLoadingDb] = useState(true);
-    const [snowball, setSnowball] = useState<number>(0);
-    const [snowballTargetPaymentId, setSnowballTargetPaymentId] = useState<string | null>(null);
-    const [payDate, setPayDate] = useState<Timestamp | null | undefined>(undefined);
-    const [payPeriodInterval, setPayPeriodInterval] = useState<Interval>("MONTHLY");
-    const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
-    const [payments, setPaymentsState] = useState<Payment[]>([]);
-    const setPayments = (next: Payment[] | ((prev: Payment[]) => Payment[])) => {
-        lastPaymentsWriteAtRef.current = Date.now();
-        setPaymentsState(next);
+  const [isLoadingDb, setIsLoadingDb] = useState(true);
+  const [snowball, setSnowball] = useState<number>(0);
+  const [snowballTargetPaymentId, setSnowballTargetPaymentId] = useState<
+    string | null
+  >(null);
+  const [payDate, setPayDate] = useState<Timestamp | null | undefined>(
+    undefined,
+  );
+  const [payPeriodInterval, setPayPeriodInterval] =
+    useState<Interval>("MONTHLY");
+  const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
+  const [payments, setPaymentsState] = useState<Payment[]>([]);
+  const setPayments = (next: Payment[] | ((prev: Payment[]) => Payment[])) => {
+    lastPaymentsWriteAtRef.current = Date.now();
+    setPaymentsState(next);
+  };
+  const [isNewUser, setIsNewUser] = useState<boolean>(false);
+  const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
+  const [resetBudgetTimestamp, setResetBudgetTimestamp] =
+    useState<Timestamp | null>(null);
+  const [oneTimeCash, setOneTimeCash] = useState<OneTimeAmount[] | null>(null);
+  const [backups, setBackups] = useState<Backup | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [documentExists, setDocumentExists] = useState<boolean | null>(null);
+
+  function normalizeTimestamp(ts: any): Timestamp | null {
+    if (!ts) return null;
+    if (ts?.toDate instanceof Function) return ts; // already a proper Timestamp
+    if (ts?.seconds !== undefined)
+      return firestore.Timestamp.fromMillis(ts.seconds * 1000);
+    return null;
+  }
+
+  function normalizePayment(data: any): Payment {
+    return {
+      ...data,
+      dueDate: normalizeTimestamp(data.dueDate),
+      paidDates: data.paidDates?.map(normalizeTimestamp) ?? [],
     };
-    const [isNewUser, setIsNewUser] = useState<boolean>(false);
-    const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
-    const [resetBudgetTimestamp, setResetBudgetTimestamp] = useState<Timestamp | null>(null);
-    const [oneTimeCash, setOneTimeCash] = useState<OneTimeAmount[] | null>(null);
-    const [backups, setBackups] = useState<Backup | null>(null);
-    const [dbError, setDbError] = useState<string | null>(null);
-    const [documentExists, setDocumentExists] = useState<boolean | null>(null);
+  }
+  useEffect(() => {
+    if (!user) {
+      setDocumentExists(null);
+      setPayDate(undefined);
+      setIsLoadingDb(false);
+      return;
+    }
+    if (!hasBudgets) {
+      setDocumentExists(null);
+      setPayDate(undefined);
+      setIsLoadingDb(false);
+      return;
+    }
+    if (!activeBudgetId) {
+      setPayDate(undefined);
+      setIsLoadingDb(false);
+      return;
+    }
 
-    useEffect(() => {
-        if (!user) {
-            setDocumentExists(null);
-            setPayDate(undefined);
-            setIsLoadingDb(false);
-            return;
-        }
-        if (!hasBudgets) {
-            setDocumentExists(null);
-            setPayDate(undefined);
-            setIsLoadingDb(false);
-            return;
-        }
-        if (!activeBudgetId) {
-            setPayDate(undefined);
-            setIsLoadingDb(false);
-            return;
-        }
-
-        setPayDate(undefined);
-        setIsLoadingDb(true);
-        const dataRef = firestore().doc(`budgets/${activeBudgetId}/data/${BUDGET_DATA_DOC_ID}`);
-
-        const unsubscribe = dataRef.onSnapshot(
-            (docSnapshot) => {
-                const data = docSnapshot.data();
-                if (data) {
-                    setDbError(null);
-                    setDocumentExists(true);
-                    setIsLoadingDb(false);
-                    setSnowball(data.snowball ?? 0);
-                    setSnowballTargetPaymentId(data.snowballTargetPaymentId ?? null);
-                    setEnvelopes(data.envelopes ?? []);
-                    setPayDate(data.payDate ?? null);
-                    setPayPeriodInterval(data.payPeriodInterval ?? "MONTHLY");
-                    const snapshotPayments = data.payments ?? [];
-                    if (Date.now() - lastPaymentsWriteAtRef.current >= PAYMENTS_WRITE_GUARD_MS) {
-                        setPaymentsState(snapshotPayments);
-                    }
-                    setIsNewUser(data.isNewUser ?? false);
-                    setTotalSpendingBudget(data.totalSpendingBudget ?? 0);
-                    setOneTimeCash(data.oneTimeCash ?? null);
-                    setResetBudgetTimestamp(data.resetBudgetTimestamp ?? null);
-                    setBackups(data.backups ?? null);
-                } else {
-                    setDocumentExists(false);
-                    setPayDate(undefined);
-                    setIsLoadingDb(false);
-                }
-            },
-            (error) => {
-                console.error("❌ Firebase listener error:", error);
-                const isPermissionDenied =
-                    (error as { code?: string }).code === "permission-denied" ||
-                    (error as { code?: string }).code === "permission_denied" ||
-                    /permission|insufficient/i.test(String(error?.message ?? ""));
-                if (isPermissionDenied && handleRemovedFromBudget) {
-                    setDbError(null);
-                    setIsNewUser(false);
-                    setDocumentExists(true);
-                    handleRemovedFromBudget();
-                } else {
-                    setDbError(`Database error: ${error.message}. Please refresh the page.`);
-                }
-                setIsLoadingDb(false);
-            }
-        );
-
-        return () => {
-            unsubscribe();
-        };
-    }, [user, activeBudgetId, hasBudgets]);
-
-    const value = {
-        isLoadingDb,
-        setIsLoadingDb,
-        snowball,
-        setSnowball,
-        snowballTargetPaymentId,
-        setSnowballTargetPaymentId,
-        payDate,
-        setPayDate,
-        payPeriodInterval,
-        setPayPeriodInterval,
-        envelopes,
-        setEnvelopes,
-        payments,
-        setPayments,
-        isNewUser,
-        setIsNewUser,
-        totalSpendingBudget,
-        setTotalSpendingBudget,
-        oneTimeCash,
-        setOneTimeCash,
-        resetBudgetTimestamp,
-        setResetBudgetTimestamp,
-        backups,
-        setBackups,
-        dbError,
-        documentExists,
-        setDocumentExists
-    };
-
-    return (
-        <DatabaseContext.Provider value={value}>
-            {children}
-        </DatabaseContext.Provider>
+    setPayDate(undefined);
+    setIsLoadingDb(true);
+    const dataRef = firestore().doc(
+      `budgets/${activeBudgetId}/data/${BUDGET_DATA_DOC_ID}`,
     );
+
+    const unsubscribe = dataRef.onSnapshot(
+      (docSnapshot) => {
+        const data = docSnapshot.data();
+        if (data) {
+          setDbError(null);
+          setDocumentExists(true);
+          setIsLoadingDb(false);
+          setSnowball(data.snowball ?? 0);
+          setSnowballTargetPaymentId(data.snowballTargetPaymentId ?? null);
+          setEnvelopes(data.envelopes ?? []);
+          setPayDate(normalizeTimestamp(data.payDate) ?? null);
+          setPayPeriodInterval(data.payPeriodInterval ?? "MONTHLY");
+          const snapshotPayments = (data.payments ?? []).map(normalizePayment);
+          if (
+            Date.now() - lastPaymentsWriteAtRef.current >=
+            PAYMENTS_WRITE_GUARD_MS
+          ) {
+            setPaymentsState(snapshotPayments);
+          }
+
+          setIsNewUser(data.isNewUser ?? false);
+          setTotalSpendingBudget(data.totalSpendingBudget ?? 0);
+          setOneTimeCash(data.oneTimeCash ?? null);
+          setResetBudgetTimestamp(normalizeTimestamp(data.resetBudgetTimestamp) ?? null);
+          setBackups(data.backups ?? null);
+        } else {
+          setDocumentExists(false);
+          setPayDate(undefined);
+          setIsLoadingDb(false);
+        }
+      },
+      (error) => {
+        console.error("❌ Firebase listener error:", error);
+        const isPermissionDenied =
+          (error as { code?: string }).code === "permission-denied" ||
+          (error as { code?: string }).code === "permission_denied" ||
+          /permission|insufficient/i.test(String(error?.message ?? ""));
+        if (isPermissionDenied && handleRemovedFromBudget) {
+          setDbError(null);
+          setIsNewUser(false);
+          setDocumentExists(true);
+          handleRemovedFromBudget();
+        } else {
+          setDbError(
+            `Database error: ${error.message}. Please refresh the page.`,
+          );
+        }
+        setIsLoadingDb(false);
+      },
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user, activeBudgetId, hasBudgets]);
+
+  const value = {
+    isLoadingDb,
+    setIsLoadingDb,
+    snowball,
+    setSnowball,
+    snowballTargetPaymentId,
+    setSnowballTargetPaymentId,
+    payDate,
+    setPayDate,
+    payPeriodInterval,
+    setPayPeriodInterval,
+    envelopes,
+    setEnvelopes,
+    payments,
+    setPayments,
+    isNewUser,
+    setIsNewUser,
+    totalSpendingBudget,
+    setTotalSpendingBudget,
+    oneTimeCash,
+    setOneTimeCash,
+    resetBudgetTimestamp,
+    setResetBudgetTimestamp,
+    backups,
+    setBackups,
+    dbError,
+    documentExists,
+    setDocumentExists,
+  };
+
+  return (
+    <DatabaseContext.Provider value={value}>
+      {children}
+    </DatabaseContext.Provider>
+  );
 }

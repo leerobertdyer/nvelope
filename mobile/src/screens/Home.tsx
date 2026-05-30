@@ -1,6 +1,6 @@
 import {  View } from "react-native";
 import { useAuth } from "../context/AuthContext/useAuth";
-import { loginWithEmailAndPassword } from "../firebase/emailAndPassword";
+import firestore from "@react-native-firebase/firestore"
 import { useEffect, useState } from "react";
 import { useBudget } from "../context/BudgetContext/useBudget";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";
@@ -37,6 +37,7 @@ export default function Home() {
       if (shouldBackup) await backupUserDataSafe(user!, activeBudgetId!);
     }
     checkAndBackup();
+    
   }, [user, activeBudgetId, documentExists]);
 
   if (isLoading) return <Loading text="Welcome to Nvelopes..." />;

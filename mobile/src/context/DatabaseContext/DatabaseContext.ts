@@ -1,6 +1,7 @@
 import { createContext } from "react";
-import type { Timestamp } from 'firebase/firestore';
 import type { Payment, Envelope, Interval, OneTimeAmount, Backup } from "../../types";
+import { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
+type Timestamp = FirebaseFirestoreTypes.Timestamp;
 
 
 interface IDatabaseContext {
