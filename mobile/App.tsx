@@ -12,9 +12,21 @@ import {
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync(); // for fonts
+
+const Stack = createNativeStackNavigator();
+
+function RootStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Home" component={Home} />
+    </Stack.Navigator>
+  );
+}
 
 // 1. Create a wrapper component inside App.js (or in its own file)
 function GlobalLayout() {
@@ -42,7 +54,9 @@ function GlobalLayout() {
         paddingRight: insets.right,
       }}
     >
-      <Home />
+      <NavigationContainer>
+        <RootStack />
+      </NavigationContainer>
     </SafeAreaView>
   );
 }

@@ -9,6 +9,7 @@ interface ITextInput {
   label?: string
   numeric?: boolean
   maxLength?: number
+  ref?: React.RefObject<TextInput | null>
 }
 
 export default function Input({ 
@@ -17,7 +18,8 @@ export default function Input({
   value, 
   label, 
   numeric, 
-  maxLength 
+  maxLength,
+  ref
 }: ITextInput) {
   return (
     // self-center ensures the w-[90%] centers itself within its parent container
@@ -25,6 +27,7 @@ export default function Input({
       <Text className="p-2 w-full text-center">{label}</Text>
       
       <TextInput
+        ref={ref}
         className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark"
         placeholder={placeholder}
         placeholderTextColor="#888" 

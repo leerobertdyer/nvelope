@@ -60,13 +60,15 @@ export default function PaymentMap({
           {p.paid ? (
             <FontAwesome
               name="check-circle"
-              className="text-my-green-dark bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+              color={"#076346"}
+              className="bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
               size={16}
             />
           ) : (
             <FontAwesome
               name="check-circle-o"
-              className="text-my-green-dark bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
+              color={"#076346"}
+              className="bg-my-white-dark rounded-lg p-[2px] border-2 border-my-black-dark"
               size={16}
             />
           )}
@@ -124,15 +126,13 @@ export default function PaymentMap({
     return (
       <Pressable onPress={setter}>
         <View className="flex-row p-2 w-full h-[3rem] bg-my-black-dark border-b-2 border-my-black-dark">
-          <View className="ml-8 w-fit h-fit items-center justify-center border-2 bg-my-black-dark rounded-md">
-            {isShown && (
+          <View className="ml-[1.8rem] w-fit h-fit items-center justify-center border-2 border-my-white-light bg-my-white-light rounded-md overflow-hidden">
               <FontAwesome6
                 name={"arrows-up-down"}
                 size={13}
-                color="#fcca68"
+                color="#121212"
                 className="px-2"
               />
-            )}
           </View>
           <View className="flex-1 flex-row items-center">
             <MyText className="flex-[3] text-center text-my-white-dark">
