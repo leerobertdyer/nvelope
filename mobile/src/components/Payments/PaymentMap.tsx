@@ -4,7 +4,6 @@ import Entypo from "@expo/vector-icons/Entypo";
 import { Pressable, View } from "react-native";
 import { Payment } from "../../types";
 import { getEffectivePaymentAmount } from "../../util";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { MyText } from "../MyText";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 

@@ -1,19 +1,20 @@
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import EvilIcons from '@expo/vector-icons/EvilIcons';
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import EvilIcons from "@expo/vector-icons/EvilIcons";
 import { useState } from "react";
 import { format } from "date-fns";
 import { Payment } from "../../types";
-import { useAuth } from '../../context/AuthContext/useAuth';
-import { useBudget } from '../../context/BudgetContext/useBudget';
-import { useDatabase } from '../../context/DatabaseContext/useDatabase';
-import { removeVirtualIdPortion } from '../../util';
-import { editPayments } from '../../firebase/editData';
-import PaymentForm from '../Forms/PaymentForm';
-import Btn from '../Buttons/Btn';
-import { Pressable, Text, View } from 'react-native';
-import MoneyInput from './MoneyInput';
+import { useAuth } from "../../context/AuthContext/useAuth";
+import { useBudget } from "../../context/BudgetContext/useBudget";
+import { useDatabase } from "../../context/DatabaseContext/useDatabase";
+import { removeVirtualIdPortion } from "../../util";
+import { editPayments } from "../../firebase/editData";
+import PaymentForm from "../Forms/PaymentForm";
+import Btn from "../Buttons/Btn";
+import { Pressable, Text, View } from "react-native";
+import MoneyInput from "./MoneyInput";
+import { MyText } from "../MyText";
 
 interface IProps {
   handleBack: () => void;
@@ -113,114 +114,135 @@ export default function BigPayment({
     );
   if (!p) return <p>Error: Missing Payment To Edit</p>;
   return (
-    <View className="absolute inset-0 pt-[3rem] bg-my-white-light w-full overflow-y-auto z-999 h-screen">
-      <View className="w-full flex flex-col items-center justify-start">
-        <View className="flex flex-col justify-center items-start p-2 w-[17rem] text-my-black-light rounded-md mb-4">
-          <Text className="text-lg text-my-white-dark mb-4 bg-my-black-light text-center rounded-md w-full">
+    <View className="pt-[3rem] bg-my-white-light w-full overflow-y-auto">
+      <View className="w-full flex-col items-center justify-start">
+        <View className="flex-col justify-center items-start p-2 w-[17rem] text-my-black-light rounded-md mb-4">
+          <MyText className="text-lg text-my-white-dark mb-4 bg-my-black-light text-center rounded-md w-full">
             {p.name}
-          </Text>
-          <Text className="w-full flex justify-between">
-            Type:{" "}
-            <Text
-              className={`${p.type === "BILL" ? "text-my-red-dark" : p.type === "FUND" ? "text-my-green-dark" : "text-my-blue-dark"}`}
-            >
-              {p.type}
-            </Text>
-          </Text>
-          <Text className="w-full flex justify-between">
-            {p.type === "FUND" ? "Per Period:" : "Amount:"}{" "}
-            <Text className="text-my-green-dark">
-              ${Number(p.amount).toFixed(2)}
-            </Text>
-          </Text>
-          <Text className="w-full flex justify-between">
-            {p.type === "FUND" ? "Target Date:" : "Due:"}{" "}
-            <Text className="text-my-green-dark">
-              {format(
-                p.dueDate.toDate(),
-                p.type === "FUND" ? "MMM do, yyyy" : "do",
-              )}
-            </Text>
-          </Text>
-          {p.type === "DEBT" && (
-            <Text className="w-full flex justify-between">
-              Remaining Due:{" "}
-              <Text className="text-my-green-dark">
-                ${Number(p.total).toFixed(2)}
-              </Text>
-            </Text>
-          )}
-          {p.type === "FUND" && (
-            <Text className="w-full flex justify-between">
-              Target Amount:{" "}
-              <Text className="text-my-green-dark">
-                ${Number(p.total).toFixed(2)}
-              </Text>
-            </Text>
-          )}
+          </MyText>
+          <View className="items-center w-full">
+            <View className="w-full flex-row justify-around">
+              <MyText>Type: </MyText>
+              <MyText
+                className={`${p.type === "BILL" ? "text-my-red-dark" : p.type === "FUND" ? "text-my-green-dark" : "text-my-blue-dark"}`}
+              >
+                {p.type}
+              </MyText>
+            </View>
+            <View className="w-full flex-row justify-around">
+              <MyText>{p.type === "FUND" ? "Per Period:" : "Amount:"} </MyText>
+              <MyText className="text-my-green-dark">
+                ${Number(p.amount).toFixed(2)}
+              </MyText>
+            </View>
+            <View className="w-full flex-row justify-around">
+              <MyText>{p.type === "FUND" ? "Target Date:" : "Due:"} </MyText>
+              <MyText className="text-my-green-dark">
+                {format(
+                  p.dueDate.toDate(),
+                  p.type === "FUND" ? "MMM do, yyyy" : "do",
+                )}
+              </MyText>
+            </View>
+            {p.type === "DEBT" && (
+              <View className="w-full flex-row justify-around">
+                <MyText>Remaining Due: </MyText>
+                <MyText className="text-my-green-dark">
+                  ${Number(p.total).toFixed(2)}
+                </MyText>
+              </View>
+            )}
+            {p.type === "FUND" && (
+              <View className="w-full flex-row justify-around">
+                <MyText>Target Amount: </MyText>
+                <MyText className="text-my-green-dark">
+                  ${Number(p.total).toFixed(2)}
+                </MyText>
+              </View>
+            )}
+          </View>
         </View>
-        <Text>\n</Text> 
-        <View className="flex flex-col justify-center items-center gap-2 ">
-          <Pressable
-            className={`cursor-pointer hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px] ${p.paid && "bg-my-green-dark text-my-white-dark"}`}
-            onPress={() => {
-              updatePaid();
-            }}
-          >
-            <FontAwesome6 name="sack-dollar" color="black"
-              className={`p-[2px] ${!p.paid && "border-2"} rounded-md bg-my-green-dark text-white border-my-black-dark`}
-              size={27}
-            />
-            <p className="text-xs">Mark As {!p.paid ? "Paid" : "Not Paid"}</p>
-          </Pressable>
-          <Pressable
-            className="cursor-pointer  hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
+        <View className="h-2" />
+        <View className="flex-col justify-center items-center gap-2 w-full">
+          <Btn color="gold" onPress={() => updatePaid()}>
+            <View className="flex-row items-center justify-center gap-8">
+              <FontAwesome6
+                name="sack-dollar"
+                color="white"
+                className={`p-2 ${!p.paid && "border-2"} rounded-md bg-my-green-dark text-white border-my-black-dark`}
+                size={20}
+              />
+              <MyText className="text-xs w-[50%]">
+                Mark As {!p.paid ? "Paid" : "Not Paid"}
+              </MyText>
+            </View>
+          </Btn>
+          <Btn
+            color="gold"
             onPress={() => {
               setShowForm(true);
             }}
           >
-            <EvilIcons name="pencil" color="black"
-              className="p-[2px] border-2 rounded-md bg-my-white-dark text-black border-my-black-dark"
-              size={27}
-            />
-            <Text className="text-xs">Manually Edit Payment</Text>
-          </Pressable>
+            <View className="flex-row items-center justify-center gap-8">
+              <EvilIcons
+                name="pencil"
+                color="black"
+                className="p-2 border-2 rounded-md bg-my-white-base text-black border-my-black-dark"
+                size={20}
+              />
+              <MyText className="text-xs w-[50%]">Manually Edit Payment</MyText>
+            </View>
+          </Btn>
           {p.type === "DEBT" && (p.total ?? 0) > 0 && (
-            <Pressable
-              className="cursor-pointer hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
+            <Btn
+              color="green"
               onPress={() => {
                 setShowExtraPaymentForm(true);
                 setExtraPaymentError(null);
                 setExtraPaymentAmount(0);
               }}
             >
-              <Ionicons name="add-circle" size={27} color="black" className="p-1 border-2 rounded-md bg-my-green-dark text-white border-my-black-dark" />
-              <Text className="text-xs">Extra Payment</Text>
-            </Pressable>
+              <View className="flex-row items-center justify-center gap-8">
+                <Ionicons
+                  name="add-circle"
+                  size={27}
+                  color="black"
+                  className="p-1 border-2 rounded-md bg-my-green-dark text-white border-my-black-dark"
+                />
+                <MyText className="text-xs w-[50%]">Extra Payment</MyText>
+              </View>
+            </Btn>
           )}
-          <Pressable
-            className="cursor-pointer  hover:scale-105 flex justify-start gap-2 items-center w-full mb-8 border-2 rounded-md p-[5px]"
+          <Btn
+            color="red"
             onPress={() => {
               handleDeleteBill(p);
             }}
           >
-            <FontAwesome name="trash" color="black" 
-              className="p-[2px] border-2 rounded-md bg-my-red-dark text-white border-my-black-dark"
-              size={27}
-            />
-            <Text className="text-xs">Delete Payment</Text>
-          </Pressable>
-          <Btn onPress={handleBack} color="red">
-            Go Back
+            <View className="flex-row items-center justify-center gap-8">
+              <FontAwesome
+                name="trash"
+                color="white"
+                className="p-2 border-2 rounded-md bg-my-red-base border-my-white-light"
+                size={20}
+              />
+              <MyText className="text-xs w-[50%] text-my-white-light">
+                Delete Payment
+              </MyText>
+            </View>
           </Btn>
+          <View className="mt-8" />
+          <Btn onPress={handleBack} color="red" text="Go Back" />
         </View>
         {showExtraPaymentForm && p?.type === "DEBT" && (p.total ?? 0) > 0 && (
           <View>
             <View className="flex flex-col items-center justify-center gap-2 w-full">
-              <Text className="text-sm font-medium mb-1">Extra Payment</Text>
-              <Text className="text-xs text-my-white-dark mb-2">
+              <MyText className="text-sm font-medium mb-1">
+                Extra Payment
+              </MyText>
+              <MyText className="text-xs text-my-white-dark mb-2">
                 Remaining: ${(p.total ?? 0).toFixed(2)}
-              </Text>
+              </MyText>
               <Btn color="gold" onPress={handlePayAll}>
                 Pay All
               </Btn>
@@ -238,9 +260,9 @@ export default function BigPayment({
                 Apply
               </Btn>
               {extraPaymentError && (
-                <Text className="text-xs text-my-red-light mb-2">
+                <MyText className="text-xs text-my-red-light mb-2">
                   {extraPaymentError}
-                </Text>
+                </MyText>
               )}
               <Btn
                 color="red"
