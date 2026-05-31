@@ -1,7 +1,7 @@
 import "./App.css";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import Home from "./Pages/Home";
-import Settings from "./Pages/Settings";
+import Settings from "../../mobile/src/screens/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
 import { useDisableNumberScroll } from "./hooks";
 import Debt from "./Pages/Debt";

@@ -36,7 +36,7 @@ import PaymentMap from "../components/Payments/PaymentMap";
 import BigPayment from "../Views/BigPayment";
 import PaymentForm from "../components/Forms/PaymentForm";
 import AddIncomeForm from "../components/Forms/AddIncomeForm";
-import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
+import AddCashToEnvelopeForm from "../../../mobile/src/components/Forms/AddCashToEnvelopeForm";
 import FundPaymentDueModal from "../components/Payments/SplitPaymentDueModal";
 import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
 import PageTour from "../../../mobile/src/components/PageTour";

@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "src/Context/AuthContext", "../mobile/src/components/Nvelopes", "../mobile/src/components/PageTour.tsx", "../mobile/src/components/Buttons/Btn.tsx", "../mobile/src/util/bankStyleMoney.ts", "../mobile/src/components/Input.tsx", "../mobile/src/components/Buttons/ShowHideButton.tsx"]
+  "include": ["src", "src/Context/AuthContext", "../mobile/src/components/Nvelopes", "../mobile/src/components/PageTour.tsx", "../mobile/src/components/Buttons/Btn.tsx", "../mobile/src/util/bankStyleMoney.ts", "../mobile/src/components/Input.tsx", "../mobile/src/components/Buttons/ShowHideButton.tsx", "../mobile/src/components/Forms/AddCashToEnvelopeForm.tsx", "../mobile/src/screens/Settings.tsx"]
 }
