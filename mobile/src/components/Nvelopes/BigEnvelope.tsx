@@ -46,7 +46,7 @@ export default function BigEnvelope({
         <View style={{ paddingTop: 10 }} />
         <View className="flex flex-col justify-center items-center gap-2 ">
           <Pressable
-            className="shadow shadow-black cursor-pointer hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
+            className="shadow shadow-black flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
             onPress={(e) => {
               e.stopPropagation();
               handleAddCashToEnvelope(envelope);
@@ -61,7 +61,7 @@ export default function BigEnvelope({
             <MyText className="text-xs">Add Money From Available Budget</MyText>
           </Pressable>
           <Pressable
-            className="shadow shadow-black flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px] cursor-pointer  hover:scale-105"
+            className="shadow shadow-black flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px] "
             onPress={(e) => {
               e.stopPropagation();
               setUpShowGiveAndTake(envelope);
@@ -76,7 +76,7 @@ export default function BigEnvelope({
             <MyText className="text-xs">Take from this envelope</MyText>
           </Pressable>
           <Pressable
-            className="shadow shadow-black cursor-pointer  hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
+            className="shadow shadow-black flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"
             onPress={(e) => {
               e.stopPropagation();
               handleSetupEdit(envelope);
@@ -91,7 +91,7 @@ export default function BigEnvelope({
             <MyText className="text-xs">Manually Edit Envelope</MyText>
           </Pressable>
           <Pressable
-            className="cursor-pointer shadow shadow-black hover:scale-105 flex justify-start gap-2 items-center w-full mb-8 border-2 rounded-md p-[5px]"
+            className="shadow shadow-black flex justify-start gap-2 items-center w-full mb-8 border-2 rounded-md p-[5px]"
             onPress={(e) => {
               e.stopPropagation();
               handleDeleteEnvelope(envelope.id);

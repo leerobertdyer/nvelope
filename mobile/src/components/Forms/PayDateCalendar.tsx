@@ -1,11 +1,11 @@
 import { forwardRef } from "react";
-import Calendar from "react-calendar";
-import type { Value } from "react-calendar/src/shared/types.js";
 import "react-calendar/dist/Calendar.css";
+import { View } from "react-native";
+import { DateData, Calendar } from "react-native-calendars";
 
 interface PayDateCalendarProps {
-  value: Date | null;
-  onChange: (value: Value) => void;
+  d: DateData | null;
+  onChange: (d: DateData) => void;
   label?: string;
   className?: string;
   maxDate?: Date;
@@ -19,7 +19,7 @@ interface PayDateCalendarProps {
 const PayDateCalendar = forwardRef<HTMLDivElement, PayDateCalendarProps>(
   (
     {
-      value,
+      d,
       onChange,
       label = "Change Pay Date",
       className = "",
@@ -29,7 +29,7 @@ const PayDateCalendar = forwardRef<HTMLDivElement, PayDateCalendarProps>(
     ref
   ) => {
     return (
-      <div
+      <View
         ref={ref}
         className={`bg-my-black-base text-my-black-light w-[80%] max-w-[20rem] border-2 p-2 rounded-md my-4 flex flex-col items-center ${className}`}
       >
@@ -38,14 +38,11 @@ const PayDateCalendar = forwardRef<HTMLDivElement, PayDateCalendarProps>(
         )}
         <Calendar
           onChange={onChange}
-          value={value || new Date()}
-          calendarType="gregory"
-          selectRange={false}
-          className="cursor-pointer-calendar"
+          date={d || new Date}
           maxDate={maxDate}
           minDate={minDate}
         />
-      </div>
+      </View>
     );
   }
 );

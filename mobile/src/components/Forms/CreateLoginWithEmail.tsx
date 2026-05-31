@@ -1,25 +1,25 @@
 import { useState } from "react";
 import Button from "../../../../mobile/src/components/Buttons/Btn";
 import { createLoginForExistingUser } from "../../firebase/createLoginForExistingUser";
-import { useToast } from "../../Context/ToastContext/useToast";
+// import { useToast } from "../../Context/ToastContext/useToast";
 
 export default function CreateLoginWithEmail({onDone}: {onDone: () => void}) {
-    const { showToast } = useToast();
+    // const { showToast } = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     async function handleSignUp() {
         if (!email.trim() || !password) {
-            showToast("Please enter email and password", "error");
+            // showToast("Please enter email and password", "error");
             return;
         }
         try {
             await createLoginForExistingUser(email.trim(), password);
-            showToast("Email/password added. You can sign in with it next time.");
+            // showToast("Email/password added. You can sign in with it next time.");
             onDone();
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Could not add email/password. Try again.";
-            showToast(message, "error");
+            // showToast(message, "error");
         }
     }
     

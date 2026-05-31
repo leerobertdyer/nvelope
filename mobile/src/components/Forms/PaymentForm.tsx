@@ -1,7 +1,6 @@
 import { Calendar, DateData } from "react-native-calendars";
 import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../../constants";
 import type { Interval, Payment } from "../../types";
-import { Timestamp } from "firebase/firestore";
 import { useState } from "react";
 import { editPayments } from "../../firebase/editData";
 import {
@@ -23,7 +22,9 @@ import Btn from "../../../../mobile/src/components/Buttons/Btn";
 import { Picker } from "@react-native-picker/picker";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { MyText } from "../MyText";
+import firestore from "@react-native-firebase/firestore";
 type User = FirebaseAuthTypes.User;
+const { Timestamp } = firestore;
 
 interface IPaymentForm {
   paymentToEdit: Payment | null;

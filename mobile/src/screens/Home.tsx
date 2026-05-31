@@ -1,6 +1,5 @@
 import {  View } from "react-native";
 import { useAuth } from "../context/AuthContext/useAuth";
-import firestore from "@react-native-firebase/firestore"
 import { useEffect, useState } from "react";
 import { useBudget } from "../context/BudgetContext/useBudget";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";

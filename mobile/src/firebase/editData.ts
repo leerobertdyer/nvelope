@@ -403,7 +403,7 @@ async function pruneOldBackups(userId: string, keepCount: number) {
  */
 const ASYNCSTORAGE_BACKUP_KEY = "nvelope_pre_restore_backup";
 
-export interface LocalStorageBackup {
+export interface AsyncStorageBackup {
   data: {
     envelopes: Envelope[];
     payments: Payment[];
@@ -426,7 +426,7 @@ export async function saveToAsyncStorageBackup(userData: {
   payPeriodInterval: string;
 }): Promise<void> {
   try {
-    const backup: LocalStorageBackup = {
+    const backup: AsyncStorageBackup = {
       data: userData,
       timestamp: new Date().toISOString(),
       reason: "pre-restore-backup",
@@ -441,11 +441,11 @@ export async function saveToAsyncStorageBackup(userData: {
 /**
  * Get the localStorage backup if it exists
  */
-export async function getAsyncStorageBackup(): Promise<LocalStorageBackup | null> {
+export async function getAsyncStorageBackup(): Promise<AsyncStorageBackup | null> {
   try {
     const stored = await AsyncStorage.getItem(ASYNCSTORAGE_BACKUP_KEY);
     if (!stored) return null;
-    return JSON.parse(stored) as LocalStorageBackup;
+    return JSON.parse(stored) as AsyncStorageBackup;
   } catch (error) {
     console.error("Error reading localStorage backup:", error);
     return null;
@@ -479,9 +479,9 @@ function toTimestamp(obj: unknown): Timestamp | null {
 }
 
 /**
- * Restore from localStorage backup (undo last restore) into the given budget.
+ * Restore from backup (undo last restore) into the given budget.
  */
-export async function restoreFromLocalStorageBackup(
+export async function restoreFromAsyncStorageBackup(
   user: User,
   budgetId: string,
 ): Promise<boolean> {
