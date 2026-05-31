@@ -1,6 +1,9 @@
 import { forwardRef } from "react";
 import { BIWEEKLY, MONTHLY, WEEKLY, YEARLY } from "../../constants";
 import type { Interval } from "../../types";
+import { View } from "react-native";
+import { MyText } from "../MyText";
+import { Picker } from "@react-native-picker/picker";
 
 interface IntervalSelectorProps {
   value: Interval | null;
@@ -13,35 +16,37 @@ interface IntervalSelectorProps {
  * Reusable interval selector component for pay period selection.
  * Used in Settings and FirstTimeSetup.
  */
-const IntervalSelector = forwardRef<HTMLDivElement, IntervalSelectorProps>(
-  ({ value, onChange, label = "Change Budget Interval", className = "" }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={`bg-my-black-base w-[80%] max-w-[20rem] border-2 p-2 rounded-md my-4 flex flex-col items-center ${className}`}
+export default function IntervalSelector({
+  value,
+  onChange,
+  label = "Change Budget Interval",
+  className = "",
+}: IntervalSelectorProps) {
+  return (
+    <View
+      className={`bg-my-black-base w-full border-2 p-2 rounded-md my-4 flex flex-col items-center ${className}`}
+    >
+      {label && (
+        <MyText className="text-my-white-dark text-center w-full">
+          {label}
+        </MyText>
+      )}
+      <Picker
+        style={{
+          width: "100%",
+          backgroundColor: "#fff2d9",
+          borderRadius: 9,
+        }}
+        selectedValue={value ?? ""}
+        onValueChange={(e) => onChange(e.toUpperCase() as Interval)}
+        className="w-full border-2 bg-my-white-light p-2 rounded-md my-4 text-my-black-dark"
       >
-        {label && (
-          <p className="text-my-white-dark text-center w-full">{label}</p>
-        )}
-        <select
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value.toUpperCase() as Interval)}
-          className="w-[80%] max-w-[20rem] border-2 bg-my-white-light p-2 rounded-md my-4 text-my-black-dark"
-        >
-          <option value="" disabled>
-            Select Interval
-          </option>
-          <option value={WEEKLY}>Weekly</option>
-          <option value={BIWEEKLY}>Biweekly</option>
-          <option value={MONTHLY}>Monthly</option>
-          <option value={YEARLY}>Yearly</option>
-        </select>
-      </div>
-    );
-  }
-);
-
-IntervalSelector.displayName = "IntervalSelector";
-
-export default IntervalSelector;
-
+        <Picker.Item value="" enabled={false} label="Select Interval" />
+        <Picker.Item value={WEEKLY} enabled={false} label="Weekly" />
+        <Picker.Item value={BIWEEKLY} enabled={false} label="Bi-Weekly" />
+        <Picker.Item value={MONTHLY} enabled={false} label="Monthly" />
+        <Picker.Item value={YEARLY} enabled={false} label="Yearly" />
+      </Picker>
+    </View>
+  );
+}

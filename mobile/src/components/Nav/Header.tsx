@@ -14,7 +14,7 @@ import EditSpendingBudget from "../Forms/EditSpendingBudget";
 export default function Header({
   links,
 }: {
-  links: { label: string; href: string }[];
+  links: string[];
 }) {
   const { totalSpendingBudget, payPeriodInterval, payDate } = useDatabase();
   const [daysTillReset, setDaysTillReset] = useState(0);

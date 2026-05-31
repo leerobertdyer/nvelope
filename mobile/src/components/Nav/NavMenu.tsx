@@ -6,7 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 interface NavMenuProps {
   showMenu: boolean;
   setShowMenu: (show: boolean) => void;
-  links: { label: string; href: string }[];
+  links: string[];
 }
 
 export default function NavMenu({
@@ -14,7 +14,7 @@ export default function NavMenu({
   setShowMenu,
   links,
 }: NavMenuProps) {
-  const navigate = useNavigation();
+  const navigation = useNavigation();
   return (
     <>
       <Pressable onPress={() => setShowMenu(true)}>
@@ -49,13 +49,13 @@ export default function NavMenu({
               <View className="my-[2rem]" />
               {links.map((link) => (
                 <Btn
-                  key={link.href}
+                  key={link}
                   color="gold"
                   onPress={() => {
-                    navigation.navigate(link.href as never);
+                    navigation.navigate(link as never);
                     setShowMenu(false);
                   }}
-                  text={link.label}
+                  text={link}
                 />
               ))}
             </View>

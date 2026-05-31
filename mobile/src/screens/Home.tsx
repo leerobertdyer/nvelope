@@ -12,6 +12,7 @@ import Loading from "../components/Loading";
 import Btn from "../components/Buttons/Btn";
 import LoginOptions from "../components/Auth/LoginOptions";
 import { MyText } from "../components/MyText";
+import FirstTimeSetup from "../components/FirstTimeSetup";
 
 export default function Home() {
   const { user, isLoadingUser } = useAuth();
@@ -43,7 +44,7 @@ export default function Home() {
 
   if (!user) {
     return (
-      <View className="flex flex-col gap-4 justify-center items-center w-full h-screen">
+      <View className="flex flex-col gap-4 pt-[6rem] items-center w-full h-screen bg-my-black-base">
         <MyText className="text-2xl text-my-white-dark">Welcome to Nvelopes</MyText>
         <MyText className="text-sm text-my-white-light">
           Old School Budgeting for the Digital Age
@@ -86,8 +87,7 @@ export default function Home() {
     documentExists === false ||
     (documentExists === null && !hasBudgets && !isLoadingBudgets);
   if (isNewUser) {
-    // return <FirstTimeSetup />;
-    return <MyText>Todo: New User</MyText>;
+    return <FirstTimeSetup />;
   }
 
   // Only show MainView once we've received the budget doc snapshot (payDate is set or explicitly null).

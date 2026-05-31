@@ -23,8 +23,8 @@ export default function Input({
 }: ITextInput) {
   return (
     // self-center ensures the w-[90%] centers itself within its parent container
-    <View className="w-[90%] flex flex-col gap-2 items-center justify-center self-center">
-      <Text className="p-2 w-full text-center">{label}</Text>
+    <View className="w-[90%] h-fit flex flex-col gap-2 items-center justify-center self-center">
+      {label && <Text className="p-2 w-full text-center">{label}</Text>}
       <TextInput
         ref={ref}
         className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark text-center"

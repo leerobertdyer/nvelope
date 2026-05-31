@@ -30,7 +30,7 @@ import AddIncomeForm from "../components/Forms/AddIncomeForm";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
-import { Button, ScrollView, Text, View } from "react-native";
+import { Button, Pressable, ScrollView, Text, View } from "react-native";
 import PageTour from "./PageTour";
 import SplitPaymentDueModal from "./Payments/SplitPaymentDueModal";
 import CongratsPaidOffModal from "./Payments/CongratsPaidOffModal";
@@ -42,10 +42,12 @@ import { MyText } from "./MyText";
 import Btn from "./Buttons/Btn";
 import AddCashToEnvelopeForm from "./Forms/AddCashToEnvelopeForm";
 import Header from "./Nav/Header";
+import { useNavigation } from "@react-navigation/native";
 
 export default function MainView() {
   const { user } = useAuth();
   const { activeBudgetId, budgets } = useBudget();
+  const navigation = useNavigation();
   const activeBudgetName =
     budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
   //   const { showToast } = useToast(); //TODO NOtifications
@@ -822,31 +824,40 @@ export default function MainView() {
         }}
       >
         <View className="flex flex-col items-start gap-2">
-          <Text>This is your current budget.</Text>
-          <Text>
-            Click <Text className="text-my-red-light">Payment</Text> for
-            bills/debts.
-          </Text>
-          <Text>
-            <Text className="text-my-green-light">Cash</Text> when money comes
-            in.
-          </Text>
-          <Text>
-            <Text className="text-my-blue-light">Nvelope</Text> to create
-            nvelopes for spending categories.
-          </Text>
-          <Text>
-            <Text className="text-my-white-dark">Clear</Text> to clear all
-            envelopes.
-          </Text>
+          <MyText className="text-my-white-light mb-2 text-center w-full">
+            This is your current budget.
+          </MyText>
+          <MyText className="text-my-white-light">
+            <MyText className="text-my-red-light">Payment</MyText> - Bills/Debts
+          </MyText>
+          <MyText className="text-my-white-light">
+            <MyText className="text-my-green-light">Cash</MyText> - Additional
+            Income
+          </MyText>
+          <MyText className="text-my-white-light">
+            <MyText className="text-my-blue-light">Nvelope</MyText> - Create
+            Spending Categories
+          </MyText>
+          <MyText className="text-my-white-light">
+            <MyText className="text-my-white-dark">Clear</MyText> - Clear All
+            Envelopes
+          </MyText>
           Useful when starting a new period.
           <View>
-            See your days left in current interval, and your balance in top
-            menu. Tap the balance to edit it. You can also adjust your pay date
-            and budget interval in{" "}
-            <Text className="text-my-blue-light underline inline">
-              LINK:Settings
-            </Text>
+            <MyText className="text-my-white-light p-2">
+              See <MyText className="text-my-green-base">days left </MyText>till
+              next pay date top left, and{" "}
+              <MyText className="text-my-red-light">current balance</MyText> top
+              center. Tap the balance to edit it. You can also adjust your pay
+              date and budget interval in{" "}
+            </MyText>
+              <Pressable
+                onPress={() => navigation.navigate("Settings" as never)}
+              >
+                <MyText className="text-my-blue-light text-center text-xl">
+                  Settings
+                </MyText>
+              </Pressable>
           </View>
         </View>
       </PageTour>
@@ -856,15 +867,7 @@ export default function MainView() {
           className="w-full h-full"
           contentContainerClassName="flex flex-col items-center"
         >
-
-        <Header
-          links={[
-            { label: "Settings", href: "/settings" },
-            { label: "Debt", href: "/debt" },
-            { label: "Bills", href: "/bills" },
-            { label: "Feedback", href: "/feedback" },
-          ]}
-        />
+          <Header links={["Settings", "Debt", "Bills", "Feedback"]} />
 
           <MyText className="text-lg font-semibold text-my-white-dark mb-2">
             {activeBudgetName}

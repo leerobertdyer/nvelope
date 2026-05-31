@@ -15,6 +15,7 @@ import { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import "./global.css";
+import Settings from "./src/screens/Settings";
 
 SplashScreen.preventAutoHideAsync(); // for fonts
 
@@ -24,6 +25,7 @@ function RootStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={Home} />
+      <Stack.Screen name="Settings" component={Settings} />
     </Stack.Navigator>
   );
 }

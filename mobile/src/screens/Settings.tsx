@@ -806,14 +806,7 @@ export default function Settings() {
           also manage budgets, backups, and account options.
         </MyText>
       </PageTour>
-      <Header
-        links={[
-          { label: "Home", href: "/" },
-          { label: "Debt", href: "/debt" },
-          { label: "Bills", href: "/bills" },
-          { label: "Feedback", href: "/feedback" },
-        ]}
-      />
+      <Header links={["Home", "Debt", "Bills", "Feedback"]} />
       <MyText className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md ">
         Settings
       </MyText>
