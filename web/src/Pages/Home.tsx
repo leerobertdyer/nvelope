@@ -5,7 +5,7 @@ import LoginOptions from "../components/Auth/LoginOptions";
 import MainView from "./MainView";
 import Loading from "../components/Loading";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import FirstTimeSetup from "./FirstTimeSetup";
+import FirstTimeSetup from "../../../mobile/src/components/FirstTimeSetup";
 import { shouldBackupUserDataSafe, backupUserDataSafe } from "../firebase/editData";
 
 export default function Home() {
