@@ -1,8 +1,9 @@
-import Button from "../../../../mobile/src/components/Buttons/Btn";
 import Loading from "../Loading";
-import MoneyInput from "../MoneyInput";
 import TextInput from "../Input";
-import FullScreen from "../../Views/FullScreen";
+import { View } from "react-native";
+import MoneyInput from "../Payments/MoneyInput";
+import Btn from "../Buttons/Btn";
+import { MyText } from "../MyText";
 
 interface IAddIncomeForm {
   showLoading: boolean;
@@ -40,35 +41,36 @@ export default function AddIncomeForm({
   return (
     <>
       {showLoading && <Loading text={loadingText} />}
-      <FullScreen>
-        <h3 className="text-center w-full text-my-white-light p-2 text-3xl mb-4">Add Income</h3>
-        <div className="bg-my-green-dark rounded-md text-my-white-light w-[90vw] md:w-[30rem] m-auto p-4 pb-6 flex flex-col gap-4 items-center">
-          <div className="w-full max-w-[20rem] m-auto h-fit flex flex-col items-center justify-center">
+      <View>
+        <MyText className="text-center w-full text-my-white-light p-2 text-3xl mb-4">
+          Add Income
+        </MyText>
+        <View className="bg-my-green-dark rounded-md text-my-white-light w-[90vw] md:w-[30rem] m-auto p-4 pb-6 flex flex-col gap-4 items-center">
+          <View className="w-full max-w-[20rem] m-auto h-fit flex flex-col items-center justify-center">
+            <MyText className="text-my-white-dark text-lg py-2">
+              Add Cash
+            </MyText>
             <MoneyInput
-              label="Amount To Add"
+              label=""
               id="newCashAmount"
-              placeholder="Amount"
+              placeholder="Amount to add"
               value={cashAmount}
               onChange={setCashAmount}
             />
             <TextInput
               id="newCashName"
-              label="Income Source"
+              label=""
               value={cashName}
-              onChange={(e) => setCashName(e.target.value)}
+              onChange={(e) => setCashName(e)}
               placeholder="Income Source"
             />
-          </div>
+          </View>
           {cashAmount > 0 && cashName.length > 0 && (
-            <Button onClick={handleSave} color="green">
-              Save
-            </Button>
+            <Btn text="Save" onPress={handleSave} color="green" />
           )}
-          <Button onClick={handleBack} color="red">
-            Back
-          </Button>
-        </div>
-      </FullScreen>
+          <Btn text="Back" onPress={handleBack} color="red" />
+        </View>
+      </View>
     </>
   );
 }

@@ -46,9 +46,7 @@ export default function MoneyInput({
   return (
     <View className="w-[90%] flex-col gap-2 items-center justify-center">
       {label != null && label !== "" && (
-        <MyText className="p-2 w-full text-center text-my-white-light">
-          {label}
-        </MyText>
+        <MyText className="p-2 w-full text-my-white-light">{label}</MyText>
       )}
       <TextInput
         ref={inputRef}

@@ -126,21 +126,21 @@ export default function PaymentMap({
     return (
       <Pressable onPress={setter}>
         <View className="flex-row items-center justify-between p-2 w-full h-[3rem] bg-my-black-dark text-my-black-dark border-b-2 border-my-black-dark">
-            {isShown ? (
-              <Entypo
-                name={"chevron-up"}
-                size={20}
-                color="#fff"
-                className="px-2"
-              />
-            ) : (
-              <Entypo
-                name={"chevron-down"}
-                size={20}
-                color="#fff"
-                className="px-2"
-              />
-            )}
+          {isShown ? (
+            <Entypo
+              name={"chevron-up"}
+              size={20}
+              color="#fff"
+              className="px-2"
+            />
+          ) : (
+            <Entypo
+              name={"chevron-down"}
+              size={20}
+              color="#fff"
+              className="px-2"
+            />
+          )}
           <MyText className="text-my-white-dark">{name}</MyText>
           <MyText className="text-my-blue-light">{total}</MyText>
         </View>
@@ -150,7 +150,7 @@ export default function PaymentMap({
 
   return (
     <>
-      <View className="h-fit w-screen max-w-[40.25rem] overflow-auto ">
+      <View className="h-fit w-full overflow-auto ">
         <PaymentBox
           name="Current Payments"
           total={currentPaymentsTotal}

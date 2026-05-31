@@ -12,7 +12,7 @@ import { removeVirtualIdPortion } from "../../util";
 import { editPayments } from "../../firebase/editData";
 import PaymentForm from "../Forms/PaymentForm";
 import Btn from "../Buttons/Btn";
-import { Pressable, Text, View } from "react-native";
+import { View } from "react-native";
 import MoneyInput from "./MoneyInput";
 import { MyText } from "../MyText";
 

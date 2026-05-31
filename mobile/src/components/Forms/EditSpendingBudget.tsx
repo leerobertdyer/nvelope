@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { editTotalSpendingBudget } from "../../firebase/editData";
-import { useBudget } from "../../Context/BudgetContext/useBudget";
-import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
-import FullScreen from "../../Views/FullScreen";
-import MoneyInput from "../MoneyInput";
+import { useBudget } from "../../context/BudgetContext/useBudget";
+import { useDatabase } from "../../context/DatabaseContext/useDatabase";
+import MoneyInput from "../Payments/MoneyInput";
+import Btn from "../Buttons/Btn";
+import { View } from "react-native";
 
 interface IProps {
   handleBack: () => void;
@@ -26,12 +27,9 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
     handleBack();
   }
 
+  //onSave={manuallySetBudgetInDB} onClose={resetState}
   return (
-    <FullScreen
-      showButtons
-      onSave={manuallySetBudgetInDB}
-      onClose={resetState}>
-      <div className="flex flex-col items-center justify-center gap-2 max-w-[20rem] m-auto">
+      <View className="flex flex-col items-center justify-center gap-2 max-w-[20rem] m-auto">
         <MoneyInput
           label="Manually Adjust Your Remaining Budget"
           id="newBudgetAmount"
@@ -39,7 +37,9 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
           onChange={setCashAmount}
           placeholder="Amount"
         />
-      </div>
-    </FullScreen>
+        <Btn color="gold" onPress={manuallySetBudgetInDB} />
+        <Btn color="red" onPress={resetState} />
+      </View>
+
   );
 }

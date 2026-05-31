@@ -24,17 +24,9 @@ import {
   recalculateBudget,
   removeVirtualIdPortion,
 } from "../util";
-// import ActionButtons from "../components/Buttons/ActionButtons";
 import Loading from "../components/Loading";
 import { startOfDay, addMonths } from "date-fns";
-// import PaymentMap from "../components/Payments/PaymentMap";
-// import BigPayment from "../Views/BigPayment";
-// import PaymentForm from "../components/Forms/PaymentForm";
-// import AddIncomeForm from "../components/Forms/AddIncomeForm";
-// import AddCashToEnvelopeForm from "../Views/AddCashToEnvelopeForm";
-// import FundPaymentDueModal from "../components/Payments/SplitPaymentDueModal";
-// import CongratsPaidOffModal from "../components/Payments/CongratsPaidOffModal";
-// import PageTour from "../components/PageTour";
+import AddIncomeForm from "../components/Forms/AddIncomeForm";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { useBudget } from "../context/BudgetContext/useBudget";
@@ -47,13 +39,16 @@ import PaymentForm from "./Forms/PaymentForm";
 import ActionButtons from "./Buttons/ActionButtons";
 import PaymentMap from "./Payments/PaymentMap";
 import { MyText } from "./MyText";
+import Btn from "./Buttons/Btn";
+import AddCashToEnvelopeForm from "./Forms/AddCashToEnvelopeForm";
+import Header from "./Nav/Header";
 
 export default function MainView() {
   const { user } = useAuth();
   const { activeBudgetId, budgets } = useBudget();
   const activeBudgetName =
     budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
-  //   const { showToast } = useToast();
+  //   const { showToast } = useToast(); //TODO NOtifications
   const {
     totalSpendingBudget,
     setTotalSpendingBudget,
@@ -111,17 +106,17 @@ export default function MainView() {
   // Check for due Fund (planned expense) payments
   useEffect(() => {
     if (!payments) return;
-    
+
     const today = startOfDay(new Date());
-    
+
     // Find Fund payments that are due (dueDate <= today) and not fully paid
     const duePayment = payments.find((p) => {
-        if (p.type !== "FUND") return false;
-        if (dismissedDuePayments.has(p.id)) return false;
-        const dueDate = startOfDay(p.dueDate.toDate());
-        return dueDate <= today && !p.paid;
+      if (p.type !== "FUND") return false;
+      if (dismissedDuePayments.has(p.id)) return false;
+      const dueDate = startOfDay(p.dueDate.toDate());
+      return dueDate <= today && !p.paid;
     });
-    
+
     if (duePayment && !dueFundPayment) {
       setDueFundPayment(duePayment);
     }
@@ -604,55 +599,43 @@ export default function MainView() {
 
   if (showClearEnvelopes)
     return (
-      //   <FullScreen
-      //     theme="DARK"
-      //     onSave={handleResetNvelopes}
-      //     onClose={() => setShowClearNvelopes(false)}
-      //     showButtons
-      //   >
-      <View
-      className="flex flex-col items-center"
-      >
-        <MyText
-          className="text-xl text-my-red-light"
-        >
+      <View className="flex-col justify-center items-center bg-my-black-dark h-full">
+        <MyText className="text-xl text-my-red-light">
           ⚠️ Are you sure? ⚠️
         </MyText>
-        <MyText>
-          This will set <MyText 
-          className="text-my-blue-light"
-          >ALL Nvelopes</MyText>{" "}
-          totals/spent to <MyText 
-          className="text-my-green-base"
-          >$0.00</MyText>,
+        <MyText className="text-my-white-light">
+          This will set{" "}
+          <MyText className="text-my-blue-light">ALL Nvelopes</MyText>{" "}
+          totals/spent to <MyText className="text-my-green-base">$0.00</MyText>,
         </MyText>
-        <MyText>and set them all to "unpaid" status.</MyText>
-        <MyText>Your budget total will be unaffected.</MyText>
+        <MyText className="text-my-white-light">
+          and set them all to "unpaid" status.
+        </MyText>
+        <MyText className="text-my-white-light">
+          Your budget total will be unaffected.
+        </MyText>
+        <View className="w-full mt-8">
+          <Btn color="red" text="Clear" onPress={handleResetNvelopes} />
+          <Btn
+            color="green"
+            text="Back"
+            onPress={() => setShowClearNvelopes(false)}
+          />
+        </View>
       </View>
-      //   </FullScreen>
     );
 
   if (showDeletePayment && payDate && paymentToEdit) {
     return (
-      <View
-      //   className="absolute inset-0 w-screen h-screen z-100 select-none"
-      >
-        <View
-        // className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center "
-        >
-          <Text
-          //   className="p-4 rounded-md text-my-white-dark w-full text-center"
-          >
+      <View className="absolute inset-0 w-full h-full z-100 select-none">
+        <View className="flex flex-col bg-my-black-dark w-full h-full justify-center items-center ">
+          <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
             Are you sure you want to delete "{paymentToEdit.name}"?
-          </Text>
-          <Text
-          //   className="text-xs text-my-white-light text-center mb-4"
-          >
+          </MyText>
+          <MyText className="text-xs text-my-white-light text-center mb-4">
             Removing this payment will not change your available budget.
-          </Text>
-          <View
-          //   className="flex gap-2 items-center justify-center w-[95%]"
-          >
+          </MyText>
+          <View className="flex gap-2 items-center justify-center w-[95%]">
             <Button
               title="No"
               color="red"
@@ -784,8 +767,8 @@ export default function MainView() {
 
   if (showBudgetWarning) {
     return (
-      <View 
-    //   className="flex flex-col items-center gap-2"
+      <View
+      //   className="flex flex-col items-center gap-2"
       >
         <Text>You have nothing left in your budget!</Text>
         <Text>Try moving some money from another envelope</Text>
@@ -798,147 +781,34 @@ export default function MainView() {
     );
   }
 
-//   if (isAddingCash) {
-//     return (
-//       <AddIncomeForm
-//         showLoading={showLoading}
-//         loadingText={loadingText}
-//         setIsAddingCash={setIsAddingCash}
-//         addCashToDb={addCashToDb}
-//         cashAmount={cashAmount}
-//         setCashAmount={setCashAmount}
-//         cashName={cashName}
-//         setCashName={setCashName}
-//       />
-//     );
-//   }
+  if (isAddingCash) {
+    return (
+      <AddIncomeForm
+        showLoading={showLoading}
+        loadingText={loadingText}
+        setIsAddingCash={setIsAddingCash}
+        addCashToDb={addCashToDb}
+        cashAmount={cashAmount}
+        setCashAmount={setCashAmount}
+        cashName={cashName}
+        setCashName={setCashName}
+      />
+    );
+  }
 
-//   if (isAddingCashToEnvelope) {
-//     return (
-//       <AddCashToEnvelopeForm
-//         showLoading={showLoading}
-//         loadingText={loadingText}
-//         cashAmount={cashAmount}
-//         setCashAmount={setCashAmount}
-//         addCashToEnvelope={addCashToEnvelope}
-//         envelopeToEdit={envelopeToEdit}
-//         setIsAddingCashToEnvelope={setIsAddingCashToEnvelope}
-//       />
-//     );
-//   }
-
-//   return (
-//     <>
-//       <PageTour
-//         visible={isNewUser}
-//         onDismiss={async () => {
-//           if (activeBudgetId) {
-//             await editIsNewUser(false, activeBudgetId);
-//             setIsNewUser(false);
-//           }
-//         }}
-//       >
-//         <View 
-//         // className="flex flex-col items-start gap-2"
-//         >
-//           <Text>This is your current budget.</Text>
-//           <Text>
-//             Click <Text 
-//             // className="text-my-red-light"
-//             >Payment</Text> for
-//             bills/debts.
-//           </Text>
-//           <Text>
-//             <Text 
-//             // className="text-my-green-light"
-//             >Cash</Text> when money comes
-//             in.
-//           </Text>
-//           <Text>
-//             <Text 
-//             // className="text-my-blue-light"
-//             >Nvelope</Text> to create
-//             nvelopes for spending categories.
-//           </Text>
-//           <Text>
-//             <Text 
-//             // className="text-my-white-dark"
-//             >Clear</Text> to clear all
-//             envelopes.
-//           </Text>
-//           Useful when starting a new period.
-//           <View>
-//             See your days left in current interval, and your balance in top
-//             menu. Tap the balance to edit it. You can also adjust your pay date
-//             and budget interval in{" "}
-//             <a href="/settings" className="text-my-blue-light underline inline">
-//               Settings
-//             </a>
-//           </View>
-//         </View>
-//       </PageTour>
-//       <View 
-//     //   className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]"
-//       >
-//         {showLoading && <Loading text={loadingText} />}
-
-//         {/* <Header
-//           links={[
-//             { label: "Settings", href: "/settings" },
-//             { label: "Debt", href: "/debt" },
-//             { label: "Bills", href: "/bills" },
-//             { label: "Feedback", href: "/feedback" },
-//           ]} //TODO: Header
-//         /> */}
-
-//         <View 
-//         // className="flex flex-col items-center pt-[1rem] w-full"
-//         >
-//           <Text 
-//         //   className="text-lg font-semibold text-my-white-dark mb-2"
-//           >
-//             {activeBudgetName}
-//           </Text>
-//           {!payDate && (
-//             <Text className="text-sm text-my-white-light mb-2">
-//               <a href="/settings" className="text-my-green-light underline">
-//                 Set your pay date in Settings
-//               </a>{" "}
-//               to see your pay period in the header.
-//             </Text>
-//           )}
-//           <ActionButtons
-//             onPaymentClick={handleAddPayment}
-//             onCashClick={handleAddCash}
-//             onEnvelopeClick={handleSetupNewEnvelope}
-//             onClearClick={() => setShowClearNvelopes(true)}
-//           />
-
-//           <View className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
-//             <Nvelopes
-//               resetState={resetState}
-//               handleSetupEdit={handleSetupEdit}
-//               editEnvelope={editEnvelopeAndBudget}
-//               handleSetShowSpendingPage={handleSetShowSpendingPage}
-//               handleDeleteEnvelope={handleSetupDelete}
-//               handleAddCashToEnvelope={handleAddCashToEnvelope}
-//             />
-//             <PaymentMap
-//               paymentsThisPeriod={paymentsThisPeriod}
-//               handleUpdatePaid={handleUpdatePaid}
-//               handleEditBill={handleEditPayment}
-//             />
-//           </View>
-//         </main>
-//       </View>
-//       {paidOffDebtName && (
-//         <CongratsPaidOffModal
-//           debtName={paidOffDebtName}
-//           onClose={() => setPaidOffDebtName(null)}
-//         />
-//       )}
-//     </>
-//   );
+  if (isAddingCashToEnvelope) {
+    return (
+      <AddCashToEnvelopeForm
+        showLoading={showLoading}
+        loadingText={loadingText}
+        cashAmount={cashAmount}
+        setCashAmount={setCashAmount}
+        addCashToEnvelope={addCashToEnvelope}
+        envelopeToEdit={envelopeToEdit}
+        setIsAddingCashToEnvelope={setIsAddingCashToEnvelope}
+      />
+    );
+  }
 
   return (
     <>
@@ -980,19 +850,22 @@ export default function MainView() {
           </View>
         </View>
       </PageTour>
-      <View className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]">
+      <View className="w-full text-center flex flex-col items-center flex-1 bg-my-blue-dark overflow-y-auto pb-[4rem]">
         {showLoading && <Loading text={loadingText} />}
+        <ScrollView
+          className="w-full h-full"
+          contentContainerClassName="flex flex-col items-center"
+        >
 
-        {/* <Header
+        <Header
           links={[
             { label: "Settings", href: "/settings" },
             { label: "Debt", href: "/debt" },
             { label: "Bills", href: "/bills" },
             { label: "Feedback", href: "/feedback" },
           ]}
-        /> */}
+        />
 
-        <ScrollView className="pt-[1rem] w-full" contentContainerClassName="flex flex-col items-center">
           <MyText className="text-lg font-semibold text-my-white-dark mb-2">
             {activeBudgetName}
           </MyText>
@@ -1011,7 +884,7 @@ export default function MainView() {
             onClearClick={() => setShowClearNvelopes(true)}
           />
 
-          <View className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
+          <View className="w-full border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
             <Nvelopes
               resetState={resetState}
               handleSetupEdit={handleSetupEdit}
@@ -1028,14 +901,12 @@ export default function MainView() {
           </View>
         </ScrollView>
       </View>
-      {/* {paidOffDebtName && (
+      {paidOffDebtName && (
         <CongratsPaidOffModal
           debtName={paidOffDebtName}
           onClose={() => setPaidOffDebtName(null)}
         />
-      )} */}
+      )}
     </>
   );
-
 }
-
