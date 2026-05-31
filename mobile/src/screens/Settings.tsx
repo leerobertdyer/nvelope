@@ -913,21 +913,17 @@ export default function Settings() {
 
           {budgets.length >= 1 && (
             <View className="w-full flex flex-col items-center gap-2">
-              <label htmlFor="budget-switcher" className="text-xs">
-                Select A Budget
-              </label>
-              <select
+              <MyText className="text-xs">Select A Budget</MyText>
+              <Picker
                 id="budget-switcher"
-                value={activeBudgetId ?? ""}
-                onChange={(e) => setActiveBudgetId(e.target.value || null)}
+                selectedValue={activeBudgetId ?? ""}
+                onValueChange={(e) => setActiveBudgetId(e || null)}
                 className="bg-my-white-light border-2 border-my-white-dark rounded-md px-3 py-2 text-my-black-dark max-w-[20rem] w-[80%]"
               >
                 {budgets.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
+                  <Picker.Item key={b.id} value={b.id} label={b.name} />
                 ))}
-              </select>
+              </Picker>
             </View>
           )}
           <Btn
@@ -998,12 +994,7 @@ export default function Settings() {
             <UndoLastRestoreScreen />
 
             {showUndoConfirm && asyncStorageBackup && (
-              <View
-                theme="DARK"
-                onClose={() => setShowUndoConfirm(false)}
-                onSave={handleUndoRestore}
-                showButtons
-              >
+              <View className="bg-my-black-dark">
                 <View className="w-full text-center">
                   <MyText className="text-xl text-my-blue-light">
                     Undo Last Restore?
@@ -1025,6 +1016,12 @@ export default function Settings() {
                     {asyncStorageBackup.data.envelopes?.length ?? 0} envelopes
                   </MyText>
                 </View>
+                <Btn color="gold" text="Confirm" onPress={handleUndoRestore} />
+                <Btn
+                  color="red"
+                  text="Cancel"
+                  onPress={() => setShowUndoConfirm(false)}
+                />
               </View>
             )}
 
@@ -1167,12 +1164,14 @@ export default function Settings() {
                   label="Password"
                   placeholder="Enter your password"
                   value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
+                  onChange={(e) => setDeletePassword(e)}
                 />
               </View>
             )}
             {isDeletingAccount && (
-              <MyText className="text-my-white-dark text-sm mt-4">Deleting…</MyText>
+              <MyText className="text-my-white-dark text-sm mt-4">
+                Deleting…
+              </MyText>
             )}
           </View>
           <Btn
