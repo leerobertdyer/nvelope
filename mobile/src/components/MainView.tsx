@@ -464,7 +464,7 @@ export default function MainView() {
       setEnvelopes(newEnvelopes);
       await editEnvelopes(newEnvelopes, activeBudgetId!);
       resetState();
-        Toast.show({type: "success", text1: "Envelope updated"};
+        Toast.show({type: "success", text1: "Envelope updated"});
     } catch (error) {
       console.error("Error editing envelope:", error);
       setShowLoading(false);

@@ -37,15 +37,10 @@ export default function NavMenu({
           onPress={() => setShowMenu(false)}
         >
           <View
-            className="bg-my-white-dark w-[70%] h-full p-4 ml-auto"
+            className="bg-my-white-dark w-[100%] h-[70%] p-4 mb-auto"
             onStartShouldSetResponder={() => true} // prevents tap-through closing when tapping menu itself
           >
             <View className="flex-col gap-2 p-4 justify-center h-fit m-auto w-full">
-              <Btn
-                color="red"
-                onPress={() => setShowMenu(false)}
-                text="Close"
-              />
               <View className="my-[2rem]" />
               {links.map((link) => (
                 <Btn
@@ -59,6 +54,7 @@ export default function NavMenu({
                 />
               ))}
             </View>
+            <Btn color="red" onPress={() => setShowMenu(false)} text="Close" />
           </View>
         </Pressable>
       </Modal>

@@ -14,6 +14,7 @@ interface MoneyInputProps {
   onChange: (dollars: number) => void;
   id?: string;
   label?: string;
+  labelColor?: string;
   placeholder?: string;
   allowNegative?: boolean;
 }
@@ -22,6 +23,7 @@ export default function MoneyInput({
   value,
   onChange,
   label,
+  labelColor,
   placeholder = "0.00",
   allowNegative = false,
 }: MoneyInputProps) {
@@ -44,9 +46,16 @@ export default function MoneyInput({
   }
 
   return (
-    <View className="w-[90%] flex-col gap-2 items-center justify-center">
+    <View className="w-[90%] m-auto flex-col gap-2 items-center justify-center">
       {label != null && label !== "" && (
-        <MyText className="p-2 w-full text-my-white-light">{label}</MyText>
+        <MyText
+          className={`
+          ${labelColor === "black" ? "text-my-black-dark" : "text-my-white-light"}
+          p-2 w-full 
+          text-center`}
+        >
+          {label}
+        </MyText>
       )}
       <TextInput
         ref={inputRef}

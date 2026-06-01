@@ -873,7 +873,10 @@ export default function Settings() {
         <View className="w-full flex flex-col items-center gap-2 mt-4 py-[1rem]">
           {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
             <>
-              <View className="w-full flex flex-col items-center gap-1 max-w-[20rem]">
+              <ScrollView
+                className="w-full gap-1"
+                contentContainerClassName="items-center"
+              >
                 <MyText className="text-my-black-light text-xs text-center">
                   Budget name
                 </MyText>
@@ -903,7 +906,7 @@ export default function Settings() {
                       />
                     </View>
                   ) : (
-                    <View className="flex flex-row items-center gap-2">
+                    <View className="items-center gap-2 w-full">
                       <MyText className="text-my-black-dark font-medium">
                         {budgetMeta.name}
                       </MyText>
@@ -922,7 +925,7 @@ export default function Settings() {
                     {budgetMeta.name}
                   </MyText>
                 )}
-              </View>
+              </ScrollView>
 
               {isOwner &&
                 budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
@@ -958,14 +961,20 @@ export default function Settings() {
             </>
           )}
 
-          {budgets.length >= 1 && (
-            <View className="w-full flex flex-col items-center gap-2">
-              <MyText className="text-xs">Select A Budget</MyText>
+          {budgets.length > 1 && (
+            <View className="w-full mt-4">
+              <MyText className="text-xs text-center text-my-black-dark">
+                Select A Budget
+              </MyText>
               <Picker
+                style={{
+                  width: "100%",
+                  backgroundColor: "#fff2d9",
+                  borderRadius: 9,
+                }}
                 id="budget-switcher"
                 selectedValue={activeBudgetId ?? ""}
                 onValueChange={(e) => setActiveBudgetId(e || null)}
-                className="bg-my-white-light border-2 border-my-white-dark rounded-md px-3 py-2 text-my-black-dark max-w-[20rem] w-[80%]"
               >
                 {budgets.map((b) => (
                   <Picker.Item key={b.id} value={b.id} label={b.name} />
