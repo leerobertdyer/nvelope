@@ -14,8 +14,9 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import "./global.css";
 import Settings from "./src/screens/Settings";
+import "./global.css";
+import Toast from "react-native-toast-message";
 
 SplashScreen.preventAutoHideAsync(); // for fonts
 
@@ -30,7 +31,6 @@ function RootStack() {
   );
 }
 
-// 1. Create a wrapper component inside App.js (or in its own file)
 function GlobalLayout() {
   const [loaded, error] = useFonts({
     myFont: require("./src/assets/fonts/posten.ttf"),
@@ -41,10 +41,9 @@ function GlobalLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded, error]);
+  const insets = useSafeAreaInsets();
 
   if (!loaded && !error) return null;
-
-  const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView
@@ -59,6 +58,7 @@ function GlobalLayout() {
       <NavigationContainer>
         <RootStack />
       </NavigationContainer>
+      <Toast />
     </SafeAreaView>
   );
 }

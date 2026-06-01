@@ -22,7 +22,7 @@ export default function PageTour({
 
   return (
     <Modal        
-    visible={true}
+    visible={visible}
         transparent
         animationType="fade"
         onRequestClose={() => (false)}>

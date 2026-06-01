@@ -23,6 +23,8 @@ import { Picker } from "@react-native-picker/picker";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { MyText } from "../MyText";
 import firestore from "@react-native-firebase/firestore";
+import Toast from "react-native-toast-message";
+
 type User = FirebaseAuthTypes.User;
 const { Timestamp } = firestore;
 
@@ -43,7 +45,6 @@ export default function PaymentForm({
 }: IPaymentForm) {
   const { activeBudgetId } = useBudget();
   const { payDate, payPeriodInterval, payments, setPayments } = useDatabase();
-  // const { showToast } = useToast();
 
   const [newPaymentDate, setNewPaymentDate] = useState<string>(
     paymentToEdit?.dueDate.toDate()
@@ -172,15 +173,13 @@ export default function PaymentForm({
       await handleUpdateBudget(diffAmount);
     }
     resetForm();
-    // showToast("Payment updated");
-    console.warn("TODO: Notifications");
+    Toast.show({type: "success", text1: "Payment updated"});
   }
 
   async function addPayment() {
     if (!user || !newPayment) return;
     if (payments.some((p) => p.id === newPayment.id)) {
-      // showToast("Payment name already exists", "error");
-      console.warn("TODO: Notifications");
+      Toast.show({type: "error", text1: "Payment name already exists"});
       return;
     }
     const updatedPayments = [...payments, newPayment];
@@ -198,8 +197,7 @@ export default function PaymentForm({
     ) {
       await handleUpdateBudget(newPayment.amount * -1);
     }
-    // showToast("Payment added");
-    console.warn("TODO: Notifications");
+    Toast.show({type: "success", text1: "Payment added"});
     resetForm();
   }
 

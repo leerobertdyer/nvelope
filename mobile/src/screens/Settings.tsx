@@ -34,7 +34,7 @@ import { DateData } from "react-native-calendars";
 import { sendPasswordResetEmailToUser } from "../firebase/emailAndPassword";
 import { deleteAccount } from "../firebase/deleteAccount";
 import firestore from "@react-native-firebase/firestore";
-import { Pressable, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import Btn from "../components/Buttons/Btn";
 import Input from "../components/Input";
 import { MyText } from "../components/MyText";
@@ -42,6 +42,8 @@ import { Picker } from "@react-native-picker/picker";
 import MoneyInput from "../components/Payments/MoneyInput";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import signout from "../firebase/signOut";
+import { useNavigation } from "@react-navigation/native";
+import Toast from "react-native-toast-message";
 type User = FirebaseAuthTypes.User;
 const { Timestamp } = firestore;
 
@@ -52,7 +54,7 @@ export default function Settings() {
   const { user } = useAuth();
   const { activeBudgetId, budgets, setActiveBudgetId, refetchBudgets } =
     useBudget();
-  // const { showToast } = useToast();
+  const navigation = useNavigation();
   const {
     payPeriodInterval,
     setTotalSpendingBudget,
@@ -211,12 +213,9 @@ export default function Settings() {
       await editTotalSpendingBudget(nextBudget, activeBudgetId);
       setTotalSpendingBudget(nextBudget);
       setShowIntervalSettings(false);
-      // showToast("Budget interval updated");
-      //TODO: Notifications
+      Toast.show({ type: "success", text1: "Budget interval updated" });
     } catch (e) {
-      console.error("Error updating budget interval", e);
-      // showToast("Failed to update budget interval", "error");
-      //TODO: Notifications
+      Toast.show({ type: "error", text1: "Failed to update budget interval" });
     }
   }
 
@@ -229,8 +228,7 @@ export default function Settings() {
       setPayDate(Timestamp.fromDate(localDate));
       if (!activeBudgetId) return;
       await editPayDate(localDate, activeBudgetId);
-      // showToast("Pay date updated");
-      //TODO: NOtifications
+      Toast.show({ type: "success", text1: "Pay date updated" });
 
       // TODO: recalculate budget based on paydate change
       // This involves checking which bills in the current interval are paid
@@ -238,8 +236,7 @@ export default function Settings() {
       // If paid and no longer in interval - not sure lol
     } catch (e) {
       console.error("Error updating pay date", e);
-      // showToast("Failed to update pay date", "error");
-      //TODO: NOtifications
+      Toast.show({ type: "error", text1: "Failed to update pay date" });
     }
   }
 
@@ -274,11 +271,9 @@ export default function Settings() {
       // After restore, update localStorage backup state (now available for undo)
       const lsBackup = await getAsyncStorageBackup();
       setAsyncStorageBackup(lsBackup);
-      // showToast("Backup restored successfully");
-      // TODO: NOtifications
+      Toast.show({ type: "success", text1: "Backup restored successfully" });
     } else {
-      // showToast("Failed to restore backup", "error");
-      // TODO: NOtifications
+      Toast.show({ type: "error", text1: "Failed to restore backup" });
     }
   }
 
@@ -294,11 +289,9 @@ export default function Settings() {
       // Clear the localStorage backup state
       setAsyncStorageBackup(null);
       setShowUndoConfirm(false);
-      // showToast("Restore undone successfully");
-      // TODO: NOtifications
+      Toast.show({ type: "success", text1: "Restore undone successfully" });
     } else {
-      // showToast("Failed to undo restore", "error");
-      // TODO: NOtifications
+      Toast.show({ type: "error", text1: "Failed to undo restore" });
     }
   }
 
@@ -318,8 +311,7 @@ export default function Settings() {
         setDeletePasswordStep(true);
         return;
       }
-      // showToast(result.error, "error");
-      // TODO: NOtifications
+      Toast.show({ type: "error", text1: result.error });
 
       // If they were on the password step (wrong password, etc.), keep modal open so they can try again or cancel.
       if (!password) {
@@ -334,20 +326,19 @@ export default function Settings() {
 
   async function resetPasswordForEmail(email: string) {
     if (!email?.trim()) {
-      // showToast("No email address", "error");
-      // TODO: NOtifications
-
+      Toast.show({ type: "error", text1: "No email address" });
       return;
     }
     try {
       await sendPasswordResetEmailToUser(email.trim());
-      // showToast("Password reset email sent. Check your inbox.", "success");
-      // TODO: NOtifications
+      Toast.show({
+        type: "success",
+        text1: "Password reset email sent. Check your inbox.",
+      });
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to send reset email";
-      // showToast(message, "error");
-      // TODO: NOtifications
+      Toast.show({ type: "error", text1: message });
     }
   }
 
@@ -368,14 +359,10 @@ export default function Settings() {
         setNewBudgetInterval(null);
         await refetchBudgets();
         setActiveBudgetId(budgetId);
-        // showToast(`Budget "${name}" created`);
-        // TODO: NOtifications
-
+        Toast.show({ type: "success", text1: `Budget "${name}" created` });
         return true;
       } else {
-        // showToast("Failed to create budget", "error");
-        // TODO: NOtifications
-
+        Toast.show({ type: "error", text1: "Failed to create budget" });
         return false;
       }
     } finally {
@@ -385,8 +372,10 @@ export default function Settings() {
 
   async function handleInvite() {
     if (!user || !activeBudgetId || !shareEmail.trim()) {
-      // showToast("Please enter a valid email address", "error");
-      // TODO: NOtifications
+      Toast.show({
+        type: "error",
+        text1: "Please enter a valid email address",
+      });
       return;
     }
     const toEmail = shareEmail.trim();
@@ -416,13 +405,12 @@ export default function Settings() {
             console.error("Failed to send invite email", e);
           }
         }
-        // showToast(
-        //   `Invite sent to ${toEmail}. They'll receive an email with a link to open or sign up for Nvelopes.`,
-        // );
-        //TODO Notifications
+        Toast.show({
+          type: "success",
+          text1: `Invite sent to ${toEmail}. They'll receive an email with a link to open or sign up for Nvelopes.`,
+        });
       } else {
-        // showToast("Failed to send invite", "error");
-        //TODO Notifications
+        Toast.show({ type: "error", text1: "Failed to send invite" });
       }
     } finally {
       setShowShareBudgetModal(false);
@@ -439,11 +427,9 @@ export default function Settings() {
         await refetchBudgets();
         const next = budgets.find((b) => b.id !== activeBudgetId)?.id ?? null;
         setActiveBudgetId(next);
-        // showToast("Budget deleted");
-        //TODO Notifications
+        Toast.show({ type: "success", text1: "Budget deleted" });
       } else {
-        // showToast("Failed to delete budget", "error");
-        //TODO Notifications
+        Toast.show({ type: "error", text1: "Failed to delete budget" });
       }
     } finally {
       setIsDeletingBudget(false);
@@ -460,11 +446,9 @@ export default function Settings() {
         await refetchBudgets();
         const next = budgets.find((b) => b.id !== activeBudgetId)?.id ?? null;
         setActiveBudgetId(next);
-        // showToast("You left the budget");
-        //TODO Notifications
+        Toast.show({ type: "success", text1: "You left the budget" });
       } else {
-        // showToast("Failed to leave budget", "error");
-        //TODO Notifications
+        Toast.show({ type: "error", text1: "Failed to leave budget" });
       }
     } finally {
       setIsLeavingBudget(false);
@@ -489,15 +473,12 @@ export default function Settings() {
             memberIds: meta.memberIds,
             memberEmails: meta.memberEmails,
           });
-        // showToast("Member removed");
-        //TODO Notifications
+        Toast.show({ type: "success", text1: "Member removed" });
       } else {
-        // showToast("Failed to remove member", "error");
-        //TODO Notifications
+        Toast.show({ type: "error", text1: "Failed to remove member" });
       }
     } catch {
-      // showToast("Failed to remove member", "error");
-      //TODO Notifications
+      Toast.show({ type: "error", text1: "Failed to remove member" });
     }
   }
 
@@ -522,15 +503,18 @@ export default function Settings() {
         await refetchBudgets();
         setEditingBudgetName(false);
         setBudgetNameInput("");
-        // showToast("Budget name updated");
-        //TODO Notifications
+        Toast.show({ type: "success", text1: "Budget name updated" });
       } else {
-        // showToast("Failed to update budget name", "error");
-        //TODO Notifications
+        Toast.show({ type: "error", text1: "Failed to update budget name" });
       }
     } finally {
       setIsSavingBudgetName(false);
     }
+  }
+
+  function handleLogOut() {
+    signout();
+    navigation.navigate("Home" as never);
   }
 
   function SettingsButton({ text }: { text: string }) {
@@ -562,8 +546,8 @@ export default function Settings() {
     onPress: () => void;
   }) {
     return (
-      <View className="w-full flex flex-col items-center justify-center text-xs sm:text-sm md:text-lg mb-10">
-        You are logged in as{" "}
+      <View className="w-full items-center justify-center">
+        <MyText>You are logged in as </MyText>
         <MyText className="text-my-blue-dark">{user?.email}</MyText>
         <Btn text="Log Out" color="red" onPress={onPress} />
       </View>
@@ -576,7 +560,7 @@ export default function Settings() {
     }
     return (
       <Pressable
-        className="flex flex-col justify-center h-fit w-[80%] max-w-[20rem] items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8 cursor-pointer hover:opacity-90"
+        className=" justify-center h-fit w-[80%] m-auto items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8 cursor-pointer hover:opacity-90"
         onPress={() => {
           setShowDeleteAccountConfirm(true);
           setDeletePasswordStep(false);
@@ -789,9 +773,81 @@ export default function Settings() {
       </View>
     );
   }
+  if (showDeleteAccountConfirm)
+    return (
+      <View className="bg-my-black-dark h-full p-8 ">
+        <View className="w-full text-center mt-4">
+          {!deletePasswordStep ? (
+            <View className="items-center justify-center w-full">
+              <MyText className="text-xl text-my-red-light font-bold mb-4">
+                Are you sure?
+              </MyText>
+              <MyText className="text-my-white-light mb-2">
+                This will permanently delete your account and all your data
+                (envelopes, payments, backups).
+              </MyText>
+              <MyText className="text-my-red-light text-sm">
+                This cannot be undone.
+              </MyText>
+              <MyText className="text-my-white-dark text-sm mt-4">
+                To confirm, you may see a Google sign-in window or be asked for
+                your password, depending on how you signed up.
+              </MyText>
+            </View>
+          ) : (
+            <View className="flex flex-col items-center justify-center w-full">
+              <MyText className="text-xl text-my-red-light font-bold mb-4">
+                Enter your password
+              </MyText>
+              <MyText className="text-my-white-light mb-2">
+                Confirm your identity to delete your account.
+              </MyText>
+              <Input
+                id="deletePassword"
+                label="Password"
+                placeholder="Enter your password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e)}
+              />
+            </View>
+          )}
+          {isDeletingAccount && (
+            <MyText className="text-my-white-dark text-sm mt-4">
+              Deleting…
+            </MyText>
+          )}
+        </View>
+        <View className="mt-[2rem] gap-4">
+          <Btn
+            color="red"
+            text="Delete account"
+            disabled={
+              isDeletingAccount ||
+              (deletePasswordStep && !deletePassword.trim())
+            }
+            onPress={() =>
+              handleDeleteAccount(
+                deletePasswordStep ? deletePassword : undefined,
+              )
+            }
+          />
+          <Btn
+            color="green"
+            text="Cancel"
+            onPress={() => {
+              if (!isDeletingAccount) {
+                setShowDeleteAccountConfirm(false);
+                setDeletePasswordStep(false);
+                setDeletePassword("");
+              }
+            }}
+          />
+        </View>
+      </View>
+    );
 
   return (
-    <View className="w-full h-screen overflow-y-scroll bg-my-white-light">
+    <ScrollView className="w-full h-screen bg-my-white-light">
       <PageTour
         visible={isNewUser}
         onDismiss={async () => {
@@ -801,15 +857,13 @@ export default function Settings() {
           }
         }}
       >
-        <MyText>
+        <MyText className="text-my-white-light">
           Set pay date and budget interval here when you want to adjust. You can
           also manage budgets, backups, and account options.
         </MyText>
       </PageTour>
       <Header links={["Home", "Debt", "Bills", "Feedback"]} />
-      <MyText className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md ">
-        Settings
-      </MyText>
+      <MyText className="text-3xl font-bold mb-4 text-center">Settings</MyText>
       <View className="w-full flex justify-center items-center gap-4 mb-4">
         <SettingsButton text="Budgets" />
         <SettingsButton text="Account" />
@@ -978,7 +1032,7 @@ export default function Settings() {
         </View>
       )}
       <View className="overflow-y-scroll  flex flex-col items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
-        <LogoutButton user={user!} onPress={() => signout()} />
+        <LogoutButton user={user!} onPress={handleLogOut} />
 
         {showBudgets && (
           <>
@@ -1105,7 +1159,7 @@ export default function Settings() {
         )}
 
         {user && showAccountSettings && (
-          <>
+          <View className="w-full mt-4 h-fit">
             {/* If the user doesn't yet have a password and has signed in with one of current provider */}
             {currentProviderTypes.includes(providerType) && !hasPassword && (
               <CreateLoginWithEmail onDone={() => handleAddPassword()} />
@@ -1120,79 +1174,9 @@ export default function Settings() {
               />
             )}
             <DeleteAccountButton />
-          </>
+          </View>
         )}
       </View>
-
-      {showDeleteAccountConfirm && (
-        <View className="bg-my-black-dark">
-          <View className="w-full text-center">
-            {!deletePasswordStep ? (
-              <View className="flex flex-col items-center justify-center w-full">
-                <MyText className="text-xl text-my-red-light font-bold mb-4">
-                  Are you sure?
-                </MyText>
-                <MyText className="text-my-white-light mb-2">
-                  This will permanently delete your account and all your data
-                  (envelopes, payments, backups).
-                </MyText>
-                <MyText className="text-my-white-dark text-sm">
-                  This cannot be undone.
-                </MyText>
-                <MyText className="text-my-white-dark text-sm mt-4">
-                  To confirm, you may see a Google sign-in window or be asked
-                  for your password, depending on how you signed up.
-                </MyText>
-              </View>
-            ) : (
-              <View className="flex flex-col items-center justify-center w-full">
-                <MyText className="text-xl text-my-red-light font-bold mb-4">
-                  Enter your password
-                </MyText>
-                <MyText className="text-my-white-light mb-2">
-                  Confirm your identity to delete your account.
-                </MyText>
-                <Input
-                  id="deletePassword"
-                  label="Password"
-                  placeholder="Enter your password"
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e)}
-                />
-              </View>
-            )}
-            {isDeletingAccount && (
-              <MyText className="text-my-white-dark text-sm mt-4">
-                Deleting…
-              </MyText>
-            )}
-          </View>
-          <Btn
-            color="red"
-            text="Delete account"
-            disabled={
-              isDeletingAccount ||
-              (deletePasswordStep && !deletePassword.trim())
-            }
-            onPress={() =>
-              handleDeleteAccount(
-                deletePasswordStep ? deletePassword : undefined,
-              )
-            }
-          />
-          <Btn
-            color="red"
-            text="Camcel"
-            onPress={() => {
-              if (!isDeletingAccount) {
-                setShowDeleteAccountConfirm(false);
-                setDeletePasswordStep(false);
-                setDeletePassword("");
-              }
-            }}
-          />
-        </View>
-      )}
-    </View>
+    </ScrollView>
   );
 }

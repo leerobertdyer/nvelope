@@ -17,6 +17,7 @@ import { MyText } from "./MyText";
 import Btn from "./Buttons/Btn";
 import { Interval } from "../types";
 import { MONTHLY } from "../constants";
+import Toast from "react-native-toast-message";
 const { Timestamp } = firebase;
 
 export default function FirstTimeSetup() {
@@ -44,7 +45,10 @@ export default function FirstTimeSetup() {
     setIsSubmitting(true);
     const ok = await completeDemoWithDefaults(user);
     if (!ok) {
-      console.error("Could not continue. Please try again.", "error"); //TODO: Notifications
+      Toast.show({
+        type: "error",
+        text1: "Could not continue. Please try again",
+      });
       setIsSubmitting(false);
       return;
     }
@@ -63,16 +67,16 @@ export default function FirstTimeSetup() {
     const date = new Date(newPayDate);
 
     if (!date || !(date instanceof Date) || !interval) {
-      console.error(
-        "Please select your last pay date and how often you're paid.",
-        "error",
-      ); // TODO: Notifications
+      Toast.show({
+        type: "error",
+        text1: "Please select your last pay date and how often you're paid.",
+      });
       return;
     }
     setIsSubmitting(true);
     const budgetId = await createFirstBudget(user);
     if (!budgetId) {
-      console.error("Could not create account. Please try again.", "error"); // TODO: Notifications
+      Toast.show({type: "error", text1: "Could not create account. Please try again."}); 
       setIsSubmitting(false);
       return;
     }
@@ -81,7 +85,7 @@ export default function FirstTimeSetup() {
       await editPayPeriodInterval(interval, budgetId);
     } catch (e) {
       console.error("FirstTimeSetup save failed:", e);
-      console.error("Something went wrong. Please try again.", "error"); // TODO: Notifications
+      Toast.show({type: "error", text1: "Something went wrong. Please try again."});
       setIsSubmitting(false);
       return;
     }

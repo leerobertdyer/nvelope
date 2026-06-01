@@ -9,6 +9,7 @@ import Input from "../Input";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import Btn from "../Buttons/Btn";
+import Toast from "react-native-toast-message";
 
 interface LoginError {
   code: string;
@@ -18,7 +19,6 @@ interface LoginError {
 export default function LoginForm() {
   const { isNewUser } = useDatabase();
   const { setUser } = useAuth();
-  // const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -28,8 +28,7 @@ export default function LoginForm() {
 
   async function loginOrSignup() {
     if (!email.trim() || !password) {
-      // showToast("Please enter email and password", "error");
-      console.warn("TODO: Notifications");
+      Toast.show({ type: "error", text1: "Please enter email and password" });
       return;
     }
     setIsLoading(true);
@@ -41,8 +40,7 @@ export default function LoginForm() {
       if (loggedInUser) {
         setUser(loggedInUser);
         if (!isNewUser) {
-          // showToast("Welcome back");
-          console.warn("TODO: Notifications");
+          Toast.show({ type: "success", text1: "Welcome back" });
         }
       }
     } catch (error: unknown) {
@@ -55,22 +53,23 @@ export default function LoginForm() {
           const newUser = await createUserEmailPass(email.trim(), password);
           if (newUser) {
             setUser(newUser);
-            // showToast("Welcome back");
-            console.warn("TODO: Notifications");
+            Toast.show({ type: "success", text1: "Welcome back" });
           }
         } catch (signupError: unknown) {
           const signupCode = (signupError as LoginError).code;
-          // showToast(
-          //   signupCode === "auth/email-already-in-use"
-          //     ? "An account with this email already exists. Sign in with your password or use Forgot password."
-          //     : "Something went wrong. Please try again.",
-          //   "error",
-          // );
-          console.warn("TODO: Notifications");
+          Toast.show({
+            type: "error",
+            text1:
+              signupCode === "auth/email-already-in-use"
+                ? "An account with this email already exists. Sign in with your password or use Forgot password."
+                : "Something went wrong. Please try again.",
+          });
         }
       } else {
-        // showToast("Something went wrong. Please try again.", "error");
-        console.warn("TODO: Notifications");
+        Toast.show({
+          type: "error",
+          text1: "Something went wrong. Please try again.",
+        });
       }
     } finally {
       setIsLoading(false);
@@ -80,27 +79,26 @@ export default function LoginForm() {
   async function handleForgotPassword() {
     const emailToUse = showForgotPassword ? forgotEmail.trim() : email.trim();
     if (!emailToUse) {
-      // showToast("Please enter an email address", "error");
-      console.warn("TODO: Notifications");
-
+      Toast.show({ type: "error", text1: "Please enter an email address" });
       return;
     }
     setIsSendingReset(true);
     try {
       await sendPasswordResetEmailToUser(emailToUse);
-      // showToast(
-      //   "If an account exists for this email, check your inbox and spam folder for the reset link.",
-      // );
-      console.warn("TODO: Notifications");
+      Toast.show({
+        type: "info",
+        text1:
+          "If an account exists for this email, check your inbox and spam folder for the reset link.",
+      });
       setShowForgotPassword(false);
       setForgotEmail("");
     } catch (err: unknown) {
       console.error("Password reset failed:", err);
-      // showToast(
-      //   "Could not send reset email. Check the email address and try again.",
-      //   "error",
-      // );
-      console.warn("TODO: Notifications");
+      Toast.show({
+        type: "error",
+        text1:
+          "Could not send reset email. Check the email address and try again.",
+      });
     } finally {
       setIsSendingReset(false);
     }

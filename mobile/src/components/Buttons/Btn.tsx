@@ -23,7 +23,7 @@ export default function Btn({
       case "BLUE":
         return "bg-my-blue-dark text-my-blue-light";
       case "GREEN":
-        return "bg-my-green-light text-my-black-dark";
+        return "bg-my-green-base text-my-black-dark";
       default:
         return "bg-my-white-base text-my-black-base";
     }
@@ -33,7 +33,7 @@ export default function Btn({
     <Pressable
       disabled={disabled}
       className={`rounded-lg h-[4.5rem] w-[80%] max-w-[20rem] p-2 cursor-pointer border-2 items-center justify-center m-auto
-          disabled:opacity-60 disabled:cursor-not-allowed
+          disabled:opacity-60
               ${bgColor()}`}
       onPress={onPress}
     >

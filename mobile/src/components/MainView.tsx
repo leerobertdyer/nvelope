@@ -43,6 +43,7 @@ import Btn from "./Buttons/Btn";
 import AddCashToEnvelopeForm from "./Forms/AddCashToEnvelopeForm";
 import Header from "./Nav/Header";
 import { useNavigation } from "@react-navigation/native";
+import Toast from "react-native-toast-message";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -50,7 +51,6 @@ export default function MainView() {
   const navigation = useNavigation();
   const activeBudgetName =
     budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
-  //   const { showToast } = useToast(); //TODO NOtifications
   const {
     totalSpendingBudget,
     setTotalSpendingBudget,
@@ -138,9 +138,7 @@ export default function MainView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
     setDueFundPayment(null);
-    // showToast(`${payment.name} marked as paid!`);
-    //TODO: Notification
-    console.warn("TODO: Use Notifications");
+    Toast.show({type: "success", text1: `${payment.name} marked as paid!`});
   }
 
   // Handler for extending a Fund payment's target date
@@ -156,9 +154,7 @@ export default function MainView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
     setDueFundPayment(null);
-    // showToast(`${payment.name} extended by 1 month`);
-    //TODO: Notification
-    console.warn("TODO: Use Notifications");
+    Toast.show({type: "success", text1: `${payment.name} extended by 1 month`});
   }
 
   // Handler for dismissing the Fund due modal (remind later)
@@ -193,9 +189,7 @@ export default function MainView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
     resetPaymentState();
-    // showToast("Payment deleted");
-    //TODO: Notification
-    console.warn("TODO: Use Notifications");
+    Toast.show({type: "success", text1: "Payment deleted"});
   }
 
   function handleAddPayment() {
@@ -373,9 +367,7 @@ export default function MainView() {
     );
     if (paidOffPayment && paidOffPayment.amount != null) {
       setPaidOffDebtName(paidOffPayment.name);
-      //   showToast(`${paidOffPayment.name} paid off!`);
-      //TODO: Notification
-      console.warn("TODO: Use Notifications");
+        Toast.show({type: "success", text1: `${paidOffPayment.name} paid off!`});
       const {
         updatedPayments: paymentsWithBakedSnowball,
         nextTargetId: nextId,
@@ -420,9 +412,7 @@ export default function MainView() {
       setTotalSpendingBudget,
     );
     resetState();
-    // showToast("Envelope created");
-    //TODO: Notification
-    console.warn("TODO: Use Notifications");
+    Toast.show({type: "success", text1: "Envelope created"});
   }
 
   async function handleSetShowSpendingPage(e: Envelope) {
@@ -440,15 +430,11 @@ export default function MainView() {
       setEnvelopes(newEnvelopes);
       await editEnvelopes(newEnvelopes, activeBudgetId!);
       resetState();
-      //   showToast("Envelope deleted");
-      //TODO: Notification
-      console.warn("TODO: Use Notifications");
+        Toast.show({type: "success", text1: "Envelope deleted"});
     } catch (error) {
       console.error("Error deleting envelope:", error);
       setShowLoading(false);
-      //   showToast("Failed to delete envelope", "error");
-      //TODO: Notification
-      console.warn("TODO: Use Notifications");
+        Toast.show({type: "error", text1: "Failed to delete envelope"});
     }
   }
 
@@ -478,15 +464,11 @@ export default function MainView() {
       setEnvelopes(newEnvelopes);
       await editEnvelopes(newEnvelopes, activeBudgetId!);
       resetState();
-      //   showToast("Envelope updated");
-      //TODO: Notification
-      console.warn("TODO: Use Notifications");
+        Toast.show({type: "success", text1: "Envelope updated"};
     } catch (error) {
       console.error("Error editing envelope:", error);
       setShowLoading(false);
-      //   showToast("Failed to update envelope", "error");
-      //TODO: Notification
-      console.warn("TODO: Use Notifications");
+        Toast.show({type: "error", text1: "Failed to update envelope"});
     }
   }
 
@@ -543,9 +525,7 @@ export default function MainView() {
   async function handleResetNvelopes() {
     if (!activeBudgetId) return;
     await resetAllNvelopes(envelopes, setEnvelopes, activeBudgetId);
-    // showToast("Envelopes cleared");
-    //TODO: Notification
-    console.warn("TODO: Use Notifications");
+    Toast.show({type: "success", text1: "Envelopes cleared"});
   }
 
   async function addCashToDb() {
@@ -567,9 +547,7 @@ export default function MainView() {
     );
     setTotalSpendingBudget(totalSpendingBudget + cashAmount);
     resetState();
-    // showToast("Cash added to budget");
-    //TODO: Notification
-    console.warn("TODO: Use Notifications");
+    Toast.show({type: "success", text1: "Cash added to budget"});
   }
 
   function handleAddCashToEnvelope(envelope: Envelope) {
@@ -593,9 +571,7 @@ export default function MainView() {
     );
     await editEnvelopes(newEnvelopes, activeBudgetId!);
     setEnvelopes(newEnvelopes);
-    // showToast(`${cashAmount} added to ${n.name}`);
-    //TODO: Notification
-    console.warn("TODO: Use Notifications");
+    Toast.show({type: "success", text1: `${cashAmount} added to ${n.name}`});
     resetState();
   }
 

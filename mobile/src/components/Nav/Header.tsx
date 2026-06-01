@@ -85,7 +85,7 @@ export default function Header({
         </MyText>
         <NavMenu showMenu={showMenu} setShowMenu={setShowMenu} links={links} />
       </View>
-      <View className="h-[4rem] w-full"></View>
+      <View className="h-[1rem] w-full"></View>
     </>
   );
 }
