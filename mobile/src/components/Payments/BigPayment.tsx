@@ -166,12 +166,11 @@ export default function BigPayment({
         <View className="flex-col justify-center items-center gap-2 w-full">
           <Btn color="gold" onPress={() => updatePaid()}>
             <View className="flex-row items-center justify-center gap-8">
-              <FontAwesome6
-                name="sack-dollar"
-                color="white"
-                className={`p-2 ${!p.paid && "border-2"} rounded-md bg-my-green-dark text-white border-my-black-dark`}
-                size={20}
-              />
+              <View
+                className={`justify-center items-center ${!p.paid && "border-2"} rounded-md bg-my-green-dark text-white border-my-black-dark w-[3rem] h-[3rem]`}
+              >
+                <FontAwesome6 name="sack-dollar" color="white" size={24} />
+              </View>
               <MyText className="text-xs w-[50%]">
                 Mark As {!p.paid ? "Paid" : "Not Paid"}
               </MyText>
@@ -184,12 +183,9 @@ export default function BigPayment({
             }}
           >
             <View className="flex-row items-center justify-center gap-8">
-              <EvilIcons
-                name="pencil"
-                color="black"
-                className="p-2 border-2 rounded-md bg-my-white-base text-black border-my-black-dark"
-                size={20}
-              />
+              <View className="justify-center items-center border-2 rounded-md bg-my-white-base text-black border-my-black-dark w-[3rem] h-[3rem]">
+                <EvilIcons name="pencil" color="black" size={33} />
+              </View>
               <MyText className="text-xs w-[50%]">Manually Edit Payment</MyText>
             </View>
           </Btn>
@@ -203,12 +199,9 @@ export default function BigPayment({
               }}
             >
               <View className="flex-row items-center justify-center gap-8">
-                <Ionicons
-                  name="add-circle"
-                  size={27}
-                  color="black"
-                  className="p-1 border-2 rounded-md bg-my-green-dark text-white border-my-black-dark"
-                />
+                <View className="justify-center items-center border-2 rounded-md bg-my-green-dark text-white border-my-black-dark w-[3rem] h-[3rem]">
+                  <Ionicons name="add-circle" size={27} color="white" />
+                </View>
                 <MyText className="text-xs w-[50%]">Extra Payment</MyText>
               </View>
             </Btn>
@@ -220,12 +213,9 @@ export default function BigPayment({
             }}
           >
             <View className="flex-row items-center justify-center gap-8">
-              <FontAwesome
-                name="trash"
-                color="white"
-                className="p-2 border-2 rounded-md bg-my-red-base border-my-white-light"
-                size={20}
-              />
+              <View className="w-[3rem] h-[3rem] items-center justify-center bg-my-red-base border-2 border-my-white-light rounded-md">
+                <FontAwesome name="trash" color="white" size={25} />
+              </View>
               <MyText className="text-xs w-[50%] text-my-white-light">
                 Delete Payment
               </MyText>

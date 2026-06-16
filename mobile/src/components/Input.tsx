@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, TextInput } from "react-native";
+import { View, TextInput } from "react-native";
+import { MyText } from "./MyText";
 
 interface ITextInput {
   id?: string;
@@ -24,7 +25,7 @@ export default function Input({
   return (
     // self-center ensures the w-[90%] centers itself within its parent container
     <View className="w-[90%] h-fit flex flex-col gap-2 items-center justify-center self-center">
-      {label && <Text className="p-2 w-full text-center">{label}</Text>}
+      {label && <MyText className="p-2 w-full text-center">{label}</MyText>}
       <TextInput
         ref={ref}
         className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark text-center"

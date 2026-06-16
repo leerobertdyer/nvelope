@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import Feather from "@expo/vector-icons/Feather";
-import { Button, Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Envelope } from "../../types";
 import NvelopeCalculator from "./NvelopeCalculator";
 import EnvelopeForm from "../Forms/EnvelopeForm";
 import Svg, { Line } from 'react-native-svg'
 import Hr from "../Hr";
+import { MyText } from "../MyText";
+import Btn from "../Buttons/Btn";
 
 interface NvelopeProps {
   kind:
@@ -71,16 +73,16 @@ export default function Nvelope({
           <View
           className="flex flex-col bg-my-red-dark w-screen h-screen justify-center items-center "
           >
-            <Text
+            <MyText
             className="p-4 rounded-md text-my-white-dark w-full text-center"
             >
               Are you sure you want to delete {envelope.name}?
-            </Text>
-            <Text
+            </MyText>
+            <MyText
             className="text-xs w-[85%] text-center text-white"
             >
               This will not affect your available budget.
-            </Text>
+            </MyText>
             <View
             className="w-[30rem] h-[50rem] rounded-md py-[1rem] px-[3.5rem] flex justify-center items-center flex-col gap-8"
             >
@@ -90,13 +92,13 @@ export default function Nvelope({
                 color="red"
                 className="w-[12rem] h-[12rem] text-my-white-light"
               />
-              <Button
-                title="Delete"
+              <Btn
+                text="Delete"
                 onPress={() => handleDeleteEnvelope?.()}
                 color="gold"
               />
-              <Button
-                title="Cancel"
+              <Btn
+                text="Cancel"
                 onPress={() => handleBack?.()}
                 color="green"
               />
@@ -146,11 +148,11 @@ export default function Nvelope({
         className={`w-fit relative  cursor-pointer bg-white border hover:bg-my-white-dark hover:text-my-green-dark rounded-sm `}
         onPress={() => onPress?.()}
         >
-          <Text
+          <MyText
           className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center text-sm"
           >
             {envelope.name}
-          </Text>
+          </MyText>
           <Svg width={dottedWidth} height={dottedHeight}>
             {/* Bottom Line */}
             <Line
@@ -226,22 +228,22 @@ export default function Nvelope({
         <View
         className="w-[35vw] h-[35vw] relative"
         >
-          <Text
+          <MyText
           className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-2 text-[.6rem]"
           >
             {envelope.name}
-          </Text>
-          <Text
+          </MyText>
+          <MyText
           className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-10 text-[.65rem]"
           >
             ${envelope.spent}
-          </Text>
+          </MyText>
           <Hr/>
-          <Text
+          <MyText
           className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-14 text-[.65rem]"
           >
             ${envelope.total}
-          </Text>
+          </MyText>
           <FontAwesome
             name="envelope-o"
             size={24}

@@ -41,28 +41,28 @@ export default function AddIncomeForm({
   return (
     <>
       {showLoading && <Loading text={loadingText} />}
-      <View>
+      <View className="bg-my-white-dark h-full">
         <MyText className="text-center w-full text-my-white-light p-2 text-3xl mb-4">
           Add Income
         </MyText>
-        <View className="bg-my-green-dark rounded-md text-my-white-light w-[90vw] md:w-[30rem] m-auto p-4 pb-6 flex flex-col gap-4 items-center">
-          <View className="w-full max-w-[20rem] m-auto h-fit flex flex-col items-center justify-center">
+        <View className="bg-my-green-dark rounded-md text-my-white-light w-[90vw] mx-auto p-4 pb-6 gap-4 ">
+          <View className="w-full m-auto h-fit gap-4 items-center justify-center">
             <MyText className="text-my-white-dark text-lg py-2">
               Add Cash
             </MyText>
-            <MoneyInput
-              label=""
-              id="newCashAmount"
-              placeholder="Amount to add"
-              value={cashAmount}
-              onChange={setCashAmount}
-            />
             <TextInput
               id="newCashName"
               label=""
               value={cashName}
               onChange={(e) => setCashName(e)}
               placeholder="Income Source"
+            />
+            <MoneyInput
+              label=""
+              id="newCashAmount"
+              placeholder="Amount to add"
+              value={cashAmount}
+              onChange={setCashAmount}
             />
           </View>
           {cashAmount > 0 && cashName.length > 0 && (

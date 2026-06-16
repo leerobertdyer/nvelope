@@ -34,7 +34,7 @@ export default function BigEnvelope({
     Number(envelope.total) - Number(envelope.spent)
   ).toFixed(2);
   return (
-    <View className="pt-[2rem] bg-my-white-light w-full overflow-y-auto h-full">
+    <View className="pt-[2rem] bg-my-white-light w-full overflow-y-auto™ h-full">
       <View className="w-full flex flex-col items-center justify-start">
         <View className="p-2 text-lg text-center w-[20rem] rounded-md flex justify-center gap-2 bg-my-black-base">
           <MyText className="text-my-white-dark text-center">

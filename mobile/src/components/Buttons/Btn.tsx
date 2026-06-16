@@ -23,7 +23,7 @@ export default function Btn({
       case "BLUE":
         return "bg-my-blue-dark text-my-blue-light";
       case "GREEN":
-        return "bg-my-green-base text-my-black-dark";
+        return "bg-my-green-light text-my-green-dark";
       default:
         return "bg-my-white-base text-my-black-base";
     }

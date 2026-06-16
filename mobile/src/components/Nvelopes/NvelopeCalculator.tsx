@@ -5,6 +5,8 @@ import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import MoneyInput from "../Payments/MoneyInput";
+import { MyText } from "../MyText";
+import Btn from "../Buttons/Btn";
 
 interface NvelopeCalculatorProps {
   handleEnterAmount: (amount: number, envelope: Envelope) => void;
@@ -45,26 +47,24 @@ export default function NvelopeCalculator({
 
   return (
     <View className="absolute inset-0 bg-my-black-base text-my-white-dark flex items-center justify-center flex-col gap-5">
-      <div className="w-full flex flex-col justify-center items-center gap-2">
+      <View className="w-full flex flex-col justify-center items-center gap-2">
         {envelope && (
-          <p className="w-full text-center text-my-white-light">
-            <span className="text-my-white-dark">"{envelope.name}"</span>{" "}
+          <MyText className="w-full text-center text-my-white-light">
+            <MyText className="text-my-white-dark">"{envelope.name}"</MyText>{" "}
             balance:
-            <span className="text-my-green-light ml-2">
+            <MyText className="text-my-green-light ml-2">
               $
               {(
                 Number(envelope?.total) -
                 Number(envelope?.spent) -
                 amount
               ).toFixed(2)}
-            </span>
-          </p>
+            </MyText>
+          </MyText>
         )}
 
-        <Button onPress={spendAll} color="gold">
-          Spend All
-        </Button>
-        <div className="w-full max-w-[20rem] flex flex-col justify-center items-center gap-4">
+        <Btn text="Spend All" onPress={spendAll} color="gold" />
+        <View className="w-full max-w-[20rem] flex flex-col justify-center items-center gap-4">
           <MoneyInput
             id="newAmountForEnvelope"
             label="Amount To Spend"
@@ -72,14 +72,18 @@ export default function NvelopeCalculator({
             onChange={handleSetAmount}
             placeholder={`$5 from ${envelope?.name ?? ""}`}
           />
-        </div>
+        </View>
         {selectEnvelope && (
           <Picker
             selectedValue={selectedEnvelope?.id || ""}
             className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-[80%] max-w-[20rem] text-my-black-dark"
             onValueChange={(itemValue) => handleSetEnvelope(itemValue)}
           >
-            <Picker.Item label="Select an envelope" enabled={false} value="java" />
+            <Picker.Item
+              label="Select an envelope"
+              enabled={false}
+              value="java"
+            />
             {envelopes.map((envelope) => (
               <Picker.Item
                 key={envelope.id}
@@ -89,18 +93,19 @@ export default function NvelopeCalculator({
             ))}
           </Picker>
         )}
-      </div>
-      <Button
+      </View>
+      <Btn
+        text="Spend"
         onPress={() => {
           handleEnterAmount(amount, selectedEnvelope || envelope!);
         }}
         color="green"
-      >
-        Spend
-      </Button>
-      <Button onPress={() => handleBack?.()} color="red">
-        {selectEnvelope ? "View Nvelopes" : "Cancel"}
-      </Button>
+      />
+      <Btn
+        text={selectEnvelope ? "View Nvelopes" : "Cancel"}
+        onPress={() => handleBack?.()}
+        color="red"
+      />
     </View>
   );
 }

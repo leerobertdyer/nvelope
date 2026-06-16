@@ -465,11 +465,10 @@ export default function PaymentForm({
           <View className="text-my-black-base pb-8 w-full mt-4">
             <View className="text-center mb-4 p-3 bg-my-white-light rounded-md mx-4 items-center">
               <MyText className="text-my-green-dark font-bold">
-                {newPayment?.name}
-              </MyText>{" "}
-              -{" "}
+                {newPayment?.name} {" "}
               <MyText className="text-my-red-dark">
                 ${newPayment?.amount.toFixed(2)}
+              </MyText>
               </MyText>
               <View className="text-sm mt-1">
                 {splitBillAcrossPayPeriods ? (

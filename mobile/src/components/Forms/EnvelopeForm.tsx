@@ -5,6 +5,8 @@ import Input from "../Input";
 import MoneyInput from "../Payments/MoneyInput";
 import { MyText } from "../MyText";
 import Btn from "../Buttons/Btn";
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs(false);
 
 interface IProps {
   newEnvelopeName: string;

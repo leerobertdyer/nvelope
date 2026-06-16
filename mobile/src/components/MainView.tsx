@@ -723,7 +723,6 @@ export default function MainView() {
           handleBack={resetState}
           handleDeleteEnvelope={() => deleteEnvelope()}
         />
-        ;
       </>
     );
   }
@@ -738,7 +737,6 @@ export default function MainView() {
           handleSaveEnvelope={saveNewEnvelope}
           handleBack={resetState}
         />
-        ;
       </>
     );
   }
