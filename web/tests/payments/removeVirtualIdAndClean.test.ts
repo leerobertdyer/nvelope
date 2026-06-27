@@ -54,7 +54,6 @@ describe("generateFreshPayment", () => {
     expect(typeof p.id).toBe("string");
     expect(p.name).toBe("");
     expect(p.amount).toBe(0);
-    expect(p.paid).toBe(false);
     expect(p.dueDate).toBeDefined();
     expect(p.dueDate.toDate).toBeDefined();
     expect(p.dueDate.toDate()).toBeInstanceOf(Date);

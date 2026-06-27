@@ -4,6 +4,7 @@ import type { Interval, Payment } from "../../types";
 import { useState } from "react";
 import { editPayments } from "../../firebase/editData";
 import {
+  deriveIsPaid,
   generateFreshPayment,
   isDateInCurrentPayPeriod,
   removeVirtualIdPortion,
@@ -156,8 +157,6 @@ export default function PaymentForm({
 
   async function editPayment() {
     if (!user || !newPayment || !paymentToEdit) return;
-    // If payment is in the interval and we change the price, we need to update the budget
-    const diffAmount = newPayment.amount - paymentToEdit.amount;
     const originalPaymentToEditId = removeVirtualIdPortion(paymentToEdit);
     setPayments((prev) => {
       const updatedPayments = prev.map((p) => {
@@ -169,9 +168,7 @@ export default function PaymentForm({
       if (activeBudgetId) editPayments(updatedPayments, activeBudgetId);
       return updatedPayments;
     });
-    if (paymentToEdit.isInInterval && !paymentToEdit.paid) {
-      await handleUpdateBudget(diffAmount);
-    }
+
     resetForm();
     Toast.show({type: "success", text1: "Payment updated"});
   }
@@ -186,17 +183,6 @@ export default function PaymentForm({
     setPayments(updatedPayments);
     if (!activeBudgetId) return;
     await editPayments(updatedPayments, activeBudgetId);
-    if (
-      payDate &&
-      isDateInCurrentPayPeriod(
-        payPeriodInterval,
-        payDate.toDate(),
-        newPayment.dueDate.toDate(),
-      ) &&
-      !newPayment.paid
-    ) {
-      await handleUpdateBudget(newPayment.amount * -1);
-    }
     Toast.show({type: "success", text1: "Payment added"});
     resetForm();
   }
@@ -241,6 +227,8 @@ export default function PaymentForm({
       ? format(addDays(new Date(), 1), "yyyy-MM-dd")
       : undefined;
 
+  const paymentLabel = selectedPaymentType === "FUND" ? "Funding Goal" : "Payment Amount"
+
   return (
     <ScrollView
       className="flex-[1] bg-my-green-dark"
@@ -254,7 +242,7 @@ export default function PaymentForm({
         </MyText>
         {/* Step 1: Payment Type Selection (for new payments only) */}
         {!selectedPaymentType && !paymentToEdit ? (
-          <View className="w-full flex-1 min-h-0 flex flex-col justify-center px-2">
+          <View className="w-full justify-center px-2 mt-12">
             <PaymentTypeSelector
               onSelect={handleSelectPaymentType}
               onBack={handleClickBack}
@@ -264,14 +252,14 @@ export default function PaymentForm({
           <>
             {/* Show current type with option to change */}
             {!paymentToEdit && (
-              <View className="w-full items-center gap-[1px] mb-2">
+              <View className="w-full items-center gap-[1px] mt-4">
                 <MyText className="text-lg text-my-white-light">
                   Type:{" "}
                   <MyText className="font-bold">{getPaymentTypeLabel()}</MyText>
                 </MyText>
 
-                <Pressable onPress={() => setSelectedPaymentType(null)}>
-                  <MyText className="text-my-blue-light text-xs">Change</MyText>
+                <Pressable className="mb-8" onPress={() => setSelectedPaymentType(null)}>
+                  <MyText className="text-my-blue-light text-xs">(Change)</MyText>
                 </Pressable>
               </View>
             )}
@@ -294,9 +282,7 @@ export default function PaymentForm({
               <View className="flex flex-col items-center w-full mb-4">
                 <MoneyInput
                   id="amount"
-                  label={
-                    selectedPaymentType === "FUND" ? "Target Amount" : "Amount"
-                  }
+                  label={paymentLabel}
                   value={newPayment?.amount ?? 0}
                   onChange={(amount) => {
                     setNewPayment({
@@ -333,12 +319,12 @@ export default function PaymentForm({
               newPayment.amount > 0 &&
               payPeriodInterval !== ("MONTHLY" as Interval) && (
                 <View className="flex-row items-center gap-3 mb-4 w-full justify-center">
-                  <MyText className="text-sm cursor-pointer w-fit">
+                  <MyText className="text-sm w-fit">
                     Split across pay periods
                   </MyText>
 
                   <Pressable
-                    className={`w-5 h-5 rounded-sm cursor-pointer border-2 ${splitBillAcrossPayPeriods ? "bg-black border-white" : "bg-white border-black"}`}
+                    className={`w-5 h-5 rounded-sm border-2 ${splitBillAcrossPayPeriods ? "bg-black border-white" : "bg-white border-black"}`}
                     onPress={() =>
                       handleToggleSplitBill(!splitBillAcrossPayPeriods)
                     }
@@ -349,7 +335,7 @@ export default function PaymentForm({
             {/* Due/Target Date */}
             {newPayment.name && newPayment.amount > 0 && (
               <View className="flex flex-col items-center w-full">
-                <MyText>
+                <MyText className="text-my-white-base">
                   {selectedPaymentType === "FUND"
                     ? "Target Date (when you need the money)"
                     : "Due Date"}
@@ -399,9 +385,6 @@ export default function PaymentForm({
                     }
                     placeholder="Total remaining balance"
                   />
-                  <MyText className="text-xs text-my-blue-dark mt-1">
-                    Track how much you still owe
-                  </MyText>
                 </View>
               )}
 
@@ -410,7 +393,7 @@ export default function PaymentForm({
               newPayment.name &&
               newPayment.amount > 0 && (
                 <View className="flex flex-col items-center w-full mt-4">
-                  <MyText>Interest rate (%) – optional</MyText>
+                  <MyText className="text-my-white-light">Interest rate (%) – optional</MyText>
                   <Input
                     id="interestRate"
                     numeric
@@ -434,7 +417,7 @@ export default function PaymentForm({
               newPayment.name &&
               newPayment.amount > 0 && (
                 <View className="flex flex-col items-center w-full mt-4">
-                  <MyText>Payment Frequency</MyText>
+                  <MyText className="text-my-white-light">Payment Frequency</MyText>
                   <Picker
                     selectedValue={newPayment.interval || ""}
                     onValueChange={(e) =>

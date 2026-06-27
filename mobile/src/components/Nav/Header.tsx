@@ -78,7 +78,7 @@ export default function Header({
         </MyText>
         <MyText
           onPress={() => setShowEditSpendingBudget(true)}
-          className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light cursor-pointer hover:opacity-80 transition-opacity
+          className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
             ${totalSpendingBudget <= 0 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
         >
           ${totalSpendingBudget.toFixed(2)}

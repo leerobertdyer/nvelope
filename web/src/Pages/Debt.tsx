@@ -352,7 +352,7 @@ export default function Debt() {
                     <span className="text-my-white-light">Snowball ❄️</span>
                     <span className="text-my-white-dark">${snowball.toFixed(2)}</span>
                 </div>
-                <button className="text-xs text-my-blue-light cursor-pointer" onClick={() => setShowEditSnowball(true)}>Edit</button>
+                <button className="text-xs text-my-blue-light" onClick={() => setShowEditSnowball(true)}>Edit</button>
             </div>
             {snowballPayoffDateStr && (
                 <div className="bg-my-black-base p-2 rounded-md text-my-green-light mb-[1rem] w-[20rem] text-center">

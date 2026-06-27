@@ -194,7 +194,6 @@ function transformBillsToPayments(bills: Bill[]): Payment[] {
     paymentsMap.push({
       id: randomUUID(),
       interval: i,
-      paid: b.paid,
       dueDate: b.originalDate,
       name: b.name,
       amount: b.amount,

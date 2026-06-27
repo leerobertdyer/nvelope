@@ -17,7 +17,7 @@ export default function ShowHideButton({
       <View
         className={`text-xs rounded-xl
           ${theme === "DARK" ? "bg-my-black-dark text-my-white-dark" : "bg-my-white-base text-my-black-dark"} 
-          cursor-pointer  p-[1px] rounded-sm border-[1px] border-my-white-light`}
+           p-[1px] rounded-sm border-[1px] border-my-white-light`}
       >
         <View>
           {isShown ? (

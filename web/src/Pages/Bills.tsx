@@ -134,7 +134,7 @@ export default function Bills() {
               tabIndex={0}
               onClick={() => setEditingBill(bill)}
               onKeyDown={(e) => e.key === "Enter" && setEditingBill(bill)}
-              className="grid grid-cols-12 gap-2 py-2 px-1 -mx-1 rounded cursor-pointer hover:bg-my-black-light text-my-white-light text-xs md:text-sm"
+              className="grid grid-cols-12 gap-2 py-2 px-1 -mx-1 rounded text-my-white-light text-xs md:text-sm"
             >
               <span className="col-span-5 text-left truncate">{bill.name}</span>
               <span className="col-span-3 text-left text-my-white-base">

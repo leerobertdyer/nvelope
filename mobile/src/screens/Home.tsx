@@ -67,7 +67,7 @@ export default function Home() {
             This error occurred to protect your data. Please do not continue
             until this is resolved.
           </MyText>
-          <View className="bg-my-red-base text-my-white-dark px-6 py-2 rounded-md hover:bg-my-blue-light">
+          <View className="bg-my-red-base text-my-white-dark px-6 py-2 rounded-md">
             <Btn color="gold" onPress={() => window.location.reload()}>Refresh Page</Btn>
           </View>
         </View>

@@ -136,7 +136,7 @@ export default function FirstTimeSetup() {
         </View>
         {newPayDate && (
           <>
-            <MyText className="text-center text-base sm:text-lg text-white">
+            <MyText className="text-center text-base text-white">
               How often are you paid?
             </MyText>
             <MyText className="text-center text-sm text-my-white-dark">

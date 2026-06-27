@@ -145,7 +145,7 @@ export default function Nvelope({
     case "dash":
       return (
         <Pressable
-        className={`w-fit relative  cursor-pointer bg-white border hover:bg-my-white-dark hover:text-my-green-dark rounded-sm `}
+        className={`w-fit relative bg-white border rounded-sm `}
         onPress={() => onPress?.()}
         >
           <MyText

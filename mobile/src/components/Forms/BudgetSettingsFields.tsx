@@ -7,7 +7,7 @@ import { MyText } from "../MyText";
 import { format } from "date-fns";
 
 const cardClass =
-  "hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark animate-glow shadow-lg shadow-my-black-dark mb-4";
+  "flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark animate-glow shadow-lg shadow-my-black-dark mb-4";
 
 export interface BudgetSettingsFieldsProps {
   /** "create" = interval + pay date only; "edit" = Edit Remaining Balance card + interval + pay date */
@@ -45,7 +45,7 @@ export default function BudgetSettingsFields({
         <Pressable className={cardClass} onPress={onEditRemainingBalance}>
           <FontAwesome
             name="pencil-square-o"
-            className="cursor-pointer border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-dark text-my-black-dark p-[2px] border-my-black-dark"
+            className="border-2 rounded-md w-[2rem] h-[2rem] bg-my-white-dark text-my-black-dark p-[2px] border-my-black-dark"
           />
           <MyText className="text-sm">Edit Remaining Balance</MyText>
         </Pressable>

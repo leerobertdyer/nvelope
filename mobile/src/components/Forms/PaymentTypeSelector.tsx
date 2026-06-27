@@ -29,15 +29,15 @@ export default function PaymentTypeSelector({
     shrink-0`}
     >
       <Btn color="gold" onPress={() => onSelect("BILL")} text="BILL">
-        <MyText className="text-xs">Utilities, Subscriptions, Rent...</MyText>
+        <MyText className="text-xs text-gray-700">Utilities, Subscriptions, Rent...</MyText>
       </Btn>
 
       <Btn color="blue" onPress={() => onSelect("DEBT")} text='DEBT'>
-        <MyText className="text-xs">Loans, Credit Cards, etc.</MyText>
+        <MyText className="text-xs text-gray-700">Loans, Credit Cards, etc.</MyText>
       </Btn>
 
       <Btn color="green" onPress={() => onSelect("FUND")} text="FUND">
-        <MyText className="text-xs">Planned expenses</MyText>
+        <MyText className="text-xs text-gray-300">Planned expenses</MyText>
       </Btn>
 
       {onSkip && <Btn color="green" onPress={onSkip} text={skipText}></Btn>}

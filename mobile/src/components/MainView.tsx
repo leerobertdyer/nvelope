@@ -18,6 +18,7 @@ import Nvelope from "../../../mobile/src/components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
   applyPayoffRoll,
+  deriveIsPaid,
   getCurrentIntervalDateRange,
   getVirtualPaymentsForCurrentPeriod,
   randomUUID,
@@ -116,7 +117,7 @@ export default function MainView() {
       if (p.type !== "FUND") return false;
       if (dismissedDuePayments.has(p.id)) return false;
       const dueDate = startOfDay(p.dueDate.toDate());
-      return dueDate <= today && !p.paid;
+      return dueDate <= today && !deriveIsPaid(p);
     });
 
     if (duePayment && !dueFundPayment) {
@@ -138,7 +139,7 @@ export default function MainView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
     setDueFundPayment(null);
-    Toast.show({type: "success", text1: `${payment.name} marked as paid!`});
+    Toast.show({ type: "success", text1: `${payment.name} marked as paid!` });
   }
 
   // Handler for extending a Fund payment's target date
@@ -154,7 +155,10 @@ export default function MainView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
     setDueFundPayment(null);
-    Toast.show({type: "success", text1: `${payment.name} extended by 1 month`});
+    Toast.show({
+      type: "success",
+      text1: `${payment.name} extended by 1 month`,
+    });
   }
 
   // Handler for dismissing the Fund due modal (remind later)
@@ -189,7 +193,7 @@ export default function MainView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
     resetPaymentState();
-    Toast.show({type: "success", text1: "Payment deleted"});
+    Toast.show({ type: "success", text1: "Payment deleted" });
   }
 
   function handleAddPayment() {
@@ -214,46 +218,21 @@ export default function MainView() {
     const updatedPayments = payments.map((p) => {
       if (p.id !== originalId) return p;
 
-      // DEBT: mark paid subtracts from total; mark unpaid adds it back (store amount in paidAmounts)
-      if (p.type === "DEBT") {
-        const occurrenceKey =
-          p.interval === "WEEKLY" ||
-          p.interval === "BIWEEKLY" ||
-          p.interval === "SPLIT"
-            ? startOfDay(payment.dueDate.toDate()).getTime().toString()
-            : "monthly";
+      // DEBT && FUND: mark paid subtracts from total; mark unpaid adds it back (store amount in paidAmounts)
+      if (p.type === "DEBT" || p.type === "FUND") {
+        const occurrenceKey = startOfDay(payment.dueDate.toDate())
+          .getTime()
+          .toString();
         const paidDates = p.paidDates || [];
         const paidAmounts = { ...(p.paidAmounts || {}) };
-        const occurrenceTime =
-          occurrenceKey === "monthly"
-            ? null
-            : startOfDay(payment.dueDate.toDate()).getTime();
-        const alreadyPaid =
-          occurrenceKey === "monthly"
-            ? p.paid
-            : paidDates.some(
-                (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
-              );
-
+        const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
+        const alreadyPaid = paidDates.some(
+          (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
+        );
         if (alreadyPaid) {
           const amountToAddBack = paidAmounts[occurrenceKey] ?? 0;
           delete paidAmounts[occurrenceKey];
           const newTotal = Math.max(0, (p.total ?? 0) + amountToAddBack);
-          if (occurrenceKey === "monthly") {
-            const monthlyOccurrenceTime = startOfDay(
-              payment.dueDate.toDate(),
-            ).getTime();
-            return {
-              ...p,
-              total: newTotal,
-              paid: false,
-              paidAmounts,
-              paidDates: paidDates.filter(
-                (pd) =>
-                  startOfDay(pd.toDate()).getTime() !== monthlyOccurrenceTime,
-              ),
-            };
-          }
           return {
             ...p,
             total: newTotal,
@@ -295,18 +274,6 @@ export default function MainView() {
         const newTotal = Math.max(0, (p.total ?? 0) - amountToApply);
         paidAmounts[occurrenceKey] = amountToApply;
 
-        if (occurrenceKey === "monthly") {
-          return {
-            ...p,
-            total: newTotal,
-            paid: true,
-            paidAmounts,
-            paidDates: [
-              ...paidDates,
-              Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
-            ],
-          };
-        }
         return {
           ...p,
           total: newTotal,
@@ -340,7 +307,6 @@ export default function MainView() {
         return {
           ...p,
           paidDates: newPaidDates,
-          paid: false,
         };
       }
       return {
@@ -349,7 +315,6 @@ export default function MainView() {
           ...paidDates,
           Timestamp.fromDate(startOfDay(occurrenceDate)),
         ],
-        paid: true,
       };
     });
 
@@ -367,7 +332,10 @@ export default function MainView() {
     );
     if (paidOffPayment && paidOffPayment.amount != null) {
       setPaidOffDebtName(paidOffPayment.name);
-        Toast.show({type: "success", text1: `${paidOffPayment.name} paid off!`});
+      Toast.show({
+        type: "success",
+        text1: `${paidOffPayment.name} paid off!`,
+      });
       const {
         updatedPayments: paymentsWithBakedSnowball,
         nextTargetId: nextId,
@@ -412,7 +380,7 @@ export default function MainView() {
       setTotalSpendingBudget,
     );
     resetState();
-    Toast.show({type: "success", text1: "Envelope created"});
+    Toast.show({ type: "success", text1: "Envelope created" });
   }
 
   async function handleSetShowSpendingPage(e: Envelope) {
@@ -430,11 +398,11 @@ export default function MainView() {
       setEnvelopes(newEnvelopes);
       await editEnvelopes(newEnvelopes, activeBudgetId!);
       resetState();
-        Toast.show({type: "success", text1: "Envelope deleted"});
+      Toast.show({ type: "success", text1: "Envelope deleted" });
     } catch (error) {
       console.error("Error deleting envelope:", error);
       setShowLoading(false);
-        Toast.show({type: "error", text1: "Failed to delete envelope"});
+      Toast.show({ type: "error", text1: "Failed to delete envelope" });
     }
   }
 
@@ -464,11 +432,11 @@ export default function MainView() {
       setEnvelopes(newEnvelopes);
       await editEnvelopes(newEnvelopes, activeBudgetId!);
       resetState();
-        Toast.show({type: "success", text1: "Envelope updated"});
+      Toast.show({ type: "success", text1: "Envelope updated" });
     } catch (error) {
       console.error("Error editing envelope:", error);
       setShowLoading(false);
-        Toast.show({type: "error", text1: "Failed to update envelope"});
+      Toast.show({ type: "error", text1: "Failed to update envelope" });
     }
   }
 
@@ -522,10 +490,15 @@ export default function MainView() {
     setIsAddingCash(true);
   }
 
-  async function handleResetNvelopes() {
+  async function handleResetEnvelopesAndPaid() {
+    setShowClearNvelopes(false);
     if (!activeBudgetId) return;
+    const paymentsMarkedPaid = payments.map((p) => {
+      return { ...p, paidDates: [], paidAmounts: {} };
+    });
     await resetAllNvelopes(envelopes, setEnvelopes, activeBudgetId);
-    Toast.show({type: "success", text1: "Envelopes cleared"});
+    await editPayments(paymentsMarkedPaid, activeBudgetId);
+    Toast.show({ type: "success", text1: "Envelopes and Payments reset" });
   }
 
   async function addCashToDb() {
@@ -547,7 +520,7 @@ export default function MainView() {
     );
     setTotalSpendingBudget(totalSpendingBudget + cashAmount);
     resetState();
-    Toast.show({type: "success", text1: "Cash added to budget"});
+    Toast.show({ type: "success", text1: "Cash added to budget" });
   }
 
   function handleAddCashToEnvelope(envelope: Envelope) {
@@ -571,7 +544,7 @@ export default function MainView() {
     );
     await editEnvelopes(newEnvelopes, activeBudgetId!);
     setEnvelopes(newEnvelopes);
-    Toast.show({type: "success", text1: `${cashAmount} added to ${n.name}`});
+    Toast.show({ type: "success", text1: `${cashAmount} added to ${n.name}` });
     resetState();
   }
 
@@ -587,15 +560,21 @@ export default function MainView() {
           totals/spent to <MyText className="text-my-green-base">$0.00</MyText>,
         </MyText>
         <MyText className="text-my-white-light">
-          and set them all to "unpaid" status.
+          and
+          <MyText className="text-my-red-light"> ALL Payments</MyText> to
+          <MyText className="text-gray-400"> unpaid</MyText>.
         </MyText>
         <MyText className="text-my-white-light">
           Your budget total will be unaffected.
         </MyText>
-        <View className="w-full mt-8">
-          <Btn color="red" text="Clear" onPress={handleResetNvelopes} />
+        <View className="w-full mt-8 gap-4">
           <Btn
-            color="green"
+            color="gold"
+            text="Clear"
+            onPress={handleResetEnvelopesAndPaid}
+          />
+          <Btn
+            color="red"
             text="Back"
             onPress={() => setShowClearNvelopes(false)}
           />
@@ -825,13 +804,11 @@ export default function MainView() {
               center. Tap the balance to edit it. You can also adjust your pay
               date and budget interval in{" "}
             </MyText>
-              <Pressable
-                onPress={() => navigation.navigate("Settings" as never)}
-              >
-                <MyText className="text-my-blue-light text-center text-xl">
-                  Settings
-                </MyText>
-              </Pressable>
+            <Pressable onPress={() => navigation.navigate("Settings" as never)}>
+              <MyText className="text-my-blue-light text-center text-xl">
+                Settings
+              </MyText>
+            </Pressable>
           </View>
         </View>
       </PageTour>

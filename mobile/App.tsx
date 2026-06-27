@@ -16,7 +16,26 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Settings from "./src/screens/Settings";
 import "./global.css";
-import Toast from "react-native-toast-message";
+import Toast, { BaseToast, BaseToastProps } from "react-native-toast-message";
+
+const toastConfig = {
+  success: (props: BaseToastProps) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: "#FFFFFF", backgroundColor: "#076346" }}
+      contentContainerStyle={{ paddingHorizontal: 15,}}
+      text1Style={{ fontSize: 15, fontWeight: "600", color: "#fcca68", fontFamily: "myFont" }}
+      text2Style={{ fontSize: 13 }}
+    />
+  ),
+  error: (props: BaseToastProps) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: "#fff2d9", backgroundColor: "#ad0241" }}
+      text1Style={{ fontSize: 15, color: "#fcca68", fontFamily: "myFont" }}
+    />
+  ),
+};
 
 SplashScreen.preventAutoHideAsync(); // for fonts
 
@@ -58,7 +77,7 @@ function GlobalLayout() {
       <NavigationContainer>
         <RootStack />
       </NavigationContainer>
-      <Toast />
+      <Toast config={toastConfig} />
     </SafeAreaView>
   );
 }

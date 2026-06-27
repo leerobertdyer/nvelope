@@ -778,6 +778,12 @@ export function isTodayCuspDate(payPeriod: Interval, payDate: Timestamp) {
   return isAfter(end, today) && end.getMonth() !== today.getMonth();
 }
 
+export function deriveIsPaid(payment: Payment, occurrenceDate?: Date): boolean {
+  return payment.paidDates?.some(
+    (pd) => startOfDay(pd.toDate()).getTime() === startOfDay(occurrenceDate ?? payment.dueDate.toDate()).getTime()
+  ) ?? false;
+}
+
 /**
  * Generates virtual payment instances for weekly/biweekly payments within a date range.
  * Returns an array of payment objects, one for each occurrence within rangeStart to rangeEnd.
@@ -827,16 +833,9 @@ export function getPaymentOccurrencesInRange(
   // Walk forward and collect all occurrences in the range
   while (!isAfter(currentDate, rangeEnd)) {
     if (isWithinInterval(currentDate, { start: rangeStart, end: rangeEnd })) {
-      const occurrenceTime = startOfDay(currentDate).getTime();
-      const isPaid =
-        payment.paidDates?.some(
-          (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
-        ) ?? false;
-
       occurrences.push({
         ...payment,
         id: `${payment.id}-${payment.interval}-${currentDate.getTime()}`, // Unique ID for each occurrence
-        paid: isPaid,
         dueDate: Timestamp.fromDate(currentDate),
       });
     }
@@ -969,7 +968,6 @@ function getSplitPaymentOccurrencesInRange(
       ...payment,
       id: `${payment.id}-SPLIT-${currentPayDate.getTime()}`,
       amount: splitAmount,
-      paid: isPaid,
       dueDate: Timestamp.fromDate(currentPayDate),
     });
 
@@ -990,7 +988,6 @@ function getSplitPaymentOccurrencesInRange(
       ...payment,
       id: `${payment.id}-SPLIT-${displayRangeStart.getTime()}`,
       amount: splitAmount,
-      paid: payment.paid,
       dueDate: Timestamp.fromDate(displayRangeStart),
     });
   }

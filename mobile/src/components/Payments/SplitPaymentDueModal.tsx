@@ -61,7 +61,7 @@ export default function SplitPaymentDueModal({
             <Btn color="blue" onPress={() => onExtendDate(payment)}>
               Extend Date
             </Btn>
-            <View className="text-my-white-dark text-sm hover:text-my-white-light underline">
+            <View className="text-my-white-dark text-sm underline">
               <Btn color="Gold" onPress={onDismiss}>
                 Remind me later
               </Btn>

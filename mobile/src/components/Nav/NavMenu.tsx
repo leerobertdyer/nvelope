@@ -41,18 +41,19 @@ export default function NavMenu({
             onStartShouldSetResponder={() => true} // prevents tap-through closing when tapping menu itself
           >
             <View className="flex-col gap-2 p-4 justify-center h-fit m-auto w-full">
-              <View className="my-[2rem]" />
-              {links.map((link) => (
-                <Btn
-                  key={link}
-                  color="gold"
-                  onPress={() => {
-                    navigation.navigate(link as never);
-                    setShowMenu(false);
-                  }}
-                  text={link}
-                />
-              ))}
+              <View className="mt-[4rem] gap-4">
+                {links.map((link) => (
+                  <Btn
+                    key={link}
+                    color="green"
+                    onPress={() => {
+                      navigation.navigate(link as never);
+                      setShowMenu(false);
+                    }}
+                    text={link}
+                  />
+                ))}
+              </View>
             </View>
             <Btn color="red" onPress={() => setShowMenu(false)} text="Close" />
           </View>

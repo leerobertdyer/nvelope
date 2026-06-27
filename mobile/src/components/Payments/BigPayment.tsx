@@ -8,7 +8,7 @@ import { Payment } from "../../types";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
-import { removeVirtualIdPortion } from "../../util";
+import { deriveIsPaid, removeVirtualIdPortion } from "../../util";
 import { editPayments } from "../../firebase/editData";
 import PaymentForm from "../Forms/PaymentForm";
 import Btn from "../Buttons/Btn";
@@ -46,7 +46,7 @@ export default function BigPayment({
   const { payments, setPayments } = useDatabase();
   async function updatePaid() {
     if (!p) return;
-    setP((prev) => prev && { ...prev, paid: !prev.paid });
+    setP((prev) => prev && { ...prev, paid: !deriveIsPaid(prev) });
     const updated = await handleUpdatePaid(p);
     if (updated) setP(updated);
   }
@@ -164,15 +164,15 @@ export default function BigPayment({
         </View>
         <View className="h-2" />
         <View className="flex-col justify-center items-center gap-2 w-full">
-          <Btn color="gold" onPress={() => updatePaid()}>
+          <Btn color="green" onPress={() => updatePaid()}>
             <View className="flex-row items-center justify-center gap-8">
               <View
-                className={`justify-center items-center ${!p.paid && "border-2"} rounded-md bg-my-green-dark text-white border-my-black-dark w-[3rem] h-[3rem]`}
+                className={`justify-center items-center border-2 rounded-md bg-my-white-dark text-my-green-dark border-my-black-dark w-[3rem] h-[3rem]`}
               >
-                <FontAwesome6 name="sack-dollar" color="white" size={24} />
+                <FontAwesome6 name="sack-dollar" color="#076346" size={24} />
               </View>
-              <MyText className="text-xs w-[50%]">
-                Mark As {!p.paid ? "Paid" : "Not Paid"}
+              <MyText className="text-xs w-[50%] text-my-white-dark">
+                Mark {!deriveIsPaid(p) ? "Paid" : "Not Paid"}
               </MyText>
             </View>
           </Btn>
@@ -191,7 +191,7 @@ export default function BigPayment({
           </Btn>
           {p.type === "DEBT" && (p.total ?? 0) > 0 && (
             <Btn
-              color="green"
+              color="blue"
               onPress={() => {
                 setShowExtraPaymentForm(true);
                 setExtraPaymentError(null);
@@ -213,7 +213,7 @@ export default function BigPayment({
             }}
           >
             <View className="flex-row items-center justify-center gap-8">
-              <View className="w-[3rem] h-[3rem] items-center justify-center bg-my-red-base border-2 border-my-white-light rounded-md">
+              <View className="w-[3rem] h-[3rem] items-center justify-center bg-my-red-base border-2 border-my-black-dark rounded-md">
                 <FontAwesome name="trash" color="white" size={25} />
               </View>
               <MyText className="text-xs w-[50%] text-my-white-light">

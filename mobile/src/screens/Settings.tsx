@@ -342,6 +342,11 @@ export default function Settings() {
     }
   }
 
+  function handleCalendarChange(d: DateData) {
+    const newDate = new Date(d.year, d.month - 1, d.day);
+    setNewBudgetPayDate(newDate);
+  }
+
   async function handleCreateBudget(): Promise<boolean> {
     if (!user || !newBudgetPayDate || !newBudgetInterval) return false;
     const name = newBudgetName.trim() || `${user.email}'s Budget`;
@@ -560,7 +565,7 @@ export default function Settings() {
     }
     return (
       <Pressable
-        className=" justify-center h-fit w-[80%] m-auto items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8 cursor-pointer hover:opacity-90"
+        className=" justify-center h-fit w-[80%] m-auto items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8"
         onPress={() => {
           setShowDeleteAccountConfirm(true);
           setDeletePasswordStep(false);
@@ -580,16 +585,16 @@ export default function Settings() {
   function BackupSelectionScreen() {
     return (
       <View className="flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4">
-        <MyText className="text-sm font-bold">⚠️ Revert To A Backup</MyText>
-        <MyText className="text-xs">Restores payments and envelopes</MyText>
+        <MyText className="text-sm font-bold text-my-white-light">⚠️ Revert To A Backup</MyText>
+        <MyText className="text-xs text-my-white-base">Restores payments and envelopes</MyText>
         <View>
           {isLoadingSafeBackups ? (
             <MyText className="text-xs py-2">Loading backups...</MyText>
           ) : safeBackups.length === 0 ? (
-            <MyText className="text-xs py-2">No backups yet</MyText>
+            <MyText className="text-xs py-2 text-gray-400">No backups yet</MyText>
           ) : (
             <Picker
-              className="py-2 px-4 bg-white rounded-md text-my-black-dark my-2 cursor-pointer"
+              className="py-2 px-4 bg-white rounded-md text-my-black-dark my-2"
               onValueChange={(e) => handleSelectBackup(e as string)}
             >
               <Picker.Item
@@ -649,7 +654,7 @@ export default function Settings() {
     if (!asyncStorageBackup) return null;
     return (
       <Pressable
-        className="flex flex-col justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4 cursor-pointer hover:bg-my-blue-base gap-2"
+        className="flex flex-col justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4 gap-2"
         onPress={() => setShowUndoConfirm(true)}
       >
         <MyText className="text-sm font-bold">Undo Last Restore</MyText>
@@ -671,7 +676,7 @@ export default function Settings() {
 
   if (showCreateBudgetModal)
     return (
-      <View>
+      <ScrollView className="py-[2rem] gap-2">
         <View className="flex flex-col items-center gap-4 w-full text-center">
           <Input
             id="new-budget-name"
@@ -685,33 +690,29 @@ export default function Settings() {
             intervalValue={newBudgetInterval}
             onIntervalChange={(d) => setNewBudgetInterval(d)}
             payDate={newBudgetPayDate}
-            onPayDateChange={(d: DateData) =>
-              setNewBudgetPayDate(
-                d instanceof Date
-                  ? d
-                  : Array.isArray(d) && d[0] instanceof Date
-                    ? d[0]
-                    : null,
-              )
-            }
+            onPayDateChange={handleCalendarChange}
             intervalLabel="Pay period interval"
           />
         </View>
-        <Btn
-          text="Save"
-          color="gold"
-          onPress={async () => {
-            const ok = await handleCreateBudget();
-            if (ok) setShowCreateBudgetModal(false);
-          }}
-          disabled={isCreatingBudget || !newBudgetPayDate || !newBudgetInterval}
-        />
-        <Btn
-          text="Back"
-          color="red"
-          onPress={() => setShowCreateBudgetModal(false)}
-        />
-      </View>
+        <View className="gap-2 py-4">
+          <Btn
+            text="Save"
+            color="gold"
+            onPress={async () => {
+              const ok = await handleCreateBudget();
+              if (ok) setShowCreateBudgetModal(false);
+            }}
+            disabled={
+              isCreatingBudget || !newBudgetPayDate || !newBudgetInterval
+            }
+          />
+          <Btn
+            text="Back"
+            color="red"
+            onPress={() => setShowCreateBudgetModal(false)}
+          />
+        </View>
+      </ScrollView>
     );
 
   if (showEditBudgetModal)
@@ -730,16 +731,18 @@ export default function Settings() {
             }}
           />
         </View>
-        <Btn
-          text="Done"
-          color="gold"
-          onPress={() => setShowEditBudgetModal(false)}
-        />
-        <Btn
-          text="Back"
-          color="red"
-          onPress={() => setShowEditBudgetModal(false)}
-        />
+        <View className="gap-2">
+          <Btn
+            text="Done"
+            color="gold"
+            onPress={() => setShowEditBudgetModal(false)}
+          />
+          <Btn
+            text="Back"
+            color="red"
+            onPress={() => setShowEditBudgetModal(false)}
+          />
+        </View>
       </View>
     );
 
@@ -874,7 +877,7 @@ export default function Settings() {
           {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
             <>
               <ScrollView
-                className="w-full gap-1"
+                className="w-full gap-2 min-h-[11rem] "
                 contentContainerClassName="items-center"
               >
                 <MyText className="text-my-black-light text-xs text-center">

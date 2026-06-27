@@ -7,6 +7,7 @@ export default function Btn({
   onPress,
   color,
   disabled = false,
+  
 }: {
   children?: React.ReactNode;
   text?: string;
@@ -21,9 +22,9 @@ export default function Btn({
       case "GOLD":
         return "bg-my-white-dark text-my-red-dark";
       case "BLUE":
-        return "bg-my-blue-dark text-my-blue-light";
+        return "bg-my-blue-dark text-my-white-base";
       case "GREEN":
-        return "bg-my-green-light text-my-green-dark";
+        return "bg-my-green-dark text-my-white-base";
       default:
         return "bg-my-white-base text-my-black-base";
     }
@@ -32,12 +33,18 @@ export default function Btn({
   return (
     <Pressable
       disabled={disabled}
-      className={`rounded-lg h-[4.5rem] w-[80%] max-w-[20rem] p-2 cursor-pointer border-2 items-center justify-center m-auto
+      className={`rounded-lg h-[4.5rem] w-[80%] max-w-[20rem] p-2 items-center justify-center m-auto
           disabled:opacity-60
               ${bgColor()}`}
       onPress={onPress}
+      style={{
+        shadowColor: "#121212",
+        shadowOffset: { width: 5, height: 4 },
+        shadowOpacity: 0.85,
+        shadowRadius: 6,
+      }}
     >
-      {text && <MyText className={`${bgColor()}`}>{text}</MyText> }
+      {text && <MyText className={`${bgColor()}`}>{text}</MyText>}
       {children}
     </Pressable>
   );
