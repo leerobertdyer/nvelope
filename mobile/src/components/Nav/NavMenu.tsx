@@ -2,6 +2,7 @@ import { Modal, Pressable, View } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import Btn from "../Buttons/Btn";
 import { useNavigation } from "@react-navigation/native";
+import { MyText } from "../MyText";
 
 interface NavMenuProps {
   showMenu: boolean;
@@ -37,25 +38,31 @@ export default function NavMenu({
           onPress={() => setShowMenu(false)}
         >
           <View
-            className="bg-my-white-dark w-[100%] h-[70%] p-4 mb-auto"
+            className="bg-my-white-dark w-[100%] h-[70%] p-4"
             onStartShouldSetResponder={() => true} // prevents tap-through closing when tapping menu itself
           >
-            <View className="flex-col gap-2 p-4 justify-center h-fit m-auto w-full">
-              <View className="mt-[4rem] gap-4">
+            <View className="p-4 w-full justify-around h-fit m-auto gap-8">
+              <View className="gap-8">
                 {links.map((link) => (
-                  <Btn
+                  <Pressable
                     key={link}
-                    color="green"
                     onPress={() => {
                       navigation.navigate(link as never);
                       setShowMenu(false);
                     }}
-                    text={link}
-                  />
+                  >
+                    <MyText className="text-5xl text-my-blue-dark text-center underline">
+                      {link}
+                    </MyText>
+                  </Pressable>
                 ))}
               </View>
+              <Btn
+                color="red"
+                onPress={() => setShowMenu(false)}
+                text="Close"
+              />
             </View>
-            <Btn color="red" onPress={() => setShowMenu(false)} text="Close" />
           </View>
         </Pressable>
       </Modal>

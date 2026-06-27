@@ -491,11 +491,12 @@ export default function MainView() {
   }
 
   async function handleResetEnvelopesAndPaid() {
-    setShowClearNvelopes(false);
     if (!activeBudgetId) return;
     const paymentsMarkedPaid = payments.map((p) => {
       return { ...p, paidDates: [], paidAmounts: {} };
     });
+    setPayments(paymentsMarkedPaid);
+    setShowClearNvelopes(false);
     await resetAllNvelopes(envelopes, setEnvelopes, activeBudgetId);
     await editPayments(paymentsMarkedPaid, activeBudgetId);
     Toast.show({ type: "success", text1: "Envelopes and Payments reset" });
