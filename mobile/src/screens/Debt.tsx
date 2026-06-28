@@ -501,7 +501,7 @@ export default function Debt() {
         </View>
 
         {debtsMissingInfo.length > 0 && (
-          <View className="items-center bg-my-black-base/40 p-2 rounded-md w-[80%] margin-auto">
+          <View className="items-center bg-my-black-base/40 p-2 rounded-md w-[80%] m-auto mb-[1rem]">
             <MyText className="text-my-red-dark bg-my-white-dark px-2 rounded-md">
               Missing Information on {debtsMissingInfo.length} debts:
             </MyText>

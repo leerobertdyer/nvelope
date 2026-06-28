@@ -321,7 +321,7 @@ export default function MainView() {
     setPayments(updatedPayments);
     await editPayments(updatedPayments, activeBudgetId!);
 
-    // Roll snowball when a debt is paid off (total hit 0): add rolled amount to next target's payment amount, then zero snowball
+    // Roll snowball when a debt is paid off
     const paidOffPayment = updatedPayments.find(
       (p) =>
         p.id === originalId &&
@@ -335,16 +335,20 @@ export default function MainView() {
         type: "success",
         text1: `${paidOffPayment.name} paid off!`,
       });
-      const {
-        updatedPayments: paymentsWithBakedSnowball,
-        nextTargetId: nextId,
-      } = applyPayoffRoll(updatedPayments, paidOffPayment, snowball);
+      // Roll: add paid-off minimum to snowball, move target to next lowest balance
+      const newSnowball = snowball + paidOffPayment.amount;
+      const remainingDebts = updatedPayments.filter(
+        (p) => p.type === "DEBT" && p.total != null && p.total > 0,
+      );
+      const nextTarget =
+        remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0] ??
+        null;
+      const nextId = nextTarget?.id ?? null;
+
       setSnowballTargetPaymentId(nextId);
       await editSnowballTargetPaymentId(activeBudgetId!, nextId);
-      setPayments(paymentsWithBakedSnowball);
-      await editPayments(paymentsWithBakedSnowball, activeBudgetId!);
-      setSnowball(0);
-      await editSnowball(activeBudgetId!, 0);
+      setSnowball(newSnowball);
+      await editSnowball(activeBudgetId!, newSnowball);
     }
 
     return updatedPayment;
@@ -804,7 +808,9 @@ export default function MainView() {
               center. Tap the balance to edit it. You can also adjust your pay
               date and budget interval in{" "}
             </MyText>
-            <Pressable onPress={() => navigationRef.navigate("Settings" as never)}>
+            <Pressable
+              onPress={() => navigationRef.navigate("Settings" as never)}
+            >
               <MyText className="text-my-blue-light text-center text-xl">
                 Settings
               </MyText>

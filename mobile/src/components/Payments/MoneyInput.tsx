@@ -58,7 +58,27 @@ export default function MoneyInput({
           {label}
         </MyText>
       )}
-      <View className="flex-row w-[20rem] gap-2 items-center">
+      {allowNegative ? (
+        <View className="flex-row w-[20rem] gap-2 items-center">
+          <TextInput
+            ref={inputRef}
+            keyboardType={"number-pad"}
+            value={displayStr}
+            onChangeText={handleChangeText}
+            placeholder={placeholder}
+            selection={{ start: displayStr.length, end: displayStr.length }}
+            className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark text-center"
+          />
+          <Pressable
+            onPress={() => setIsNegative(!isNegative)}
+            className="bg-my-white-dark rounded-md w-[1.75rem] h-[1.75rem] justify-center items-center"
+          >
+            <MyText className="text-center text-my-black-dark">
+              {isNegative ? "+" : "-"}
+            </MyText>
+          </Pressable>
+        </View>
+      ) : (
         <TextInput
           ref={inputRef}
           keyboardType={"number-pad"}
@@ -68,15 +88,7 @@ export default function MoneyInput({
           selection={{ start: displayStr.length, end: displayStr.length }}
           className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark text-center"
         />
-        <Pressable
-          onPress={() => setIsNegative(!isNegative)}
-          className="bg-my-white-dark rounded-md w-[1.75rem] h-[1.75rem] justify-center items-center"
-        >
-          <MyText className="text-center text-my-black-dark">
-            {isNegative ? "+" : "-"}
-          </MyText>
-        </Pressable>
-      </View>
+      )}
     </View>
   );
 }
