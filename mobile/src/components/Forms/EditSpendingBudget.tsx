@@ -21,11 +21,11 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
   }
 
   async function manuallySetBudgetInDB() {
-    if (cashAmount <= 0 || !activeBudgetId) return;
+    if (!activeBudgetId) return;
     await editTotalSpendingBudget(cashAmount, activeBudgetId);
     setTotalSpendingBudget(cashAmount);
     handleBack();
-  }
+  } 
 
   //onSave={manuallySetBudgetInDB} onClose={resetState}
   return (
@@ -38,6 +38,7 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
             value={cashAmount}
             onChange={setCashAmount}
             placeholder="Amount"
+            allowNegative
           />
           <Btn color="gold" text="Save" onPress={manuallySetBudgetInDB} />
           <Btn color="red" text="Back" onPress={resetState} />

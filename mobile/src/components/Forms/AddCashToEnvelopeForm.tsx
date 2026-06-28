@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { Modal, View } from "react-native";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { Envelope } from "../../types";
 import Btn from "../Buttons/Btn";
@@ -28,31 +28,36 @@ export default function AddCashToEnvelopeForm({
   const { totalSpendingBudget } = useDatabase();
 
   return (
-    <>
+    <Modal>
       {showLoading && <Loading text={loadingText} />}
-      <View className="absolute inset-0 bg-my-black-base text-my-white-dark w-full h-screen flex flex-col items-center justify-center">
-        <MyText className="text-my-white-light mb-2">
-          Remaining Budget: ${(totalSpendingBudget - cashAmount).toFixed(2)}
-        </MyText>
-        <MyText className="p-2 text-my-white-light mb-4">
-          Add Cash to "{envelopeToEdit?.name}"
-        </MyText>
-        <MoneyInput
-          id="add-cash-amount"
-          label=""
-          value={cashAmount}
-          onChange={setCashAmount}
-          placeholder="Amount"
-        />
-        <View className="flex flex-col w-full items-center gap-2">
-          <Btn text="Add" onPress={addCashToEnvelope} color="green" />
-          <Btn
-            onPress={() => setIsAddingCashToEnvelope(false)}
-            color="red"
-            text="Go Back"
+      <View className="bg-my-black-base text-my-white-dark w-full h-screen items-center justify-center">
+        <View className="h-fit m-auto w-full gap-2">
+          <MyText className="text-my-white-base mb-2 text-center">
+            Remaining Budget: ${(totalSpendingBudget - cashAmount).toFixed(2)}
+          </MyText>
+          <MyText className="p-2 text-my-white-light mb-4 text-center">
+            Add <MyText className="text-my-green-base">cash</MyText> to{" "}
+            <MyText className="text-my-white-dark">
+              "{envelopeToEdit?.name}"
+            </MyText>
+          </MyText>
+          <MoneyInput
+            id="add-cash-amount"
+            label=""
+            value={cashAmount}
+            onChange={setCashAmount}
+            placeholder="Amount"
           />
+          <View className="flex flex-col w-full items-center gap-2">
+            <Btn text="Add" onPress={addCashToEnvelope} color="green" />
+            <Btn
+              onPress={() => setIsAddingCashToEnvelope(false)}
+              color="red"
+              text="Go Back"
+            />
+          </View>
         </View>
       </View>
-    </>
+    </Modal>
   );
 }

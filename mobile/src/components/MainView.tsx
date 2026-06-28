@@ -584,8 +584,8 @@ export default function MainView() {
 
   if (showDeletePayment && payDate && paymentToEdit) {
     return (
-      <View className="absolute inset-0 w-full h-full z-100 select-none">
-        <View className="flex flex-col bg-my-black-dark w-full h-full justify-center items-center ">
+      <View className="w-full h-full">
+        <View className="bg-my-black-dark w-full h-fit justify-center items-center ">
           <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
             Are you sure you want to delete "{paymentToEdit.name}"?
           </MyText>

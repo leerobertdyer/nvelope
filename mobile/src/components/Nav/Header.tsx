@@ -11,11 +11,7 @@ import { View } from "react-native";
 import { MyText } from "../MyText";
 import EditSpendingBudget from "../Forms/EditSpendingBudget";
 
-export default function Header({
-  links,
-}: {
-  links: string[];
-}) {
+export default function Header({ links }: { links: string[] }) {
   const { totalSpendingBudget, payPeriodInterval, payDate } = useDatabase();
   const [daysTillReset, setDaysTillReset] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
@@ -79,7 +75,7 @@ export default function Header({
         <MyText
           onPress={() => setShowEditSpendingBudget(true)}
           className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
-            ${totalSpendingBudget <= 0 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
+            ${totalSpendingBudget < 0 ? "bg-my-red-dark" : totalSpendingBudget === 0 ? "bg-my-black-dark" : "bg-my-green-dark"}`}
         >
           ${totalSpendingBudget.toFixed(2)}
         </MyText>

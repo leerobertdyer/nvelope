@@ -15,7 +15,7 @@ export function centsToDollars(cents: number): number {
 
 /** Format cents for display (e.g. 1234 -> "12.34", -1234 -> "-12.34"). */
 export function formatCentsForDisplay(cents: number): string {
-  if (cents === 0) return "";
+  if (cents === 0) return "0.00";
   const absCents = Math.abs(cents);
   const dollars = (absCents / 100).toFixed(2);
   return cents < 0 ? `-${dollars}` : dollars;

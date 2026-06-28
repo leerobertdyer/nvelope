@@ -9,7 +9,7 @@ import { Pressable, View } from "react-native";
 import { Envelope } from "../../types";
 import NvelopeCalculator from "./NvelopeCalculator";
 import EnvelopeForm from "../Forms/EnvelopeForm";
-import Svg, { Line } from 'react-native-svg'
+import Svg, { Line } from "react-native-svg";
 import Hr from "../Hr";
 import { MyText } from "../MyText";
 import Btn from "../Buttons/Btn";
@@ -67,41 +67,21 @@ export default function Nvelope({
   switch (kind) {
     case "deleteEnvelope":
       return (
-        <View
-        className="absolute inset-0 w-screen h-screen z-100 select-none"
-        >
-          <View
-          className="flex flex-col bg-my-red-dark w-screen h-screen justify-center items-center "
-          >
-            <MyText
-            className="p-4 rounded-md text-my-white-dark w-full text-center"
-            >
+        <View className="flex-1 bg-my-red-dark justify-center">
+          <View className="p-4 gap-2 bg-my-black-dark w-screen h-fit justify-center items-center ">
+            <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
               Are you sure you want to delete {envelope.name}?
             </MyText>
-            <MyText
-            className="text-xs w-[85%] text-center text-white"
-            >
+            <MyText className="text-xs w-[85%] text-center text-white">
               This will not affect your available budget.
             </MyText>
-            <View
-            className="w-[30rem] h-[50rem] rounded-md py-[1rem] px-[3.5rem] flex justify-center items-center flex-col gap-8"
-            >
-              <Feather
-                name="delete"
-                size={24}
-                color="red"
-                className="w-[12rem] h-[12rem] text-my-white-light"
-              />
+            <View className="w-full h-fit rounded-md justify-center items-center gap-2">
               <Btn
                 text="Delete"
                 onPress={() => handleDeleteEnvelope?.()}
                 color="gold"
               />
-              <Btn
-                text="Cancel"
-                onPress={() => handleBack?.()}
-                color="green"
-              />
+              <Btn text="Cancel" onPress={() => handleBack?.()} color="red" />
             </View>
           </View>
         </View>
@@ -145,12 +125,10 @@ export default function Nvelope({
     case "dash":
       return (
         <Pressable
-        className={`w-fit relative bg-white border rounded-sm `}
-        onPress={() => onPress?.()}
+          className={`w-fit relative bg-white border rounded-sm `}
+          onPress={() => onPress?.()}
         >
-          <MyText
-          className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center text-sm"
-          >
+          <MyText className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center text-sm">
             {envelope.name}
           </MyText>
           <Svg width={dottedWidth} height={dottedHeight}>
@@ -225,23 +203,15 @@ export default function Nvelope({
       );
     default:
       return (
-        <View
-        className="w-[35vw] h-[35vw] relative"
-        >
-          <MyText
-          className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-2 text-[.6rem]"
-          >
+        <View className="w-[35vw] h-[35vw] relative">
+          <MyText className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-2 text-[.6rem]">
             {envelope.name}
           </MyText>
-          <MyText
-          className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-10 text-[.65rem]"
-          >
+          <MyText className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-10 text-[.65rem]">
             ${envelope.spent}
           </MyText>
-          <Hr/>
-          <MyText
-          className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-14 text-[.65rem]"
-          >
+          <Hr />
+          <MyText className="absolute w-[60%] left-1/2 -translate-x-1/2 text-center top-14 text-[.65rem]">
             ${envelope.total}
           </MyText>
           <FontAwesome

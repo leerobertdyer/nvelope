@@ -4,7 +4,7 @@ import { MyText } from "./MyText";
 
 export default function Loading({ text }: { text: string }) {
   return (
-      <View className="flex flex-col gap-2 justify-center items-center w-full h-screen text-my-black-dark">
+      <View className="gap-2 justify-center items-center w-full h-screen bg-my-black-dark">
         <Nvelope
           envelope={{
             id: "1",
@@ -15,7 +15,7 @@ export default function Loading({ text }: { text: string }) {
           kind="dash"
         />
         <MyText className="text-my-white-dark">{text}</MyText>
-        {/* animate-pulse in class above will break right now for some reason to do with babel.config.js reanimate */}
+        {/* TODO: animate-pulse in class above will break right now for some reason to do with babel.config.js reanimate */}
       </View>
   );
 }
