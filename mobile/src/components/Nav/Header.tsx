@@ -69,7 +69,7 @@ export default function Header({
 
   return (
     <>
-      <View className="flex-row items-center justify-evenly gap-8 w-full py-2 h-[6rem] bg-my-white-base border-b-2 select-none">
+      <View className="flex-row items-center justify-evenly gap-8 w-full py-2 h-[6rem] bg-my-white-base border-b-2">
         <MyText
           className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
               ${daysTillReset > 3 ? "bg-my-red-dark" : "bg-my-green-dark"}`}
@@ -85,7 +85,6 @@ export default function Header({
         </MyText>
         <NavMenu showMenu={showMenu} setShowMenu={setShowMenu} links={links} />
       </View>
-      <View className="h-[1rem] w-full"></View>
     </>
   );
 }

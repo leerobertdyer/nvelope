@@ -449,11 +449,11 @@ export default function Debt() {
           an additional payment.
         </MyText>
       </PageTour>
+      <Header links={["Home", "Settings", "Bills", "Feedback"]} />
       <ScrollView
         contentContainerClassName="items-center"
-        className="w-full h-full bg-my-blue-dark text-my-white-dark"
+        className="w-full h-screen my-0 py-[3rem] bg-my-blue-dark text-my-white-dark"
       >
-        <Header links={["Home", "Settings", "Bills", "Feedback"]} />
         <View className="bg-my-black-base/40 p-2 rounded-md w-[80%] mb-[1rem] items-center gap-2">
           <MyText className="text-my-white-dark">TOTAL DEBT</MyText>
           <MyText className="text-my-red-dark mb-[.75rem] bg-my-white-dark px-2 rounded-md">
@@ -472,14 +472,14 @@ export default function Debt() {
             </MyText>
           )}
           {debts.length > 0 && (
-            <View className="bg-my-black-base/40 p-2 rounded-md text-my-white-light mb-[2rem] w-[80%] md:w-[24rem]">
+            <View className="bg-my-black-base/40 p-2 rounded-md text-my-white-light mb-[1rem] w-[80%] md:w-[24rem]">
               <MyText className="text-my-white-dark text-sm font-medium mb-2 text-center">
                 What if you pay extra each month?
               </MyText>
               <View className="flex flex-col items-center gap-2 mb-2">
                 <MoneyInput
                   id="extra-monthly"
-                  label="Extra per month ($)"
+                  label=""
                   placeholder="e.g. 400"
                   value={extraMonthly}
                   onChange={setExtraMonthly}
@@ -488,7 +488,7 @@ export default function Debt() {
             </View>
           )}
         </View>
-        <View className="bg-my-black-base/40 p-2 rounded-md text-my-blue-light mb-[1rem] w-[80%] flex flex-col items-center justify-between gap-2 px-3 py-2">
+        <View className="bg-my-black-base/40 p-2 rounded-md text-my-blue-light mb-[1rem] w-[80%] items-center justify-between gap-2 px-3 py-2">
           <View className="flex items-center justify-between gap-2">
             <MyText className="text-my-white-light">❄️ Snowball ❄️</MyText>
             <MyText className="text-my-white-dark">
@@ -574,7 +574,7 @@ export default function Debt() {
               .filter((d) => d.total! > 0)
               .sort((a, b) => (a.total ?? 0) - (b.total ?? 0));
             return (
-              <View className="bg-my-black-base/40 p-4 rounded-md w-[80%] margin-auto mt-[2rem]">
+              <View className="bg-my-black-base/40 p-4 rounded-md w-[80%] m-auto">
                 <View className="flex flex-col gap-2 mb-4">
                   <MyText className="text-my-white-dark text-sm text-center">
                     Snowball target
@@ -661,7 +661,7 @@ export default function Debt() {
           })()}
 
         {paidOffDebts.length > 0 && (
-          <View className="text-my-white-light bg-my-black-base/40 p-4 rounded-md w-[80%] md:w-[30rem] margin-auto mt-[2rem]">
+          <View className="text-my-white-light bg-my-black-base/40 p-4 rounded-md w-[80%] md:w-[30rem] margin-auto mt-[1rem]">
             <MyText className="text-my-white-dark text-sm text-center">
               Paid Off
             </MyText>

@@ -820,7 +820,7 @@ export default function MainView() {
         >
           <Header links={["Settings", "Debt", "Bills", "Feedback"]} />
 
-          <MyText className="text-lg font-semibold text-my-white-dark mb-2">
+          <MyText className="text-lg font-semibold text-my-white-dark mb-2 py-4">
             {activeBudgetName}
           </MyText>
           {!payDate && (

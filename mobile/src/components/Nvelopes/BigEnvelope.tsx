@@ -1,7 +1,7 @@
 import Entypo from "@expo/vector-icons/Entypo";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 // import SpendBtn from "../components/Btns/SpendBtn";
-import { Pressable, View } from "react-native";
+import { Modal, Pressable, View } from "react-native";
 import Hr from "../Hr";
 import Btn from "../Buttons/Btn";
 import { Envelope } from "../../types";
@@ -34,72 +34,59 @@ export default function BigEnvelope({
     Number(envelope.total) - Number(envelope.spent)
   ).toFixed(2);
   return (
-    <View className="pt-[2rem] bg-my-white-light w-full overflow-y-auto™ h-full">
-      <View className="w-full flex flex-col items-center justify-start">
-        <View className="p-2 text-lg text-center w-[20rem] rounded-md flex justify-center gap-2 bg-my-black-base">
-          <MyText className="text-my-white-dark text-center">
-            {envelope.name}
-          </MyText>
-          <MyText className="text-my-green-base text-center">
-            ${envelopeRemainder}
-          </MyText>
-        </View>
-        <Hr />
-        <Btn onPress={handleBack} color="red" text="Go Back" />
-        <View style={{ paddingTop: 10 }} />
-        <View className="flex flex-col justify-center items-center gap-2 w-[20rem]">
-          <Btn color="green" onPress={() => handleAddCashToEnvelope(envelope)}>
-            <View className="flex-row items-center w-full gap-4">
-              <FontAwesome6
-                name="sack-dollar"
-                color="white"
-                className="p-[2px] border-2 rounded-md bg-my-green-dark text-black border-my-black-dark"
-                size={20}
-              />
-              <MyText className="text-my-green-dark">
-                Add Money From Budget
-              </MyText>
-            </View>
-          </Btn>
-          <Btn color="blue" onPress={() => setUpShowGiveAndTake(envelope)}>
-            <View className="flex-row items-center w-full gap-4">
-              <Entypo
-                name="hand"
-                color="black"
-                className="p-[2px] border-2 rounded-md bg-my-blue-base text-black border-my-black-dark"
-                size={20}
-              />
-              <MyText className="text-my-blue-light">
-                Take From This Envelope
-              </MyText>
-            </View>
-          </Btn>
-          <Btn color="gold" onPress={() => handleSetupEdit(envelope)}>
-            <View className="flex-row items-center w-full gap-4">
-              <FontAwesome
-                name="pencil-square-o"
-                size={20}
-                className="p-[2px] border-2 rounded-md bg-my-white-base text-black border-my-black-dark"
-              />
-              <MyText className="text-my-red-dark">
-                Manually Edit Envelope
-              </MyText>
-            </View>
-          </Btn>
-          <Btn color="red" onPress={() => handleDeleteEnvelope(envelope.id)}>
-            <View className="flex-row items-center w-full gap-4">
-              <EvilIcons
-                name="trash"
-                size={24}
-                color="#fcca68"
-                className="p-[2px] border-2 rounded-md bg-my-black-base border-my-white-base"
-              />
-              <MyText className="text-my-white-dark">Delete Envelope</MyText>
-            </View>
-          </Btn>
+    <Modal>
+      <View className="bg-my-green-base w-full overflow-y-auto™ h-screen">
+        <View className="w-full h-fit m-auto items-center justify-start gap-4">
+          <View className="p-2 text-lg text-center w-[20rem] rounded-md flex justify-center gap-2">
+            <MyText className="text-my-black-dark text-center text-3xl">
+              "{envelope.name}"
+            </MyText>
+            <MyText className="text-my-green-base text-center">
+              ${envelopeRemainder}
+            </MyText>
+          </View>
           <SpendBtn onPress={() => handleSetShowSpendingPage(envelope)} />
+          <Btn onPress={handleBack} color="red" text="Go Back" />
+          <View className="flex flex-col justify-center items-center gap-2 w-full ">
+            <Pressable
+              className="border-2 rounded-md p-2 bg-white w-[20rem]"
+              onPress={() => handleAddCashToEnvelope(envelope)}
+            >
+              <View className="flex-row items-center w-full gap-4 p-[2px] border-2 rounded-md bg-my-white-base text-black border-my-black-dark">
+                <FontAwesome6 name="sack-dollar" color="#076346" size={20} />
+                <MyText>Add Money From Budget</MyText>
+              </View>
+            </Pressable>
+            <Pressable
+              className="border-2 rounded-md p-2 bg-white w-[20rem]"
+              onPress={() => setUpShowGiveAndTake(envelope)}
+            >
+              <View className="flex-row items-center w-full gap-4 p-[2px] border-2 rounded-md bg-my-white-base text-black border-my-black-dark">
+                <Entypo name="hand" color="black" size={20} />
+                <MyText>Take From This Envelope</MyText>
+              </View>
+            </Pressable>
+            <Pressable
+              className="border-2 rounded-md p-2 bg-white w-[20rem]"
+              onPress={() => handleSetupEdit(envelope)}
+            >
+              <View className="flex-row items-center w-full gap-4 p-[2px] border-2 rounded-md bg-my-white-base text-black border-my-black-dark">
+                <FontAwesome name="pencil-square-o" size={20} />
+                <MyText>Manually Edit Envelope</MyText>
+              </View>
+            </Pressable>
+            <Pressable
+              className="border-2 rounded-md p-2 bg-white w-[20rem]"
+              onPress={() => handleDeleteEnvelope(envelope.id)}
+            >
+              <View className="flex-row items-center w-full gap-4 p-[2px] border-2 rounded-md bg-my-white-base border-my-black-dark">
+                <EvilIcons name="trash" size={24} color="#ad0241" />
+                <MyText>Delete Envelope</MyText>
+              </View>
+            </Pressable>
+          </View>
         </View>
       </View>
-    </View>
+    </Modal>
   );
 }

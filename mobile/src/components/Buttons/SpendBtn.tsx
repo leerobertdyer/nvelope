@@ -30,15 +30,17 @@ export default function SpendBtn({ onPress }: { onPress: () => void }) {
         className="w-[8rem] h-[8rem] items-center justify-center"
       >
         {/* Shadow/base layer */}
-        <View className="absolute w-[8rem] h-[8rem] rounded-full bg-my-green-dark" />
-
+        <View
+          style={{ position: "absolute", top: -8}}
+          className="w-[9rem] h-[9rem] rounded-full bg-my-black-dark"
+        />
         {/* Raised button layer */}
         <Animated.View
           style={{ transform: [{ translateY }] }}
           className="w-[8rem] h-[8rem] rounded-full bg-my-green-light items-center justify-center"
         >
           <LinearGradient
-            colors={["#your-green-dark", "#your-green-light"]}
+            colors={["#f54263", "#ad0241", "#fcca68", "#076346", "#f2055c"]}
             start={{ x: 1, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={{
@@ -49,8 +51,8 @@ export default function SpendBtn({ onPress }: { onPress: () => void }) {
               justifyContent: "center",
             }}
           >
-            <MyText className="text-my-white-light text-[2rem]">SPEND</MyText>
-          </LinearGradient>{" "}
+            <MyText className="text-my-white-light text-[5rem]">$</MyText>
+          </LinearGradient>
         </Animated.View>
       </Pressable>
     </View>

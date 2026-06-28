@@ -4,7 +4,7 @@ import { useBudget } from "../../context/BudgetContext/useBudget";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import MoneyInput from "../Payments/MoneyInput";
 import Btn from "../Buttons/Btn";
-import { View } from "react-native";
+import { Modal, View } from "react-native";
 
 interface IProps {
   handleBack: () => void;
@@ -29,17 +29,20 @@ export default function EditSpendingBudget({ handleBack }: IProps) {
 
   //onSave={manuallySetBudgetInDB} onClose={resetState}
   return (
-      <View className="flex flex-col items-center justify-center gap-2 max-w-[20rem] m-auto">
-        <MoneyInput
-          label="Manually Adjust Your Remaining Budget"
-          id="newBudgetAmount"
-          value={cashAmount}
-          onChange={setCashAmount}
-          placeholder="Amount"
-        />
-        <Btn color="gold" onPress={manuallySetBudgetInDB} />
-        <Btn color="red" onPress={resetState} />
+    <Modal>
+      <View className="w-full h-full items-center justify-center gap-2  bg-my-black-base">
+        <View className="w-full h-fit items-center justify-center gap-2  bg-my-blue-dark py-8">
+          <MoneyInput
+            label="Manually Adjust Your Remaining Budget"
+            id="newBudgetAmount"
+            value={cashAmount}
+            onChange={setCashAmount}
+            placeholder="Amount"
+          />
+          <Btn color="gold" text="Save" onPress={manuallySetBudgetInDB} />
+          <Btn color="red" text="Back" onPress={resetState} />
+        </View>
       </View>
-
+    </Modal>
   );
 }

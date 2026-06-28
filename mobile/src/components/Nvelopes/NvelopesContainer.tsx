@@ -13,13 +13,11 @@ import {
   editEnvelopes,
   editTotalSpendingBudget,
 } from "../../firebase/editData";
-import ShowHideButton from "../Buttons/ShowHideButton";
 import ListEnvelope from "./NvelopeListRow";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import GiveAndTake from "../Payments/GiveAndTake";
 import BigEnvelope from "./BigEnvelope";
 import { Pressable } from "react-native-gesture-handler";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { MyText } from "../MyText";
 import Entypo from "@expo/vector-icons/Entypo";
 
@@ -219,7 +217,7 @@ export default function Nvelopes({
           total={envelopesTotalStr}
           setter={() => setShowEnvelopes(!showEnvelopes)}
         />
-        {showEnvelopes && (
+        {showEnvelopes && sortedEnvelopes.length > 0 && (
           <>
             <View className="w-screen max-w-[40rem] h-[2rem] flex-row divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold">
               <View className="flex-[3] flex-row justify-start items-center pl-2">
