@@ -143,6 +143,7 @@ export async function deleteBudgetAsOwner(
 ): Promise<boolean> {
   try {
     const meta = await getBudgetMeta(budgetId);
+    console.log("[nvelope invite] meta:", meta, "ownerId:", ownerId);
     if (!meta || meta.ownerId !== ownerId) return false;
     const dataRef = budgetDataRef(budgetId);
     for (const uid of meta.memberIds) {
@@ -260,6 +261,7 @@ export async function addInviteToBudget(
       return false;
     }
     const inviteDocId = budgetId + "_" + normalizedEmail;
+    console.log("WHAT THE HELL: ", {budgetId, inviteDocId, normalizedEmail, ownerId})
     const inviterEmail = (ownerEmail ?? "").trim().toLowerCase();
     const invitePayload = {
       budgetId,
@@ -324,6 +326,8 @@ export async function getPendingInvites(user: User): Promise<PendingInvite[]> {
   let tokenEmail: string | null = null;
   try {
     const token = await user.getIdToken(false);
+    console.log("raw token:", token);
+
     const payload = decodeIdTokenPayload(token);
     tokenEmail =
       payload?.email != null

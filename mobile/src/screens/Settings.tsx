@@ -49,7 +49,7 @@ type User = FirebaseAuthTypes.User;
 const { Timestamp } = firestore;
 
 const SERVER_URL =
-  process.env.EXPO_PUBLIC_SERVER_URL ?? "https//:api.leedyer.com/";
+  process.env.EXPO_PUBLIC_SERVER_URL ?? "https://api.leedyer.com/";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -401,7 +401,7 @@ export default function Settings() {
               }),
             });
           } catch (e) {
-            console.error("Failed to send invite email", e);
+            console.error("Failed to send invite email", {e, SERVER_URL});
           }
         }
         Toast.show({
@@ -566,7 +566,7 @@ export default function Settings() {
           {isLoadingSafeBackups ? (
             <MyText className="text-xs py-2">Loading backups...</MyText>
           ) : safeBackups.length === 0 ? (
-            <MyText className="text-xs py-2 text-gray-400">
+            <MyText className="text-xs py-2 text-gray-400 text-center">
               No backups yet
             </MyText>
           ) : (
@@ -979,23 +979,27 @@ export default function Settings() {
                   />
                 )}
                 {isOwner && showShareBudgetModal && (
-                  <View className="bg-my-white-base">
-                    <View className="w-full flex-col gap-2 items-center justify-center">
-                      <Input
-                        id="Email to share with"
-                        label="Share budget by email"
-                        placeholder="email@example.com"
-                        value={shareEmail}
-                        onChange={(e) => setShareEmail(e)}
-                      />
+                  <Modal>
+                    <View className="h-screen w-full justify-center bg-my-black-base">
+                      <View className="bg-my-white-base h-fit w-full p-8 gap-4">
+                        <View className="w-full flex-col gap-2 items-center justify-center">
+                          <Input
+                            id="Email to share with"
+                            label="Share budget by email"
+                            placeholder="email@example.com"
+                            value={shareEmail}
+                            onChange={(e) => setShareEmail(e)}
+                          />
+                        </View>
+                        <Btn color="gold" text="Share" onPress={handleInvite} />
+                        <Btn
+                          color="red"
+                          text="Cancel"
+                          onPress={() => setShowShareBudgetModal(false)}
+                        />
+                      </View>
                     </View>
-                    <Btn color="gold" text="Share" onPress={handleInvite} />
-                    <Btn
-                      color="red"
-                      text="Cancel"
-                      onPress={() => setShowShareBudgetModal(false)}
-                    />
-                  </View>
+                  </Modal>
                 )}
                 {isOwner && (
                   <Btn
