@@ -5,7 +5,7 @@ import firestore, {
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { MONTHLY } from "../constants";
 import { budgetDataRef } from "./budgets";
-import { cleanPaymentsForFirebase, randomUUID } from "../util";
+import { cleanPaymentsForFirebase, randomUUID } from "../util/util";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Timestamp = FirebaseFirestoreTypes.Timestamp;
@@ -210,10 +210,6 @@ export const validIntervals: Interval[] = [
   "YEARLY",
   "SPLIT",
 ];
-
-export async function editSnowball(budgetId: string, amount: number) {
-  await budgetDataRef(budgetId).update({ snowball: amount });
-}
 
 export async function editSnowballTargetPaymentId(
   budgetId: string,

@@ -37,7 +37,7 @@ export default function Home() {
 
   if (!user) {
     return (
-      <div className="flex flex-col gap-4 justify-center items-center w-full h-screen">
+      <div className="gap-4 justify-center items-center w-full h-screen">
         <h1 className="text-2xl text-my-white-dark">Welcome to Nvelopes</h1>
         <p className="text-sm text-my-white-light">Old School Budgeting for the Digital Age</p>
         <LoginOptions />
@@ -48,7 +48,7 @@ export default function Home() {
   // Display critical database errors that could indicate data corruption risk
   if (dbError) {
     return (
-      <div className="flex flex-col justify-center items-center w-full h-screen bg-my-black-dark text-my-white-dark p-4">
+      <div className="justify-center items-center w-full h-screen bg-my-black-dark text-my-white-dark p-4">
         <div className="max-w-md text-center">
           <h1 className="text-2xl text-my-red-light mb-4">⚠️ Database Error</h1>
           <p className="mb-4 text-my-white-light">{dbError}</p>

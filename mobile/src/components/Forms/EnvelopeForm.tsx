@@ -1,5 +1,5 @@
 import type { Envelope } from "../../types";
-import { randomUUID } from "../../util";
+import { randomUUID } from "../../util/util";
 import { View } from "react-native";
 import Input from "../Input";
 import MoneyInput from "../Payments/MoneyInput";

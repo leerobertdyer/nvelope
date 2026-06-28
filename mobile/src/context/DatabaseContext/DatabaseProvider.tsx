@@ -28,7 +28,6 @@ export default function DatabaseProvider({
   const lastPaymentsWriteAtRef = useRef(0);
 
   const [isLoadingDb, setIsLoadingDb] = useState(true);
-  const [snowball, setSnowball] = useState<number>(0);
   const [snowballTargetPaymentId, setSnowballTargetPaymentId] = useState<
     string | null
   >(null);
@@ -99,7 +98,6 @@ export default function DatabaseProvider({
           setDbError(null);
           setDocumentExists(true);
           setIsLoadingDb(false);
-          setSnowball(data.snowball ?? 0);
           setSnowballTargetPaymentId(data.snowballTargetPaymentId ?? null);
           setEnvelopes(data.envelopes ?? []);
           setPayDate(normalizeTimestamp(data.payDate) ?? null);
@@ -151,8 +149,6 @@ export default function DatabaseProvider({
   const value = {
     isLoadingDb,
     setIsLoadingDb,
-    snowball,
-    setSnowball,
     snowballTargetPaymentId,
     setSnowballTargetPaymentId,
     payDate,

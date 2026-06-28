@@ -148,7 +148,7 @@ export default function FirstTimeSetup() {
             />
           </>
         )}
-        <View className="flex flex-col gap-3 pt-4 w-full">
+        <View className="gap-3 pt-4 w-full">
           <Btn
             color="green"
             text={isSubmitting ? "Setting up…" : "Continue"}

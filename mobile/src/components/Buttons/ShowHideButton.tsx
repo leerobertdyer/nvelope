@@ -13,7 +13,7 @@ export default function ShowHideButton({
 }) {
 
   return (
-    <Pressable onPress={onPress} className=" z-100 w-[4rem] h-[4rem] flex justify-center items-center ">
+    <Pressable onPress={onPress} className="z-100 w-[4rem] h-[4rem] flex justify-center items-center ">
       <View
         className={`text-xs rounded-xl
           ${theme === "DARK" ? "bg-my-black-dark text-my-white-dark" : "bg-my-white-base text-my-black-dark"} 

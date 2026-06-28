@@ -3,7 +3,7 @@ import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../../constants";
 import type { Interval, Payment } from "../../types";
 import { useState } from "react";
 import { editPayments } from "../../firebase/editData";
-import { generateFreshPayment, removeVirtualIdPortion } from "../../util";
+import { generateFreshPayment, removeVirtualIdPortion } from "../../util/util";
 import { format, addDays } from "date-fns";
 // import { useToast } from "../../Context/ToastContext/useToast";
 import PaymentTypeSelector, {
@@ -287,7 +287,7 @@ export default function PaymentForm({
 
             {/* Payment Amount */}
             {newPayment.name && (
-              <View className="flex flex-col items-center w-full mb-4">
+              <View className="items-center w-full mb-4">
                 <MoneyInput
                   id="amount"
                   label={paymentLabel}
@@ -342,7 +342,7 @@ export default function PaymentForm({
 
             {/* Due/Target Date */}
             {newPayment.name && newPayment.amount > 0 && (
-              <View className="flex flex-col items-center w-full">
+              <View className="items-center w-full">
                 <MyText className="text-my-white-base">
                   {selectedPaymentType === "FUND"
                     ? "Target Date (when you need the money)"
@@ -385,7 +385,7 @@ export default function PaymentForm({
             {selectedPaymentType === "DEBT" &&
               newPayment.name &&
               newPayment.amount > 0 && (
-                <View className="flex flex-col items-center w-full mt-4">
+                <View className="items-center w-full mt-4">
                   <MoneyInput
                     id="total"
                     label="Total Owed"
@@ -405,7 +405,7 @@ export default function PaymentForm({
             {selectedPaymentType === "DEBT" &&
               newPayment.name &&
               newPayment.amount > 0 && (
-                <View className="flex flex-col items-center w-full mt-4">
+                <View className="items-center w-full mt-4">
                   <MyText className="text-my-white-light">
                     Interest rate (%) – optional
                   </MyText>
@@ -431,7 +431,7 @@ export default function PaymentForm({
               selectedPaymentType === "DEBT") &&
               newPayment.name &&
               newPayment.amount > 0 && (
-                <View className="flex flex-col items-center w-full mt-4">
+                <View className="items-center w-full mt-4">
                   <MyText className="text-my-white-light">
                     Payment Frequency
                   </MyText>
@@ -490,7 +490,7 @@ export default function PaymentForm({
                 )}
               </View>
             </View>
-            <View className="flex flex-col gap-4 items-center justify-center w-full">
+            <View className="gap-4 items-center justify-center w-full">
               <Btn color="gold" text="Save" onPress={handleSavePayment} />
               <Btn
                 color="red"

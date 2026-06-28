@@ -1,30 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-// import Header from "../components/Nav/Header";
 import Nvelopes from "../../../mobile/src/components/Nvelopes/NvelopesContainer";
-import { type Envelope, type Payment } from "../types";
+import { Interval, type Envelope, type Payment } from "../types";
 import {
   editEnvelopes,
   editIsNewUser,
   editOneTimeCashAndBudget,
   editPayments,
-  editSnowball,
   editSnowballTargetPaymentId,
   editTotalSpendingBudget,
   resetAllNvelopes,
   updateBudgetStateAndDBB,
 } from "../firebase/editData";
-// import { useToast } from "../Context/ToastContext/useToast";
 import Nvelope from "../../../mobile/src/components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
-  applyPayoffRoll,
   deriveIsPaid,
-  getCurrentIntervalDateRange,
   getVirtualPaymentsForCurrentPeriod,
   randomUUID,
   recalculateBudget,
   removeVirtualIdPortion,
-} from "../util";
+} from "../util/util";
 import Loading from "../components/Loading";
 import { startOfDay, addMonths } from "date-fns";
 import AddIncomeForm from "../components/Forms/AddIncomeForm";
@@ -45,6 +40,12 @@ import AddCashToEnvelopeForm from "./Forms/AddCashToEnvelopeForm";
 import Header from "./Nav/Header";
 import { navigationRef } from "../../App";
 import Toast from "react-native-toast-message";
+import {
+  applyAmountToTotal,
+  computeUpdatedPayment,
+  getOriginalIdFromVirtualId,
+  togglePaidDates,
+} from "../util/paymentUtils";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -60,8 +61,6 @@ export default function MainView() {
     setIsNewUser,
     payDate,
     payPeriodInterval,
-    snowball,
-    setSnowball,
     snowballTargetPaymentId,
     setSnowballTargetPaymentId,
     payments,
@@ -205,123 +204,127 @@ export default function MainView() {
     setPaymentToEdit(null);
   }
 
-  async function handleUpdatePaid(payment: Payment) {
-    const originalId = payment.id.includes("-WEEKLY-")
-      ? payment.id.split("-WEEKLY-")[0]
-      : payment.id.includes("-BIWEEKLY-")
-        ? payment.id.split("-BIWEEKLY-")[0]
-        : payment.id.includes("-SPLIT-")
-          ? payment.id.split("-SPLIT-")[0]
-          : payment.id;
+  async function applySnowballToTarget(virtualPayment: Payment) {
+    if (!snowballTargetPaymentId || !activeBudgetId) return;
 
-    const updatedPayments = payments.map((p) => {
-      if (p.id !== originalId) return p;
+    const snowballPayment = payments.find((p) => p.id === "SNOWBALL");
+    const targetDebt = payments.find((p) => p.id === snowballTargetPaymentId);
+    if (!snowballPayment || !targetDebt) return;
 
-      // DEBT && FUND: mark paid subtracts from total; mark unpaid adds it back (store amount in paidAmounts)
-      if (p.type === "DEBT" || p.type === "FUND") {
-        const occurrenceKey = startOfDay(payment.dueDate.toDate())
-          .getTime()
-          .toString();
-        const paidDates = p.paidDates || [];
-        const paidAmounts = { ...(p.paidAmounts || {}) };
-        const occurrenceTime = startOfDay(payment.dueDate.toDate()).getTime();
-        const alreadyPaid = paidDates.some(
-          (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
-        );
-        if (alreadyPaid) {
-          const amountToAddBack = paidAmounts[occurrenceKey] ?? 0;
-          delete paidAmounts[occurrenceKey];
-          const newTotal = Math.max(0, (p.total ?? 0) + amountToAddBack);
-          return {
-            ...p,
-            total: newTotal,
-            paidDates: paidDates.filter(
-              (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime,
-            ),
-            paidAmounts,
-          };
-        }
+    const occurrenceDate = virtualPayment.dueDate.toDate();
+    const occurrenceKey = startOfDay(occurrenceDate).getTime().toString();
 
-        const isVirtualOccurrence =
-          payment.id.includes("-SPLIT-") ||
-          payment.id.includes("-WEEKLY-") ||
-          payment.id.includes("-BIWEEKLY-");
-        const occurrenceAmount = isVirtualOccurrence
-          ? payment.amount
-          : p.amount;
-        const isSnowballTarget = p.id === snowballTargetPaymentId;
-        const addSnowballToThisOccurrence =
-          isSnowballTarget &&
-          (p.interval !== "SPLIT" ||
-            (payDate &&
-              payPeriodInterval &&
-              (() => {
-                const { start: periodStart } = getCurrentIntervalDateRange(
-                  payPeriodInterval,
-                  payDate,
-                );
-                const occurrenceTime = startOfDay(
-                  payment.dueDate.toDate(),
-                ).getTime();
-                const periodStartTime = startOfDay(periodStart).getTime();
-                const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-                return occurrenceTime <= periodStartTime + oneWeekMs;
-              })()));
-        const periodPayment =
-          occurrenceAmount + (addSnowballToThisOccurrence ? snowball : 0);
-        const amountToApply = Math.min(periodPayment, p.total ?? 0);
-        const newTotal = Math.max(0, (p.total ?? 0) - amountToApply);
-        paidAmounts[occurrenceKey] = amountToApply;
+    const updatedSnowball = togglePaidDates(snowballPayment, occurrenceDate);
+    const updatedTarget = applyAmountToTotal(
+      targetDebt,
+      virtualPayment.amount,
+      occurrenceKey,
+    );
 
-        return {
-          ...p,
-          total: newTotal,
-          paidDates: [
-            ...paidDates,
-            Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
-          ],
-          paidAmounts,
-        };
-      }
-
-      // Non-DEBT: toggle paid/paidDates
-      // YEARLY: use stored payment's month/day in the displayed year so we never store the wrong date
-      const occurrenceDate =
-        p.interval === "YEARLY"
-          ? new Date(
-              payment.dueDate.toDate().getFullYear(),
-              p.dueDate.toDate().getMonth(),
-              p.dueDate.toDate().getDate(),
-            )
-          : payment.dueDate.toDate();
-      const occurrenceTime = startOfDay(occurrenceDate).getTime();
-      const paidDates = p.paidDates || [];
-      const alreadyPaid = paidDates.some(
-        (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
-      );
-      if (alreadyPaid) {
-        const newPaidDates = paidDates.filter(
-          (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime,
-        );
-        return {
-          ...p,
-          paidDates: newPaidDates,
-        };
-      }
-      return {
-        ...p,
-        paidDates: [
-          ...paidDates,
-          Timestamp.fromDate(startOfDay(occurrenceDate)),
-        ],
-      };
+    let updatedPayments: Payment[] = payments.map((p) => {
+      if (p.id === "SNOWBALL") return updatedSnowball;
+      if (p.id === snowballTargetPaymentId) return updatedTarget;
+      return p;
     });
 
-    const updatedPayment = updatedPayments.find((x) => x.id === originalId);
+    if (updatedTarget.total! <= 0) {
+      const remainder = virtualPayment.amount - (targetDebt.total ?? 0);
+      updatedPayments = await handleDebtPayoff(
+        targetDebt,
+        updatedPayments,
+        remainder,
+      );
+    }
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, activeBudgetId!);
+    await editPayments(updatedPayments, activeBudgetId);
+  }
 
-    // Roll snowball when a debt is paid off
+  async function handleDebtPayoff(
+    paidOffPayment: Payment,
+    updatedPayments: Payment[],
+    remainder: number = 0,
+  ): Promise<Payment[]> {
+    setPaidOffDebtName(paidOffPayment.name);
+
+    const remainingDebts = updatedPayments.filter(
+      (p) =>
+        p.type === "DEBT" &&
+        p.id !== "SNOWBALL" &&
+        p.id !== paidOffPayment.id &&
+        p.total != null &&
+        p.total > 0,
+    );
+    const nextId =
+      remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0]?.id ??
+      null;
+
+    setSnowballTargetPaymentId(nextId);
+    await editSnowballTargetPaymentId(activeBudgetId!, nextId);
+
+    const snowballPayment = updatedPayments.find((p) => p.id === "SNOWBALL");
+    const newSnowballAmount =
+      (snowballPayment?.amount ?? 0) + paidOffPayment.amount;
+
+    let finalPayments: Payment[];
+    if (snowballPayment) {
+      finalPayments = updatedPayments.map((p) =>
+        p.id === "SNOWBALL" ? { ...p, amount: newSnowballAmount } : p,
+      );
+    } else {
+      finalPayments = [
+        ...updatedPayments,
+        {
+          id: "SNOWBALL",
+          name: "❄️Snowball❄️",
+          amount: newSnowballAmount,
+          dueDate: payDate!,
+          interval: "SPLIT" as Interval,
+          recurring: true,
+          paidDates: [],
+          paidAmounts: {},
+          type: "DEBT",
+        } as Payment,
+      ];
+    }
+
+    if (remainder > 0) {
+      const newBudget = totalSpendingBudget + remainder;
+      setTotalSpendingBudget(newBudget);
+      await editTotalSpendingBudget(newBudget, activeBudgetId!);
+    }
+    Toast.show({
+      type: "success",
+      text1: `${paidOffPayment.name} paid off!`,
+      text2:
+        remainder > 0
+          ? `$${remainder.toFixed(2)} returned to budget`
+          : undefined,
+    });
+
+    return finalPayments;
+  }
+
+  async function handleUpdatePaid(virtualPayment: Payment) {
+    const originalId = getOriginalIdFromVirtualId(virtualPayment.id);
+
+    // Snowball payment routes to its own handler
+    if (originalId === "SNOWBALL") {
+      await applySnowballToTarget(virtualPayment);
+      return;
+    }
+
+    const originalPayment = payments.find((p) => p.id === originalId);
+    if (!originalPayment) return;
+
+    const updatedPayment = computeUpdatedPayment(
+      originalPayment,
+      virtualPayment,
+    );
+    let updatedPayments: Payment[] = payments.map((p) =>
+      p.id === originalId ? updatedPayment : p,
+    );
+
+    // Is Debt Paid Off?
     const paidOffPayment = updatedPayments.find(
       (p) =>
         p.id === originalId &&
@@ -329,27 +332,11 @@ export default function MainView() {
         p.total != null &&
         p.total <= 0,
     );
-    if (paidOffPayment && paidOffPayment.amount != null) {
-      setPaidOffDebtName(paidOffPayment.name);
-      Toast.show({
-        type: "success",
-        text1: `${paidOffPayment.name} paid off!`,
-      });
-      // Roll: add paid-off minimum to snowball, move target to next lowest balance
-      const newSnowball = snowball + paidOffPayment.amount;
-      const remainingDebts = updatedPayments.filter(
-        (p) => p.type === "DEBT" && p.total != null && p.total > 0,
-      );
-      const nextTarget =
-        remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0] ??
-        null;
-      const nextId = nextTarget?.id ?? null;
-
-      setSnowballTargetPaymentId(nextId);
-      await editSnowballTargetPaymentId(activeBudgetId!, nextId);
-      setSnowball(newSnowball);
-      await editSnowball(activeBudgetId!, newSnowball);
+    if (paidOffPayment) {
+      updatedPayments = await handleDebtPayoff(paidOffPayment, updatedPayments);
     }
+    setPayments(updatedPayments);
+    await editPayments(updatedPayments, activeBudgetId!);
 
     return updatedPayment;
   }
@@ -727,7 +714,7 @@ export default function MainView() {
   if (showBudgetWarning) {
     return (
       <View
-      //   className="flex flex-col items-center gap-2"
+      //   className="items-center gap-2"
       >
         <Text>You have nothing left in your budget!</Text>
         <Text>Try moving some money from another envelope</Text>
@@ -780,7 +767,7 @@ export default function MainView() {
           }
         }}
       >
-        <View className="flex flex-col items-start gap-2">
+        <View className="items-start gap-2">
           <MyText className="text-my-white-light mb-2 text-center w-full">
             This is your current budget.
           </MyText>
@@ -818,16 +805,16 @@ export default function MainView() {
           </View>
         </View>
       </PageTour>
-      <View className="w-full text-center flex flex-col items-center flex-1 bg-my-blue-dark overflow-y-auto pb-[4rem]">
+      <View className="w-full text-center  items-center flex-1 bg-my-blue-dark overflow-y-auto pb-[4rem]">
         {showLoading && <Loading text={loadingText} />}
         <ScrollView
           className="w-full h-full"
-          contentContainerClassName="flex flex-col items-center"
+          contentContainerClassName="items-center"
         >
-          <Header links={["Settings", "Debt", "Bills", "Feedback"]} />
+          <Header links={["Settings", "Debt", "Bills"]} />
 
           <MyText className="text-lg font-semibold text-my-white-dark mb-2 py-4">
-            {activeBudgetName}
+            "{activeBudgetName}"
           </MyText>
           {!payDate && (
             <MyText className="text-sm text-my-white-light mb-2">

@@ -48,7 +48,7 @@ export default function AddCashToEnvelopeForm({
             onChange={setCashAmount}
             placeholder="Amount"
           />
-          <View className="flex flex-col w-full items-center gap-2">
+          <View className="w-full items-center gap-2">
             <Btn text="Add" onPress={addCashToEnvelope} color="green" />
             <Btn
               onPress={() => setIsAddingCashToEnvelope(false)}

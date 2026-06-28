@@ -30,11 +30,11 @@ export default function GiveAndTake({
 
   return (
     <Modal>
-      <View className="w-full h-screen flex flex-col items-center justify-center bg-my-black-base">
+      <View className="w-full h-screen  items-center justify-center bg-my-black-base">
         <MyText className="text-2xl font-bold mb-4 text-my-white-dark">
           Give and Take
         </MyText>
-        <View className="flex flex-col items-center gap-2 w-full">
+        <View className="items-center gap-2 w-full">
           <MyText className="text-my-white-light">
             Amount to <MyText className="text-my-red-light">take</MyText> from{" "}
             <MyText className="text-my-white-dark">"{envelope.name}"</MyText>
@@ -44,7 +44,6 @@ export default function GiveAndTake({
             value={amountToGiveOrTake}
             onChange={setAmountToGiveOrTake}
             placeholder="Enter amount"
-            allowNegative
           />
           <MyText className="text-my-white-light">
             Where do you want to put the $$$?

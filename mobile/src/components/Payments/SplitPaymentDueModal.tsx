@@ -22,7 +22,7 @@ export default function SplitPaymentDueModal({
 }: SplitPaymentDueModalProps) {
   return (
     <View>
-      <View className="flex flex-col items-center justify-center min-h-screen p-4">
+      <View className="items-center justify-center min-h-screen p-4">
         <View className="bg-my-black-base border-2 border-my-white-dark rounded-lg p-6 max-w-md w-full text-center">
           <Text className="text-xl text-my-white-light mb-4">
             Target Date Reached! 🎯
@@ -54,7 +54,7 @@ export default function SplitPaymentDueModal({
             Did you complete this payment?
           </Text>
 
-          <View className="flex flex-col gap-3">
+          <View className="gap-3">
             <Btn color="green" onPress={() => onMarkPaid(payment)}>
               Yes, Mark as Paid
             </Btn>

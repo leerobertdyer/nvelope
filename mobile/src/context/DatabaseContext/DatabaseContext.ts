@@ -7,8 +7,6 @@ type Timestamp = FirebaseFirestoreTypes.Timestamp;
 interface IDatabaseContext {
     isLoadingDb: boolean,
     setIsLoadingDb: (b: boolean) => void;
-    snowball: number,
-    setSnowball: (n: number) => void;
     snowballTargetPaymentId: string | null;
     setSnowballTargetPaymentId: (id: string | null) => void;
     payDate: Timestamp | null | undefined

@@ -1,7 +1,7 @@
 import { useState, useCallback, type ReactNode } from "react";
 import { ToastContext, type Toast, type ToastType } from "./ToastContext";
 import ToastContainer from "../../components/Notifications/Toast";
-import { randomUUID } from "../../util";
+import { randomUUID } from "../../util/util";
 
 const TOAST_DURATION = 3000; // 3 seconds
 

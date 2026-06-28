@@ -8,7 +8,7 @@ import { Payment } from "../../types";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
-import { deriveIsPaid, removeVirtualIdPortion } from "../../util";
+import { deriveIsPaid, removeVirtualIdPortion } from "../../util/util";
 import { editPayments } from "../../firebase/editData";
 import PaymentForm from "../Forms/PaymentForm";
 import Btn from "../Buttons/Btn";
@@ -226,7 +226,7 @@ export default function BigPayment({
         </View>
         {showExtraPaymentForm && p?.type === "DEBT" && (p.total ?? 0) > 0 && (
           <View>
-            <View className="flex flex-col items-center justify-center gap-2 w-full">
+            <View className="items-center justify-center gap-2 w-full">
               <MyText className="text-sm font-medium mb-1">
                 Extra Payment
               </MyText>

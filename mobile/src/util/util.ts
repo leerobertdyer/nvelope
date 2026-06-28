@@ -4,8 +4,8 @@ import type {
   Interval,
   IntervalDates,
   Backup,
-} from "./types";
-import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "./constants";
+} from "../types";
+import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../constants";
 import {
   addMonths,
   addWeeks,
@@ -999,6 +999,7 @@ function getSplitPaymentOccurrencesInRange(
  * Get all virtual payment occurrences for the current pay period only.
  * Used by MainView for display and paymentsTotal for calculations.
  * Aligns with getCurrentIntervalDateRange so we don't show dates outside the interval.
+ * Automatically adds Snowball if > 0
  */
 export function getVirtualPaymentsForCurrentPeriod(
   payments: Payment[],

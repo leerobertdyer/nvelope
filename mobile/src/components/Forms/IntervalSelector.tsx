@@ -24,7 +24,7 @@ export default function IntervalSelector({
 }: IntervalSelectorProps) {
   return (
     <View
-      className={`bg-my-black-base w-full border-2 p-2 rounded-md my-4 flex flex-col items-center ${className}`}
+      className={`bg-my-black-base w-full p-2 rounded-md my-4 items-center ${className}`}
     >
       {label && (
         <MyText className="text-my-white-dark text-center w-full">

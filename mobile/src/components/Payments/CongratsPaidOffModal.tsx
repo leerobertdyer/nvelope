@@ -10,7 +10,7 @@ interface IProps {
 export default function CongratsPaidOffModal({ debtName, onClose }: IProps) {
   return (
     <Modal backdropColor={"#242424"}>
-      <View className=" h-[50%] m-auto w-full p-4 items-center">
+      <View className="h-[50%] m-auto w-full p-4 items-center">
         <MyText className="text-2xl text-my-green-light">
           🎉 Congrats! 🎉
         </MyText>

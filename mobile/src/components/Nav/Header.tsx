@@ -4,7 +4,7 @@ import {
   calculateCurrentIntervalStart,
   getIntervalDateRange,
   getNumberOfDaysFromInterval,
-} from "../../util";
+} from "../../util/util";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { View } from "react-native";

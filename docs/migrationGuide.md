@@ -124,12 +124,12 @@ Replace HTML primitives as you go:
 
 ```tsx
 // Web
-<div className="flex flex-col p-4">
+<div className="p-4">
   <p className="text-lg font-bold">Hello</p>
 </div>
 
 // Native (NativeWind)
-<View className="flex flex-col p-4">
+<View className="p-4">
   <Text className="text-lg font-bold">Hello</Text>
 </View>
 ```

@@ -105,10 +105,10 @@ export default function LoginForm() {
   }
 
   return (
-    <View className="w-full h-fit p-4 flex flex-col justify-center items-center gap-6 bg-my-green-dark rounded-md">
+    <View className="w-full h-fit p-4  justify-center items-center gap-6 bg-my-green-dark rounded-md">
       <View
         style={{ display: showForgotPassword ? "flex" : "none" }}
-        className="flex flex-col justify-center items-center gap-6 w-full"
+        className="justify-center items-center gap-6 w-full"
       >
         <Input
           id="forgot-email"
@@ -116,7 +116,7 @@ export default function LoginForm() {
           value={forgotEmail}
           onChange={(e) => setForgotEmail(e)}
         />
-        <View className="flex flex-col items-center gap-2 w-full">
+        <View className="items-center gap-2 w-full">
           <Btn
             color="red"
             text={isSendingReset ? "Sending…" : "Send reset link"}
@@ -141,7 +141,7 @@ export default function LoginForm() {
 
       <View
         style={{ display: !showForgotPassword ? "flex" : "none" }}
-        className="flex flex-col justify-center items-center gap-4 w-full"
+        className="justify-center items-center gap-4 w-full"
       >
         <Input
           id="login-email"

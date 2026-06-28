@@ -209,7 +209,7 @@ export default function Nvelopes({
   const envelopesTotalStr = `$${Math.ceil(envelopesTotal).toFixed(2)}`;
 
   return (
-    <View className="flex flex-col justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">
+    <View className="justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">
       <View className="w-full">
         <EnvelopeBox
           isShown={showEnvelopes}

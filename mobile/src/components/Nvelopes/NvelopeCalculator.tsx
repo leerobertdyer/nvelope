@@ -70,7 +70,7 @@ export default function NvelopeCalculator({
             )}
 
             <Btn text="Spend All" onPress={spendAll} color="gold" />
-            <View className="w-full max-w-[20rem] flex flex-col justify-center items-center gap-4">
+            <View className="w-full max-w-[20rem]  justify-center items-center gap-4">
               <MoneyInput
                 id="newAmountForEnvelope"
                 label="Amount To Spend"

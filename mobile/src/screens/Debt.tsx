@@ -4,7 +4,6 @@ import Header from "../components/Nav/Header";
 import {
   editIsNewUser,
   editPayments,
-  editSnowball,
   editSnowballTargetPaymentId,
 } from "../firebase/editData";
 import { format, parse } from "date-fns";
@@ -22,13 +21,14 @@ import {
   calculatePayoffDate,
   calculateSnowballPayoffDate,
   paymentsTotal,
-} from "../util";
+} from "../util/util";
 import MoneyInput from "../components/Payments/MoneyInput";
 import { MyText } from "../components/MyText";
 import Btn from "../components/Buttons/Btn";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import Hr from "../components/Hr";
+import { getSnowballAmount } from "../util/paymentUtils";
 
 interface iDebtGrid {
   name: string;
@@ -111,8 +111,6 @@ export default function Debt() {
     setPayments,
     payPeriodInterval,
     payDate,
-    snowball,
-    setSnowball,
     snowballTargetPaymentId,
     setSnowballTargetPaymentId,
     isNewUser,
@@ -222,6 +220,14 @@ export default function Debt() {
     setIsLoading(false);
   }, [payments]);
 
+  async function handleUpdateSnowball(n: number) {
+    const newPayments = payments.map((p) =>
+      p.id === "SNOWBALL" ? { ...p, amount: p.amount + n } : p,
+    );
+    setPayments(newPayments);
+    await editPayments(newPayments, activeBudgetId!);
+  }
+
   async function saveDebtInformation(d: Payment) {
     const nextPayments = payments.map((p) => {
       if (p.id === d.id) return d;
@@ -257,7 +263,6 @@ export default function Debt() {
   }
 
   async function handleEditSnowball() {
-    await editSnowball(activeBudgetId!, snowball);
     setShowEditSnowball(false);
     Toast.show({ type: "success", text1: "Snowball updated" });
   }
@@ -282,13 +287,15 @@ export default function Debt() {
     if (newTotal <= 0 && debt.amount != null) {
       const paidOffPayment = updatedPayments.find((p) => p.id === debt.id)!;
       const { updatedPayments: withBakedSnowball, nextTargetId: nextId } =
-        applyPayoffRoll(updatedPayments, paidOffPayment, snowball);
+        applyPayoffRoll(
+          updatedPayments,
+          paidOffPayment,
+          getSnowballAmount(payments),
+        );
       setSnowballTargetPaymentId(nextId);
       await editSnowballTargetPaymentId(activeBudgetId, nextId);
       setPayments(withBakedSnowball);
       await editPayments(withBakedSnowball, activeBudgetId);
-      setSnowball(0);
-      await editSnowball(activeBudgetId, 0);
       setPaidOffDebtName(debt.name);
     }
     Toast.show({ type: "success", text1: "Payment applied" });
@@ -303,9 +310,9 @@ export default function Debt() {
           <MoneyInput
             id="newSnowballAmount"
             label="Snowball Amount"
-            value={snowball}
-            onChange={setSnowball}
-            placeholder={`$${snowball.toFixed(2)}`}
+            value={getSnowballAmount(payments)}
+            onChange={handleUpdateSnowball}
+            placeholder={`$${getSnowballAmount(payments).toFixed(2)}`}
           />
           <Btn color="gold" onPress={handleEditSnowball} text="Save" />
           <Btn
@@ -362,12 +369,12 @@ export default function Debt() {
     const d = debtMenuOpen;
     return (
       <View className="w-screen h-screen bg-my-black-dark">
-        <View className="flex flex-col items-center justify-center text-center w-full gap-4">
+        <View className="items-center justify-center text-center w-full gap-4">
           <MyText className="text-my-white-light font-medium">{d.name}</MyText>
           <MyText className="text-my-white-dark text-sm">
             What would you like to do?
           </MyText>
-          <View className="flex flex-col gap-2 w-full max-w-[16rem] items-center">
+          <View className="gap-2 w-full max-w-[16rem] items-center">
             <Btn
               color="green"
               onPress={() => {
@@ -420,7 +427,7 @@ export default function Debt() {
 
   const snowballPayoffDate = calculateSnowballPayoffDate(
     debts,
-    snowball,
+    getSnowballAmount(payments),
     effectiveSnowballTargetId,
     new Date(),
     extraMonthly || undefined,
@@ -449,7 +456,7 @@ export default function Debt() {
           an additional payment.
         </MyText>
       </PageTour>
-      <Header links={["Home", "Settings", "Bills", "Feedback"]} />
+      <Header links={["Home", "Settings", "Bills"]} />
       <ScrollView
         contentContainerClassName="items-center"
         className="w-full h-screen my-0 py-[3rem] bg-my-blue-dark text-my-white-dark"
@@ -476,7 +483,7 @@ export default function Debt() {
               <MyText className="text-my-white-dark text-sm font-medium mb-2 text-center">
                 What if you pay extra each month?
               </MyText>
-              <View className="flex flex-col items-center gap-2 mb-2">
+              <View className="items-center gap-2 mb-2">
                 <MoneyInput
                   id="extra-monthly"
                   label=""
@@ -492,7 +499,7 @@ export default function Debt() {
           <View className="flex items-center justify-between gap-2">
             <MyText className="text-my-white-light">❄️ Snowball ❄️</MyText>
             <MyText className="text-my-white-dark">
-              ${snowball.toFixed(2)}
+              ${getSnowballAmount(payments).toFixed(2)}
             </MyText>
           </View>
           <Pressable onPress={() => setShowEditSnowball(true)}>
@@ -575,7 +582,7 @@ export default function Debt() {
               .sort((a, b) => (a.total ?? 0) - (b.total ?? 0));
             return (
               <View className="bg-my-black-base/40 p-4 rounded-md w-[80%] m-auto">
-                <View className="flex flex-col gap-2 mb-4">
+                <View className="gap-2 mb-4">
                   <MyText className="text-my-white-dark text-sm text-center">
                     Snowball target
                   </MyText>
@@ -604,7 +611,9 @@ export default function Debt() {
                       ))}
                     </Picker>
                   ) : (
-                    <MyText className="text-gray-400 text-center">"{debtsByLowestOwed[0].name}"</MyText>
+                    <MyText className="text-gray-400 text-center">
+                      "{debtsByLowestOwed[0].name}"
+                    </MyText>
                   )}
                 </View>
                 <MyText className="text-xs text-center text-my-white-dark mb-[1rem]">

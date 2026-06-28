@@ -3,7 +3,7 @@ import { useState } from "react";
 import Entypo from "@expo/vector-icons/Entypo";
 import { Pressable, View } from "react-native";
 import { Payment } from "../../types";
-import { deriveIsPaid, getEffectivePaymentAmount } from "../../util";
+import { deriveIsPaid, getEffectivePaymentAmount } from "../../util/util";
 import { MyText } from "../MyText";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
@@ -152,7 +152,7 @@ export default function PaymentMap({
           setter={() => setShowCurrent(!showCurrent)}
         />
         {showCurrent && (
-          <View className=" bg-my-black-dark">
+          <View className="bg-my-black-dark">
             {paymentsThisPeriod.map((p) => (
               <RenderPayment key={p.id} p={p} />
             ))}

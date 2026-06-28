@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Nav/Header";
 import EditSpendingBudget from "../components/Forms/EditSpendingBudget";
-import BudgetSettingsFields from "../components/Forms/BudgetSettingsFields";
+import BudgetSettingsFields, {
+  BudgetMeta,
+} from "../components/Forms/BudgetSettingsFields";
 import CreateLoginWithEmail from "../components/Forms/CreateLoginWithEmail";
 import { format } from "date-fns";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -28,13 +30,12 @@ import {
   getBudgetMeta,
   leaveBudget,
   removeMemberFromBudget,
-  updateBudgetName,
 } from "../firebase/budgets";
 import { DateData } from "react-native-calendars";
 import { sendPasswordResetEmailToUser } from "../firebase/emailAndPassword";
 import { deleteAccount } from "../firebase/deleteAccount";
 import firestore from "@react-native-firebase/firestore";
-import { Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, View } from "react-native";
 import Btn from "../components/Buttons/Btn";
 import Input from "../components/Input";
 import { MyText } from "../components/MyText";
@@ -100,16 +101,6 @@ export default function Settings() {
   const [deletePasswordStep, setDeletePasswordStep] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
 
-  // Budget management (create, share, delete, leave, members)
-  const [budgetMeta, setBudgetMeta] = useState<{
-    name: string;
-    ownerId: string;
-    memberIds: string[];
-    memberEmails?: Record<string, string>;
-  } | null>(null);
-  const [editingBudgetName, setEditingBudgetName] = useState(false);
-  const [budgetNameInput, setBudgetNameInput] = useState("");
-  const [isSavingBudgetName, setIsSavingBudgetName] = useState(false);
   const [newBudgetName, setNewBudgetName] = useState("");
   const [shareEmail, setShareEmail] = useState("");
   const [isLoadingBudgetMeta, setIsLoadingBudgetMeta] = useState(false);
@@ -125,6 +116,8 @@ export default function Settings() {
   );
   const [showCreateBudgetModal, setShowCreateBudgetModal] = useState(false);
   const [showEditBudgetModal, setShowEditBudgetModal] = useState(false);
+  const [showBudgetSelector, setShowBudgetSelector] = useState(false);
+  const [budgetMeta, setBudgetMeta] = useState<BudgetMeta | null>(null);
 
   const currentProviderTypes = ["google.com"];
   const isOwner = user && budgetMeta && budgetMeta.ownerId === user.uid;
@@ -196,9 +189,11 @@ export default function Settings() {
     setIsEditingCash(false);
   }
 
-  function handleIntervalChange(interval: Interval) {
+  async function handleIntervalChange(interval: Interval) {
+    console.log("DID WE MAKE IT!?", interval);
     setShowIntervalSettings(true);
     setNewInterval(interval);
+    await editPayPeriodInterval(interval, activeBudgetId!);
     setNewIntervalBudgetAmount(totalSpendingBudget.toString());
   }
 
@@ -486,36 +481,6 @@ export default function Settings() {
     }
   }
 
-  async function handleSaveBudgetName() {
-    if (!user || !activeBudgetId || !budgetNameInput.trim()) return;
-    setIsSavingBudgetName(true);
-    try {
-      const ok = await updateBudgetName(
-        activeBudgetId,
-        user.uid,
-        budgetNameInput.trim(),
-      );
-      if (ok) {
-        const meta = await getBudgetMeta(activeBudgetId);
-        if (meta)
-          setBudgetMeta({
-            name: meta.name,
-            ownerId: meta.ownerId,
-            memberIds: meta.memberIds,
-            memberEmails: meta.memberEmails,
-          });
-        await refetchBudgets();
-        setEditingBudgetName(false);
-        setBudgetNameInput("");
-        Toast.show({ type: "success", text1: "Budget name updated" });
-      } else {
-        Toast.show({ type: "error", text1: "Failed to update budget name" });
-      }
-    } finally {
-      setIsSavingBudgetName(false);
-    }
-  }
-
   function handleLogOut() {
     signout();
     navigationRef.navigate("Home" as never);
@@ -529,23 +494,23 @@ export default function Settings() {
     selected: boolean;
   }) {
     return (
-        <Btn
-          selected={selected}
-          color="gold"
-          text={text}
-          onPress={() => {
-            switch (text.toLowerCase()) {
-              case "budgets":
-                setShowAccountSettings(false);
-                setShowBudgets(true);
-                break;
-              case "account":
-                setShowBudgets(false);
-                setShowAccountSettings(true);
-                break;
-            }
-          }}
-        />
+      <Btn
+        selected={selected}
+        color="gold"
+        text={text}
+        onPress={() => {
+          switch (text.toLowerCase()) {
+            case "budgets":
+              setShowAccountSettings(false);
+              setShowBudgets(true);
+              break;
+            case "account":
+              setShowBudgets(false);
+              setShowAccountSettings(true);
+              break;
+          }
+        }}
+      />
     );
   }
 
@@ -571,7 +536,7 @@ export default function Settings() {
     }
     return (
       <Pressable
-        className=" justify-center h-fit w-[80%] m-auto items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8"
+        className="justify-center h-fit w-[80%] m-auto items-center p-4 bg-my-black-dark rounded-md border-2 border-my-red-dark text-my-white-light my-8"
         onPress={() => {
           setShowDeleteAccountConfirm(true);
           setDeletePasswordStep(false);
@@ -590,14 +555,14 @@ export default function Settings() {
 
   function BackupSelectionScreen() {
     return (
-      <View className="flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4">
+      <View className="justify-between items-center w-[80%] p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark my-4">
         <MyText className="text-sm font-bold text-my-white-light">
           ⚠️ Revert To A Backup
         </MyText>
         <MyText className="text-xs text-my-white-base">
           Restores payments and envelopes
         </MyText>
-        <View>
+        <View className="w-full">
           {isLoadingSafeBackups ? (
             <MyText className="text-xs py-2">Loading backups...</MyText>
           ) : safeBackups.length === 0 ? (
@@ -606,7 +571,11 @@ export default function Settings() {
             </MyText>
           ) : (
             <Picker
-              className="py-2 px-4 bg-white rounded-md text-my-black-dark my-2"
+              style={{
+                width: "100%",
+                backgroundColor: "#fff2d9",
+                borderRadius: 9,
+              }}
               onValueChange={(e) => handleSelectBackup(e as string)}
             >
               <Picker.Item
@@ -634,31 +603,33 @@ export default function Settings() {
   function BackupSelectionConfirmScreen() {
     if (!selectedSafeBackup) return null;
     return (
-      <View className="bg-my-black-dark">
-        <View className="w-full text-center">
-          <MyText className="text-xl text-my-red-light">Are you sure?</MyText>
-          <MyText>You can undo this restore if needed.</MyText>
-          <MyText>
-            Your budget will reset to {selectedSafeBackup.totalSpendingBudget}
-          </MyText>
-          <MyText>
-            You will have {selectedSafeBackup.payments?.length ?? 0} payments
-            totaling $
-            {(selectedSafeBackup.payments ?? [])
-              .reduce((acc, p) => p.amount + acc, 0)
-              .toFixed(2)}
-          </MyText>
-          <MyText>
-            You will have {selectedSafeBackup.nvelopes?.length ?? 0} envelopes
-            totaling $
-            {(selectedSafeBackup.nvelopes ?? [])
-              .reduce((acc, p) => p.total + acc, 0)
-              .toFixed(2)}
-          </MyText>
+      <Modal>
+        <View className="bg-my-black-dark">
+          <View className="w-full text-center">
+            <MyText className="text-xl text-my-red-light">Are you sure?</MyText>
+            <MyText>You can undo this restore if needed.</MyText>
+            <MyText>
+              Your budget will reset to {selectedSafeBackup.totalSpendingBudget}
+            </MyText>
+            <MyText>
+              You will have {selectedSafeBackup.payments?.length ?? 0} payments
+              totaling $
+              {(selectedSafeBackup.payments ?? [])
+                .reduce((acc, p) => p.amount + acc, 0)
+                .toFixed(2)}
+            </MyText>
+            <MyText>
+              You will have {selectedSafeBackup.nvelopes?.length ?? 0} envelopes
+              totaling $
+              {(selectedSafeBackup.nvelopes ?? [])
+                .reduce((acc, p) => p.total + acc, 0)
+                .toFixed(2)}
+            </MyText>
+          </View>
+          <Btn color="gold" text="Save" onPress={handleRestoreBackup} />
+          <Btn color="red" text="Back" onPress={handleCloseBackup} />
         </View>
-        <Btn color="gold" text="Save" onPress={handleRestoreBackup} />
-        <Btn color="red" text="Back" onPress={handleCloseBackup} />
-      </View>
+      </Modal>
     );
   }
 
@@ -666,7 +637,7 @@ export default function Settings() {
     if (!asyncStorageBackup) return null;
     return (
       <Pressable
-        className="flex flex-col justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4 gap-2"
+        className="justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4 gap-2"
         onPress={() => setShowUndoConfirm(true)}
       >
         <MyText className="text-sm font-bold">Undo Last Restore</MyText>
@@ -689,7 +660,7 @@ export default function Settings() {
   if (showCreateBudgetModal)
     return (
       <ScrollView className="py-[2rem] gap-2">
-        <View className="flex flex-col items-center gap-4 w-full text-center">
+        <View className="items-center gap-4 w-full text-center">
           <Input
             id="new-budget-name"
             label="New budget name"
@@ -698,6 +669,8 @@ export default function Settings() {
             onChange={(e) => setNewBudgetName(e)}
           />
           <BudgetSettingsFields
+            budgetMeta={budgetMeta}
+            setBudgetMeta={setBudgetMeta}
             mode="create"
             intervalValue={newBudgetInterval}
             onIntervalChange={(d) => setNewBudgetInterval(d)}
@@ -729,39 +702,38 @@ export default function Settings() {
 
   if (showEditBudgetModal)
     return (
-      <View>
-        <View className="flex flex-col items-center gap-4 w-full text-center">
-          <BudgetSettingsFields
-            mode="edit"
-            intervalValue={payPeriodInterval}
-            onIntervalChange={handleIntervalChange}
-            payDate={payDate?.toDate() ?? null}
-            onPayDateChange={handlePayDateChange}
-            onEditRemainingBalance={() => {
-              setShowEditBudgetModal(false);
-              setIsEditingCash(true);
-            }}
-          />
+      <Modal>
+        <View className="justify-center gap-4 w-full h-full bg-my-black-base">
+          <View className="w-full h-fit m-auto bg-my-blue-dark p-4">
+            <BudgetSettingsFields
+              budgetMeta={budgetMeta}
+              setBudgetMeta={setBudgetMeta}
+              mode="edit"
+              intervalValue={payPeriodInterval}
+              onIntervalChange={handleIntervalChange}
+              payDate={payDate?.toDate() ?? null}
+              onPayDateChange={handlePayDateChange}
+              onEditRemainingBalance={() => {
+                setShowEditBudgetModal(false);
+                setIsEditingCash(true);
+              }}
+            />
+            <View className="gap-2">
+              <Btn
+                text="Back"
+                color="red"
+                onPress={() => setShowEditBudgetModal(false)}
+              />
+            </View>
+          </View>
         </View>
-        <View className="gap-2">
-          <Btn
-            text="Done"
-            color="gold"
-            onPress={() => setShowEditBudgetModal(false)}
-          />
-          <Btn
-            text="Back"
-            color="red"
-            onPress={() => setShowEditBudgetModal(false)}
-          />
-        </View>
-      </View>
+      </Modal>
     );
 
   if (showIntervalSettings) {
     return (
       <View className="absolute inset-0 w-screen h-screen z-100 select-none">
-        <View className="flex flex-col bg-my-black-dark w-screen h-screen justify-center items-center ">
+        <View className="bg-my-black-dark w-screen h-screen justify-center items-center ">
           <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
             What will your new {newInterval} total budget be?
           </MyText>
@@ -772,7 +744,7 @@ export default function Settings() {
             onChange={(d) => setNewIntervalBudgetAmount(d.toString())}
             placeholder="New budget amount"
           />
-          <View className="flex flex-col items-center gap-4 w-full">
+          <View className="items-center gap-4 w-full">
             <Btn
               text="Cancel"
               color="red"
@@ -810,7 +782,7 @@ export default function Settings() {
               </MyText>
             </View>
           ) : (
-            <View className="flex flex-col items-center justify-center w-full">
+            <View className="items-center justify-center w-full">
               <MyText className="text-xl text-my-red-light font-bold mb-4">
                 Enter your password
               </MyText>
@@ -877,15 +849,16 @@ export default function Settings() {
           also manage budgets, backups, and account options.
         </MyText>
       </PageTour>
-      <Header links={["Home", "Debt", "Bills", "Feedback"]} />
-      <MyText className="text-3xl font-bold mb-4 text-center pt-8">Settings</MyText>
+      <Header links={["Home", "Debt", "Bills"]} />
+      <MyText className="text-3xl font-bold mb-4 text-center pt-8">
+        Settings
+      </MyText>
       <View className="w-full flex justify-center items-center gap-4 mb-4">
         <SettingsButton text="Budgets" selected={showBudgets} />
         <SettingsButton text="Account" selected={showAccountSettings} />
       </View>
-      {/* Budgets: name, members, switcher, create, share, edit, delete/leave */}
       {showBudgets && (
-        <View className="w-full flex flex-col items-center gap-2 mt-4 py-[1rem]">
+        <View className="w-full items-center gap-2 mt-4 py-[1rem]">
           {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
             <>
               <ScrollView
@@ -896,45 +869,20 @@ export default function Settings() {
                   Budget name
                 </MyText>
                 {isOwner ? (
-                  editingBudgetName ? (
-                    <View className="flex flex-col items-center gap-2 w-full">
-                      <Input
-                        id="budget-name-edit"
-                        label=""
-                        placeholder="Budget name"
-                        value={budgetNameInput}
-                        onChange={(e) => setBudgetNameInput(e)}
-                      />
-                      <Btn
-                        text="Save"
-                        color="green"
-                        onPress={handleSaveBudgetName}
-                        disabled={isSavingBudgetName || !budgetNameInput.trim()}
-                      />
-                      <Btn
-                        text="Cancel"
-                        color="red"
-                        onPress={() => {
-                          setEditingBudgetName(false);
-                          setBudgetNameInput("");
-                        }}
-                      />
-                    </View>
-                  ) : (
-                    <View className="items-center gap-2 w-full">
-                      <MyText className="text-my-black-dark font-medium">
-                        {budgetMeta.name}
-                      </MyText>
-                      <Btn
-                        text="Edit"
-                        color="gold"
-                        onPress={() => {
-                          setBudgetNameInput(budgetMeta.name);
-                          setEditingBudgetName(true);
-                        }}
-                      />
-                    </View>
-                  )
+                  <View className="items-center gap-2 w-full">
+                    <MyText className="text-my-black-dark font-medium">
+                      "{budgetMeta.name}"
+                    </MyText>
+                    <Btn
+                      text="Edit Budget"
+                      color="red"
+                      onPress={() => {
+                        setShowEditBudgetModal(true);
+                        // setBudgetNameInput(budgetMeta.name);
+                        // setEditingBudgetName(true);
+                      }}
+                    />
+                  </View>
                 ) : (
                   <MyText className="text-my-black-dark font-medium">
                     {budgetMeta.name}
@@ -945,7 +893,7 @@ export default function Settings() {
               {isOwner &&
                 budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
                   .length > 0 && (
-                  <View className="w-full max-w-[20rem] flex flex-col gap-1 bg-my-black-base rounded-md p-2 text-my-white-light">
+                  <View className="w-full max-w-[20rem]  gap-1 bg-my-black-base rounded-md p-2 text-my-white-light">
                     <MyText className="text-xs text-center">
                       {budgetMeta.name} Members
                     </MyText>
@@ -976,86 +924,99 @@ export default function Settings() {
             </>
           )}
 
-          {budgets.length > 1 && (
-            <View className="w-full mt-4">
-              <MyText className="text-xs text-center text-my-black-dark">
-                Select A Budget
-              </MyText>
-              <Picker
-                style={{
-                  width: "100%",
-                  backgroundColor: "#fff2d9",
-                  borderRadius: 9,
-                }}
-                id="budget-switcher"
-                selectedValue={activeBudgetId ?? ""}
-                onValueChange={(e) => setActiveBudgetId(e || null)}
-              >
-                {budgets.map((b) => (
-                  <Picker.Item key={b.id} value={b.id} label={b.name} />
-                ))}
-              </Picker>
-            </View>
-          )}
-          <Btn
-            text="Create new budget"
-            color="gold"
-            onPress={() => setShowCreateBudgetModal(true)}
-          />
-          {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
-            <>
-              {isOwner && (
-                <Btn
-                  text="Share budget"
-                  color="green"
-                  onPress={() => setShowShareBudgetModal(true)}
-                />
-              )}
-              {isOwner && (
-                <Btn
-                  text="Edit budget"
-                  color="gold"
-                  onPress={() => setShowEditBudgetModal(true)}
-                />
-              )}
-              {isOwner && showShareBudgetModal && (
-                <View className="bg-my-white-base">
-                  <View className="w-full flex-col gap-2 items-center justify-center">
-                    <Input
-                      id="Email to share with"
-                      label="Share budget by email"
-                      placeholder="email@example.com"
-                      value={shareEmail}
-                      onChange={(e) => setShareEmail(e)}
+          <View className="w-full gap-4">
+            {budgets.length > 1 && showBudgetSelector ? (
+              <Modal>
+                <View className="w-full h-screen bg-my-black-base">
+                  <View className="w-full m-auto gap-8">
+                    <MyText className="text-xs text-center text-my-black-dark">
+                      Select A Budget
+                    </MyText>
+                    <Picker
+                      style={{
+                        width: "100%",
+                        backgroundColor: "#fff2d9",
+                        borderRadius: 9,
+                      }}
+                      id="budget-switcher"
+                      selectedValue={activeBudgetId ?? ""}
+                      onValueChange={(e) => {
+                        setActiveBudgetId(e || null);
+                        setShowBudgetSelector(false);
+                      }}
+                    >
+                      {budgets.map((b) => (
+                        <Picker.Item key={b.id} value={b.id} label={b.name} />
+                      ))}
+                    </Picker>
+                    <Btn
+                      color="red"
+                      text="Back"
+                      onPress={() => setShowBudgetSelector(false)}
                     />
                   </View>
-                  <Btn color="gold" text="Share" onPress={handleInvite} />
-                  <Btn
-                    color="red"
-                    text="Cancel"
-                    onPress={() => setShowShareBudgetModal(false)}
-                  />
                 </View>
-              )}
-              {isOwner && (
-                <Btn
-                  text="Delete this budget"
-                  color="red"
-                  onPress={() => setShowDeleteBudgetConfirm(true)}
-                />
-              )}
-              {isMember && (
-                <Btn
-                  text="Leave this budget"
-                  color="red"
-                  onPress={() => setShowLeaveBudgetConfirm(true)}
-                />
-              )}
-            </>
-          )}
+              </Modal>
+            ) : (
+              <Btn
+                color="gold"
+                text="Show Other Budgets"
+                onPress={() => setShowBudgetSelector(true)}
+              />
+            )}
+            <Btn
+              text="Create new budget"
+              color="green"
+              onPress={() => setShowCreateBudgetModal(true)}
+            />
+            {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
+              <>
+                {isOwner && (
+                  <Btn
+                    text="Share budget"
+                    color="green"
+                    onPress={() => setShowShareBudgetModal(true)}
+                  />
+                )}
+                {isOwner && showShareBudgetModal && (
+                  <View className="bg-my-white-base">
+                    <View className="w-full flex-col gap-2 items-center justify-center">
+                      <Input
+                        id="Email to share with"
+                        label="Share budget by email"
+                        placeholder="email@example.com"
+                        value={shareEmail}
+                        onChange={(e) => setShareEmail(e)}
+                      />
+                    </View>
+                    <Btn color="gold" text="Share" onPress={handleInvite} />
+                    <Btn
+                      color="red"
+                      text="Cancel"
+                      onPress={() => setShowShareBudgetModal(false)}
+                    />
+                  </View>
+                )}
+                {isOwner && (
+                  <Btn
+                    text="Delete this budget"
+                    color="red"
+                    onPress={() => setShowDeleteBudgetConfirm(true)}
+                  />
+                )}
+                {isMember && (
+                  <Btn
+                    text="Leave this budget"
+                    color="red"
+                    onPress={() => setShowLeaveBudgetConfirm(true)}
+                  />
+                )}
+              </>
+            )}
+          </View>
         </View>
       )}
-      <View className="overflow-y-scroll  flex flex-col items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
+      <View className="overflow-y-scroll   items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
         <LogoutButton user={user!} onPress={handleLogOut} />
 
         {showBudgets && (

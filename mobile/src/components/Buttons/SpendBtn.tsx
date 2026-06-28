@@ -22,7 +22,7 @@ export default function SpendBtn({ onPress }: { onPress: () => void }) {
   };
 
   return (
-    <View className="w-[12rem] h-[12rem] bg-my-white-dark items-center justify-center rounded-3xl">
+    <View className="w-[12rem] h-[12rem] bg-my-white-dark border-2 border-my-black-base items-center justify-center rounded-3xl">
       <Pressable
         onPress={onPress}
         onPressIn={pressIn}

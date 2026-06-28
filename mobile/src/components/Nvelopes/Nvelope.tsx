@@ -68,9 +68,9 @@ export default function Nvelope({
     case "deleteEnvelope":
       return (
         <View className="flex-1 bg-my-red-dark justify-center">
-          <View className="p-4 gap-2 bg-my-black-dark w-screen h-fit justify-center items-center ">
+          <View className="p-4 gap-2 bg-my-black-dark w-screen h-[50%] m-auto justify-center items-center ">
             <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
-              Are you sure you want to delete {envelope.name}?
+              Are you sure you want to delete "{envelope.name}"?
             </MyText>
             <MyText className="text-xs w-[85%] text-center text-white">
               This will not affect your available budget.

@@ -28,7 +28,7 @@ export default function PageTour({
         onRequestClose={() => (false)}>
 
       <View className="flex-row items-center justify-center bg-my-black-dark/80  w-full h-[42%] p-4 ml-auto mt-auto">
-        <View className="bg-my-black-base border border-my-white-dark/20 rounded-lg shadow-lg w-full p-5 flex flex-col gap-4 text-my-white-light">
+        <View className="bg-my-black-base border border-my-white-dark/20 rounded-lg shadow-lg w-full p-5  gap-4 text-my-white-light">
           <View className="text-sm">{children}</View>
           <Btn color="gold" text="Got it" onPress={onDismiss} />
         </View>

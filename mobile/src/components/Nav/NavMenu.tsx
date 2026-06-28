@@ -37,11 +37,11 @@ export default function NavMenu({
           onPress={() => setShowMenu(false)}
         >
           <View
-            className="bg-my-white-dark w-[100%] h-[70%] p-4"
+            className="bg-my-white-dark w-[100%] h-[70%] p-4 justify-center"
             onStartShouldSetResponder={() => true} // prevents tap-through closing when tapping menu itself
           >
-            <View className="p-4 w-full justify-around h-fit m-auto gap-8">
-              <View className="gap-8">
+            <View className="w-full h-full justify-center">
+              <View className="gap-8 h-fit">
                 {links.map((link) => (
                   <Pressable
                     key={link}
@@ -55,12 +55,14 @@ export default function NavMenu({
                     </MyText>
                   </Pressable>
                 ))}
+                <View className="mt-8">
+                  <Btn
+                    color="red"
+                    onPress={() => setShowMenu(false)}
+                    text="Close"
+                  />
+                </View>
               </View>
-              <Btn
-                color="red"
-                onPress={() => setShowMenu(false)}
-                text="Close"
-              />
             </View>
           </View>
         </Pressable>

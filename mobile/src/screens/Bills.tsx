@@ -89,11 +89,10 @@ export default function Bills() {
     { label: "Home", href: "/" },
     { label: "Settings", href: "/settings" },
     { label: "Debt", href: "/debt" },
-    { label: "Feedback", href: "/feedback" },
   ];
 
   return (
-    <div className="flex flex-col items-center justify-start py-[5rem] w-full min-h-screen bg-my-blue-dark text-my-white-dark">
+    <div className="items-center justify-start py-[5rem] w-full min-h-screen bg-my-blue-dark text-my-white-dark">
       <PageTour
         visible={isNewUser}
         onDismiss={async () => {
