@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TextInput } from "react-native";
+import { View, TextInput, BlurEvent } from "react-native";
 import { MyText } from "./MyText";
 
 interface ITextInput {
@@ -11,6 +11,7 @@ interface ITextInput {
   numeric?: boolean;
   maxLength?: number;
   ref?: React.RefObject<TextInput | null>;
+  onBlur?: (e: BlurEvent) => void;
 }
 
 export default function Input({
@@ -21,6 +22,7 @@ export default function Input({
   numeric,
   maxLength,
   ref,
+  onBlur,
 }: ITextInput) {
   return (
     // self-center ensures the w-[90%] centers itself within its parent container
@@ -35,6 +37,7 @@ export default function Input({
         onChangeText={onChange}
         keyboardType={numeric ? "decimal-pad" : "default"}
         maxLength={maxLength}
+        onBlur={onBlur}
       />
     </View>
   );

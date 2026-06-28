@@ -42,8 +42,8 @@ import { Picker } from "@react-native-picker/picker";
 import MoneyInput from "../components/Payments/MoneyInput";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import signout from "../firebase/signOut";
-import { useNavigation } from "@react-navigation/native";
 import Toast from "react-native-toast-message";
+import { navigationRef } from "../../App";
 type User = FirebaseAuthTypes.User;
 const { Timestamp } = firestore;
 
@@ -54,7 +54,6 @@ export default function Settings() {
   const { user } = useAuth();
   const { activeBudgetId, budgets, setActiveBudgetId, refetchBudgets } =
     useBudget();
-  const navigation = useNavigation();
   const {
     payPeriodInterval,
     setTotalSpendingBudget,
@@ -519,27 +518,34 @@ export default function Settings() {
 
   function handleLogOut() {
     signout();
-    navigation.navigate("Home" as never);
+    navigationRef.navigate("Home" as never);
   }
 
-  function SettingsButton({ text }: { text: string }) {
+  function SettingsButton({
+    text,
+    selected,
+  }: {
+    text: string;
+    selected: boolean;
+  }) {
     return (
-      <Btn
-        color="gold"
-        text={text}
-        onPress={() => {
-          switch (text.toLowerCase()) {
-            case "budgets":
-              setShowAccountSettings(false);
-              setShowBudgets(true);
-              break;
-            case "account":
-              setShowBudgets(false);
-              setShowAccountSettings(true);
-              break;
-          }
-        }}
-      />
+        <Btn
+          selected={selected}
+          color="gold"
+          text={text}
+          onPress={() => {
+            switch (text.toLowerCase()) {
+              case "budgets":
+                setShowAccountSettings(false);
+                setShowBudgets(true);
+                break;
+              case "account":
+                setShowBudgets(false);
+                setShowAccountSettings(true);
+                break;
+            }
+          }}
+        />
     );
   }
 
@@ -585,13 +591,19 @@ export default function Settings() {
   function BackupSelectionScreen() {
     return (
       <View className="flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4">
-        <MyText className="text-sm font-bold text-my-white-light">⚠️ Revert To A Backup</MyText>
-        <MyText className="text-xs text-my-white-base">Restores payments and envelopes</MyText>
+        <MyText className="text-sm font-bold text-my-white-light">
+          ⚠️ Revert To A Backup
+        </MyText>
+        <MyText className="text-xs text-my-white-base">
+          Restores payments and envelopes
+        </MyText>
         <View>
           {isLoadingSafeBackups ? (
             <MyText className="text-xs py-2">Loading backups...</MyText>
           ) : safeBackups.length === 0 ? (
-            <MyText className="text-xs py-2 text-gray-400">No backups yet</MyText>
+            <MyText className="text-xs py-2 text-gray-400">
+              No backups yet
+            </MyText>
           ) : (
             <Picker
               className="py-2 px-4 bg-white rounded-md text-my-black-dark my-2"
@@ -868,8 +880,8 @@ export default function Settings() {
       <Header links={["Home", "Debt", "Bills", "Feedback"]} />
       <MyText className="text-3xl font-bold mb-4 text-center">Settings</MyText>
       <View className="w-full flex justify-center items-center gap-4 mb-4">
-        <SettingsButton text="Budgets" />
-        <SettingsButton text="Account" />
+        <SettingsButton text="Budgets" selected={showBudgets} />
+        <SettingsButton text="Account" selected={showAccountSettings} />
       </View>
       {/* Budgets: name, members, switcher, create, share, edit, delete/leave */}
       {showBudgets && (

@@ -12,19 +12,27 @@ import {
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Settings from "./src/screens/Settings";
 import "./global.css";
 import Toast, { BaseToast, BaseToastProps } from "react-native-toast-message";
+import Debt from "./src/screens/Debt";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
+
+export const navigationRef = createNavigationContainerRef();
 
 const toastConfig = {
   success: (props: BaseToastProps) => (
     <BaseToast
       {...props}
       style={{ borderLeftColor: "#FFFFFF", backgroundColor: "#076346" }}
-      contentContainerStyle={{ paddingHorizontal: 15,}}
-      text1Style={{ fontSize: 15, fontWeight: "600", color: "#fcca68", fontFamily: "myFont" }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{
+        fontSize: 15,
+        fontWeight: "600",
+        color: "#fcca68",
+        fontFamily: "myFont",
+      }}
       text2Style={{ fontSize: 13 }}
     />
   ),
@@ -46,6 +54,7 @@ function RootStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={Home} />
       <Stack.Screen name="Settings" component={Settings} />
+      <Stack.Screen name="Debt" component={Debt} />
     </Stack.Navigator>
   );
 }
@@ -74,10 +83,10 @@ function GlobalLayout() {
         paddingRight: insets.right,
       }}
     >
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <RootStack />
+        <Toast config={toastConfig} />
       </NavigationContainer>
-      <Toast config={toastConfig} />
     </SafeAreaView>
   );
 }

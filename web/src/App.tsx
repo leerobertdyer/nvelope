@@ -5,7 +5,7 @@ import Settings from "../../mobile/src/screens/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
 import { useDisableNumberScroll } from "./hooks";
 import Debt from "./Pages/Debt";
-import Bills from "./Pages/Bills";
+import Bills from "../../mobile/src/screens/Bills";
 import Feedback from "./Pages/Feedback";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {

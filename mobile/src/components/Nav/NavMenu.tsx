@@ -1,8 +1,8 @@
 import { Modal, Pressable, View } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import Btn from "../Buttons/Btn";
-import { useNavigation } from "@react-navigation/native";
 import { MyText } from "../MyText";
+import { navigationRef } from "../../../App";
 
 interface NavMenuProps {
   showMenu: boolean;
@@ -15,7 +15,6 @@ export default function NavMenu({
   setShowMenu,
   links,
 }: NavMenuProps) {
-  const navigation = useNavigation();
   return (
     <>
       <Pressable onPress={() => setShowMenu(true)}>
@@ -47,7 +46,7 @@ export default function NavMenu({
                   <Pressable
                     key={link}
                     onPress={() => {
-                      navigation.navigate(link as never);
+                      navigationRef.navigate(link as never);
                       setShowMenu(false);
                     }}
                   >

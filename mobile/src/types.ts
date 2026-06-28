@@ -19,7 +19,8 @@ export interface Payment {
     paidAmounts?: Record<string, number> // for DEBT: key = occurrence timestamp string, value = amount applied (so we can reverse on unmark)
     type: "DEBT" | "BILL" | "FUND" | undefined
     isInInterval?: boolean
-    total?: number
+    total?: number // Running Total Remaining
+    originalTotal?: number // Original Amount due when added to budget
     interestRate?: number
     recurring?: boolean // For SPLIT: true = monthly recurring (like rent), false = Fund (planned expense to save toward)
     paymentsLeft?: number

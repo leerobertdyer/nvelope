@@ -9,7 +9,6 @@ import IntervalSelector from "../components/Forms/IntervalSelector";
 import { useAuth } from "../context/AuthContext/useAuth";
 import { DateData, Calendar } from "react-native-calendars";
 import { useDatabase } from "../context/DatabaseContext/useDatabase";
-import { useNavigation } from "@react-navigation/native";
 import { useBudget } from "../context/BudgetContext/useBudget";
 import firebase from "@react-native-firebase/firestore";
 import { ScrollView, View } from "react-native";
@@ -18,13 +17,13 @@ import Btn from "./Buttons/Btn";
 import { Interval } from "../types";
 import { MONTHLY } from "../constants";
 import Toast from "react-native-toast-message";
+import { navigationRef } from "../../App";
 const { Timestamp } = firebase;
 
 export default function FirstTimeSetup() {
   const { user } = useAuth();
   const { setActiveBudgetId, refetchBudgets } = useBudget();
   const { setPayDate, setPayPeriodInterval, setDocumentExists } = useDatabase();
-  const navigate = useNavigation();
 
   const [newPayDate, setNewPayDate] = useState("");
   const [interval, setInterval] = useState<Interval | null>(MONTHLY);
@@ -59,7 +58,7 @@ export default function FirstTimeSetup() {
     setDocumentExists(true);
     await refetchBudgets();
     setIsSubmitting(false);
-    navigate.navigate("Home" as never);
+    navigationRef.navigate("Home" as never);
   }
 
   async function handleSubmit() {
@@ -95,7 +94,7 @@ export default function FirstTimeSetup() {
     setDocumentExists(true);
     refetchBudgets();
     setIsSubmitting(false);
-    navigate.navigate("Home" as never);
+    navigationRef.navigate("Home" as never);
   }
 
   return (

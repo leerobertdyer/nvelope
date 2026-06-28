@@ -3,12 +3,7 @@ import { BIWEEKLY, MONTHLY, SPLIT, WEEKLY, YEARLY } from "../../constants";
 import type { Interval, Payment } from "../../types";
 import { useState } from "react";
 import { editPayments } from "../../firebase/editData";
-import {
-  deriveIsPaid,
-  generateFreshPayment,
-  isDateInCurrentPayPeriod,
-  removeVirtualIdPortion,
-} from "../../util";
+import { generateFreshPayment, removeVirtualIdPortion } from "../../util";
 import { format, addDays } from "date-fns";
 // import { useToast } from "../../Context/ToastContext/useToast";
 import PaymentTypeSelector, {
@@ -41,7 +36,6 @@ interface IPaymentForm {
 export default function PaymentForm({
   paymentToEdit,
   user,
-  handleUpdateBudget,
   handleBack,
 }: IPaymentForm) {
   const { activeBudgetId } = useBudget();
@@ -170,20 +164,28 @@ export default function PaymentForm({
     });
 
     resetForm();
-    Toast.show({type: "success", text1: "Payment updated"});
+    Toast.show({ type: "success", text1: "Payment updated" });
   }
 
   async function addPayment() {
     if (!user || !newPayment) return;
     if (payments.some((p) => p.id === newPayment.id)) {
-      Toast.show({type: "error", text1: "Payment name already exists"});
+      Toast.show({ type: "error", text1: "Payment name already exists" });
       return;
     }
-    const updatedPayments = [...payments, newPayment];
+    let updatedPayments: Payment[] = [];
+    if (newPayment.type === "DEBT") {
+      updatedPayments = [
+        ...payments,
+        { ...newPayment, originalTotal: newPayment.total },
+      ];
+    } else {
+      updatedPayments = [...payments, newPayment];
+    }
     setPayments(updatedPayments);
     if (!activeBudgetId) return;
     await editPayments(updatedPayments, activeBudgetId);
-    Toast.show({type: "success", text1: "Payment added"});
+    Toast.show({ type: "success", text1: "Payment added" });
     resetForm();
   }
 
@@ -227,7 +229,8 @@ export default function PaymentForm({
       ? format(addDays(new Date(), 1), "yyyy-MM-dd")
       : undefined;
 
-  const paymentLabel = selectedPaymentType === "FUND" ? "Funding Goal" : "Payment Amount"
+  const paymentLabel =
+    selectedPaymentType === "FUND" ? "Funding Goal" : "Payment Amount";
 
   return (
     <ScrollView
@@ -258,8 +261,13 @@ export default function PaymentForm({
                   <MyText className="font-bold">{getPaymentTypeLabel()}</MyText>
                 </MyText>
 
-                <Pressable className="mb-8" onPress={() => setSelectedPaymentType(null)}>
-                  <MyText className="text-my-blue-light text-xs">(Change)</MyText>
+                <Pressable
+                  className="mb-8"
+                  onPress={() => setSelectedPaymentType(null)}
+                >
+                  <MyText className="text-my-blue-light text-xs">
+                    (Change)
+                  </MyText>
                 </Pressable>
               </View>
             )}
@@ -342,7 +350,12 @@ export default function PaymentForm({
                 </MyText>
                 <View className="text-black rounded-md overflow-hidden border-2 border-my-white-dark text-center bg-my-white-light p-2 w-full">
                   <Calendar
-                  markedDates={{[newPaymentDate]: {selected: true, selectedColor: "#fcca68"}}}
+                    markedDates={{
+                      [newPaymentDate]: {
+                        selected: true,
+                        selectedColor: "#fcca68",
+                      },
+                    }}
                     theme={{
                       calendarBackground: "#fff2d9",
                       textSectionTitleColor: "#b6c1cd",
@@ -393,7 +406,9 @@ export default function PaymentForm({
               newPayment.name &&
               newPayment.amount > 0 && (
                 <View className="flex flex-col items-center w-full mt-4">
-                  <MyText className="text-my-white-light">Interest rate (%) – optional</MyText>
+                  <MyText className="text-my-white-light">
+                    Interest rate (%) – optional
+                  </MyText>
                   <Input
                     id="interestRate"
                     numeric
@@ -417,7 +432,9 @@ export default function PaymentForm({
               newPayment.name &&
               newPayment.amount > 0 && (
                 <View className="flex flex-col items-center w-full mt-4">
-                  <MyText className="text-my-white-light">Payment Frequency</MyText>
+                  <MyText className="text-my-white-light">
+                    Payment Frequency
+                  </MyText>
                   <Picker
                     selectedValue={newPayment.interval || ""}
                     onValueChange={(e) =>
@@ -448,10 +465,10 @@ export default function PaymentForm({
           <View className="text-my-black-base pb-8 w-full mt-4">
             <View className="text-center mb-4 p-3 bg-my-white-light rounded-md mx-4 items-center">
               <MyText className="text-my-green-dark font-bold">
-                {newPayment?.name} {" "}
-              <MyText className="text-my-red-dark">
-                ${newPayment?.amount.toFixed(2)}
-              </MyText>
+                {newPayment?.name}{" "}
+                <MyText className="text-my-red-dark">
+                  ${newPayment?.amount.toFixed(2)}
+                </MyText>
               </MyText>
               <View className="text-sm mt-1">
                 {splitBillAcrossPayPeriods ? (

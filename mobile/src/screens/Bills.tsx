@@ -4,13 +4,13 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useToast } from "../Context/ToastContext/useToast";
 import Header from "../components/Nav/Header";
-import type { Payment } from "../types";
+import type { Payment } from "../../../web/src/types";
 import { editIsNewUser, editPayments } from "../firebase/editData";
-import { getBillIntervalLabel, paymentsTotal, removeVirtualIdPortion } from "../util";
+import { getBillIntervalLabel, paymentsTotal, removeVirtualIdPortion } from "../../../web/src/util";
 import BigPayment from "../Views/BigPayment";
 import { Timestamp } from "firebase/firestore";
 import { format, startOfDay } from "date-fns";
-import PageTour from "../../../mobile/src/components/PageTour";
+import PageTour from "../components/PageTour";
 
 export default function Bills() {
   const { user } = useAuth();

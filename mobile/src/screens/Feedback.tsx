@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Header from "../components/Nav/Header";
-import Button from "../../../mobile/src/components/Buttons/Btn";
-import TextInput from "../../../mobile/src/components/Input";
+import Button from "../components/Buttons/Btn";
+import TextInput from "../components/Input";
 import { IoStar, IoStarOutline } from "react-icons/io5";
 import { useToast } from "../Context/ToastContext/useToast";
 

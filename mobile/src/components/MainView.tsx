@@ -43,13 +43,12 @@ import { MyText } from "./MyText";
 import Btn from "./Buttons/Btn";
 import AddCashToEnvelopeForm from "./Forms/AddCashToEnvelopeForm";
 import Header from "./Nav/Header";
-import { useNavigation } from "@react-navigation/native";
+import { navigationRef } from "../../App";
 import Toast from "react-native-toast-message";
 
 export default function MainView() {
   const { user } = useAuth();
   const { activeBudgetId, budgets } = useBudget();
-  const navigation = useNavigation();
   const activeBudgetName =
     budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
   const {
@@ -805,7 +804,7 @@ export default function MainView() {
               center. Tap the balance to edit it. You can also adjust your pay
               date and budget interval in{" "}
             </MyText>
-            <Pressable onPress={() => navigation.navigate("Settings" as never)}>
+            <Pressable onPress={() => navigationRef.navigate("Settings" as never)}>
               <MyText className="text-my-blue-light text-center text-xl">
                 Settings
               </MyText>
