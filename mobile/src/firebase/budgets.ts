@@ -326,7 +326,6 @@ export async function getPendingInvites(user: User): Promise<PendingInvite[]> {
   let tokenEmail: string | null = null;
   try {
     const token = await user.getIdToken(false);
-    console.log("raw token:", token);
 
     const payload = decodeIdTokenPayload(token);
     tokenEmail =

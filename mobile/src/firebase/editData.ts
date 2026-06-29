@@ -11,6 +11,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 type Timestamp = FirebaseFirestoreTypes.Timestamp;
 type User = FirebaseAuthTypes.User;
 
+export async function createUserProfile(user: { uid: string; email: string | null }) {
+  try {
+    const userRef = firestore().collection("users").doc(user.uid);
+    
+    // Use set with merge: true so it won't overwrite existing fields if they run this twice
+    await userRef.set({
+      email: user.email?.toLowerCase() ?? "",
+      updatedAt: firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return true;
+  } catch (e) {
+    console.error("Failed to create user profile document:", e);
+    return false;
+  }
+}
+
 export async function editResetBudgetTimestamp(
   resetBudgetTimestamp: Timestamp,
   budgetId: string,

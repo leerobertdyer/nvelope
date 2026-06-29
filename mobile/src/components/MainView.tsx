@@ -784,24 +784,23 @@ export default function MainView() {
           </MyText>
           <MyText className="text-my-white-light">
             <MyText className="text-my-white-dark">Clear</MyText> - Clear All
-            Envelopes
+            Envelopes | Mark all payments unpaid
           </MyText>
-          Useful when starting a new period.
           <View>
             <MyText className="text-my-white-light p-2">
-              See <MyText className="text-my-green-base">days left </MyText>till
-              next pay date top left, and{" "}
-              <MyText className="text-my-red-light">current balance</MyText> top
-              center. Tap the balance to edit it. You can also adjust your pay
-              date and budget interval in{" "}
+              Top Left:{" "}
+              <MyText className="text-my-green-base">Days left </MyText>till
+              next pay date.
             </MyText>
-            <Pressable
-              onPress={() => navigationRef.navigate("Settings" as never)}
-            >
-              <MyText className="text-my-blue-light text-center text-xl">
-                Settings
-              </MyText>
-            </Pressable>
+            <MyText className="text-my-white-light p-2">
+              Top Center:{" "}
+              <MyText className="text-my-red-light">Current balance.</MyText>{" "}
+              Tap to edit.
+            </MyText>
+            <MyText className="text-my-white-light">
+              {" "}
+              You can also adjust your pay date and budget interval in Settings.
+            </MyText>
           </View>
         </View>
       </PageTour>
@@ -817,12 +816,17 @@ export default function MainView() {
             "{activeBudgetName}"
           </MyText>
           {!payDate && (
-            <MyText className="text-sm text-my-white-light mb-2">
-              <MyText className="text-my-green-light underline">
-                LINK:Set your pay date in Settings
-              </MyText>{" "}
-              to see your pay period in the header.
-            </MyText>
+            <Pressable
+              className="mb-4"
+              onPress={() => navigationRef.navigate("Settings" as never)}
+            >
+              <MyText className="text-my-green-light underline text-center">
+                Set your pay date in Settings
+              </MyText>
+              <MyText className="text-sm text-my-white-light text-center">
+                to see your pay period in the header.
+              </MyText>
+            </Pressable>
           )}
           <ActionButtons
             onPaymentClick={handleAddPayment}

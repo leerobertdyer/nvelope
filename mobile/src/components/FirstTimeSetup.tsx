@@ -3,7 +3,11 @@ import {
   createFirstBudget,
   completeDemoWithDefaults,
 } from "../firebase/budgets";
-import { editPayDate, editPayPeriodInterval } from "../firebase/editData";
+import {
+  createUserProfile,
+  editPayDate,
+  editPayPeriodInterval,
+} from "../firebase/editData";
 import Header from "../components/Nav/Header";
 import IntervalSelector from "../components/Forms/IntervalSelector";
 import { useAuth } from "../context/AuthContext/useAuth";
@@ -42,6 +46,10 @@ export default function FirstTimeSetup() {
   async function handleSkip() {
     if (!user) return;
     setIsSubmitting(true);
+
+    // Ensure the root user document exists!
+    await createUserProfile(user);
+
     const ok = await completeDemoWithDefaults(user);
     if (!ok) {
       Toast.show({
@@ -64,6 +72,8 @@ export default function FirstTimeSetup() {
   async function handleSubmit() {
     if (!user) return;
     const date = new Date(newPayDate);
+    // Ensure the root user document exists!
+    await createUserProfile(user);
 
     if (!date || !(date instanceof Date) || !interval) {
       Toast.show({
@@ -75,7 +85,10 @@ export default function FirstTimeSetup() {
     setIsSubmitting(true);
     const budgetId = await createFirstBudget(user);
     if (!budgetId) {
-      Toast.show({type: "error", text1: "Could not create account. Please try again."}); 
+      Toast.show({
+        type: "error",
+        text1: "Could not create account. Please try again.",
+      });
       setIsSubmitting(false);
       return;
     }
@@ -84,7 +97,10 @@ export default function FirstTimeSetup() {
       await editPayPeriodInterval(interval, budgetId);
     } catch (e) {
       console.error("FirstTimeSetup save failed:", e);
-      Toast.show({type: "error", text1: "Something went wrong. Please try again."});
+      Toast.show({
+        type: "error",
+        text1: "Something went wrong. Please try again.",
+      });
       setIsSubmitting(false);
       return;
     }

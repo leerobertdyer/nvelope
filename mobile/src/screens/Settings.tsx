@@ -401,7 +401,7 @@ export default function Settings() {
               }),
             });
           } catch (e) {
-            console.error("Failed to send invite email", {e, SERVER_URL});
+            console.error("Failed to send invite email", { e, SERVER_URL });
           }
         }
         Toast.show({
@@ -957,7 +957,7 @@ export default function Settings() {
                   </View>
                 </View>
               </Modal>
-            ) : (
+            ) : budgets.length > 1 &&(
               <Btn
                 color="gold"
                 text="Show Other Budgets"
@@ -1062,33 +1062,40 @@ export default function Settings() {
             )}
 
             {showDeleteBudgetConfirm && (
-              <View className="bg-my-black-dark">
-                <View className="text-center">
-                  <MyText className="text-xl text-my-red-light mb-2">
-                    Delete this budget?
-                  </MyText>
-                  <MyText className="text-my-white-light">
-                    All data (envelopes, payments) will be permanently deleted.
-                    All members will lose access. This cannot be undone.
-                  </MyText>
-                  {isDeletingBudget && (
-                    <MyText className="text-my-white-dark text-sm mt-4">
-                      Deleting…
-                    </MyText>
-                  )}
+              <Modal>
+                <View className="bg-my-black-dark w-full h-screen">
+                  <View className="items-center gap-4 w-full h-fit m-auto">
+                    <View className="items-center w-full">
+                      <MyText className="text-xl text-my-red-light mb-2">
+                        Delete this budget?
+                      </MyText>
+                      <MyText className="text-my-white-light w-[80%] text-center">
+                        All data (envelopes, payments) will be permanently
+                        deleted. All members will lose access.
+                        <MyText className="text-my-red-light underline">
+                          {" "}This cannot be undone.
+                        </MyText>
+                      </MyText>
+                      {isDeletingBudget && (
+                        <MyText className="text-my-white-dark text-sm mt-4">
+                          Deleting…
+                        </MyText>
+                      )}
+                    </View>
+                    <Btn
+                      color="red"
+                      text="Delete Budget"
+                      disabled={isDeletingBudget}
+                      onPress={handleDeleteBudgetConfirm}
+                    />
+                    <Btn
+                      color="gold"
+                      text="Cancel"
+                      onPress={() => setShowDeleteBudgetConfirm(false)}
+                    />
+                  </View>
                 </View>
-                <Btn
-                  color="red"
-                  text="Delete Budget"
-                  disabled={isDeletingBudget}
-                  onPress={handleDeleteBudgetConfirm}
-                />
-                <Btn
-                  color="red"
-                  text="Cancel"
-                  onPress={() => setShowDeleteBudgetConfirm(false)}
-                />
-              </View>
+              </Modal>
             )}
 
             {showLeaveBudgetConfirm && (
