@@ -19,7 +19,12 @@ import Toast, { BaseToast, BaseToastProps } from "react-native-toast-message";
 import Debt from "./src/screens/Debt";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 
-export const navigationRef = createNavigationContainerRef();
+export type RootStackParamList = {
+  Home: undefined;
+  Settings: { showEditMenu?: boolean };
+};
+
+export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const toastConfig = {
   success: (props: BaseToastProps) => (

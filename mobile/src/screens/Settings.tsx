@@ -44,7 +44,11 @@ import MoneyInput from "../components/Payments/MoneyInput";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import signout from "../firebase/signOut";
 import Toast from "react-native-toast-message";
-import { navigationRef } from "../../App";
+import { navigationRef, RootStackParamList } from "../../App";
+import { useRoute, RouteProp } from '@react-navigation/native';
+
+type SettingsRouteProp = RouteProp<RootStackParamList, 'Settings'>;
+
 type User = FirebaseAuthTypes.User;
 const { Timestamp } = firestore;
 
@@ -68,8 +72,6 @@ export default function Settings() {
     setIsNewUser,
   } = useDatabase();
 
-  const [showIntervalSettings, setShowIntervalSettings] =
-    useState<boolean>(false);
   const [newIntervalBudgetAmount, setNewIntervalBudgetAmount] =
     useState<string>("");
   const [newInterval, setNewInterval] = useState<Interval | null>(null);
@@ -118,11 +120,21 @@ export default function Settings() {
   const [showEditBudgetModal, setShowEditBudgetModal] = useState(false);
   const [showBudgetSelector, setShowBudgetSelector] = useState(false);
   const [budgetMeta, setBudgetMeta] = useState<BudgetMeta | null>(null);
+  
 
   const currentProviderTypes = ["google.com"];
   const isOwner = user && budgetMeta && budgetMeta.ownerId === user.uid;
   const isMember =
     user && budgetMeta && budgetMeta.memberIds.includes(user.uid) && !isOwner;
+
+  // For missing payDate - auto open edit menu
+  const route = useRoute<SettingsRouteProp>();
+
+  useEffect(() => {
+    if (route.params?.showEditMenu) {
+      setShowEditBudgetModal(true);
+    }
+  }, [route.params]);
 
   // Load safe backups for active budget and check for localStorage backup
   useEffect(() => {
@@ -183,34 +195,15 @@ export default function Settings() {
   }, [user]);
 
   function resetState() {
-    setShowIntervalSettings(false);
     setNewIntervalBudgetAmount("");
     setNewInterval(null);
     setIsEditingCash(false);
   }
 
   async function handleIntervalChange(interval: Interval) {
-    console.log("DID WE MAKE IT!?", interval);
-    setShowIntervalSettings(true);
     setNewInterval(interval);
     await editPayPeriodInterval(interval, activeBudgetId!);
     setNewIntervalBudgetAmount(totalSpendingBudget.toString());
-  }
-
-  async function handleUpdateInterval() {
-    if (!newIntervalBudgetAmount || !newInterval) return;
-    try {
-      const nextBudget = Number(newIntervalBudgetAmount);
-      setPayPeriodInterval(newInterval);
-      if (!activeBudgetId) return;
-      await editPayPeriodInterval(newInterval, activeBudgetId);
-      await editTotalSpendingBudget(nextBudget, activeBudgetId);
-      setTotalSpendingBudget(nextBudget);
-      setShowIntervalSettings(false);
-      Toast.show({ type: "success", text1: "Budget interval updated" });
-    } catch (e) {
-      Toast.show({ type: "error", text1: "Failed to update budget interval" });
-    }
   }
 
   async function handlePayDateChange(d: DateData) {
@@ -730,36 +723,6 @@ export default function Settings() {
       </Modal>
     );
 
-  if (showIntervalSettings) {
-    return (
-      <View className="absolute inset-0 w-screen h-screen z-100 select-none">
-        <View className="bg-my-black-dark w-screen h-screen justify-center items-center ">
-          <MyText className="p-4 rounded-md text-my-white-dark w-full text-center">
-            What will your new {newInterval} total budget be?
-          </MyText>
-          <MoneyInput
-            id="newIntervalBudgetAmount"
-            label=""
-            value={Number(newIntervalBudgetAmount) || 0}
-            onChange={(d) => setNewIntervalBudgetAmount(d.toString())}
-            placeholder="New budget amount"
-          />
-          <View className="items-center gap-4 w-full">
-            <Btn
-              text="Cancel"
-              color="red"
-              onPress={() => setShowIntervalSettings(false)}
-            />
-            <Btn
-              text="Save"
-              color="green"
-              onPress={() => handleUpdateInterval()}
-            />
-          </View>
-        </View>
-      </View>
-    );
-  }
   if (showDeleteAccountConfirm)
     return (
       <View className="bg-my-black-dark h-full p-8 ">
@@ -849,7 +812,7 @@ export default function Settings() {
           also manage budgets, backups, and account options.
         </MyText>
       </PageTour>
-      <Header links={["Home", "Debt", "Bills"]} />
+      <Header links={["Home", "Debt"]} />
       <MyText className="text-3xl font-bold mb-4 text-center pt-8">
         Settings
       </MyText>
@@ -957,12 +920,14 @@ export default function Settings() {
                   </View>
                 </View>
               </Modal>
-            ) : budgets.length > 1 &&(
-              <Btn
-                color="gold"
-                text="Show Other Budgets"
-                onPress={() => setShowBudgetSelector(true)}
-              />
+            ) : (
+              budgets.length > 1 && (
+                <Btn
+                  color="gold"
+                  text="Show Other Budgets"
+                  onPress={() => setShowBudgetSelector(true)}
+                />
+              )
             )}
             <Btn
               text="Create new budget"
@@ -1073,7 +1038,8 @@ export default function Settings() {
                         All data (envelopes, payments) will be permanently
                         deleted. All members will lose access.
                         <MyText className="text-my-red-light underline">
-                          {" "}This cannot be undone.
+                          {" "}
+                          This cannot be undone.
                         </MyText>
                       </MyText>
                       {isDeletingBudget && (

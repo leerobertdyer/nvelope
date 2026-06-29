@@ -6,6 +6,7 @@ import { Payment } from "../../types";
 import { deriveIsPaid, getEffectivePaymentAmount } from "../../util/util";
 import { MyText } from "../MyText";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 
 interface PaymentMapProps {
   handleUpdatePaid: (payment: Payment) => void;
@@ -17,9 +18,18 @@ export default function PaymentMap({
   handleUpdatePaid,
   paymentsThisPeriod,
 }: PaymentMapProps) {
-  const [showCurrent, setShowCurrent] = useState(true);
+  const { payments } = useDatabase();
 
-  function RenderPayment({ p }: { p: Payment }) {
+  const [showCurrent, setShowCurrent] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+
+  function RenderPayment({
+    p,
+    hidePayments,
+  }: {
+    p: Payment;
+    hidePayments?: boolean;
+  }) {
     // Check if this is a SPLIT payment (ID contains "-SPLIT-")
     const isSplitPayment = p.id.includes("-SPLIT-");
     const isLastPayment =
@@ -40,34 +50,36 @@ export default function PaymentMap({
           ${isLastPayment ? "border-2 border-my-white-dark" : ""}
           ${deriveIsPaid(p) ? "bg-my-black-light" : "bg-my-black-base"} `}
       >
-        <Pressable
-          className="flex items-center justify-start ml-[.75rem] mr-[1rem]"
-          onPress={(e) => {
-            e.stopPropagation();
-            handleUpdatePaid(p);
-          }}
-          role="button"
-          aria-label={deriveIsPaid(p) ? "Mark as not paid" : "Mark as paid"}
-        >
-          {deriveIsPaid(p) ? (
-            <FontAwesome
-              name="check-circle"
-              color={"#076346"}
-              className="bg-my-white-dark rounded-md p-[4px] border-2 border-my-black-dark overflow-hidden"
-              size={20}
-            />
-          ) : (
-            <FontAwesome
-              name="check-circle-o"
-              color={"#076346"}
-              className="bg-my-white-light rounded-md p-[4px] border-2 border-my-black-dark overflow-hidden"
-              size={20}
-            />
-          )}
-        </Pressable>
-        <MyText
-          className={`text-xs w-8  ${textType}`}
-        >
+        {!hidePayments ? (
+          <Pressable
+            className="flex items-center justify-start ml-[.75rem] mr-[1rem]"
+            onPress={(e) => {
+              e.stopPropagation();
+              handleUpdatePaid(p);
+            }}
+            role="button"
+            aria-label={deriveIsPaid(p) ? "Mark as not paid" : "Mark as paid"}
+          >
+            {deriveIsPaid(p) ? (
+              <FontAwesome
+                name="check-circle"
+                color={"#076346"}
+                className="bg-my-white-dark rounded-md p-[4px] border-2 border-my-black-dark overflow-hidden"
+                size={20}
+              />
+            ) : (
+              <FontAwesome
+                name="check-circle-o"
+                color={"#076346"}
+                className="bg-my-white-light rounded-md p-[4px] border-2 border-my-black-dark overflow-hidden"
+                size={20}
+              />
+            )}
+          </Pressable>
+        ) : (
+          <View className="ml-16" />
+        )}
+        <MyText className={`text-xs w-8  ${textType}`}>
           {format(p.dueDate.toDate(), "do")}
         </MyText>
         <View className="flex-row items-center justify-start text-xs ml-[1rem] p-2 flex-[5]">
@@ -82,9 +94,11 @@ export default function PaymentMap({
           <MyText className="text-my-white-light flex-row items-center justify-end gap-[2px] mr-[1rem]">
             <MyText className={`text-sm ${textType}`}>
               ${Math.ceil(getEffectivePaymentAmount(p))}
-            </MyText>
-            {" "}/{" "}
-            <MyText className={`text-sm ${p.type === "DEBT" ? "text-my-blue-light" : textType}`}>
+            </MyText>{" "}
+            /{" "}
+            <MyText
+              className={`text-sm ${p.type === "DEBT" ? "text-my-blue-light" : textType}`}
+            >
               {Math.ceil(p.total)}
             </MyText>
           </MyText>
@@ -105,6 +119,8 @@ export default function PaymentMap({
       0,
     )
     .toFixed(2)}`;
+
+  const allPaymentsTotal = `$${payments.reduce((acc, p) => p.amount + acc, 0).toFixed(2)}`;
 
   function PaymentBox({
     isShown,
@@ -155,6 +171,19 @@ export default function PaymentMap({
           <View className="bg-my-black-dark">
             {paymentsThisPeriod.map((p) => (
               <RenderPayment key={p.id} p={p} />
+            ))}
+          </View>
+        )}
+        <PaymentBox
+          name="All Payments"
+          total={allPaymentsTotal}
+          isShown={showAll}
+          setter={() => setShowAll(!showAll)}
+        />
+        {showAll && (
+          <View className="">
+            {payments.map((p) => (
+              <RenderPayment key={p.id} p={p} hidePayments />
             ))}
           </View>
         )}

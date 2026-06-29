@@ -456,7 +456,7 @@ export default function Debt() {
           an additional payment.
         </MyText>
       </PageTour>
-      <Header links={["Home", "Settings", "Bills"]} />
+      <Header links={["Home", "Settings"]} />
       <ScrollView
         contentContainerClassName="items-center"
         className="w-full h-screen my-0 py-[3rem] bg-my-blue-dark text-my-white-dark"

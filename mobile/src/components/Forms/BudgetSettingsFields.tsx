@@ -100,8 +100,8 @@ export default function BudgetSettingsFields({
   return (
     <View className="items-center w-full h-fit gap-4 mb-4">
       {budgetMeta && mode === "edit" && (
-        <MyText className="text-3xl text-my-white-dark">
-          Editing "{budgetMeta.name}"
+        <MyText className="text-xl text-my-white-dark">
+           "{budgetMeta.name}"
         </MyText>
       )}
       {editingBudgetName && (

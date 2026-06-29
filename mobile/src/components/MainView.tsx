@@ -810,7 +810,7 @@ export default function MainView() {
           className="w-full h-full"
           contentContainerClassName="items-center"
         >
-          <Header links={["Settings", "Debt", "Bills"]} />
+          <Header links={["Settings", "Debt"]} />
 
           <MyText className="text-lg font-semibold text-my-white-dark mb-2 py-4">
             "{activeBudgetName}"
@@ -818,7 +818,11 @@ export default function MainView() {
           {!payDate && (
             <Pressable
               className="mb-4"
-              onPress={() => navigationRef.navigate("Settings" as never)}
+              onPress={() =>
+                (navigationRef.navigate as Function)("Settings", {
+                  showEditMenu: true,
+                })
+              }
             >
               <MyText className="text-my-green-light underline text-center">
                 Set your pay date in Settings
