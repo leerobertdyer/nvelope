@@ -1,9 +1,8 @@
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 
 import type { RefObject } from "react";
-import { Pressable, Text, View } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Pressable, View } from "react-native";
 import { MyText } from "../MyText";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface ActionButtonsProps {
   onPaymentClick?: () => void;
@@ -31,55 +30,154 @@ export default function ActionButtons({
   clearRef,
 }: ActionButtonsProps) {
   return (
-    <View
-      className="flex-row w-full justify-center gap-4 items-center"
-    >
+    <View className="flex-row w-full justify-center gap-4 items-center">
       {/* Payment Button */}
       <Pressable
         ref={paymentRef}
         onPress={onPaymentClick}
-        className="flex-col justify-between h-[5.5rem] w-[5.5rem] items-center p-2 bg-my-white-light rounded-md border-[3px] border-my-red-dark text-my-red-dark shadow-my-red-light"
+        className="rounded-md border-[3px] border-my-white-light"
       >
-        <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-white-base items-center justify-center">
-          <FontAwesome6 name="money-bill-wave" color="#ad0241" size={18} />
-        </View>
-        <MyText className="text-xs text-my-red-dark">Payment</MyText>
+        <LinearGradient
+          colors={[
+            "#fff2d9",
+            "#fff2d9",
+            "#fcca68",
+            "#f79902",
+
+            "#fff2d9",
+            "#fcca68",
+            "#fff2d9",
+            "#ad0241",
+          ]}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{
+            width: 77,
+            height: 77,
+            borderRadius: 0,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-red-light items-center justify-center">
+            <MyText className="text-[1.75rem]">💸</MyText>
+          </View>
+          <MyText className="text-sm">Payment</MyText>
+        </LinearGradient>
       </Pressable>
 
       {/* Cash Button */}
       <Pressable
         ref={cashRef}
         onPress={onCashClick}
-        className="flex-col justify-between h-[5.5rem] w-[5.5rem] items-center p-2 bg-my-white-light rounded-md border-[3px] border-my-green-dark text-my-green-dark shadow-my-green-light"
+        className="rounded-md border-[3px] border-my-white-light"
       >
-        <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-white-base items-center justify-center">
-          <FontAwesome6 name="sack-dollar" color="green" size={18} />
-        </View>
-        <MyText className="text-xs text-my-green-dark">Cash</MyText>
+        <LinearGradient
+          colors={[
+            "#0bb07c",
+            "#f79902",
+            "#fff2d9",
+            "#0bb07c",
+            "#fcca68",
+            "#fff2d9",
+            "#0bb07c",
+            "#f79902",
+            "#f79902",
+            "#fff2d9",
+            "#fcca68",
+            "#fff2d9",
+            "#fcca68",
+            "#f79902",
+            "#f79902",
+            "#fff2d9",
+            "#0bb07c",
+            "#0bb07c",
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: 77,
+            height: 77,
+            borderRadius: 0,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-green-base items-center justify-center">
+            <MyText className="text-[1.75rem]">💰</MyText>
+          </View>
+          <MyText className="text-sm">Cash</MyText>
+        </LinearGradient>
       </Pressable>
 
       {/* Nvelope Button */}
       <Pressable
         ref={envelopeRef}
         onPress={onEnvelopeClick}
-        className="flex-col justify-between h-[5.5rem] w-[5.5rem] items-center p-2 bg-my-white-light rounded-md border-[3px] border-my-green-dark text-my-green-dark shadow-my-green-light"
+        className="border-[3px] border-my-white-light rounded-md"
       >
-        <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-white-base items-center justify-center">
-          <FontAwesome name="envelope" color="green" size={18} />
-        </View>
-        <MyText className="text-xs text-my-green-dark">Nvelope</MyText>
+        <LinearGradient
+          colors={[
+            "#f79902",
+            "#fff2d9",
+            "#FFFFFF",
+            "#fff2d9",
+            "#fcca68",
+            "#fff2d9",
+            "#f79902",
+            "#fcca68",
+            "#FFFFFF",
+            "#fff2d9",
+            "#f79902",
+          ]}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 1, y: 0 }}
+          style={{
+            width: 77,
+            height: 77,
+            borderRadius: 0,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-green-dark items-center justify-center">
+            <MyText className="text-[1.75rem]">📨</MyText>
+          </View>
+          <MyText className="text-sm text-my-black-dark">Nvelope</MyText>
+        </LinearGradient>
       </Pressable>
 
       {/* Clear Button */}
       <Pressable
         ref={clearRef}
         onPress={onClearClick}
-        className="flex-col justify-between h-[5.5rem] w-[5.5rem] items-center p-2 bg-my-white-light rounded-md border-[3px] border-my-green-dark text-my-green-dark shadow-my-green-light"
+        className="border-[3px] border-my-white-light rounded-md"
       >
-        <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-my-white-base items-center justify-center">
-          <FontAwesome name="envelope" color="#ad0241" size={18} />
-        </View>
-        <MyText className="text-xs text-my-red-dark">Clear</MyText>
+        <LinearGradient
+          colors={[
+            "#ad0241",
+            "#fff2d9",
+            "#fcca68",
+            "#fff2d9",
+            "#fcca68",
+            "#fff2d9",
+            "#ad0241",
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: 77,
+            height: 77,
+            borderRadius: 0,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <View className="border-2 rounded-md w-[3rem] h-[3rem] p-[2px] bg-white items-center justify-center">
+            <MyText className="text-[1.75rem]">♻️</MyText>
+          </View>
+          <MyText className="text-sm text-my-black-dark">Clear</MyText>
+        </LinearGradient>
       </Pressable>
     </View>
   );

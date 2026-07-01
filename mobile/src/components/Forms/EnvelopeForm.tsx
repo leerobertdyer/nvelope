@@ -47,7 +47,6 @@ export default function EnvelopeForm(props: IProps) {
           id="newEnvelopeName"
           label="What is your envelope for?"
           placeholder="Envelope name"
-          maxLength={16}
           value={newEnvelopeName ?? ""}
           onChange={(e) => setNewEnvelopeName(e.toLowerCase())}
         />

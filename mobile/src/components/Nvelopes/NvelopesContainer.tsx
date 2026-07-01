@@ -44,25 +44,17 @@ function EnvelopeBox({
   return (
     <Pressable onPress={setter}>
       <View className="flex-row p-2 w-full h-[3rem] justify-between bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
-            {isShown ? (
-              <Entypo
-                name={"chevron-up"}
-                size={20}
-                color="#000"
-                className="px-2"
-              />
-            ) : (
-              <Entypo
-                name={"chevron-down"}
-                size={20}
-                color="#000"
-                className="px-2"
-              />
-            )}
+        {isShown ? (
+          <View className="ml-[6px] p-[2px] w-[1.75rem] h-[1.75rem] justify-center items-center bg-my-black-base rounded-md">
+            <Entypo name={"chevron-up"} size={20} color="#fcca68" />
+          </View>
+        ) : (
+          <View className="ml-[6px] p-[2px] w-[1.75rem] h-[1.75rem] justify-center items-center bg-my-black-base rounded-md">
+            <Entypo name={"chevron-down"} size={20} color="#fcca68" />
+          </View>
+        )}
         <MyText className="text-center">{name}</MyText>
-        <MyText className="text-center text-my-green-dark">
-          {total}
-        </MyText>
+        <MyText className="text-center">{total}</MyText>
       </View>
     </Pressable>
   );

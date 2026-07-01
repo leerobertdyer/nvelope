@@ -40,74 +40,91 @@ export default function PaymentMap({
         ? "text-my-blue-dark"
         : p.type === "BILL"
           ? "text-my-red-light"
-          : "text-my-white-dark";
+          : "text-my-green-light";
 
     return (
       <Pressable
         key={p.id}
         onPress={() => handleEditBill(p)}
-        className={`flex-row py-2 border-y-[1px] items-center border-my-black-dark w-full 
+        className={`flex-row py-2 border-y-[1px] justify-center items-center border-my-black-dark w-full 
           ${isLastPayment ? "border-2 border-my-white-dark" : ""}
-          ${deriveIsPaid(p) ? "bg-my-black-light" : "bg-my-black-base"} `}
+          ${deriveIsPaid(p) ? "bg-my-black-light" : "bg-my-black-base"} ${hidePayments && "rounded-md"}`}
       >
-        {!hidePayments ? (
-          <Pressable
-            className="flex items-center justify-start ml-[.75rem] mr-[1rem]"
-            onPress={(e) => {
-              e.stopPropagation();
-              handleUpdatePaid(p);
-            }}
-            role="button"
-            aria-label={deriveIsPaid(p) ? "Mark as not paid" : "Mark as paid"}
-          >
-            {deriveIsPaid(p) ? (
-              <FontAwesome
-                name="check-circle"
-                color={"#076346"}
-                className="bg-my-white-dark rounded-md p-[4px] border-2 border-my-black-dark overflow-hidden"
-                size={20}
-              />
-            ) : (
-              <FontAwesome
-                name="check-circle-o"
-                color={"#076346"}
-                className="bg-my-white-light rounded-md p-[4px] border-2 border-my-black-dark overflow-hidden"
-                size={20}
-              />
-            )}
-          </Pressable>
-        ) : (
-          <View className="ml-16" />
-        )}
-        <MyText className={`text-xs w-8  ${textType}`}>
-          {format(p.dueDate.toDate(), "do")}
-        </MyText>
-        <View className="flex-row items-center justify-start text-xs ml-[1rem] p-2 flex-[5]">
-          <MyText className={`${textType}`}>{p.name}</MyText>
-          {isSplitPayment && (
-            <MyText className="text-[10px] bg-my-green-dark px-2 rounded ml-2 text-my-white-light">
-              SPLIT
+        {hidePayments ? (
+          <View className="flex-row w-[50%] m-auto justify-between gap-2">
+            <MyText className={`text-xs w-8 text-my-white-dark`}>
+              {format(p.dueDate.toDate(), "do")}
             </MyText>
-          )}
-        </View>
-        {p.total != null ? (
-          <MyText className="text-my-white-light flex-row items-center justify-end gap-[2px] mr-[1rem]">
-            <MyText className={`text-sm ${textType}`}>
-              ${Math.ceil(getEffectivePaymentAmount(p))}
-            </MyText>{" "}
-            /{" "}
             <MyText
-              className={`text-sm ${p.type === "DEBT" ? "text-my-blue-light" : textType}`}
+              numberOfLines={1}
+              className={`text-xs w-20 text-left flex-1 text-my-white-light`}
             >
-              {Math.ceil(p.total)}
+              {p.name}
             </MyText>
-          </MyText>
-        ) : (
-          <View className="text-my-white-light flex items-center justify-end gap-[2px] mr-[1rem]">
-            <MyText className={`text-sm ${textType}`}>
+            <MyText className={`text-sm text-my-white-dark`}>
               ${getEffectivePaymentAmount(p).toFixed(2)}
             </MyText>
           </View>
+        ) : (
+          <>
+            <Pressable
+              className="flex items-center justify-start ml-[.75rem] mr-[1rem]"
+              onPress={(e) => {
+                e.stopPropagation();
+                handleUpdatePaid(p);
+              }}
+              role="button"
+              aria-label={deriveIsPaid(p) ? "Mark as not paid" : "Mark as paid"}
+            >
+              {deriveIsPaid(p) ? (
+                <FontAwesome
+                  name="check-circle"
+                  color={"#076346"}
+                  className="bg-my-white-dark rounded-md p-[4px] border-2 border-my-black-dark overflow-hidden"
+                  size={20}
+                />
+              ) : (
+                <FontAwesome
+                  name="check-circle-o"
+                  color={"#076346"}
+                  className="bg-my-white-light rounded-md p-[4px] border-2 border-my-black-dark overflow-hidden"
+                  size={20}
+                />
+              )}
+            </Pressable>
+            <MyText className={`text-xs w-8  ${textType}`}>
+              {format(p.dueDate.toDate(), "do")}
+            </MyText>
+            <View className="flex-row items-center justify-start text-xs ml-[1rem] p-2 flex-[5]">
+              <MyText numberOfLines={1} className={`${textType}`}>
+                {p.name}
+              </MyText>
+              {isSplitPayment && (
+                <MyText className="text-[10px] bg-my-green-dark px-2 rounded ml-2 text-my-white-light">
+                  SPLIT
+                </MyText>
+              )}
+            </View>
+            {p.total != null ? (
+              <MyText className="text-my-white-light flex-row items-center justify-end gap-[2px] mr-[1rem]">
+                <MyText className={`text-sm ${textType}`}>
+                  ${Math.ceil(getEffectivePaymentAmount(p))}
+                </MyText>{" "}
+                /{" "}
+                <MyText
+                  className={`text-sm ${p.type === "DEBT" ? "text-my-blue-light" : textType}`}
+                >
+                  {Math.ceil(p.total)}
+                </MyText>
+              </MyText>
+            ) : (
+              <View className="text-my-white-light flex items-center justify-end gap-[2px] mr-[1rem]">
+                <MyText className={`text-sm ${textType}`}>
+                  ${getEffectivePaymentAmount(p).toFixed(2)}
+                </MyText>
+              </View>
+            )}
+          </>
         )}
       </Pressable>
     );
@@ -127,32 +144,39 @@ export default function PaymentMap({
     name,
     total,
     setter,
+    color,
   }: {
     isShown: boolean;
     setter: () => void;
     total: string;
     name: string;
+    color?: string;
   }) {
     return (
       <Pressable onPress={setter}>
-        <View className="flex-row items-center justify-between p-2 w-full h-[3rem] bg-my-black-dark text-my-black-dark border-b-2 border-my-black-dark">
+        <View
+          className={`flex-row items-center justify-between p-2 w-full h-[3rem] 
+            ${color ? color : "bg-my-black-dark text-my-black-dark border-my-black-dark border-b-2"}`}
+        >
           {isShown ? (
-            <Entypo
-              name={"chevron-up"}
-              size={20}
-              color="#fff"
-              className="px-2"
-            />
+            <View className={`ml-[6px] justify-center items-center w-[1.75rem] h-[1.75rem] border-my-white-light ${color ? "bg-my-white-dark" : "bg-my-white-light"} rounded-md`}>
+              <Entypo name={"chevron-up"} size={20} color="#000" />
+            </View>
           ) : (
-            <Entypo
-              name={"chevron-down"}
-              size={20}
-              color="#fff"
-              className="px-2"
-            />
+            <View className={`ml-[6px] justify-center items-center w-[1.75rem] h-[1.75rem] border-my-white-light ${color ? "bg-my-white-dark" : "bg-my-white-light"} rounded-md`}>
+              <Entypo name={"chevron-down"} size={20} color="#000" />
+            </View>
           )}
-          <MyText className="text-my-white-dark">{name}</MyText>
-          <MyText className="text-my-red-light">{total}</MyText>
+          <MyText
+            className={`${color ? "text-my-red-light" : "text-my-white-dark"}`}
+          >
+            {name}
+          </MyText>
+          <MyText
+            className={`${color ? "text-my-red-light" : "text-my-white-light"}`}
+          >
+            {total}
+          </MyText>
         </View>
       </Pressable>
     );
@@ -168,7 +192,7 @@ export default function PaymentMap({
           setter={() => setShowCurrent(!showCurrent)}
         />
         {showCurrent && (
-          <View className="bg-my-black-dark">
+          <View className="bg-my-black-dark p-2">
             {paymentsThisPeriod.map((p) => (
               <RenderPayment key={p.id} p={p} />
             ))}
@@ -179,9 +203,10 @@ export default function PaymentMap({
           total={allPaymentsTotal}
           isShown={showAll}
           setter={() => setShowAll(!showAll)}
+          color="bg-my-black-base "
         />
         {showAll && (
-          <View className="">
+          <View className="p-2 bg-my-white-light gap-2">
             {payments.map((p) => (
               <RenderPayment key={p.id} p={p} hidePayments />
             ))}

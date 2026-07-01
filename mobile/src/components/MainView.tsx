@@ -804,7 +804,7 @@ export default function MainView() {
           </View>
         </View>
       </PageTour>
-      <View className="w-full text-center  items-center flex-1 bg-my-blue-dark overflow-y-auto pb-[4rem]">
+      <View className="w-full text-center  items-center flex-1 bg-my-blue-dark overflow-y-auto ">
         {showLoading && <Loading text={loadingText} />}
         <ScrollView
           className="w-full h-full"
@@ -839,7 +839,7 @@ export default function MainView() {
             onClearClick={() => setShowClearNvelopes(true)}
           />
 
-          <View className="w-full border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
+          <View className="w-full border-2 border-my-white-light mt-[1.5rem]">
             <Nvelopes
               resetState={resetState}
               handleSetupEdit={handleSetupEdit}
