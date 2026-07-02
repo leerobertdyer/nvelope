@@ -15,7 +15,8 @@ export default function CongratsPaidOffModal({ debtName, onClose }: IProps) {
           🎉 Congrats! 🎉
         </MyText>
         <MyText className="text-lg text-my-white-light">You paid off</MyText>
-        <MyText className="text-my-white-dark">"{debtName}"</MyText>.
+        <MyText className="text-my-white-dark">"{debtName}"</MyText>
+        {/* TODO: Right here we could tell the user that the snowball has triggered and which debt it went to and they could accept or refuse it */}
         <Btn color="red" onPress={onClose} text="Close" />
       </View>
     </Modal>

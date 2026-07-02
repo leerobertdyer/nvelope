@@ -1,6 +1,6 @@
 import { Modal, View } from "react-native";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
-import { Envelope } from "../../types";
+import { Nvelope } from "../../types";
 import Btn from "../Buttons/Btn";
 import Loading from "../Loading";
 import MoneyInput from "../Payments/MoneyInput";
@@ -10,7 +10,7 @@ interface iAddCashToEnvelopeForm {
   showLoading: boolean;
   loadingText: string;
   cashAmount: number;
-  envelopeToEdit?: Envelope;
+  envelopeToEdit?: Nvelope;
   setCashAmount: (n: number) => void;
   addCashToEnvelope: () => Promise<void>;
   setIsAddingCashToEnvelope: (b: boolean) => void;

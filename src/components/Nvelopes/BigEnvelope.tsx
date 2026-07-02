@@ -2,22 +2,26 @@ import Entypo from "@expo/vector-icons/Entypo";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { Modal, Pressable, View } from "react-native";
 import Btn from "../Buttons/Btn";
-import { Envelope } from "../../types";
+import { Nvelope, NvelopesTransaction } from "../../types";
 import EvilIcons from "@expo/vector-icons/EvilIcons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { MyText } from "../MyText";
 import SpendBtn from "../Buttons/SpendBtn";
 import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useState } from "react";
+import { useBudget } from "../../context/BudgetContext/useBudget";
+import { getTransactions } from "../../firebase/budgets";
+import { format } from "date-fns";
 
 interface IBigEnvelope {
   handleBack: () => void;
-  envelope: Envelope;
+  envelope: Nvelope;
   resetState: () => void;
-  handleSetShowSpendingPage: (envelope: Envelope) => void;
-  handleSetupEdit: (envelope: Envelope) => void;
-  setUpShowGiveAndTake: (envelope: Envelope) => void;
+  handleSetShowSpendingPage: (envelope: Nvelope) => void;
+  handleSetupEdit: (envelope: Nvelope) => void;
+  setUpShowGiveAndTake: (envelope: Nvelope) => void;
   handleDeleteEnvelope: (id: string) => void;
-  handleAddCashToEnvelope: (envelope: Envelope) => void;
+  handleAddCashToEnvelope: (envelope: Nvelope) => void;
 }
 
 export default function BigEnvelope({
@@ -29,6 +33,22 @@ export default function BigEnvelope({
   handleDeleteEnvelope,
   handleAddCashToEnvelope,
 }: IBigEnvelope) {
+  const { activeBudgetId } = useBudget();
+
+  const [transactions, setTransactions] = useState<NvelopesTransaction[]>([]);
+  const [showTransactions, setShowTransactions] = useState(false);
+
+  useEffect(() => {
+    async function getEnvelopeTransactions() {
+      const allTransactions = await getTransactions(activeBudgetId!);
+      const filteredTransactions = allTransactions.filter(
+        (t) => t.nvelopeOrPaymentId === envelope.id,
+      );
+      setTransactions(filteredTransactions);
+    }
+    getEnvelopeTransactions();
+  }, [activeBudgetId, envelope.id]);
+
   const envelopeRemainder = (
     Number(envelope.total) - Number(envelope.spent)
   ).toFixed(2);
@@ -92,6 +112,37 @@ export default function BigEnvelope({
                   <MyText>Delete Envelope</MyText>
                 </View>
               </Pressable>
+              <View className="w-[90%] m-auto bg-my-white-dark rounded-md items-center justify-center gap-2 p-2 mt-2">
+                <MyText className="text-3xl">Transactions</MyText>
+                {showTransactions ? (
+                  <Pressable
+                    onPress={() => setShowTransactions(false)}
+                    className="ml-[6px] p-[2px] w-[1.75rem] h-[1.75rem] justify-center items-center bg-my-black-base rounded-md"
+                  >
+                    <Entypo name={"chevron-up"} size={20} color="#fcca68" />
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    onPress={() => setShowTransactions(true)}
+                    className="ml-[6px] p-[2px] w-[1.75rem] h-[1.75rem] justify-center items-center bg-my-black-base rounded-md"
+                  >
+                    <Entypo name={"chevron-down"} size={20} color="#fcca68" />
+                  </Pressable>
+                )}
+                {transactions.length > 0 &&
+                  showTransactions &&
+                  transactions.map((t) => (
+                    <View
+                      key={t.id}
+                      className="w-full items-center justify-center flex-row"
+                    >
+                      <MyText className="text-xs mr-2">
+                        {format(t.createdAt.toDate(), "MMMM do")}:
+                      </MyText>
+                      <MyText className="text-xs">{t.description}</MyText>
+                    </View>
+                  ))}
+              </View>
             </View>
           </View>
         </View>

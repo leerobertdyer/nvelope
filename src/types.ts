@@ -1,12 +1,25 @@
 import { FirebaseFirestoreTypes} from "@react-native-firebase/firestore"
 type Timestamp = FirebaseFirestoreTypes.Timestamp
 
-export interface Envelope {
+export interface Nvelope {
     id: string
     name: string
     total: number
     spent: number
     order?: number
+}
+
+export type NvelopesTransactionType = "DELETE" | "EDIT" | "SPEND" |"CASH" | "NEW" | "TAKE" | "GIVE" | "RESET" | "FILL" | "EXTRA" | "SNOWBALL" | "PAID" | "PAID_OFF"
+
+export interface NvelopesTransaction {
+    id: string
+    type: NvelopesTransactionType
+    createdAt: Timestamp
+    createdBy: string
+    amount?: number
+    description?: string
+    modifiedAt?: Timestamp
+    nvelopeOrPaymentId?: string
 }
 
 export interface Payment {
@@ -45,20 +58,6 @@ export type IntervalDates = {
     end: Date;
 }
 
-export type BackupData = {
-    backupTimeStamp: Timestamp;
-    cash?: OneTimeAmount[];
-    expenses?: OneTimeAmount[];
-    nvelopes: Envelope[];
-    payDate: Timestamp;
-    payPeriodInterval: Interval;
-    payments: Payment[];
-    shouldReset: Timestamp;
-    snowball: number;
-    snowballTargetPaymentId?: string | null;
-    totalSpendingBudget: number;
-}
-
 export type Backup = {
     backupTimeStamp: Timestamp;
     data: BackupData[]
@@ -69,7 +68,6 @@ export interface Budget {
     name: string;
     ownerId: string;
     memberIds: string[];
-    /** uid -> email for display; set on create and when user accepts invite */
     memberEmails?: Record<string, string>;
     createdAt?: Timestamp;
 }
@@ -82,15 +80,17 @@ export interface UserBudgetRef {
 
 // Single doc under budgets/{budgetId}/data/main - same shape as old user doc
 export type BudgetDataDoc = {
-    envelopes: Envelope[];
+    nvelopes: Nvelope[];
     payments: Payment[];
     payDate: Timestamp | null;
     payPeriodInterval: Interval;
     totalSpendingBudget: number;
-    oneTimeCash: OneTimeAmount[] | null;
-    resetBudgetTimestamp: Timestamp | null;
-    snowball: number;
     snowballTargetPaymentId: string | null;
     isNewUser: boolean;
     backups: Backup | null;
+    transactions: NvelopesTransaction[]
 };
+
+export type BackupData = BudgetDataDoc & {
+    backupTimeStamp: Timestamp;
+}

@@ -1,6 +1,6 @@
 import type {
   Payment,
-  Envelope,
+  Nvelope,
   Interval,
   IntervalDates,
   Backup,
@@ -78,7 +78,7 @@ export function randomUUID(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-export function resetEnvelopesSpentToZero(envelopes: Envelope[]) {
+export function resetEnvelopesSpentToZero(envelopes: Nvelope[]) {
   const updatedEnvelopes = [...envelopes].map((e) => {
     return { ...e, spent: 0 };
   });

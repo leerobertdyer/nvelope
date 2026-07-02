@@ -1,31 +1,36 @@
 import { useState } from "react";
-import Button from "../Buttons/Btn";
-import { Envelope } from "../../types";
+
+import { Nvelope } from "../../types";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { Modal, View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import MoneyInput from "../Payments/MoneyInput";
 import { MyText } from "../MyText";
 import Btn from "../Buttons/Btn";
+import Input from "../Input";
 
 interface NvelopeCalculatorProps {
-  handleEnterAmount: (amount: number, envelope: Envelope) => void;
+  handleEnterAmount: (amount: number, envelope: Nvelope) => void;
   handleBack: (() => void) | undefined;
   selectEnvelope?: boolean;
-  envelope?: Envelope;
+  envelope?: Nvelope;
+  setSpendingDescription: (desc: string) => void;
+  spendingDescription: string | null
 }
 export default function NvelopeCalculator({
   handleEnterAmount,
   handleBack,
   selectEnvelope,
   envelope,
+  setSpendingDescription,
+  spendingDescription
 }: NvelopeCalculatorProps) {
   const { envelopes } = useDatabase();
 
   const [amount, setAmount] = useState(0);
-  const [selectedEnvelope, setSelectedEnvelope] = useState<
-    Envelope | undefined
-  >(undefined);
+  const [selectedEnvelope, setSelectedEnvelope] = useState<Nvelope | undefined>(
+    undefined,
+  );
 
   function handleSetAmount(n: number) {
     const env = selectedEnvelope || envelope;
@@ -77,6 +82,11 @@ export default function NvelopeCalculator({
                 value={amount}
                 onChange={handleSetAmount}
                 placeholder={`$5 from ${envelope?.name ?? ""}`}
+              />
+              <Input
+                onChange={setSpendingDescription}
+                placeholder={`Optional reason for expense...`}
+                value={spendingDescription ?? ""}
               />
             </View>
             {selectEnvelope && (

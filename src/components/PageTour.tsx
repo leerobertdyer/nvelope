@@ -1,4 +1,4 @@
-import { Button, Modal, View } from "react-native";
+import { Modal, View } from "react-native";
 import Btn from "./Buttons/Btn";
 
 interface PageTourProps {

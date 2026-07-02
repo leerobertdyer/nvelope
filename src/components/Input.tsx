@@ -12,6 +12,7 @@ interface ITextInput {
   maxLength?: number;
   ref?: React.RefObject<TextInput | null>;
   onBlur?: (e: BlurEvent) => void;
+  required?: boolean
 }
 
 export default function Input({

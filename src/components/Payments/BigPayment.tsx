@@ -1,3 +1,5 @@
+
+
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -9,12 +11,18 @@ import { useAuth } from "../../context/AuthContext/useAuth";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { deriveIsPaid, removeVirtualIdPortion } from "../../util/util";
-import { editPayments } from "../../firebase/editData";
+import {
+  editDatabaseWithTransaction,
+  editPayments,
+} from "../../firebase/editData";
 import PaymentForm from "../Forms/PaymentForm";
 import Btn from "../Buttons/Btn";
 import { View } from "react-native";
 import MoneyInput from "./MoneyInput";
 import { MyText } from "../MyText";
+import firestore from "@react-native-firebase/firestore"
+
+
 
 interface IProps {
   handleBack: () => void;
@@ -54,8 +62,8 @@ export default function BigPayment({
     onPaymentUpdated?.(updated);
   }
 
-  function applyExtraToDebt(extra: number) {
-    if (!user || !p || p.type !== "DEBT") return;
+  async function applyExtraToDebt(extra: number) {
+    if (!user || !p || p.type !== "DEBT" || !activeBudgetId) return;
     const currentTotal = p.total ?? 0;
     if (currentTotal <= 0) return;
     const amount = Math.min(extra, currentTotal);
@@ -66,7 +74,17 @@ export default function BigPayment({
       removeVirtualIdPortion(pay) === originalId ? updatedPayment : pay,
     );
     setPayments(updatedPayments);
-    if (activeBudgetId) editPayments(updatedPayments, activeBudgetId);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "EXTRA",
+        description: `Paid $${extra} extra towards debt for ${p.name}`,
+        createdAt: firestore.Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(updatedPayments, activeBudgetId),
+    });
     setP(updatedPayment);
     onPaymentUpdated?.(updatedPayment);
   }
@@ -84,16 +102,16 @@ export default function BigPayment({
       return;
     }
     setExtraPaymentError(null);
-    applyExtraToDebt(extraPaymentAmount);
+    await applyExtraToDebt(extraPaymentAmount);
     setExtraPaymentAmount(0);
     setShowExtraPaymentForm(false);
   }
 
-  function handlePayAll() {
+  async function handlePayAll() {
     if (!p || p.type !== "DEBT") return;
     const currentTotal = p.total ?? 0;
     if (currentTotal <= 0) return;
-    applyExtraToDebt(currentTotal);
+    await applyExtraToDebt(currentTotal);
     setShowExtraPaymentForm(false);
     setExtraPaymentAmount(0);
     setExtraPaymentError(null);

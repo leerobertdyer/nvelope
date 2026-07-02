@@ -5,7 +5,6 @@ import { useState } from "react";
 import { editPayments } from "../../firebase/editData";
 import { generateFreshPayment, removeVirtualIdPortion } from "../../util/util";
 import { format, addDays } from "date-fns";
-// import { useToast } from "../../Context/ToastContext/useToast";
 import PaymentTypeSelector, {
   type PaymentTypeOption,
 } from "./PaymentTypeSelector";

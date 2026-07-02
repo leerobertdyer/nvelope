@@ -1,11 +1,11 @@
 import React from "react";
 import { View, Pressable } from "react-native";
-import { Envelope } from "../../types";
+import { Nvelope } from "../../types";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { MyText } from "../MyText";
 
 interface IListEnvelopeProps {
-  envelope: Envelope;
+  envelope: Nvelope;
   onPress: () => void;
 }
 

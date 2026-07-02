@@ -4,9 +4,8 @@
 import { useEffect, useState } from "react";
 
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import Feather from "@expo/vector-icons/Feather";
 import { Pressable, View } from "react-native";
-import { Envelope } from "../../types";
+import { Nvelope } from "../../types";
 import NvelopeCalculator from "./NvelopeCalculator";
 import EnvelopeForm from "../Forms/EnvelopeForm";
 import Svg, { Line } from "react-native-svg";
@@ -21,14 +20,18 @@ interface NvelopeProps {
     | "dash"
     | "editEnvelope"
     | "spendingEnvelope";
-  envelope: Envelope;
+  envelope: Nvelope;
   onPress?: () => void;
   handleBack?: () => void;
-  handleSaveEnvelope?: (envelope: Envelope) => Promise<void>;
-  editEnvelope?: (envelope: Envelope) => Promise<void>;
+  handleSaveEnvelope?: (envelope: Nvelope) => Promise<void>;
+  editEnvelope?: (
+    envelope: Nvelope,
+    isSpending: boolean,
+    spendDesc?: string,
+  ) => Promise<void>;
   handleDeleteEnvelope?: () => void;
 }
-export default function Nvelope({
+export default function MainEnvelope({
   kind,
   envelope,
   onPress,
@@ -46,6 +49,9 @@ export default function Nvelope({
   const [newEnvelopeSpent, setNewEnvelopeSpent] = useState<number>(
     envelope.spent ?? 0,
   );
+  const [spendingDescription, setSpendingDescription] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setNewEnvelopeName(envelope.name || "");
@@ -57,10 +63,10 @@ export default function Nvelope({
   const dottedHeight = 80;
   const dottedStrokeWidth = 8;
 
-  function handleEnterAmount(amount: number, n: Envelope) {
+  function handleEnterAmount(amount: number, n: Nvelope) {
     if (amount <= 0) return;
     n.spent = Number(n.spent) + amount;
-    editEnvelope?.(n);
+    editEnvelope?.(n, true, spendingDescription || undefined);
     handleBack?.();
   }
 
@@ -89,6 +95,8 @@ export default function Nvelope({
     case "spendingEnvelope":
       return (
         <NvelopeCalculator
+          spendingDescription={spendingDescription}
+          setSpendingDescription={setSpendingDescription}
           envelope={envelope}
           selectEnvelope={envelope.id === ""}
           handleEnterAmount={handleEnterAmount}

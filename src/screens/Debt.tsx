@@ -1,7 +1,9 @@
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import Loading from "../components/Loading";
 import Header from "../components/Nav/Header";
 import {
+  editDatabaseWithTransaction,
   editIsNewUser,
   editPayments,
   editSnowballTargetPaymentId,
@@ -28,9 +30,10 @@ import { MyText } from "../components/MyText";
 import Btn from "../components/Buttons/Btn";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import Hr from "../components/Hr";
 import { getSnowballAmount } from "../util/paymentUtils";
 import BigPayment from "../components/Payments/BigPayment";
+import firestore from "@react-native-firebase/firestore"
+
 
 interface iDebtGrid {
   name: string;
@@ -224,11 +227,22 @@ export default function Debt() {
   }, [payments]);
 
   async function handleUpdateSnowball(n: number) {
+    if (!user) return;
     const newPayments = payments.map((p) =>
       p.id === "SNOWBALL" ? { ...p, amount: p.amount + n } : p,
     );
     setPayments(newPayments);
-    await editPayments(newPayments, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "SNOWBALL",
+        createdAt: firestore.Timestamp.now(),
+        description: `Manually edited snowball to $${n}`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(newPayments, activeBudgetId!),
+    });
   }
 
   async function saveDebtInformation(d: Payment) {
@@ -249,7 +263,17 @@ export default function Debt() {
       return originalPId !== originalPaymentToEditId;
     });
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "DELETE",
+        createdAt: firestore.Timestamp.now(),
+        description: `Deleted debt ${debtMenuOpen.name}`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(updatedPayments, activeBudgetId!),
+    });
     setDebtMenuOpen(null);
     Toast.show({ type: "success", text1: "Payment deleted" });
   }
@@ -264,10 +288,21 @@ export default function Debt() {
         : null;
 
   async function handleSnowballTargetChange(debtId: string) {
+    if (!user) return;
     try {
-      //   console.log("HERE ARE THE IDS: ", { debtId, activeBudgetId });
       setSnowballTargetPaymentId(debtId);
-      await editSnowballTargetPaymentId(activeBudgetId!, debtId);
+      const debt = payments.find((p) => p.id === debtId);
+      await editDatabaseWithTransaction({
+        t: {
+         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+          type: "SNOWBALL",
+          createdAt: firestore.Timestamp.now(),
+          description: `Snowball target changed to ${debt?.name}`,
+          createdBy: user.email ?? user.uid,
+        },
+        budgetId: activeBudgetId!,
+        func: () => editSnowballTargetPaymentId(activeBudgetId!, debtId),
+      });
       Toast.show({ type: "success", text1: "Snowball target updated" });
     } catch (error) {
       console.error(`There was an issue changing snowball targets: ${error}`);
@@ -285,7 +320,7 @@ export default function Debt() {
 
   async function handleApplyAdditionalPayment() {
     const debt = additionalPaymentDebt;
-    if (!debt || !activeBudgetId) return;
+    if (!debt || !activeBudgetId || !user) return;
     const amount = additionalPaymentAmount;
     if (amount <= 0) {
       Toast.show({ type: "error", text1: "Enter a valid amount" });
@@ -297,7 +332,17 @@ export default function Debt() {
       p.id === debt.id ? { ...p, total: newTotal } : p,
     );
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, activeBudgetId);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "EXTRA",
+        createdAt: firestore.Timestamp.now(),
+        description: `Extra payment of $${additionalPaymentAmount} applied to ${debt?.name}`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(updatedPayments, activeBudgetId),
+    });
     setAdditionalPaymentDebt(null);
     setAdditionalPaymentAmount(0);
     if (newTotal <= 0 && debt.amount != null) {
@@ -309,7 +354,18 @@ export default function Debt() {
           getSnowballAmount(payments),
         );
       setSnowballTargetPaymentId(nextId);
-      await editSnowballTargetPaymentId(activeBudgetId, nextId);
+      const nextSnowball = payments.find((p) => p.id === nextId);
+      await editDatabaseWithTransaction({
+        t: {
+         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+          type: "SNOWBALL",
+          createdAt: firestore.Timestamp.now(),
+          description: `Extra payment of $${additionalPaymentAmount} Paid off ${debt?.name}! Changing snowball to ${nextSnowball?.name}`,
+          createdBy: user.email ?? user.uid,
+        },
+        budgetId: activeBudgetId!,
+        func: () => editSnowballTargetPaymentId(activeBudgetId, nextId),
+      });
       setPayments(withBakedSnowball);
       await editPayments(withBakedSnowball, activeBudgetId);
       setPaidOffDebtName(debt.name);

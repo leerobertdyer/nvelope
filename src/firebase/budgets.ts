@@ -1,7 +1,7 @@
 import firestore from "@react-native-firebase/firestore";
 import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { MONTHLY, BUDGET_DATA_DOC_ID } from "../constants";
-import type { Interval } from "../types";
+import type { Interval, NvelopesTransaction } from "../types";
 
 type User = FirebaseAuthTypes.User;
 
@@ -53,7 +53,6 @@ export async function createFirstBudget(
       payments: [],
       totalSpendingBudget: 0,
       oneTimeCash: null,
-      resetBudgetTimestamp: null,
       snowball: 0,
       snowballTargetPaymentId: null,
       isNewUser: true,
@@ -104,7 +103,6 @@ export async function createBudget(
       payments: [],
       totalSpendingBudget: 0,
       oneTimeCash: null,
-      resetBudgetTimestamp: null,
       snowball: 0,
       snowballTargetPaymentId: null,
       isNewUser: false,
@@ -261,7 +259,12 @@ export async function addInviteToBudget(
       return false;
     }
     const inviteDocId = budgetId + "_" + normalizedEmail;
-    console.log("WHAT THE HELL: ", {budgetId, inviteDocId, normalizedEmail, ownerId})
+    console.log("WHAT THE HELL: ", {
+      budgetId,
+      inviteDocId,
+      normalizedEmail,
+      ownerId,
+    });
     const inviterEmail = (ownerEmail ?? "").trim().toLowerCase();
     const invitePayload = {
       budgetId,
@@ -606,4 +609,19 @@ export async function completeDemoWithDefaults(user: User): Promise<boolean> {
     console.error("completeDemoWithDefaults failed:", error);
     return false;
   }
+}
+
+export async function getTransactions(
+  budgetId: string,
+): Promise<NvelopesTransaction[]> {
+  try {
+    const snapshot = await firestore()
+      .collection(`budgets/${budgetId}/transactions`)
+      .orderBy("createdAt", "desc")
+      .get();
+    return snapshot.docs.map((doc) => doc.data() as NvelopesTransaction);
+  } catch (error) {
+    console.error("getTransaction error: ", error);
+  }
+  return [];
 }

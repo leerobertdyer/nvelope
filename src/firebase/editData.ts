@@ -1,4 +1,9 @@
-import type { Payment, Envelope, Interval, OneTimeAmount } from "../types";
+import type {
+  Payment,
+  Nvelope,
+  Interval,
+  NvelopesTransaction,
+} from "../types";
 import firestore, {
   FirebaseFirestoreTypes,
 } from "@react-native-firebase/firestore";
@@ -6,20 +11,46 @@ import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { MONTHLY } from "../constants";
 import { budgetDataRef } from "./budgets";
 import { cleanPaymentsForFirebase, randomUUID } from "../util/util";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Timestamp = FirebaseFirestoreTypes.Timestamp;
 type User = FirebaseAuthTypes.User;
 
-export async function createUserProfile(user: { uid: string; email: string | null }) {
+export async function addTransaction(t: NvelopesTransaction, budgetId: string) {
+  await firestore()
+    .collection(`budgets/${budgetId}/transactions`)
+    .doc(t.id)
+    .set(t);
+}
+
+export async function editDatabaseWithTransaction<T>({
+  t,
+  budgetId,
+  func,
+}: {
+  t: NvelopesTransaction;
+  budgetId: string;
+  func: () => Promise<T>;
+}): Promise<T> {
+  await addTransaction(t, budgetId);
+return await func();
+}
+
+export async function createUserProfile(user: {
+  uid: string;
+  email: string | null;
+}) {
   try {
     const userRef = firestore().collection("users").doc(user.uid);
-    
+
     // Use set with merge: true so it won't overwrite existing fields if they run this twice
-    await userRef.set({
-      email: user.email?.toLowerCase() ?? "",
-      updatedAt: firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
+    await userRef.set(
+      {
+        email: user.email?.toLowerCase() ?? "",
+        updatedAt: firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
     return true;
   } catch (e) {
     console.error("Failed to create user profile document:", e);
@@ -27,22 +58,11 @@ export async function createUserProfile(user: { uid: string; email: string | nul
   }
 }
 
-export async function editResetBudgetTimestamp(
-  resetBudgetTimestamp: Timestamp,
-  budgetId: string,
-) {
-  try {
-    await budgetDataRef(budgetId).update({ resetBudgetTimestamp });
-  } catch (error) {
-    console.error("Firebase, editResetBudgetTimestamp Failed", error);
-  }
-}
-
 export async function updateBudgetStateAndDBB(
   amount: number,
   budgetId: string,
   totalSpendingBudget: number,
-  setTotalSpendingBudget: (totalSpendingBudget: number) => void
+  setTotalSpendingBudget: (totalSpendingBudget: number) => void,
 ) {
   const newBudget = totalSpendingBudget + amount;
   await editTotalSpendingBudget(newBudget, budgetId);
@@ -50,9 +70,9 @@ export async function updateBudgetStateAndDBB(
 }
 
 export async function resetAllNvelopes(
-  nvelopes: Envelope[],
-  setEnvelopes: (e: Envelope[]) => void,
-  budgetId: string
+  nvelopes: Nvelope[],
+  setEnvelopes: (e: Nvelope[]) => void,
+  budgetId: string,
 ) {
   const updatedNvelopes = [...nvelopes].map((n) => {
     return { ...n, spent: 0, total: 0, paid: false };
@@ -61,8 +81,8 @@ export async function resetAllNvelopes(
   setEnvelopes(updatedNvelopes);
 }
 
-export async function editEnvelopes(envelopes: Envelope[], budgetId: string) {
-  const toFixedEnvelopes = envelopes.map((e: Envelope) => ({
+export async function editEnvelopes(envelopes: Nvelope[], budgetId: string) {
+  const toFixedEnvelopes = envelopes.map((e: Nvelope) => ({
     ...e,
     total: Number(e.total.toFixed(2)),
   }));
@@ -110,33 +130,6 @@ export async function editPayDate(payDate: Date, budgetId: string) {
   }
 }
 
-export async function editOneTimeCashAndBudget(
-  newCashEntry: OneTimeAmount | null,
-  budgetId: string,
-  currentBudget: number,
-) {
-  try {
-    const dataRef = budgetDataRef(budgetId);
-    const docSnap = await dataRef.get();
-    if (!newCashEntry) {
-      await dataRef.update({
-        oneTimeCash: [],
-        totalSpendingBudget: currentBudget,
-      });
-      return;
-    }
-    const data = docSnap.data();
-    if (!data) return;
-    const oneTimeCash = data.oneTimeCash ?? [];
-    await dataRef.update({
-      oneTimeCash: [...oneTimeCash, newCashEntry],
-      totalSpendingBudget: currentBudget + newCashEntry.amount,
-    });
-  } catch (error) {
-    console.error("Firebase, editOneTimeCashAndBudget Failed", error);
-  }
-}
-
 export async function editTotalSpendingBudget(
   newTotal: number,
   budgetId: string,
@@ -150,6 +143,8 @@ export async function editTotalSpendingBudget(
 
 /**
  * FUTURE FEATURE: Analytics & Period Tracking
+ * 
+ * TODO: Consider using the newly added transactions for this
  *
  * The previous snapshot-based approach (previousIntervalDetails, resetBudget,
  * isResetToday, storePreviousIntervalDetails) was removed as it had limited value.
@@ -163,69 +158,6 @@ export async function editTotalSpendingBudget(
  *
  * This would enable pie charts, spending trends, and period comparisons.
  */
-
-export async function setDefaultPaymentInterval(budgetId: string) {
-  try {
-    const dataRef = budgetDataRef(budgetId);
-    const docSnap = await dataRef.get();
-    if (!docSnap.exists) return;
-    const payments = docSnap.data()?.payments || [];
-    const newPayments = payments.map((p: Payment) => ({
-      ...p,
-      interval: p.interval ?? MONTHLY,
-    }));
-    await dataRef.update({ payments: newPayments });
-  } catch (error) {
-    console.error("Firebase, error in setDefaultPaymentInterval:", error);
-  }
-}
-
-export async function importAndTransformLegacyBills(budgetId: string) {
-  const dataRef = budgetDataRef(budgetId);
-  const docSnap = await dataRef.get();
-  if (!docSnap.exists) return [];
-  const data = docSnap.data();
-  const bills = data?.bills || [];
-  const existingPayments = data?.payments || [];
-  const newPayments = transformBillsToPayments(bills).filter((p) =>
-    existingPayments.every((e: Payment) => e.name !== p.name),
-  );
-  await dataRef.update({ payments: [...existingPayments, ...newPayments] });
-}
-
-type Bill = {
-  amount: number;
-  interval: string;
-  name: string;
-  originalDate: Timestamp;
-  paid: boolean;
-};
-
-function transformBillsToPayments(bills: Bill[]): Payment[] {
-  const paymentsMap: Payment[] = [];
-  bills.forEach((b) => {
-    const i = validIntervals.includes(b.interval.toUpperCase() as Interval)
-      ? (b.interval.toUpperCase() as Interval)
-      : "MONTHLY";
-    paymentsMap.push({
-      id: randomUUID(),
-      interval: i,
-      dueDate: b.originalDate,
-      name: b.name,
-      amount: b.amount,
-      type: "BILL",
-    });
-  });
-  return paymentsMap;
-}
-
-export const validIntervals: Interval[] = [
-  "WEEKLY",
-  "BIWEEKLY",
-  "MONTHLY",
-  "YEARLY",
-  "SPLIT",
-];
 
 export async function editSnowballTargetPaymentId(
   budgetId: string,
@@ -406,7 +338,7 @@ async function pruneOldBackups(userId: string, keepCount: number) {
 }
 
 /**
- * LOCAL STORAGE BACKUP SYSTEM
+ * Async STORAGE BACKUP SYSTEM
  *
  * Saves the current user data to localStorage before a restore operation.
  * This provides an "undo last restore" feature without consuming Firestore backups.
@@ -416,7 +348,7 @@ const ASYNCSTORAGE_BACKUP_KEY = "nvelope_pre_restore_backup";
 
 export interface AsyncStorageBackup {
   data: {
-    envelopes: Envelope[];
+    envelopes: Nvelope[];
     payments: Payment[];
     totalSpendingBudget: number;
     payDate: unknown;
@@ -430,7 +362,7 @@ export interface AsyncStorageBackup {
  * Save current user data to localStorage before restore
  */
 export async function saveToAsyncStorageBackup(userData: {
-  envelopes: Envelope[];
+  envelopes: Nvelope[];
   payments: Payment[];
   totalSpendingBudget: number;
   payDate: unknown;
@@ -450,7 +382,7 @@ export async function saveToAsyncStorageBackup(userData: {
 }
 
 /**
- * Get the localStorage backup if it exists
+ * Get the async storage backup if it exists
  */
 export async function getAsyncStorageBackup(): Promise<AsyncStorageBackup | null> {
   try {

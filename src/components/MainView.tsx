@@ -1,21 +1,21 @@
+
 import { useEffect, useMemo, useState } from "react";
-import { Interval, type Envelope, type Payment } from "../types";
+import { Interval, type Nvelope, type Payment } from "../types";
 import {
+  editDatabaseWithTransaction,
   editEnvelopes,
   editIsNewUser,
-  editOneTimeCashAndBudget,
   editPayments,
   editSnowballTargetPaymentId,
   editTotalSpendingBudget,
   resetAllNvelopes,
   updateBudgetStateAndDBB,
 } from "../firebase/editData";
-import { Timestamp } from "firebase/firestore";
+import firestore from "@react-native-firebase/firestore";
 import {
   deriveIsPaid,
   getVirtualPaymentsForCurrentPeriod,
   randomUUID,
-  recalculateBudget,
   removeVirtualIdPortion,
 } from "../util/util";
 import Loading from "./Loading";
@@ -44,8 +44,9 @@ import {
   getOriginalIdFromVirtualId,
   togglePaidDates,
 } from "../util/paymentUtils";
-import Nvelope from "./Nvelopes/Nvelope";
-import Nvelopes from "./Nvelopes/NvelopesContainer";
+import NvelopesContainer from "./Nvelopes/NvelopesContainer";
+import MainEnvelope from "./Nvelopes/MainNvelope";
+
 
 export default function MainView() {
   const { user } = useAuth();
@@ -71,7 +72,7 @@ export default function MainView() {
   const [showPaymentInputs, setShowPaymentInputs] = useState(false);
   const [showDeletePayment, setShowDeletePayment] = useState(false);
 
-  const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | undefined>();
+  const [envelopeToEdit, setEnvelopeToEdit] = useState<Nvelope | undefined>();
   const [isEditingEnvelope, setIsEditingEnvelope] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isAddingCash, setIsAddingCash] = useState(false);
@@ -147,7 +148,7 @@ export default function MainView() {
     const newDueDate = addMonths(payment.dueDate.toDate(), 1);
     const updatedPayments = payments.map((p) =>
       p.id === payment.id
-        ? { ...p, dueDate: Timestamp.fromDate(newDueDate) }
+        ? { ...p, dueDate: firestore.Timestamp.fromDate(newDueDate) }
         : p,
     );
     setPayments(updatedPayments);
@@ -167,15 +168,6 @@ export default function MainView() {
     setDueFundPayment(null);
   }
 
-  async function handleUpdateBudget(diffAmount: number) {
-    const nextBudget = recalculateBudget({
-      currentAvailableBudget: totalSpendingBudget,
-      diffAmount,
-    });
-    await editTotalSpendingBudget(nextBudget, activeBudgetId!);
-    setTotalSpendingBudget(nextBudget);
-  }
-
   function handleDeleteBill(p: Payment) {
     setPaymentToEdit(p);
     setShowDeletePayment(true);
@@ -189,7 +181,18 @@ export default function MainView() {
       return originalPId !== originalPaymentToEditId;
     });
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "DELETE",
+        createdAt: firestore.Timestamp.now(),
+        nvelopeOrPaymentId: originalPaymentToEditId,
+        description: `Deleted payment: "${paymentToEdit?.name}"`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(updatedPayments, activeBudgetId!),
+    });
     resetPaymentState();
     Toast.show({ type: "success", text1: "Payment deleted" });
   }
@@ -205,7 +208,7 @@ export default function MainView() {
   }
 
   async function applySnowballToTarget(virtualPayment: Payment) {
-    if (!snowballTargetPaymentId || !activeBudgetId) return;
+    if (!snowballTargetPaymentId || !activeBudgetId || !user) return;
 
     const snowballPayment = payments.find((p) => p.id === "SNOWBALL");
     const targetDebt = payments.find((p) => p.id === snowballTargetPaymentId);
@@ -236,7 +239,18 @@ export default function MainView() {
       );
     }
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, activeBudgetId);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "SNOWBALL",
+        createdAt: firestore.Timestamp.now(),
+        nvelopeOrPaymentId: virtualPayment.id,
+        description: `Applied snowball to  "${targetDebt?.name}"`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(updatedPayments, activeBudgetId!),
+    });
   }
 
   async function handleDebtPayoff(
@@ -244,6 +258,7 @@ export default function MainView() {
     updatedPayments: Payment[],
     remainder: number = 0,
   ): Promise<Payment[]> {
+    if (!user) return []
     setPaidOffDebtName(paidOffPayment.name);
 
     const remainingDebts = updatedPayments.filter(
@@ -254,12 +269,22 @@ export default function MainView() {
         p.total != null &&
         p.total > 0,
     );
-    const nextId =
-      remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0]?.id ??
-      null;
+    const nextDebt =
+      remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0] ?? null;
 
-    setSnowballTargetPaymentId(nextId);
-    await editSnowballTargetPaymentId(activeBudgetId!, nextId);
+    setSnowballTargetPaymentId(nextDebt.id);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "PAID_OFF",
+        createdAt: firestore.Timestamp.now(),
+        nvelopeOrPaymentId: paidOffPayment.id,
+        description: `Snowball paid off "${paidOffPayment?.name}" Rolling into "${nextDebt?.name}"`,
+        createdBy: user!.email ?? user!.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editSnowballTargetPaymentId(activeBudgetId!, nextDebt.id),
+    });
 
     const snowballPayment = updatedPayments.find((p) => p.id === "SNOWBALL");
     const newSnowballAmount =
@@ -290,7 +315,18 @@ export default function MainView() {
     if (remainder > 0) {
       const newBudget = totalSpendingBudget + remainder;
       setTotalSpendingBudget(newBudget);
-      await editTotalSpendingBudget(newBudget, activeBudgetId!);
+      await editDatabaseWithTransaction({
+        t: {
+         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+          type: "SNOWBALL",
+          createdAt: firestore.Timestamp.now(),
+          nvelopeOrPaymentId: paidOffPayment.id,
+          description: `Snowball exeeded final payment. Applied $${remainder} to available budget`,
+          createdBy: user!.email ?? user!.uid,
+        },
+        budgetId: activeBudgetId!,
+        func: () => editTotalSpendingBudget(newBudget, activeBudgetId!),
+      });
     }
     Toast.show({
       type: "success",
@@ -305,6 +341,7 @@ export default function MainView() {
   }
 
   async function handleUpdatePaid(virtualPayment: Payment) {
+    if (!user) return;
     const originalId = getOriginalIdFromVirtualId(virtualPayment.id);
 
     // Snowball payment routes to its own handler
@@ -336,7 +373,17 @@ export default function MainView() {
       updatedPayments = await handleDebtPayoff(paidOffPayment, updatedPayments);
     }
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "PAID",
+        createdAt: firestore.Timestamp.now(),
+        description: `Marked "${updatedPayment?.name}" as PAID`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(updatedPayments, activeBudgetId!),
+    });
 
     return updatedPayment;
   }
@@ -349,22 +396,35 @@ export default function MainView() {
     oneTime: false,
   };
 
-  async function saveNewEnvelope(e: Envelope) {
-    if (!e.name.trim()) return;
+  async function saveNewEnvelope(n: Nvelope) {
+    if (!n.name.trim() || !user) return;
     setLoadingText("Adding New Envelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes];
     newEnvelopes.push({
-      id: e.id,
-      name: e.name,
-      total: e.total,
-      spent: e.spent || 0,
-      order: e.order || 0,
+      id: n.id,
+      name: n.name,
+      total: n.total,
+      spent: n.spent || 0,
+      order: n.order || 0,
     });
     setEnvelopes(newEnvelopes);
-    await editEnvelopes(newEnvelopes, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "NEW",
+        createdAt: firestore.Timestamp.now(),
+        nvelopeOrPaymentId: n.id,
+        amount: n.total,
+        description: `Added new envelope ${n.name} with $${n.total}`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+    });
+
     await updateBudgetStateAndDBB(
-      Number(e.total) * -1,
+      Number(n.total) * -1,
       activeBudgetId!,
       totalSpendingBudget,
       setTotalSpendingBudget,
@@ -373,20 +433,31 @@ export default function MainView() {
     Toast.show({ type: "success", text1: "Envelope created" });
   }
 
-  async function handleSetShowSpendingPage(e: Envelope) {
-    setEnvelopeToEdit(e);
+  async function handleSetShowSpendingPage(n: Nvelope) {
+    setEnvelopeToEdit(n);
     setShowSpendPage(true);
   }
 
   async function deleteEnvelope() {
+    if (!user || !envelopeToEdit) return;
     try {
       setLoadingText("Deleting Envelope...");
       setShowLoading(true);
       const newEnvelopes = [...envelopes].filter(
-        (e) => e.id !== envelopeToEdit?.id,
+        (e) => e.id !== envelopeToEdit.id,
       );
       setEnvelopes(newEnvelopes);
-      await editEnvelopes(newEnvelopes, activeBudgetId!);
+      await editDatabaseWithTransaction({
+        t: {
+         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+          type: "DELETE",
+          description: `Deleted envelope ${envelopeToEdit.name}`,
+          createdAt: firestore.Timestamp.now(),
+          createdBy: user.email ?? user.uid,
+        },
+        budgetId: activeBudgetId!,
+        func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+      });
       resetState();
       Toast.show({ type: "success", text1: "Envelope deleted" });
     } catch (error) {
@@ -397,7 +468,8 @@ export default function MainView() {
   }
 
   // Edit Envelopes AND budget
-  async function editEnvelopeAndBudget(n: Envelope) {
+  async function editEnvelopeAndBudget(n: Nvelope) {
+    if (!user) return;
     try {
       const originalEnvelope = envelopes.find((e) => e.id === n.id);
       if (!originalEnvelope) return;
@@ -420,7 +492,17 @@ export default function MainView() {
       }
       const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
       setEnvelopes(newEnvelopes);
-      await editEnvelopes(newEnvelopes, activeBudgetId!);
+      await editDatabaseWithTransaction({
+        t: {
+         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+          type: "EDIT",
+          description: `Edited envelope ${n.name}: { "Spent": ${n.spent}, "Total": ${n.total} }`,
+          createdAt: firestore.Timestamp.now(),
+          createdBy: user.email ?? user.uid,
+        },
+        budgetId: activeBudgetId!,
+        func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+      });
       resetState();
       Toast.show({ type: "success", text1: "Envelope updated" });
     } catch (error) {
@@ -431,18 +513,39 @@ export default function MainView() {
   }
 
   // Edit just the envelopes without affecting budget
-  async function editEnvelope(n: Envelope) {
+  async function editEnvelope(
+    n: Nvelope,
+    isSpending: boolean,
+    spendDesc?: string,
+  ) {
+    if (!user) return;
     const originalEnvelope = envelopes.find((e) => e.id === n.id);
     if (!originalEnvelope) return;
     setLoadingText("Editing Envelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
     setEnvelopes(newEnvelopes);
-    await editEnvelopes(newEnvelopes, activeBudgetId!);
+    try {
+      await editDatabaseWithTransaction({
+        t: {
+         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+          type: isSpending ? "SPEND" : "EDIT",
+          description:
+            spendDesc ||
+            `Edited envelope ${n.name}: { "Spent": ${n.spent}, "Total": ${n.total} }`,
+          nvelopeOrPaymentId: n.id,
+          createdAt: firestore.Timestamp.now(),
+          createdBy: user.email ?? user.uid,
+        },
+        budgetId: activeBudgetId!,
+        func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+      });
+    } catch (error) {}
+
     resetState();
   }
 
-  function handleSetupEdit(n: Envelope) {
+  function handleSetupEdit(n: Nvelope) {
     setIsDeleting(false);
     setEnvelopeToEdit(n);
     setIsEditingEnvelope(true);
@@ -481,14 +584,24 @@ export default function MainView() {
   }
 
   async function handleResetEnvelopesAndPaid() {
-    if (!activeBudgetId) return;
+    if (!activeBudgetId || !user) return;
     const paymentsMarkedPaid = payments.map((p) => {
       return { ...p, paidDates: [], paidAmounts: {} };
     });
     setPayments(paymentsMarkedPaid);
     setShowClearNvelopes(false);
     await resetAllNvelopes(envelopes, setEnvelopes, activeBudgetId);
-    await editPayments(paymentsMarkedPaid, activeBudgetId);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "RESET",
+        description: "Reset Nvelopes & Marked Payments as UNPAID",
+        createdAt: firestore.Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(paymentsMarkedPaid, activeBudgetId!),
+    });
     Toast.show({ type: "success", text1: "Envelopes and Payments reset" });
   }
 
@@ -497,24 +610,30 @@ export default function MainView() {
     setLoadingText("Adding Cash...");
     setShowLoading(true);
     const randomId = randomUUID();
-    const date = Timestamp.fromDate(new Date());
-    const newOneTimeCash = {
-      id: randomId,
-      name: cashName,
-      amount: cashAmount,
-      date,
-    };
-    await editOneTimeCashAndBudget(
-      newOneTimeCash,
-      activeBudgetId!,
-      totalSpendingBudget,
-    );
-    setTotalSpendingBudget(totalSpendingBudget + cashAmount);
+    const date = firestore.Timestamp.fromDate(new Date());
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "CASH",
+        amount: cashAmount,
+        description: `Added Cash: ${cashName}`,
+        createdAt: firestore.Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () =>
+        updateBudgetStateAndDBB(
+          cashAmount,
+          activeBudgetId!,
+          totalSpendingBudget,
+          setTotalSpendingBudget,
+        ),
+    });
     resetState();
     Toast.show({ type: "success", text1: "Cash added to budget" });
   }
 
-  function handleAddCashToEnvelope(envelope: Envelope) {
+  function handleAddCashToEnvelope(envelope: Nvelope) {
     setIsAddingCashToEnvelope(true);
     setEnvelopeToEdit(envelope);
   }
@@ -533,7 +652,19 @@ export default function MainView() {
       totalSpendingBudget,
       setTotalSpendingBudget,
     );
-    await editEnvelopes(newEnvelopes, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "FILL",
+        description: `Added $${cashAmount} to ${n.name}`,
+        amount: cashAmount,
+        createdAt: firestore.Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+    });
+    console.log("GET RIGHT THE SHIT HERE");
     setEnvelopes(newEnvelopes);
     Toast.show({ type: "success", text1: `${cashAmount} added to ${n.name}` });
     resetState();
@@ -655,7 +786,7 @@ export default function MainView() {
     return (
       <>
         {showLoading && <Loading text={loadingText} />}
-        <Nvelope
+        <MainEnvelope
           kind="spendingEnvelope"
           envelope={envelopeSent}
           editEnvelope={editEnvelope}
@@ -669,7 +800,7 @@ export default function MainView() {
     return (
       <>
         {showLoading && <Loading text={loadingText} />}
-        <Nvelope
+        <MainEnvelope
           kind="editEnvelope"
           envelope={envelopeToEdit}
           editEnvelope={editEnvelope}
@@ -685,7 +816,7 @@ export default function MainView() {
     return (
       <>
         {showLoading && <Loading text={loadingText} />}
-        <Nvelope
+        <MainEnvelope
           kind="deleteEnvelope"
           envelope={envelopeToEdit}
           handleBack={resetState}
@@ -699,7 +830,7 @@ export default function MainView() {
     return (
       <>
         {showLoading && <Loading text={loadingText} />}
-        <Nvelope
+        <MainEnvelope
           kind="addEnvelope"
           envelope={emptyEnvelope}
           handleSaveEnvelope={saveNewEnvelope}
@@ -838,7 +969,7 @@ export default function MainView() {
           />
 
           <View className="w-full border-y-2 border-my-white-light mt-[1.5rem]">
-            <Nvelopes
+            <NvelopesContainer
               resetState={resetState}
               handleSetupEdit={handleSetupEdit}
               editEnvelope={editEnvelopeAndBudget}

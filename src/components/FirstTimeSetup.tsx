@@ -24,6 +24,8 @@ import Toast from "react-native-toast-message";
 import { navigationRef } from "../../App";
 const { Timestamp } = firebase;
 
+// TODO: Replace this with live walkthrough: add envelope add payment edit each and reset budget
+
 export default function FirstTimeSetup() {
   const { user } = useAuth();
   const { setActiveBudgetId, refetchBudgets } = useBudget();

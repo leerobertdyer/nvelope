@@ -1,4 +1,4 @@
-import type { Envelope } from "../../types";
+import type { Nvelope } from "../../types";
 import { randomUUID } from "../../util/util";
 import { View } from "react-native";
 import Input from "../Input";
@@ -15,9 +15,9 @@ interface IProps {
   setNewEnvelopeTotal: (n: number) => void;
   isEditing: boolean;
   handleBack?: () => void;
-  handleSaveEnvelope?: (envelope: Envelope) => Promise<void>;
-  editEnvelope?: (envelope: Envelope) => Promise<void>;
-  envelope?: Envelope;
+  handleSaveEnvelope?: (envelope: Nvelope) => Promise<void>;
+  editEnvelope?: (envelope: Nvelope, isSpending: boolean) => Promise<void>;
+  envelope?: Nvelope;
   newEnvelopeSpent?: number;
   setNewEnvelopeSpent?: (n: number) => void;
 }
@@ -85,7 +85,7 @@ export default function EnvelopeForm(props: IProps) {
                       total: newEnvelopeTotal,
                       spent: newEnvelopeSpent ?? envelope.spent,
                       order: envelope.order || 1000,
-                    });
+                    }, false);
                   }
                 : () => {
                     handleSaveEnvelope?.({

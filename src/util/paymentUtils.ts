@@ -1,6 +1,6 @@
 import { startOfDay } from "date-fns";
 import { Payment } from "../types";
-import { Timestamp } from "firebase/firestore";
+import firestore from "@react-native-firebase/firestore"
 
 
 export function togglePaidDates(payment: Payment, occurrenceDate: Date): Payment {
@@ -12,7 +12,7 @@ export function togglePaidDates(payment: Payment, occurrenceDate: Date): Payment
   if (alreadyPaid) {
     return { ...payment, paidDates: paidDates.filter(pd => startOfDay(pd.toDate()).getTime() !== occurrenceTime) };
   }
-  return { ...payment, paidDates: [...paidDates, Timestamp.fromDate(startOfDay(occurrenceDate))] };
+  return { ...payment, paidDates: [...paidDates, firestore.Timestamp.fromDate(startOfDay(occurrenceDate))] };
 }
 
 export function applyAmountToTotal(payment: Payment, amount: number, occurrenceKey: string): Payment {

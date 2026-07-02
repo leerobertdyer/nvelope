@@ -4,14 +4,14 @@ import { Modal, View } from "react-native";
 import RadioBtn from "../Buttons/RadioBtn";
 import { Picker } from "@react-native-picker/picker";
 import Btn from "../Buttons/Btn";
-import { Envelope } from "../../types";
+import { Nvelope } from "../../types";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { MyText } from "../MyText";
 
 interface GiveAndTakeProps {
-  envelope: Envelope;
+  envelope: Nvelope;
   handleBack: () => void;
-  takeAndGive: (e: Envelope, n: number) => Promise<void>;
+  takeAndGive: (e: Nvelope, n: number) => Promise<void>;
   takeFromEnvelope: (n?: number) => Promise<void>;
 }
 
@@ -23,7 +23,7 @@ export default function GiveAndTake({
 }: GiveAndTakeProps) {
   const [amountToGiveOrTake, setAmountToGiveOrTake] = useState(0);
   const [isGiving, setIsGiving] = useState<boolean | null>(null);
-  const [envelopeToGiveTo, setEnvelopeToGiveTo] = useState<Envelope | null>(
+  const [envelopeToGiveTo, setEnvelopeToGiveTo] = useState<Nvelope | null>(
     null,
   );
   const { envelopes } = useDatabase();

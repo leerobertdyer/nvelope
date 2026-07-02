@@ -2,9 +2,8 @@ import { DatabaseContext } from "./DatabaseContext";
 import { useEffect, useRef, useState } from "react";
 import {
   type Backup,
-  type Envelope,
+  type Nvelope,
   type Interval,
-  type OneTimeAmount,
   type Payment,
 } from "../../types";
 import { useAuth } from "../AuthContext/useAuth";
@@ -36,7 +35,7 @@ export default function DatabaseProvider({
   );
   const [payPeriodInterval, setPayPeriodInterval] =
     useState<Interval>("MONTHLY");
-  const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
+  const [envelopes, setEnvelopes] = useState<Nvelope[]>([]);
   const [payments, setPaymentsState] = useState<Payment[]>([]);
   const setPayments = (next: Payment[] | ((prev: Payment[]) => Payment[])) => {
     lastPaymentsWriteAtRef.current = Date.now();
@@ -44,9 +43,6 @@ export default function DatabaseProvider({
   };
   const [isNewUser, setIsNewUser] = useState<boolean>(false);
   const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
-  const [resetBudgetTimestamp, setResetBudgetTimestamp] =
-    useState<Timestamp | null>(null);
-  const [oneTimeCash, setOneTimeCash] = useState<OneTimeAmount[] | null>(null);
   const [backups, setBackups] = useState<Backup | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [documentExists, setDocumentExists] = useState<boolean | null>(null);
@@ -112,8 +108,6 @@ export default function DatabaseProvider({
 
           setIsNewUser(data.isNewUser ?? false);
           setTotalSpendingBudget(data.totalSpendingBudget ?? 0);
-          setOneTimeCash(data.oneTimeCash ?? null);
-          setResetBudgetTimestamp(normalizeTimestamp(data.resetBudgetTimestamp) ?? null);
           setBackups(data.backups ?? null);
         } else {
           setDocumentExists(false);
@@ -163,10 +157,6 @@ export default function DatabaseProvider({
     setIsNewUser,
     totalSpendingBudget,
     setTotalSpendingBudget,
-    oneTimeCash,
-    setOneTimeCash,
-    resetBudgetTimestamp,
-    setResetBudgetTimestamp,
     backups,
     setBackups,
     dbError,
