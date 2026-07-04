@@ -46,7 +46,7 @@ export default function PaymentMap({
       <Pressable
         key={p.id}
         onPress={() => handleEditBill(p)}
-        className={`flex-row py-2 border-y-[1px] justify-center items-center border-my-black-dark w-full 
+        className={`flex-row py-2 border-y-[1px] justify-center items-center border-my-black-dark w-full rounded-md
           ${isLastPayment ? "border-2 border-my-white-dark" : ""}
           ${deriveIsPaid(p) ? "bg-my-black-light" : "bg-my-black-base"} ${hidePayments && "rounded-md"}`}
       >
@@ -87,7 +87,7 @@ export default function PaymentMap({
                 <FontAwesome
                   name="check-circle-o"
                   color={"#076346"}
-                  className="bg-my-white-light rounded-md p-[4px] border-2 border-my-black-dark overflow-hidden"
+                  className="bg-my-white-light rounded-md p-[4px] border-2 border-my-green-dark overflow-hidden"
                   size={20}
                 />
               )}

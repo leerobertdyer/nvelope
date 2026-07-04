@@ -1,4 +1,3 @@
-
 import type { RefObject } from "react";
 import { Pressable, View } from "react-native";
 import { MyText } from "../MyText";
@@ -35,6 +34,13 @@ export default function ActionButtons({
       <Pressable
         ref={paymentRef}
         onPress={onPaymentClick}
+        style={{
+          shadowColor: "#121212",
+          shadowOffset: { width: 5, height: 4 },
+          shadowOpacity: 0.85,
+          shadowRadius: 6,
+        }}
+        className="bg-my-white-light rounded-lg p-[1px]"
       >
         <LinearGradient
           colors={[
@@ -42,7 +48,6 @@ export default function ActionButtons({
             "#fff2d9",
             "#fcca68",
             "#f79902",
-
             "#fff2d9",
             "#fcca68",
             "#fff2d9",
@@ -58,7 +63,7 @@ export default function ActionButtons({
             justifyContent: "center",
           }}
         >
-            <MyText className="text-[3rem]">💸</MyText>
+          <MyText className="text-[3rem]">💸</MyText>
           <MyText className="text-sm">Payment</MyText>
         </LinearGradient>
       </Pressable>
@@ -67,6 +72,13 @@ export default function ActionButtons({
       <Pressable
         ref={cashRef}
         onPress={onCashClick}
+        style={{
+          shadowColor: "#121212",
+          shadowOffset: { width: 5, height: 4 },
+          shadowOpacity: 0.85,
+          shadowRadius: 6,
+        }}
+        className="bg-my-white-light rounded-lg p-[1px]"
       >
         <LinearGradient
           colors={[
@@ -99,7 +111,7 @@ export default function ActionButtons({
             justifyContent: "center",
           }}
         >
-            <MyText className="text-[3rem]">💰</MyText>
+          <MyText className="text-[3rem]">💰</MyText>
           <MyText className="text-sm">Cash</MyText>
         </LinearGradient>
       </Pressable>
@@ -108,6 +120,13 @@ export default function ActionButtons({
       <Pressable
         ref={envelopeRef}
         onPress={onEnvelopeClick}
+        style={{
+          shadowColor: "#121212",
+          shadowOffset: { width: 5, height: 4 },
+          shadowOpacity: 0.85,
+          shadowRadius: 6,
+        }}
+        className="bg-my-white-light rounded-lg p-[1px]"
       >
         <LinearGradient
           colors={[
@@ -133,7 +152,7 @@ export default function ActionButtons({
             justifyContent: "center",
           }}
         >
-            <MyText className="text-[3rem]">📨</MyText>
+          <MyText className="text-[3rem]">📨</MyText>
           <MyText className="text-sm text-my-black-dark">Nvelope</MyText>
         </LinearGradient>
       </Pressable>
@@ -142,6 +161,13 @@ export default function ActionButtons({
       <Pressable
         ref={clearRef}
         onPress={onClearClick}
+        style={{
+          shadowColor: "#121212",
+          shadowOffset: { width: 5, height: 4 },
+          shadowOpacity: 0.85,
+          shadowRadius: 6,
+        }}
+        className="bg-my-white-light rounded-lg p-[1px]"
       >
         <LinearGradient
           colors={[
@@ -163,7 +189,7 @@ export default function ActionButtons({
             justifyContent: "center",
           }}
         >
-            <MyText className="text-[3rem]">♻️</MyText>
+          <MyText className="text-[3rem]">♻️</MyText>
           <MyText className="text-sm text-my-black-dark">Clear</MyText>
         </LinearGradient>
       </Pressable>
