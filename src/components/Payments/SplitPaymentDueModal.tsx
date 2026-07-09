@@ -22,7 +22,7 @@ export default function SplitPaymentDueModal({
 }: SplitPaymentDueModalProps) {
   return (
     <View>
-      <View className="items-center justify-center min-h-screen p-4">
+      <View className="items-center justify-center min-h-full p-4">
         <View className="bg-my-black-base border-2 border-my-white-dark rounded-lg p-6 max-w-md w-full text-center">
           <Text className="text-xl text-my-white-light mb-4">
             Target Date Reached! 🎯

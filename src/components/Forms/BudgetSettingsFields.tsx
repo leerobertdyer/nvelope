@@ -106,7 +106,7 @@ export default function BudgetSettingsFields({
       )}
       {editingBudgetName && (
         <Modal>
-          <View className="justify-center gap-2 w-full h-screen bg-my-black-base">
+          <View className="justify-center gap-2 w-full flex-1 bg-my-black-base">
             <View className="items-center gap-2 w-full h-fit m-auto">
               <MyText className="text-my-white-dark">Update Budget Name</MyText>
               <Input
@@ -150,7 +150,7 @@ export default function BudgetSettingsFields({
       )}
       {showIntervalSelector ? (
         <Modal>
-          <View className="bg-my-black-base w-full h-screen justify-center">
+          <View className="bg-my-black-base w-full h-full justify-center">
             <View className="h-fit w-full">
               <IntervalSelector
                 value={intervalValue}
@@ -177,7 +177,7 @@ export default function BudgetSettingsFields({
       )}
       {showPayDateCalendar ? (
         <Modal>
-          <View className="bg-my-black-base w-full h-screen justify-center">
+          <View className="bg-my-black-base w-full h-full justify-center">
             <View className="w-full h-fit gap-4">
               <Calendar
                 markedDates={{

@@ -30,7 +30,7 @@ export default function AddCashToEnvelopeForm({
   return (
     <Modal>
       {showLoading && <Loading text={loadingText} />}
-      <View className="bg-my-black-base text-my-white-dark w-full h-screen items-center justify-center">
+      <View className="bg-my-black-base text-my-white-dark w-full h-full items-center justify-center">
         <View className="h-fit m-auto w-full gap-2">
           <MyText className="text-my-white-base mb-2 text-center">
             Remaining Budget: ${(totalSpendingBudget - cashAmount).toFixed(2)}

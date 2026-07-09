@@ -793,7 +793,7 @@ export default function Settings() {
     );
 
   return (
-    <ScrollView className="w-full h-screen bg-my-white-light">
+    <ScrollView className="w-full h-full bg-my-white-light">
       <PageTour
         visible={isNewUser}
         onDismiss={async () => {
@@ -886,7 +886,7 @@ export default function Settings() {
           <View className="w-full gap-4">
             {budgets.length > 1 && showBudgetSelector ? (
               <Modal>
-                <View className="w-full h-screen bg-my-black-base">
+                <View className="w-full h-full bg-my-black-base">
                   <View className="w-full m-auto gap-8">
                     <MyText className="text-xs text-center text-my-black-dark">
                       Select A Budget
@@ -941,7 +941,7 @@ export default function Settings() {
                 )}
                 {isOwner && showShareBudgetModal && (
                   <Modal>
-                    <View className="h-screen w-full justify-center bg-my-black-base">
+                    <View className="h-full w-full justify-center bg-my-black-base">
                       <View className="bg-my-white-base h-fit w-full p-8 gap-4">
                         <View className="w-full gap-2 items-center justify-center">
                           <Input

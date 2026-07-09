@@ -11,7 +11,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import { getTransactions } from "../../firebase/budgets";
-import { format } from "date-fns";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import Transactions from "../Transactions";
 
 interface IBigEnvelope {
   handleBack: () => void;
@@ -52,6 +53,15 @@ export default function BigEnvelope({
   const envelopeRemainder = (
     Number(envelope.total) - Number(envelope.spent)
   ).toFixed(2);
+
+  if (showTransactions)
+    return (
+      <Transactions
+        transactions={transactions}
+        onClose={() => setShowTransactions(false)}
+      />
+    );
+
   return (
     <Modal>
       <LinearGradient
@@ -63,7 +73,7 @@ export default function BigEnvelope({
           justifyContent: "center",
         }}
       >
-        <View className="h-screen w-full">
+        <View className="h-full w-full">
           <View className="w-full h-fit m-auto items-center justify-start gap-4">
             <View className="p-2 text-lg text-center w-[20rem] rounded-md flex justify-center gap-2">
               <MyText className="text-my-black-dark text-center text-3xl">
@@ -77,72 +87,82 @@ export default function BigEnvelope({
             <Btn onPress={handleBack} color="red" text="Go Back" />
             <View className="justify-center items-center gap-2 w-full ">
               <Pressable
-                className="border-2 rounded-md p-2 bg-white w-[18rem]"
+                className="border-2 rounded-md p-2 bg-my-green-dark w-[18rem]"
                 onPress={() => handleAddCashToEnvelope(envelope)}
+                style={{
+                  shadowColor: "#121212",
+                  shadowOffset: { width: 5, height: 4 },
+                  shadowOpacity: 0.85,
+                  shadowRadius: 6,
+                }}
               >
-                <View className="flex-row items-center w-full gap-4 p-[2px] border-2 rounded-md bg-my-white-base border-my-black-dark">
+                <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base border-my-black-dark">
                   <FontAwesome6 name="sack-dollar" color="#076346" size={20} />
                   <MyText>Add Money From Budget</MyText>
                 </View>
               </Pressable>
               <Pressable
-                className="border-2 rounded-md p-2 bg-white w-[18rem]"
+                className="border-2 rounded-md p-2 bg-my-white-dark w-[18rem]"
                 onPress={() => setUpShowGiveAndTake(envelope)}
+                style={{
+                  shadowColor: "#121212",
+                  shadowOffset: { width: 5, height: 4 },
+                  shadowOpacity: 0.85,
+                  shadowRadius: 6,
+                }}
               >
-                <View className="flex-row items-center w-full gap-4 p-[2px] border-2 rounded-md bg-my-white-base border-my-black-dark">
+                <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base border-my-black-dark">
                   <Entypo name="hand" color="black" size={20} />
                   <MyText>Take From This Envelope</MyText>
                 </View>
               </Pressable>
               <Pressable
-                className="border-2 rounded-md p-2 bg-white w-[18rem]"
+                className="border-2 rounded-md p-2 bg-my-white-light w-[18rem]"
                 onPress={() => handleSetupEdit(envelope)}
+                style={{
+                  shadowColor: "#121212",
+                  shadowOffset: { width: 5, height: 4 },
+                  shadowOpacity: 0.85,
+                  shadowRadius: 6,
+                }}
               >
-                <View className="flex-row items-center w-full gap-4 p-[2px] border-2 rounded-md bg-my-white-base text-black border-my-black-dark">
+                <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base text-black border-my-black-dark">
                   <FontAwesome name="pencil-square-o" size={20} />
                   <MyText>Manually Edit Envelope</MyText>
                 </View>
               </Pressable>
               <Pressable
-                className="border-2 rounded-md p-2 bg-white w-[18rem]"
+                className="border-2 rounded-md p-2 bg-my-red-base w-[18rem]"
                 onPress={() => handleDeleteEnvelope(envelope.id)}
+                style={{
+                  shadowColor: "#121212",
+                  shadowOffset: { width: 5, height: 4 },
+                  shadowOpacity: 0.85,
+                  shadowRadius: 6,
+                }}
               >
                 <View className="flex-row items-center w-full gap-4 p-[2px] border-2 rounded-md bg-my-white-base border-my-black-dark">
                   <EvilIcons name="trash" size={24} color="#ad0241" />
                   <MyText>Delete Envelope</MyText>
                 </View>
               </Pressable>
-              <View className="w-[90%] m-auto bg-my-white-dark rounded-md items-center justify-center gap-2 p-2 mt-2">
-                <MyText className="text-3xl">Transactions</MyText>
-                {showTransactions ? (
-                  <Pressable
-                    onPress={() => setShowTransactions(false)}
-                    className="ml-[6px] p-[2px] w-[1.75rem] h-[1.75rem] justify-center items-center bg-my-black-base rounded-md"
-                  >
-                    <Entypo name={"chevron-up"} size={20} color="#fcca68" />
-                  </Pressable>
-                ) : (
-                  <Pressable
-                    onPress={() => setShowTransactions(true)}
-                    className="ml-[6px] p-[2px] w-[1.75rem] h-[1.75rem] justify-center items-center bg-my-black-base rounded-md"
-                  >
-                    <Entypo name={"chevron-down"} size={20} color="#fcca68" />
-                  </Pressable>
-                )}
-                {transactions.length > 0 &&
-                  showTransactions &&
-                  transactions.map((t) => (
-                    <View
-                      key={t.id}
-                      className="w-full items-center justify-center flex-row"
-                    >
-                      <MyText className="text-xs mr-2">
-                        {format(t.createdAt.toDate(), "MMMM do")}:
-                      </MyText>
-                      <MyText className="text-xs">{t.description}</MyText>
-                    </View>
-                  ))}
-              </View>
+              {transactions.length > 0 && (
+                <Pressable
+                  className="border-2 rounded-md p-2 bg-[#a1dde3] w-[18rem] mt-4"
+                  onPress={() => setShowTransactions(true)}
+                  style={{
+                    shadowColor: "#121212",
+                    shadowOffset: { width: 5, height: 4 },
+                    shadowOpacity: 0.85,
+                    shadowRadius: 6,
+                  }}
+                >
+                  <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base border-my-black-dark">
+                    <MaterialIcons name="notes" size={24} color="black" />
+                    <MyText>Show Transactions</MyText>
+                  </View>
+                </Pressable>
+              )}
             </View>
           </View>
         </View>

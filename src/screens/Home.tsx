@@ -44,7 +44,7 @@ export default function Home() {
 
   if (!user) {
     return (
-      <View className="gap-4 pt-[6rem] items-center w-full h-screen bg-my-black-base">
+      <View className="gap-4 pt-[6rem] items-center w-full h-full bg-my-black-base">
         <MyText className="text-2xl text-my-white-dark">Welcome to Nvelopes</MyText>
         <MyText className="text-sm text-my-white-light">
           Old School Budgeting for the Digital Age
@@ -57,7 +57,7 @@ export default function Home() {
   // Display critical database errors that could indicate data corruption risk
   if (dbError) {
     return (
-      <View className="justify-center items-center w-full h-screen bg-my-black-dark text-my-white-dark p-4">
+      <View className="justify-center items-center w-full h-full bg-my-black-dark text-my-white-dark p-4">
         <View className="max-w-md text-center">
           <MyText className="text-2xl text-my-red-light mb-4">
             ⚠️ Database Error

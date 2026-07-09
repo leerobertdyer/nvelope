@@ -52,7 +52,7 @@ export default function NvelopeCalculator({
 
   return (
     <Modal>
-      <View className="w-full h-screen bg-my-black-base text-my-white-dark flex items-center justify-center gap-5">
+      <View className="w-full h-full bg-my-black-base text-my-white-dark flex items-center justify-center gap-5">
         <View className="w-full h-fit m-auto gap-4">
           <View className="w-full justify-center items-center gap-2">
             {envelope && (

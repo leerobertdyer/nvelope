@@ -133,10 +133,10 @@ export default function MainEnvelope({
     case "dash":
       return (
         <Pressable
-          className={`w-fit relative bg-white border rounded-sm `}
+          className={`w-fit relative bg-white border rounded-sm`}
           onPress={() => onPress?.()}
         >
-          <MyText className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center text-sm">
+          <MyText className="absolute top-1/2 left-[13%] w-fit text-center text-sm text-my-black-dark">
             {envelope.name}
           </MyText>
           <Svg width={dottedWidth} height={dottedHeight}>

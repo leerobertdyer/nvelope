@@ -30,7 +30,7 @@ export default function GiveAndTake({
 
   return (
     <Modal>
-      <View className="w-full h-screen  items-center justify-center bg-my-black-base">
+      <View className="w-full h-full  items-center justify-center bg-my-black-base">
         <MyText className="text-2xl font-bold mb-4 text-my-white-dark">
           Give and Take
         </MyText>
@@ -62,7 +62,7 @@ export default function GiveAndTake({
           </View>
           {isGiving && (
             <>
-              <MyText>Enter envelope to give to</MyText>
+              <MyText className="text-my-white-light">Enter envelope to give to</MyText>
               <Picker
                 style={{
                   width: "80%",

@@ -4,7 +4,7 @@ import { MyText } from "./MyText";
 
 export default function Loading({ text }: { text: string }) {
   return (
-      <View className="gap-2 justify-center items-center w-full h-screen bg-my-black-dark">
+      <View className="gap-2 justify-center items-center w-full flex-1 bg-my-black-dark">
         <MainEnvelope
           envelope={{
             id: "1",

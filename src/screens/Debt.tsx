@@ -417,7 +417,7 @@ export default function Debt() {
 
   if (showEditSnowball) {
     return (
-      <View className="w-screen h-screen bg-my-blue-dark pt-[4rem]">
+      <View className="w-screen h-full bg-my-blue-dark pt-[4rem]">
         <View className="justify-center items-center gap-2 w-full">
           <MoneyInput
             id="newSnowballAmount"
@@ -545,7 +545,7 @@ export default function Debt() {
       <Header links={["Home", "Settings"]} />
       <ScrollView
         contentContainerClassName="items-center"
-        className="w-full h-screen my-0 py-[3rem] bg-my-blue-dark text-my-white-dark"
+        className="w-full h-full my-0 py-[3rem] bg-my-blue-dark text-my-white-dark"
       >
         <View className="bg-my-black-base/40 p-2 rounded-md w-[80%] mb-[1rem] items-center gap-2">
           <MyText className="text-my-white-dark">TOTAL DEBT</MyText>
