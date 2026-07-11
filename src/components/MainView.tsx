@@ -664,7 +664,6 @@ export default function MainView() {
       budgetId: activeBudgetId!,
       func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
     });
-    console.log("GET RIGHT THE SHIT HERE");
     setEnvelopes(newEnvelopes);
     Toast.show({ type: "success", text1: `${cashAmount} added to ${n.name}` });
     resetState();
@@ -968,7 +967,7 @@ export default function MainView() {
             onClearClick={() => setShowClearNvelopes(true)}
           />
 
-          <View className="w-full border-y-2 border-my-white-light mt-[1.5rem]">
+          <View className="w-full  mt-[1.5rem]">
             <NvelopesContainer
               resetState={resetState}
               handleSetupEdit={handleSetupEdit}

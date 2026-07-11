@@ -59,6 +59,7 @@ export default function BigEnvelope({
       <Transactions
         transactions={transactions}
         onClose={() => setShowTransactions(false)}
+        name={envelope.name}
       />
     );
 

@@ -22,9 +22,8 @@ import BigEnvelope from "./BigEnvelope";
 import { Pressable } from "react-native-gesture-handler";
 import { MyText } from "../MyText";
 import Entypo from "@expo/vector-icons/Entypo";
-import firestore from "@react-native-firebase/firestore"
+import firestore from "@react-native-firebase/firestore";
 import { useAuth } from "../../context/AuthContext/useAuth";
-
 
 interface NvelopeProps {
   resetState: () => void;
@@ -48,7 +47,7 @@ function EnvelopeBox({
 }) {
   return (
     <Pressable onPress={setter}>
-      <View className="flex-row p-2 w-full h-[3rem] justify-between bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
+      <View className="flex-row p-2 w-full h-[3rem] justify-between items-center bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
         {isShown ? (
           <View className="ml-[6px] p-[2px] w-[1.75rem] h-[1.75rem] justify-center items-center bg-my-black-base rounded-md">
             <Entypo name={"chevron-up"} size={20} color="#fcca68" />
@@ -116,7 +115,7 @@ export default function Nvelopes({
     }
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
         type: "TAKE",
         description: `Put $${amount} from ${envelopeToEdit.name} back into available funds`,
         createdAt: firestore.Timestamp.now(),
@@ -143,7 +142,7 @@ export default function Nvelopes({
     newEnvelopes[envelopeToEditIndex] = envelopeToEdit;
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
         type: "GIVE",
         description: `Took $${amount} from ${envelopeToEdit.name} and put it in ${envelope}`,
         createdAt: firestore.Timestamp.now(),
@@ -205,29 +204,16 @@ export default function Nvelopes({
           setter={() => setShowEnvelopes(!showEnvelopes)}
         />
         {showEnvelopes && sortedEnvelopes.length > 0 && (
-          <>
-            <View className="w-screen max-w-[40rem] h-[2rem] flex-row divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold">
-              <View className="flex-[3] flex-row justify-start items-center pl-2">
-                <MyText className="text-sm font-bold">Nvelope</MyText>
-              </View>
+          <View className="p-2 bg-my-white-base overflow-hidden flex-wrap flex-row gap-2 justify-between">
 
-              <View className="flex-[2] flex-row justify-center items-center">
-                <MyText className="text-sm font-bold">Remaining</MyText>
-              </View>
-
-              <View className="flex-[2] flex-row justify-end items-center pr-2">
-                <MyText className="text-sm font-bold">Total</MyText>
-              </View>
-            </View>
             {sortedEnvelopes.map((e) => (
-              <View key={e.id} className="w-full">
-                <ListEnvelope
-                  envelope={e}
-                  onPress={() => handleSelectListEnvelope(e)}
-                />
-              </View>
+              <ListEnvelope
+                key={e.id}
+                envelope={e}
+                onPress={() => handleSelectListEnvelope(e)}
+              />
             ))}
-          </>
+          </View>
         )}
       </View>
     </View>

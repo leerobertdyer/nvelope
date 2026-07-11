@@ -159,21 +159,21 @@ export default function PaymentMap({
             ${color ? color : "bg-my-black-dark text-my-black-dark border-my-black-dark border-b-2"}`}
         >
           {isShown ? (
-            <View className={`ml-[6px] justify-center items-center w-[1.75rem] h-[1.75rem] border-my-white-light ${color ? "bg-my-white-dark" : "bg-my-white-light"} rounded-md`}>
+            <View className={`ml-[6px] justify-center items-center w-[1.75rem] h-[1.75rem] border-my-white-light ${color ? "bg-my-white-light" : "bg-my-white-dark"} rounded-md`}>
               <Entypo name={"chevron-up"} size={20} color="#000" />
             </View>
           ) : (
-            <View className={`ml-[6px] justify-center items-center w-[1.75rem] h-[1.75rem] border-my-white-light ${color ? "bg-my-white-dark" : "bg-my-white-light"} rounded-md`}>
+            <View className={`ml-[6px] justify-center items-center w-[1.75rem] h-[1.75rem] border-my-white-light ${color ? "bg-my-white-light" : "bg-my-white-dark"} rounded-md`}>
               <Entypo name={"chevron-down"} size={20} color="#000" />
             </View>
           )}
           <MyText
-            className={`${color ? "text-my-red-light" : "text-my-white-dark"}`}
+            className={`${color ? "text-my-white-light" : "text-my-white-dark"}`}
           >
             {name}
           </MyText>
           <MyText
-            className={`${color ? "text-my-red-light" : "text-my-white-light"}`}
+            className={`${color ? "text-my-white-light" : "text-my-white-dark"}`}
           >
             {total}
           </MyText>

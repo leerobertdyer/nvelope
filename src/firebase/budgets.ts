@@ -259,12 +259,6 @@ export async function addInviteToBudget(
       return false;
     }
     const inviteDocId = budgetId + "_" + normalizedEmail;
-    console.log("WHAT THE HELL: ", {
-      budgetId,
-      inviteDocId,
-      normalizedEmail,
-      ownerId,
-    });
     const inviterEmail = (ownerEmail ?? "").trim().toLowerCase();
     const invitePayload = {
       budgetId,

@@ -63,7 +63,6 @@ export default function BudgetSettingsFields({
   const [editingBudgetName, setEditingBudgetName] = useState(false);
 
   function handleIntervalChange(e: Interval) {
-    console.log("HERE: ", e);
     setShowIntervalSelector(false);
     onIntervalChange(e);
   }
