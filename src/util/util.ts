@@ -27,6 +27,8 @@ import {
 } from "date-fns";
 import firestore from "@react-native-firebase/firestore";
 import { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
+import { FirebaseAuthTypes } from "@react-native-firebase/auth";
+type User = FirebaseAuthTypes.User;
 type Timestamp = FirebaseFirestoreTypes.Timestamp;
 const { Timestamp } = firestore;
 
@@ -779,9 +781,13 @@ export function isTodayCuspDate(payPeriod: Interval, payDate: Timestamp) {
 }
 
 export function deriveIsPaid(payment: Payment, occurrenceDate?: Date): boolean {
-  return payment.paidDates?.some(
-    (pd) => startOfDay(pd.toDate()).getTime() === startOfDay(occurrenceDate ?? payment.dueDate.toDate()).getTime()
-  ) ?? false;
+  return (
+    payment.paidDates?.some(
+      (pd) =>
+        startOfDay(pd.toDate()).getTime() ===
+        startOfDay(occurrenceDate ?? payment.dueDate.toDate()).getTime(),
+    ) ?? false
+  );
 }
 
 /**
@@ -1167,4 +1173,8 @@ export function getPayPeriodsUntilDate(
 
   // Ensure at least 1 period
   return Math.max(count, 1);
+}
+
+export function createTransactionId(user: User) {
+  return `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`;
 }

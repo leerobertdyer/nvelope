@@ -5,8 +5,6 @@ import Input from "../Input";
 import MoneyInput from "../Payments/MoneyInput";
 import { MyText } from "../MyText";
 import Btn from "../Buttons/Btn";
-import { LogBox } from 'react-native';
-LogBox.ignoreAllLogs(false);
 
 interface IProps {
   newEnvelopeName: string;
@@ -61,16 +59,14 @@ export default function EnvelopeForm(props: IProps) {
               onChange={setNewEnvelopeTotal}
             />
             {setNewEnvelopeSpent != null && (
-              <>
-                {/* This is for editing envelope */}
-                <MoneyInput
-                  id="newSpent"
-                  label="How much is already spent?"
-                  placeholder="Spent"
-                  value={newEnvelopeSpent ?? 0}
-                  onChange={(n) => setNewEnvelopeSpent(n)}
-                />
-              </>
+              <MoneyInput
+                id="newSpent"
+                label="How much is already spent?"
+                labelColor="black"
+                placeholder="Spent"
+                value={newEnvelopeSpent ?? 0}
+                onChange={(n) => setNewEnvelopeSpent(n)}
+              />
             )}
           </>
         )}
@@ -79,13 +75,16 @@ export default function EnvelopeForm(props: IProps) {
             onPress={
               isEditing && envelope
                 ? () => {
-                    editEnvelope?.({
-                      id: envelope!.id,
-                      name: newEnvelopeName,
-                      total: newEnvelopeTotal,
-                      spent: newEnvelopeSpent ?? envelope.spent,
-                      order: envelope.order || 1000,
-                    }, false);
+                    editEnvelope?.(
+                      {
+                        id: envelope!.id,
+                        name: newEnvelopeName,
+                        total: newEnvelopeTotal,
+                        spent: newEnvelopeSpent ?? envelope.spent,
+                        order: envelope.order || 1000,
+                      },
+                      false,
+                    );
                   }
                 : () => {
                     handleSaveEnvelope?.({
@@ -104,9 +103,6 @@ export default function EnvelopeForm(props: IProps) {
         <Btn
           onPress={() => {
             handleBack?.();
-            // setNewEnvelopeName("");
-            // setNewEnvelopeTotal("");
-            // setNewEnvelopeSpent("");
           }}
           color="red"
           text="Back"

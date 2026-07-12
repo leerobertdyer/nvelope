@@ -11,6 +11,7 @@ import { Nvelope } from "../../types";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import {
+  addTransaction,
   editDatabaseWithTransaction,
   editEnvelopes,
   editTotalSpendingBudget,
@@ -24,6 +25,7 @@ import { MyText } from "../MyText";
 import Entypo from "@expo/vector-icons/Entypo";
 import firestore from "@react-native-firebase/firestore";
 import { useAuth } from "../../context/AuthContext/useAuth";
+import { createTransactionId } from "../../util/util";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -47,7 +49,7 @@ function EnvelopeBox({
 }) {
   return (
     <Pressable onPress={setter}>
-      <View className="flex-row p-2 w-full h-[3rem] justify-between items-center bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
+      <View className="flex-row p-2 w-full h-[3rem] justify-between items-center bg-my-white-dark text-my-black-dark">
         {isShown ? (
           <View className="ml-[6px] p-[2px] w-[1.75rem] h-[1.75rem] justify-center items-center bg-my-black-base rounded-md">
             <Entypo name={"chevron-up"} size={20} color="#fcca68" />
@@ -115,9 +117,10 @@ export default function Nvelopes({
     }
     await editDatabaseWithTransaction({
       t: {
-        id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: createTransactionId(user),
         type: "TAKE",
         description: `Put $${amount} from ${envelopeToEdit.name} back into available funds`,
+        nvelopeOrPaymentId: envelopeToEdit.id,
         createdAt: firestore.Timestamp.now(),
         createdBy: user.email ?? user.uid,
       },
@@ -142,15 +145,27 @@ export default function Nvelopes({
     newEnvelopes[envelopeToEditIndex] = envelopeToEdit;
     await editDatabaseWithTransaction({
       t: {
-        id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
-        type: "GIVE",
-        description: `Took $${amount} from ${envelopeToEdit.name} and put it in ${envelope}`,
+        id: createTransactionId(user),
+        type: "TAKE",
+        description: `${user.email ?? user.uid} took $${amount} from "${envelopeToEdit.name}" and put it in "${envelope.name}"`,
+        nvelopeOrPaymentId: envelope.id,
         createdAt: firestore.Timestamp.now(),
         createdBy: user.email ?? user.uid,
       },
       budgetId: activeBudgetId!,
       func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
     });
+    await addTransaction(
+      {
+        id: createTransactionId(user),
+        type: "GIVE",
+        description: `Gave $${amount} to ${envelope.name} from ${envelopeToEdit.name}.`,
+        nvelopeOrPaymentId: envelopeToEdit.id,
+        createdAt: firestore.Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      activeBudgetId!,
+    );
     setEnvelopes(newEnvelopes);
     handleBack();
   }
@@ -205,7 +220,6 @@ export default function Nvelopes({
         />
         {showEnvelopes && sortedEnvelopes.length > 0 && (
           <View className="p-2 bg-my-white-base overflow-hidden flex-wrap flex-row gap-2 justify-between">
-
             {sortedEnvelopes.map((e) => (
               <ListEnvelope
                 key={e.id}

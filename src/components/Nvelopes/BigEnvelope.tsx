@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import { getTransactions } from "../../firebase/budgets";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import Transactions from "../Transactions";
+import Transactions from "../Transactions/Transactions";
 
 interface IBigEnvelope {
   handleBack: () => void;
@@ -58,7 +58,10 @@ export default function BigEnvelope({
     return (
       <Transactions
         transactions={transactions}
-        onClose={() => setShowTransactions(false)}
+        onClose={() => {
+          setShowTransactions(false);
+          handleBack();
+        }}
         name={envelope.name}
       />
     );
@@ -76,15 +79,15 @@ export default function BigEnvelope({
       >
         <View className="h-full w-full">
           <View className="w-full h-fit m-auto items-center justify-start gap-4">
-            <View className="p-2 text-lg text-center w-[20rem] rounded-md flex justify-center gap-2">
-              <MyText className="text-my-black-dark text-center text-3xl">
+            <View className="w-[20rem] items-center justify-center gap-2 bg-my-green-dark p-2 rounded-md pb-8">
+              <MyText className="text-my-white-dark text-center text-3xl">
                 "{envelope.name}"
               </MyText>
-              <MyText className="text-my-green-base text-center">
+              <MyText className="text-my-white-light text-center ">
                 ${envelopeRemainder}
               </MyText>
+              <SpendBtn onPress={() => handleSetShowSpendingPage(envelope)} />
             </View>
-            <SpendBtn onPress={() => handleSetShowSpendingPage(envelope)} />
             <Btn onPress={handleBack} color="red" text="Go Back" />
             <View className="justify-center items-center gap-2 w-full ">
               <Pressable
@@ -118,7 +121,7 @@ export default function BigEnvelope({
                 </View>
               </Pressable>
               <Pressable
-                className="border-2 rounded-md p-2 bg-my-white-light w-[18rem]"
+                className="border-2 rounded-md p-2 bg-my-blue-light w-[18rem]"
                 onPress={() => handleSetupEdit(envelope)}
                 style={{
                   shadowColor: "#121212",
@@ -147,23 +150,22 @@ export default function BigEnvelope({
                   <MyText>Delete Envelope</MyText>
                 </View>
               </Pressable>
-              {transactions.length > 0 && (
-                <Pressable
-                  className="border-2 rounded-md p-2 bg-[#a1dde3] w-[18rem] mt-4"
-                  onPress={() => setShowTransactions(true)}
-                  style={{
-                    shadowColor: "#121212",
-                    shadowOffset: { width: 5, height: 4 },
-                    shadowOpacity: 0.85,
-                    shadowRadius: 6,
-                  }}
-                >
-                  <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base border-my-black-dark">
-                    <MaterialIcons name="notes" size={24} color="black" />
-                    <MyText>Show Transactions</MyText>
-                  </View>
-                </Pressable>
-              )}
+              <Pressable
+                className="border-2 rounded-md p-2 bg-white w-[18rem] mt-4"
+                disabled={transactions.length < 1}
+                onPress={() => setShowTransactions(true)}
+                style={{
+                  shadowColor: "#121212",
+                  shadowOffset: { width: 5, height: 4 },
+                  shadowOpacity: 0.85,
+                  shadowRadius: 6,
+                }}
+              >
+                <View className="flex-row items-center h-10 w-full gap-4 p-[3px] border-2 rounded-md bg-my-white-base border-my-black-dark">
+                  <MaterialIcons name="notes" size={24} color="black" />
+                  <MyText>Show Transactions</MyText>
+                </View>
+              </Pressable>
             </View>
           </View>
         </View>

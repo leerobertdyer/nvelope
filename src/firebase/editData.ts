@@ -17,10 +17,15 @@ type Timestamp = FirebaseFirestoreTypes.Timestamp;
 type User = FirebaseAuthTypes.User;
 
 export async function addTransaction(t: NvelopesTransaction, budgetId: string) {
-  await firestore()
+  try {
+    
+    await firestore()
     .collection(`budgets/${budgetId}/transactions`)
     .doc(t.id)
     .set(t);
+  } catch (error) {
+    console.error("Error adding transaction: ", error)
+  }
 }
 
 export async function editDatabaseWithTransaction<T>({
@@ -32,6 +37,7 @@ export async function editDatabaseWithTransaction<T>({
   budgetId: string;
   func: () => Promise<T>;
 }): Promise<T> {
+  console.log("INSIDE editDatabaseWithTransaction: ", {t, budgetId, func})
   await addTransaction(t, budgetId);
 return await func();
 }

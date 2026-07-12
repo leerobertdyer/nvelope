@@ -21,7 +21,7 @@ module.exports = {
         "my-green-light": "#69d1a4",
         "my-green-base": "#0bb07c",
         "my-green-dark": "#076346",
-        "my-blue-light": "#69f2ff",
+        "my-blue-light": "#a1dde3",
         "my-blue-base": "#0edbed",
         "my-blue-dark": "#038894",
         "my-black-light": "#484848",

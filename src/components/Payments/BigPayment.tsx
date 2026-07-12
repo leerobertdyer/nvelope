@@ -10,7 +10,7 @@ import { Payment } from "../../types";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import { useBudget } from "../../context/BudgetContext/useBudget";
 import { useDatabase } from "../../context/DatabaseContext/useDatabase";
-import { deriveIsPaid, removeVirtualIdPortion } from "../../util/util";
+import { createTransactionId, deriveIsPaid, removeVirtualIdPortion } from "../../util/util";
 import {
   editDatabaseWithTransaction,
   editPayments,
@@ -76,9 +76,10 @@ export default function BigPayment({
     setPayments(updatedPayments);
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+       id: createTransactionId(user),
         type: "EXTRA",
         description: `Paid $${extra} extra towards debt for ${p.name}`,
+        nvelopeOrPaymentId: p.id,
         createdAt: firestore.Timestamp.now(),
         createdBy: user.email ?? user.uid,
       },

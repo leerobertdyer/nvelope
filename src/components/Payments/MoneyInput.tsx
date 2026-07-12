@@ -37,7 +37,7 @@ export default function MoneyInput({
 
     if (digitsOnly === "") {
       onChange(0);
-      return;
+      return
     }
 
     const newCents = parseInt(digitsOnly, 10);
@@ -90,5 +90,5 @@ export default function MoneyInput({
         />
       )}
     </View>
-  );
+  )
 }

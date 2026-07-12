@@ -22,7 +22,7 @@ export default function GiveAndTake({
   takeFromEnvelope,
 }: GiveAndTakeProps) {
   const [amountToGiveOrTake, setAmountToGiveOrTake] = useState(0);
-  const [isGiving, setIsGiving] = useState<boolean | null>(null);
+  const [isGiving, setIsGiving] = useState<boolean>(false);
   const [envelopeToGiveTo, setEnvelopeToGiveTo] = useState<Nvelope | null>(
     null,
   );
@@ -118,7 +118,7 @@ export default function GiveAndTake({
 
           <Btn
             onPress={() => {
-              setIsGiving(null);
+              setIsGiving(false);
               handleBack();
             }}
             color="red"

@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { Interval, type Nvelope, type Payment } from "../types";
 import {
@@ -13,6 +12,7 @@ import {
 } from "../firebase/editData";
 import firestore from "@react-native-firebase/firestore";
 import {
+  createTransactionId,
   deriveIsPaid,
   getVirtualPaymentsForCurrentPeriod,
   randomUUID,
@@ -46,7 +46,6 @@ import {
 } from "../util/paymentUtils";
 import NvelopesContainer from "./Nvelopes/NvelopesContainer";
 import MainEnvelope from "./Nvelopes/MainNvelope";
-
 
 export default function MainView() {
   const { user } = useAuth();
@@ -183,7 +182,7 @@ export default function MainView() {
     setPayments(updatedPayments);
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: createTransactionId(user),
         type: "DELETE",
         createdAt: firestore.Timestamp.now(),
         nvelopeOrPaymentId: originalPaymentToEditId,
@@ -241,7 +240,7 @@ export default function MainView() {
     setPayments(updatedPayments);
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: createTransactionId(user),
         type: "SNOWBALL",
         createdAt: firestore.Timestamp.now(),
         nvelopeOrPaymentId: virtualPayment.id,
@@ -258,7 +257,7 @@ export default function MainView() {
     updatedPayments: Payment[],
     remainder: number = 0,
   ): Promise<Payment[]> {
-    if (!user) return []
+    if (!user) return [];
     setPaidOffDebtName(paidOffPayment.name);
 
     const remainingDebts = updatedPayments.filter(
@@ -275,7 +274,7 @@ export default function MainView() {
     setSnowballTargetPaymentId(nextDebt.id);
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: createTransactionId(user),
         type: "PAID_OFF",
         createdAt: firestore.Timestamp.now(),
         nvelopeOrPaymentId: paidOffPayment.id,
@@ -317,7 +316,7 @@ export default function MainView() {
       setTotalSpendingBudget(newBudget);
       await editDatabaseWithTransaction({
         t: {
-         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+          id: createTransactionId(user),
           type: "SNOWBALL",
           createdAt: firestore.Timestamp.now(),
           nvelopeOrPaymentId: paidOffPayment.id,
@@ -375,10 +374,11 @@ export default function MainView() {
     setPayments(updatedPayments);
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: createTransactionId(user),
         type: "PAID",
         createdAt: firestore.Timestamp.now(),
         description: `Marked "${updatedPayment?.name}" as PAID`,
+        nvelopeOrPaymentId: updatedPayment.id,
         createdBy: user.email ?? user.uid,
       },
       budgetId: activeBudgetId!,
@@ -411,7 +411,7 @@ export default function MainView() {
     setEnvelopes(newEnvelopes);
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: createTransactionId(user),
         type: "NEW",
         createdAt: firestore.Timestamp.now(),
         nvelopeOrPaymentId: n.id,
@@ -449,7 +449,7 @@ export default function MainView() {
       setEnvelopes(newEnvelopes);
       await editDatabaseWithTransaction({
         t: {
-         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+          id: createTransactionId(user),
           type: "DELETE",
           description: `Deleted envelope ${envelopeToEdit.name}`,
           createdAt: firestore.Timestamp.now(),
@@ -494,9 +494,10 @@ export default function MainView() {
       setEnvelopes(newEnvelopes);
       await editDatabaseWithTransaction({
         t: {
-         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+          id: createTransactionId(user),
           type: "EDIT",
-          description: `Edited envelope ${n.name}: { "Spent": ${n.spent}, "Total": ${n.total} }`,
+          description: `Manually Edited "${n.name}"`,
+          nvelopeOrPaymentId: n.id,
           createdAt: firestore.Timestamp.now(),
           createdBy: user.email ?? user.uid,
         },
@@ -517,6 +518,7 @@ export default function MainView() {
     n: Nvelope,
     isSpending: boolean,
     spendDesc?: string,
+    amount?: number,
   ) {
     if (!user) return;
     const originalEnvelope = envelopes.find((e) => e.id === n.id);
@@ -528,12 +530,11 @@ export default function MainView() {
     try {
       await editDatabaseWithTransaction({
         t: {
-         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+          id: createTransactionId(user),
           type: isSpending ? "SPEND" : "EDIT",
-          description:
-            spendDesc ||
-            `Edited envelope ${n.name}: { "Spent": ${n.spent}, "Total": ${n.total} }`,
+          description: spendDesc || `Manually edited ${n.name}.`,
           nvelopeOrPaymentId: n.id,
+          amount,
           createdAt: firestore.Timestamp.now(),
           createdBy: user.email ?? user.uid,
         },
@@ -567,6 +568,7 @@ export default function MainView() {
     setShowSpendPage(false);
     setShowBudgetWarning(false);
     setShowLoading(false);
+    setLoadingText("");
     setIsAddingCashToEnvelope(false);
   }
 
@@ -593,7 +595,7 @@ export default function MainView() {
     await resetAllNvelopes(envelopes, setEnvelopes, activeBudgetId);
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: createTransactionId(user),
         type: "RESET",
         description: "Reset Nvelopes & Marked Payments as UNPAID",
         createdAt: firestore.Timestamp.now(),
@@ -613,7 +615,7 @@ export default function MainView() {
     const date = firestore.Timestamp.fromDate(new Date());
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: createTransactionId(user),
         type: "CASH",
         amount: cashAmount,
         description: `Added Cash: ${cashName}`,
@@ -654,9 +656,10 @@ export default function MainView() {
     );
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+        id: createTransactionId(user),
         type: "FILL",
         description: `Added $${cashAmount} to ${n.name}`,
+        nvelopeOrPaymentId: n.id,
         amount: cashAmount,
         createdAt: firestore.Timestamp.now(),
         createdBy: user.email ?? user.uid,
@@ -738,6 +741,20 @@ export default function MainView() {
     );
   }
 
+  if (isDeleting && envelopeToEdit) {
+    return (
+      <>
+        {showLoading && <Loading text={loadingText} />}
+        <MainEnvelope
+          kind="deleteEnvelope"
+          envelope={envelopeToEdit}
+          handleBack={resetState}
+          handleDeleteEnvelope={() => deleteEnvelope()}
+        />
+      </>
+    );
+  }
+
   // Show modal for due Fund (planned expense) payments
   if (dueFundPayment) {
     return (
@@ -805,21 +822,6 @@ export default function MainView() {
           editEnvelope={editEnvelope}
           handleBack={resetState}
           handleDeleteEnvelope={() => handleSetupDelete()}
-        />
-        ;
-      </>
-    );
-  }
-
-  if (isDeleting && envelopeToEdit) {
-    return (
-      <>
-        {showLoading && <Loading text={loadingText} />}
-        <MainEnvelope
-          kind="deleteEnvelope"
-          envelope={envelopeToEdit}
-          handleBack={resetState}
-          handleDeleteEnvelope={() => deleteEnvelope()}
         />
       </>
     );
@@ -932,9 +934,10 @@ export default function MainView() {
           </View>
         </View>
       </PageTour>
-      <View className="w-full text-center  items-center flex-1 bg-my-blue-dark overflow-y-auto ">
+      <View className="w-full text-center items-center flex-1 bg-my-blue-dark">
         {showLoading && <Loading text={loadingText} />}
         <ScrollView
+          bounces={false}
           className="w-full h-full"
           contentContainerClassName="items-center"
         >

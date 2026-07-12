@@ -22,6 +22,7 @@ import {
   applyPayoffRoll,
   calculatePayoffDate,
   calculateSnowballPayoffDate,
+  createTransactionId,
   paymentsTotal,
   removeVirtualIdPortion,
 } from "../util/util";
@@ -234,7 +235,7 @@ export default function Debt() {
     setPayments(newPayments);
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+       id: createTransactionId(user),
         type: "SNOWBALL",
         createdAt: firestore.Timestamp.now(),
         description: `Manually edited snowball to $${n}`,
@@ -265,7 +266,7 @@ export default function Debt() {
     setPayments(updatedPayments);
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+       id: createTransactionId(user),
         type: "DELETE",
         createdAt: firestore.Timestamp.now(),
         description: `Deleted debt ${debtMenuOpen.name}`,
@@ -294,9 +295,10 @@ export default function Debt() {
       const debt = payments.find((p) => p.id === debtId);
       await editDatabaseWithTransaction({
         t: {
-         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+         id: createTransactionId(user),
           type: "SNOWBALL",
           createdAt: firestore.Timestamp.now(),
+          nvelopeOrPaymentId: debt?.id,
           description: `Snowball target changed to ${debt?.name}`,
           createdBy: user.email ?? user.uid,
         },
@@ -334,9 +336,10 @@ export default function Debt() {
     setPayments(updatedPayments);
     await editDatabaseWithTransaction({
       t: {
-       id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+       id: createTransactionId(user),
         type: "EXTRA",
         createdAt: firestore.Timestamp.now(),
+        nvelopeOrPaymentId: debt.id,
         description: `Extra payment of $${additionalPaymentAmount} applied to ${debt?.name}`,
         createdBy: user.email ?? user.uid,
       },
@@ -357,9 +360,10 @@ export default function Debt() {
       const nextSnowball = payments.find((p) => p.id === nextId);
       await editDatabaseWithTransaction({
         t: {
-         id: `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`,
+         id: createTransactionId(user),
           type: "SNOWBALL",
           createdAt: firestore.Timestamp.now(),
+          nvelopeOrPaymentId: debt.id,
           description: `Extra payment of $${additionalPaymentAmount} Paid off ${debt?.name}! Changing snowball to ${nextSnowball?.name}`,
           createdBy: user.email ?? user.uid,
         },

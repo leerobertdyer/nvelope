@@ -26,9 +26,8 @@ export default function Input({
   onBlur,
 }: ITextInput) {
   return (
-    // self-center ensures the w-[90%] centers itself within its parent container
     <View className="w-[90%] h-fit  gap-2 items-center justify-center self-center">
-      {label && <MyText className="p-2 w-full text-center">{label}</MyText>}
+      {label ? <MyText className="p-2 w-full text-center">{label}</MyText> : null}
       <TextInput
         ref={ref}
         className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-full max-w-[20rem] text-my-black-dark text-center"
@@ -41,5 +40,5 @@ export default function Input({
         onBlur={onBlur}
       />
     </View>
-  );
+  )
 }

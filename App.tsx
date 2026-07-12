@@ -30,7 +30,7 @@ const toastConfig = {
   success: (props: BaseToastProps) => (
     <BaseToast
       {...props}
-      style={{ borderLeftColor: "#FFFFFF", backgroundColor: "#076346" }}
+      style={{ borderLeftColor: "#038894", backgroundColor: "#076346" }}
       contentContainerStyle={{ paddingHorizontal: 15 }}
       text1Style={{
         fontSize: 15,
@@ -44,7 +44,7 @@ const toastConfig = {
   error: (props: BaseToastProps) => (
     <BaseToast
       {...props}
-      style={{ borderLeftColor: "#fff2d9", backgroundColor: "#ad0241" }}
+      style={{ borderLeftColor: "#038894", backgroundColor: "#ad0241" }}
       text1Style={{ fontSize: 15, color: "#fcca68", fontFamily: "myFont" }}
     />
   ),
@@ -90,7 +90,7 @@ function GlobalLayout() {
     >
       <NavigationContainer ref={navigationRef}>
         <RootStack />
-        <Toast config={toastConfig} />
+        <Toast config={toastConfig} position="bottom"/>
       </NavigationContainer>
     </SafeAreaView>
   );
