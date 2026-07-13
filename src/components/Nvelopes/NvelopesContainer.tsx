@@ -47,19 +47,17 @@ function EnvelopeBox({
   setter: () => void;
   total: string;
 }) {
+  const Icon = () => (
+    <Entypo name={!isShown ? "chevron-up" : "chevron-down"} size={20} />
+  );
+
   return (
     <Pressable onPress={setter}>
       <View className="flex-row p-2 w-full h-[3rem] justify-between items-center bg-my-white-dark text-my-black-dark">
-        {isShown ? (
-          <View className="ml-[6px] p-[2px] w-[1.75rem] h-[1.75rem] justify-center items-center bg-my-black-base rounded-md">
-            <Entypo name={"chevron-up"} size={20} color="#fcca68" />
-          </View>
-        ) : (
-          <View className="ml-[6px] p-[2px] w-[1.75rem] h-[1.75rem] justify-center items-center bg-my-black-base rounded-md">
-            <Entypo name={"chevron-down"} size={20} color="#fcca68" />
-          </View>
-        )}
-        <MyText className="text-center">{name}</MyText>
+        <View className="ml-4 flex-1 flex-row gap-4">
+          <Icon />
+          <MyText className="text-start">{name}</MyText>
+        </View>
         <MyText className="text-center">{total}</MyText>
       </View>
     </Pressable>
@@ -219,7 +217,7 @@ export default function Nvelopes({
           setter={() => setShowEnvelopes(!showEnvelopes)}
         />
         {showEnvelopes && sortedEnvelopes.length > 0 && (
-          <View className="p-2 bg-my-white-base overflow-hidden flex-wrap flex-row gap-2 justify-between">
+          <View className="p-2 bg-my-white-base overflow-hidden flex-wrap flex-row gap-2 justify-around">
             {sortedEnvelopes.map((e) => (
               <ListEnvelope
                 key={e.id}

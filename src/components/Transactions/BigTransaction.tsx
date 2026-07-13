@@ -1,5 +1,5 @@
 import { Modal, View } from "react-native";
-import { Nvelope, NvelopesTransaction, Payment } from "../../types";
+import { NvelopesTransaction } from "../../types";
 import { MyText } from "../MyText";
 import Btn from "../Buttons/Btn";
 import { format } from "date-fns";
@@ -27,7 +27,8 @@ export default function BigTransaction({
       } else {
         const payment = payments.find((p) => p.id === t.nvelopeOrPaymentId);
         if (payment) {
-          let desc = `${payment.name}`;
+          const name = `${payment.name}`;
+          const desc = createDesc(name)
           setTransactionDesc(desc);
         }
       }
@@ -46,6 +47,8 @@ export default function BigTransaction({
         return `On ${workingDate}, ${t.createdBy} added $${t.amount} to "${name}".`;
       case "SPEND":
         return `On ${workingDate}, ${t.createdBy} spent $${t.amount} from "${name}".`;
+      case "PAID":
+        return `On ${workingDate}, ${t.createdBy} toggled "${name}" as Paid/Unpaid`;
       default:
         return t.description ?? "";
     }
@@ -62,7 +65,6 @@ export default function BigTransaction({
             <>
               <MyText>{format(t.createdAt.toDate(), "MM/dd/yyyy")}</MyText>
               <MyText>{t.createdBy}</MyText>
-              <MyText>{t.type}</MyText>
               <MyText>{t.description}</MyText>
             </>
           )}

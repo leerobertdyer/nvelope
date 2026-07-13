@@ -700,7 +700,7 @@ export default function Debt() {
                         />
                       ))}
                     </Picker>
-                  ) : (
+                  ) : debtsByLowestOwed.length === 1 && (
                     <MyText className="text-gray-400 text-center">
                       "{debtsByLowestOwed[0].name}"
                     </MyText>
@@ -745,7 +745,7 @@ export default function Debt() {
                         </View>
                       </View>
                       {cannotPayOff && (
-                        <MyText className="flex-shrink-0 text-my-red-light">
+                        <MyText className="text-my-red-light bg-my-black-dark/80 text-center p-2">
                           <Entypo name="warning" size={20} />
                           Payoff cannot be calculated. Your minimum payment may
                           be too low to cover interest – try increasing the

@@ -149,7 +149,7 @@ export default function ActionButtons({
         >
           <MyText className="text-[3rem]">♻️</MyText>
           <MyText className="text-sm w-full text-center bg-my-white-base text-my-black-dark">
-            Clear
+            Reset
           </MyText>
         </LinearGradient>
       </Pressable>

@@ -377,7 +377,7 @@ export default function MainView() {
         id: createTransactionId(user),
         type: "PAID",
         createdAt: firestore.Timestamp.now(),
-        description: `Marked "${updatedPayment?.name}" as PAID`,
+        description: `Toggled "${updatedPayment?.name}" Paid/Unpaid `,
         nvelopeOrPaymentId: updatedPayment.id,
         createdBy: user.email ?? user.uid,
       },
@@ -398,7 +398,7 @@ export default function MainView() {
 
   async function saveNewEnvelope(n: Nvelope) {
     if (!n.name.trim() || !user) return;
-    setLoadingText("Adding New Envelope...");
+    setLoadingText("Adding New Nvelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes];
     newEnvelopes.push({
@@ -534,7 +534,7 @@ export default function MainView() {
           type: isSpending ? "SPEND" : "EDIT",
           description: spendDesc || `Manually edited ${n.name}.`,
           nvelopeOrPaymentId: n.id,
-          amount,
+          ...(amount !== undefined && { amount }),
           createdAt: firestore.Timestamp.now(),
           createdBy: user.email ?? user.uid,
         },
@@ -674,23 +674,22 @@ export default function MainView() {
 
   if (showClearEnvelopes)
     return (
-      <View className="justify-center items-center bg-my-black-dark h-full">
-        <MyText className="text-xl text-my-red-light">
-          ⚠️ Are you sure? ⚠️
-        </MyText>
-        <MyText className="text-my-white-light">
-          This will set{" "}
-          <MyText className="text-my-blue-light">ALL Nvelopes</MyText>{" "}
-          totals/spent to <MyText className="text-my-green-base">$0.00</MyText>,
-        </MyText>
-        <MyText className="text-my-white-light">
-          and
-          <MyText className="text-my-red-light"> ALL Payments</MyText> to
-          <MyText className="text-gray-400"> unpaid</MyText>.
-        </MyText>
-        <MyText className="text-my-white-light">
-          Your budget total will be unaffected.
-        </MyText>
+      <View className="justify-center items-center bg-my-blue-dark h-full">
+        <View className="items-center w-fit mx-auto bg-my-black-dark/60 p-4 rounded-md">
+          <MyText className="text-my-white-light text-xl m-2">
+            Reset{" "}
+            <MyText className="text-my-blue-light">Nvelope</MyText>{" "}
+            amounts to{" "}
+            <MyText className="text-my-green-base">$0.00</MyText>
+          </MyText>
+          <MyText className="text-my-white-light text-xl m-2">Mark{" "}
+            <MyText className="text-my-red-light">ALL Payments</MyText>
+            <MyText className="text-gray-400"> unpaid</MyText>.
+          </MyText>
+          <MyText className="text-my-white-light text-sm mt-2">
+            (Your budget total will be unaffected)
+          </MyText>
+        </View>
         <View className="w-full mt-8 gap-4">
           <Btn
             color="gold"
@@ -786,7 +785,7 @@ export default function MainView() {
             />
           )}
         </>
-      );
+      )
     } else if (user)
       return (
         <PaymentForm
@@ -794,7 +793,7 @@ export default function MainView() {
           user={user}
           handleBack={resetPaymentState}
         />
-      );
+      )
   }
 
   if (showSpendPage && envelopes.length > 0) {

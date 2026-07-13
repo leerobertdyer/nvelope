@@ -31,9 +31,9 @@ export default function ListEnvelope({
   return (
     <Pressable
       onPress={onPress}
-      className={`bg-my-white-light border-2 rounded-md ${borderClass} w-[30%] items-center justify-center`}
+      className={`bg-my-white-light border-2 rounded-md ${borderClass} w-[11rem] items-center justify-center`}
     >
-      <View className="flex-row items-center">
+      <View className="flex-row items-center justify-center gap-6 w-full">
         <FontAwesome
           name="envelope"
           size={40}

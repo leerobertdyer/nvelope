@@ -79,7 +79,7 @@ export default function BigEnvelope({
       >
         <View className="h-full w-full">
           <View className="w-full h-fit m-auto items-center justify-start gap-4">
-            <View className="w-[20rem] items-center justify-center gap-2 bg-my-green-dark p-2 rounded-md pb-8">
+            <View className="w-[24rem] items-center justify-center gap-2 bg-my-green-dark/30 p-8 rounded-[24px]">
               <MyText className="text-my-white-dark text-center text-3xl">
                 "{envelope.name}"
               </MyText>

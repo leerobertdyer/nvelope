@@ -17,7 +17,11 @@ import Settings from "./src/screens/Settings";
 import "./global.css";
 import Toast, { BaseToast, BaseToastProps } from "react-native-toast-message";
 import Debt from "./src/screens/Debt";
-import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  createNavigationContainerRef,
+} from "@react-navigation/native";
+import TransactionProvider from "./src/context/TransactionContext/TransactionProvider";
 
 export type RootStackParamList = {
   Home: undefined;
@@ -90,7 +94,7 @@ function GlobalLayout() {
     >
       <NavigationContainer ref={navigationRef}>
         <RootStack />
-        <Toast config={toastConfig} position="bottom"/>
+        <Toast config={toastConfig} position="bottom" />
       </NavigationContainer>
     </SafeAreaView>
   );
@@ -101,13 +105,15 @@ export default function App() {
     <AuthProvider>
       <BudgetProvider>
         <DatabaseProvider>
-          {/* SafeAreaProvider stays at the root to calculate the measurements */}
-          <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              {/* GlobalLayout consumes those measurements and forces the whole app into the safe zone */}
-              <GlobalLayout />
-            </GestureHandlerRootView>
-          </SafeAreaProvider>
+          <TransactionProvider>
+            {/* SafeAreaProvider stays at the root to calculate the measurements */}
+            <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                {/* GlobalLayout consumes those measurements and forces the whole app into the safe zone */}
+                <GlobalLayout />
+              </GestureHandlerRootView>
+            </SafeAreaProvider>
+          </TransactionProvider>
         </DatabaseProvider>
       </BudgetProvider>
     </AuthProvider>

@@ -15,7 +15,7 @@ interface NvelopeCalculatorProps {
   selectEnvelope?: boolean;
   envelope?: Nvelope;
   setSpendingDescription: (desc: string) => void;
-  spendingDescription: string | null
+  spendingDescription: string | null;
 }
 export default function NvelopeCalculator({
   handleEnterAmount,
@@ -23,7 +23,7 @@ export default function NvelopeCalculator({
   selectEnvelope,
   envelope,
   setSpendingDescription,
-  spendingDescription
+  spendingDescription,
 }: NvelopeCalculatorProps) {
   const { envelopes } = useDatabase();
 
@@ -111,21 +111,19 @@ export default function NvelopeCalculator({
             )}
           </View>
           {(amount || envelope?.total === 0) && (
-            <>
-              <Btn
-                text="Spend"
-                onPress={() => {
-                  handleEnterAmount(amount, selectedEnvelope || envelope!);
-                }}
-                color="green"
-              />
-              <Btn
-                text={selectEnvelope ? "View Nvelopes" : "Cancel"}
-                onPress={() => handleBack?.()}
-                color="red"
-              />
-            </>
+            <Btn
+              text="Spend"
+              onPress={() => {
+                handleEnterAmount(amount, selectedEnvelope || envelope!);
+              }}
+              color="green"
+            />
           )}
+          <Btn
+            text={selectEnvelope ? "View Nvelopes" : "Cancel"}
+            onPress={() => handleBack?.()}
+            color="red"
+          />
         </View>
       </View>
     </Modal>
