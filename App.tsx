@@ -22,6 +22,39 @@ import {
   createNavigationContainerRef,
 } from "@react-navigation/native";
 import TransactionProvider from "./src/context/TransactionContext/TransactionProvider";
+import * as Linking from 'expo-linking';
+import { useNavigation } from '@react-navigation/native';
+
+export function useDeepLinkInviteHandler() {
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    // 1. Handle app launching from a cold start via link
+    Linking.getInitialURL().then((url) => {
+      if (url) handleUrl(url);
+    });
+
+    // 2. Handle links incoming while app is alive in background
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleUrl(event.url);
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  const handleUrl = (url: string) => {
+    const parsed = Linking.parse(url);
+    const path = parsed.path; // e.g., "invite/someTokenABC"
+    
+    if (path && path.startsWith('invite/')) {
+      const token = path.split('/')[1];
+      if (token) {
+        // Direct navigation to your accept screen, passing the token
+        navigation.navigate('AcceptInvite' as never, { token });
+      }
+    }
+  };
+}
 
 export type RootStackParamList = {
   Home: undefined;

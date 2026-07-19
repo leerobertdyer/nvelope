@@ -1,18 +1,16 @@
 import React from "react";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { Nvelope } from "../../types";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { MyText } from "../MyText";
 
-interface IListEnvelopeProps {
+interface INvelopeCard {
   envelope: Nvelope;
-  onPress: () => void;
 }
 
-export default function ListEnvelope({
+export default function NvelopeCard({
   envelope,
-  onPress,
-}: IListEnvelopeProps) {
+}: INvelopeCard) {
   // 1. Calculate color logic dynamically
   const isSpent = envelope.spent >= envelope.total;
   const isMidSpend = envelope.spent >= envelope.total * 0.5;
@@ -29,9 +27,8 @@ export default function ListEnvelope({
       : "bg-my-green-dark text-my-white-dark";
 
   return (
-    <Pressable
-      onPress={onPress}
-      className={`bg-my-white-light border-2 rounded-md ${borderClass} w-[11rem] items-center justify-center`}
+    <View
+      className={`bg-my-white-light border-2 rounded-md ${borderClass} w-[10rem] items-center justify-center`}
     >
       <View className="flex-row items-center justify-center gap-6 w-full">
         <FontAwesome
@@ -55,6 +52,6 @@ export default function ListEnvelope({
       <MyText numberOfLines={1} className={`w-full text-center p-[2px] ${bgClass}`}>
         "{envelope.name}"
       </MyText>
-    </Pressable>
+    </View>
   );
 }

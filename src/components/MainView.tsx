@@ -46,6 +46,7 @@ import {
 } from "../util/paymentUtils";
 import NvelopesContainer from "./Nvelopes/NvelopesContainer";
 import MainEnvelope from "./Nvelopes/MainNvelope";
+import { DraxProvider, DraxScrollView } from "react-native-drax";
 
 export default function MainView() {
   const { user } = useAuth();
@@ -400,6 +401,7 @@ export default function MainView() {
     if (!n.name.trim() || !user) return;
     setLoadingText("Adding New Nvelope...");
     setShowLoading(true);
+    setIsAdding(false);
     const newEnvelopes = [...envelopes];
     newEnvelopes.push({
       id: n.id,
@@ -677,13 +679,11 @@ export default function MainView() {
       <View className="justify-center items-center bg-my-blue-dark h-full">
         <View className="items-center w-fit mx-auto bg-my-black-dark/60 p-4 rounded-md">
           <MyText className="text-my-white-light text-xl m-2">
-            Reset{" "}
-            <MyText className="text-my-blue-light">Nvelope</MyText>{" "}
-            amounts to{" "}
-            <MyText className="text-my-green-base">$0.00</MyText>
+            Reset <MyText className="text-my-blue-light">Nvelope</MyText>{" "}
+            amounts to <MyText className="text-my-green-base">$0.00</MyText>
           </MyText>
-          <MyText className="text-my-white-light text-xl m-2">Mark{" "}
-            <MyText className="text-my-red-light">ALL Payments</MyText>
+          <MyText className="text-my-white-light text-xl m-2">
+            Mark <MyText className="text-my-red-light">ALL Payments</MyText>
             <MyText className="text-gray-400"> unpaid</MyText>.
           </MyText>
           <MyText className="text-my-white-light text-sm mt-2">
@@ -785,7 +785,7 @@ export default function MainView() {
             />
           )}
         </>
-      )
+      );
     } else if (user)
       return (
         <PaymentForm
@@ -793,7 +793,7 @@ export default function MainView() {
           user={user}
           handleBack={resetPaymentState}
         />
-      )
+      );
   }
 
   if (showSpendPage && envelopes.length > 0) {
@@ -935,56 +935,58 @@ export default function MainView() {
       </PageTour>
       <View className="w-full text-center items-center flex-1 bg-my-blue-dark">
         {showLoading && <Loading text={loadingText} />}
-        <ScrollView
-          bounces={false}
-          className="w-full h-full"
-          contentContainerClassName="items-center"
-        >
-          <Header links={["Settings", "Debt"]} />
+        <DraxProvider>
+          <ScrollView
+            bounces={false}
+            className="w-full h-full"
+            contentContainerClassName="items-center"
+          >
+            <Header links={["Settings", "Debt"]} />
 
-          <MyText className="text-lg font-semibold text-my-white-dark mb-2 py-4">
-            "{activeBudgetName}"
-          </MyText>
-          {!payDate && (
-            <Pressable
-              className="mb-4"
-              onPress={() =>
-                (navigationRef.navigate as Function)("Settings", {
-                  showEditMenu: true,
-                })
-              }
-            >
-              <MyText className="text-my-green-light underline text-center">
-                Set your pay date in Settings
-              </MyText>
-              <MyText className="text-sm text-my-white-light text-center">
-                to see your pay period in the header.
-              </MyText>
-            </Pressable>
-          )}
-          <ActionButtons
-            onPaymentClick={handleAddPayment}
-            onCashClick={handleAddCash}
-            onEnvelopeClick={handleSetupNewEnvelope}
-            onClearClick={() => setShowClearNvelopes(true)}
-          />
+            <MyText className="text-lg font-semibold text-my-white-dark mb-2 py-4">
+              "{activeBudgetName}"
+            </MyText>
+            {!payDate && (
+              <Pressable
+                className="mb-4"
+                onPress={() =>
+                  (navigationRef.navigate as Function)("Settings", {
+                    showEditMenu: true,
+                  })
+                }
+              >
+                <MyText className="text-my-green-light underline text-center">
+                  Set your pay date in Settings
+                </MyText>
+                <MyText className="text-sm text-my-white-light text-center">
+                  to see your pay period in the header.
+                </MyText>
+              </Pressable>
+            )}
+            <ActionButtons
+              onPaymentClick={handleAddPayment}
+              onCashClick={handleAddCash}
+              onEnvelopeClick={handleSetupNewEnvelope}
+              onClearClick={() => setShowClearNvelopes(true)}
+            />
 
-          <View className="w-full  mt-[1.5rem]">
-            <NvelopesContainer
-              resetState={resetState}
-              handleSetupEdit={handleSetupEdit}
-              editEnvelope={editEnvelopeAndBudget}
-              handleSetShowSpendingPage={handleSetShowSpendingPage}
-              handleDeleteEnvelope={handleSetupDelete}
-              handleAddCashToEnvelope={handleAddCashToEnvelope}
-            />
-            <PaymentMap
-              paymentsThisPeriod={paymentsThisPeriod}
-              handleUpdatePaid={handleUpdatePaid}
-              handleEditBill={handleEditPayment}
-            />
-          </View>
-        </ScrollView>
+            <View className="w-full  mt-[1.5rem]">
+              <NvelopesContainer
+                resetState={resetState}
+                handleSetupEdit={handleSetupEdit}
+                editEnvelope={editEnvelopeAndBudget}
+                handleSetShowSpendingPage={handleSetShowSpendingPage}
+                handleDeleteEnvelope={handleSetupDelete}
+                handleAddCashToEnvelope={handleAddCashToEnvelope}
+              />
+              <PaymentMap
+                paymentsThisPeriod={paymentsThisPeriod}
+                handleUpdatePaid={handleUpdatePaid}
+                handleEditBill={handleEditPayment}
+              />
+            </View>
+          </ScrollView>
+        </DraxProvider>
       </View>
       {paidOffDebtName && (
         <CongratsPaidOffModal

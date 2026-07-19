@@ -16,7 +16,7 @@ import {
   editEnvelopes,
   editTotalSpendingBudget,
 } from "../../firebase/editData";
-import ListEnvelope from "./NvelopeListRow";
+import NvelopeCard from "./NvelopeCard";
 import { View } from "react-native";
 import GiveAndTake from "../Payments/GiveAndTake";
 import BigEnvelope from "./BigEnvelope";
@@ -26,6 +26,7 @@ import Entypo from "@expo/vector-icons/Entypo";
 import firestore from "@react-native-firebase/firestore";
 import { useAuth } from "../../context/AuthContext/useAuth";
 import { createTransactionId } from "../../util/util";
+import DraggableNvelope from "./DraggableNvelope";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -178,6 +179,11 @@ export default function Nvelopes({
     setEnvelopeToEdit(envelope);
   }
 
+  async function handleReorderNvelopes(nvelopes: Nvelope[]) {
+    setEnvelopes(nvelopes);
+    await editEnvelopes(nvelopes, activeBudgetId!);
+  }
+
   if (showGiveAndTake && envelopeToEdit) {
     return (
       <GiveAndTake
@@ -208,7 +214,7 @@ export default function Nvelopes({
   const envelopesTotalStr = `$${Math.ceil(envelopesTotal).toFixed(2)}`;
 
   return (
-    <View className="justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">
+    <View className="justify-center items-center w-full h-fit">
       <View className="w-full">
         <EnvelopeBox
           isShown={showEnvelopes}
@@ -217,15 +223,11 @@ export default function Nvelopes({
           setter={() => setShowEnvelopes(!showEnvelopes)}
         />
         {showEnvelopes && sortedEnvelopes.length > 0 && (
-          <View className="p-2 bg-my-white-base overflow-hidden flex-wrap flex-row gap-2 justify-around">
-            {sortedEnvelopes.map((e) => (
-              <ListEnvelope
-                key={e.id}
-                envelope={e}
-                onPress={() => handleSelectListEnvelope(e)}
-              />
-            ))}
-          </View>
+          <DraggableNvelope
+            onReorder={handleReorderNvelopes}
+            envelopes={sortedEnvelopes}
+            onPress={handleSelectListEnvelope}
+          />
         )}
       </View>
     </View>

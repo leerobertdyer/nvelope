@@ -15,6 +15,7 @@ export default {
       backgroundColor: "#ffffff",
     },
     ios: {
+      associatedDomains: ["applinks:invite.nvelopes.com"],
       supportsTablet: true,
       buildReactNativeFromSource: true,
       bundleIdentifier: "com.ldyer.nvelopes",
@@ -27,6 +28,20 @@ export default {
         foregroundImage: "./src/assets/adaptive-icon.png",
         backgroundColor: "#ffffff",
       },
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "https",
+              host: "invite.nvelopes.com",
+              pathPrefix: "/invite",
+            },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+      ],
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       googleServicesFile:
@@ -34,7 +49,7 @@ export default {
     },
     web: {
       favicon: "./src/assets/favicon.png",
-      bundler: "metro"
+      bundler: "metro",
     },
     plugins: [
       "@react-native-firebase/app",
