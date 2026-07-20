@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "446SK6UABC.com.ldyer.nvelopes",
+        "paths": ["/invite/*"]
+      }
+    ]
+  }
+}

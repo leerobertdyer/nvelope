@@ -6,7 +6,11 @@ import MainView from "./MainView";
 import Loading from "../components/Loading";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import FirstTimeSetup from "./FirstTimeSetup";
-import { shouldBackupUserDataSafe, backupUserDataSafe } from "../firebase/editData";
+import {
+  shouldBackupUserDataSafe,
+  backupUserDataSafe,
+} from "../firebase/editData";
+import InviteLandingPage from "./Invite";
 
 export default function Home() {
   const { user, isLoadingUser } = useAuth();
@@ -14,32 +18,40 @@ export default function Home() {
   const { isLoadingDb, dbError, documentExists, payDate } = useDatabase();
   const [isLoading, setIsLoading] = useState(true);
 
+  const currentDomain = window.location.hostname;
+
   useEffect(() => {
     if (!isLoadingUser && !isLoadingBudgets && !isLoadingDb) {
       setIsLoading(false);
     }
   }, [isLoadingUser, isLoadingBudgets, isLoadingDb]);
-  
+
   // Run backup check for authenticated users with active budget
   useEffect(() => {
     if (!user || !activeBudgetId || documentExists !== true) return;
     async function checkAndBackup() {
-      const shouldBackup = await shouldBackupUserDataSafe(user!, activeBudgetId!);
+      const shouldBackup = await shouldBackupUserDataSafe(
+        user!,
+        activeBudgetId!,
+      );
       if (shouldBackup) await backupUserDataSafe(user!, activeBudgetId!);
     }
     checkAndBackup();
   }, [user, activeBudgetId, documentExists]);
 
-  if (isLoading)
-    return (
-          <Loading text="Welcome to Nvelopes..." />
-    );
+  if (isLoading) return <Loading text="Welcome to Nvelopes..." />;
+
+  if (currentDomain === "invite.nvelopes.app") {
+    return <InviteLandingPage />;
+  }
 
   if (!user) {
     return (
       <div className="flex flex-col gap-4 justify-center items-center w-full h-screen">
         <h1 className="text-2xl text-my-white-dark">Welcome to Nvelopes</h1>
-        <p className="text-sm text-my-white-light">Old School Budgeting for the Digital Age</p>
+        <p className="text-sm text-my-white-light">
+          Old School Budgeting for the Digital Age
+        </p>
         <LoginOptions />
       </div>
     );
@@ -53,10 +65,11 @@ export default function Home() {
           <h1 className="text-2xl text-my-red-light mb-4">⚠️ Database Error</h1>
           <p className="mb-4 text-my-white-light">{dbError}</p>
           <p className="text-sm text-my-white-base mb-6">
-            This error occurred to protect your data. Please do not continue until this is resolved.
+            This error occurred to protect your data. Please do not continue
+            until this is resolved.
           </p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="bg-my-red-base text-my-white-dark px-6 py-2 rounded-md hover:bg-my-blue-light"
           >
             Refresh Page
