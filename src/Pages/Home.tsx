@@ -10,7 +10,6 @@ import {
   shouldBackupUserDataSafe,
   backupUserDataSafe,
 } from "../firebase/editData";
-import InviteLandingPage from "./Invite";
 
 export default function Home() {
   const { user, isLoadingUser } = useAuth();
@@ -18,7 +17,6 @@ export default function Home() {
   const { isLoadingDb, dbError, documentExists, payDate } = useDatabase();
   const [isLoading, setIsLoading] = useState(true);
 
-  const currentDomain = window.location.hostname;
 
   useEffect(() => {
     if (!isLoadingUser && !isLoadingBudgets && !isLoadingDb) {
@@ -40,10 +38,6 @@ export default function Home() {
   }, [user, activeBudgetId, documentExists]);
 
   if (isLoading) return <Loading text="Welcome to Nvelopes..." />;
-
-  if (currentDomain === "invite.nvelopes.app") {
-    return <InviteLandingPage />;
-  }
 
   if (!user) {
     return (

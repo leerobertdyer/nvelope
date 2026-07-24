@@ -1,5 +1,10 @@
 import "./App.css";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
 import Home from "./Pages/Home";
 import Settings from "./Pages/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
@@ -7,6 +12,7 @@ import { useDisableNumberScroll } from "./hooks";
 import Debt from "./Pages/Debt";
 import Bills from "./Pages/Bills";
 import Feedback from "./Pages/Feedback";
+import InviteLandingPage from "./Pages/Invite";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoadingUser } = useAuth();
@@ -19,7 +25,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  useDisableNumberScroll()
+  useDisableNumberScroll();
   return (
     <Router>
       <Routes>
@@ -49,6 +55,7 @@ function App() {
           }
         />
         <Route path="/feedback" element={<Feedback />} />
+        <Route path="/i/:token" element={<InviteLandingPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

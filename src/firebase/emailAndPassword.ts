@@ -49,13 +49,16 @@ export async function createUserEmailPass(email: string, password: string) {
 }
 
 export async function loginWithEmailAndPassword(email: string, password: string) {
+ console.log("IN THE FUNCTION")
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password)
+        console.log("USER CREDS: ", userCredential)
         if (userCredential) {
             const user = userCredential.user;
             return user;
         }
     } catch (error: unknown) {
+      console.log("ERROR IN CATCH: ", error)
         const errorCode = (error as { code: string }).code;
         const errorMessage = (error as { message: string }).message;
         console.error('Error signing in:', { errorCode, errorMessage })
