@@ -4,8 +4,6 @@ import type { Invite } from "../types";
 
 export async function getInviteToken(token: string): Promise<Invite | null> {
   const snap = await getDoc(doc(db, "invites", token));
-  console.log("projectId:", db.app.options.projectId);
-  console.log("token param:", JSON.stringify(token));
 
   if (!snap.exists()) return null;
   const d = snap.data();
