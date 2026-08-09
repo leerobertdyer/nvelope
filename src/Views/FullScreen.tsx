@@ -55,7 +55,7 @@ export default function FullScreen({
         `}
     >
       <div
-        className="overflow-y-auto w-full py-[5rem]"
+        className="overflow-y-auto w-full py-[4rem]"
         onClick={(e) => e.stopPropagation()}
       >
         {children}

@@ -50,7 +50,7 @@ export default function Header({ links }: { links: { label: string, href: string
 
   return (
     <>
-      <div className="fixed inset-0 z-9990 flex items-center justify-evenly gap-8 w-full py-4 h-[2rem] bg-my-white-base border-b-2 select-none">
+      <div className="fixed inset-0 z-9990 flex items-center justify-evenly gap-8 w-full py-4 h-[5rem] bg-my-white-base border-b-2 select-none">
         <p
           className={`text-xl rounded-md text-my-white-light py-[.3rem] px-3 font-bold border-2 border-my-white-light
               ${daysTillReset > 3

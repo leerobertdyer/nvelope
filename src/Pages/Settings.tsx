@@ -62,13 +62,14 @@ export default function Settings() {
 
   const [showIntervalSettings, setShowIntervalSettings] =
     useState<boolean>(false);
-  const [newIntervalBudgetAmount, setNewIntervalBudgetAmount] = useState<string>("");
+  const [newIntervalBudgetAmount, setNewIntervalBudgetAmount] =
+    useState<string>("");
   const [newInterval, setNewInterval] = useState<Interval | null>(null);
   const [isEditingCash, setIsEditingCash] = useState(false);
   const [providerType, setProviderType] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
   const [showBudgets, setShowBudgets] = useState(false);
-  const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(true);
   const [showShareBudgetModal, setShowShareBudgetModal] = useState(false);
 
   // Safe backups (stored in separate collection - survives user doc corruption)
@@ -361,7 +362,8 @@ export default function Settings() {
       return;
     }
     const toEmail = shareEmail.trim();
-    const budgetName = budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
+    const budgetName =
+      budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
     try {
       const token = await inviteUserToBudget({
         activeBudgetId,
@@ -646,7 +648,7 @@ export default function Settings() {
           isCreatingBudget || !newBudgetPayDate || !newBudgetInterval
         }
       >
-        <div className="flex flex-col items-center gap-4 w-full text-center">
+        <div className="flex flex-col items-center h-[70vh] gap-4 w-full text-center border-b-2 border-my-white-dark overflow-y-scroll">
           <TextInput
             id="new-budget-name"
             label="New budget name"
@@ -683,7 +685,7 @@ export default function Settings() {
         saveButtonText="Done"
         onSave={() => setShowEditBudgetModal(false)}
       >
-        <div className="flex flex-col items-center gap-4 w-full text-center">
+        <div className="flex flex-col items-center gap-4 w-full text-center h-[70vh] overflow-y-scroll border-b-2 border-my-white-dark">
           <BudgetSettingsFields
             mode="edit"
             intervalValue={payPeriodInterval}
@@ -738,7 +740,8 @@ export default function Settings() {
         }}
       >
         <p>
-          Set pay date and budget interval here when you want to adjust. You can also manage budgets, backups, and account options.
+          Set pay date and budget interval here when you want to adjust. You can
+          also manage budgets, backups, and account options.
         </p>
       </PageTour>
       <Header
@@ -761,7 +764,9 @@ export default function Settings() {
           {activeBudgetId && !isLoadingBudgetMeta && budgetMeta && (
             <>
               <div className="w-full flex flex-col items-center gap-1 max-w-[20rem]">
-                <p className="text-my-black-light text-xs text-center">Budget name</p>
+                <p className="text-my-black-light text-xs text-center">
+                  Budget name
+                </p>
                 {isOwner ? (
                   editingBudgetName ? (
                     <div className="flex flex-col items-center gap-2 w-full">
@@ -791,7 +796,9 @@ export default function Settings() {
                     </div>
                   ) : (
                     <div className="flex flex-row items-center gap-2">
-                      <span className="text-my-black-dark font-medium">{budgetMeta.name}</span>
+                      <span className="text-my-black-dark font-medium">
+                        {budgetMeta.name}
+                      </span>
                       <button
                         type="button"
                         className="p-1 text-my-blue-dark hover:underline text-sm"
@@ -805,7 +812,9 @@ export default function Settings() {
                     </div>
                   )
                 ) : (
-                  <span className="text-my-black-dark font-medium">{budgetMeta.name}</span>
+                  <span className="text-my-black-dark font-medium">
+                    {budgetMeta.name}
+                  </span>
                 )}
               </div>
 
@@ -813,17 +822,20 @@ export default function Settings() {
                 budgetMeta.memberIds.filter((id) => id !== budgetMeta.ownerId)
                   .length > 0 && (
                   <div className="w-full max-w-[20rem] flex flex-col gap-1 bg-my-black-base rounded-md p-2 text-my-white-light">
-                    <p className="text-xs text-center">{budgetMeta.name} Members</p>
+                    <p className="text-xs text-center">
+                      {budgetMeta.name} Members
+                    </p>
                     <ul className="list-none">
                       {budgetMeta.memberIds
                         .filter((id) => id !== budgetMeta.ownerId)
                         .map((mid) => (
                           <li
                             key={mid}
-                            className="flex flex-row items-center justify-between gap-2 py-1 text-my-white-dark text-sm"
+                            className="flex flex-row items-center justify-around gap-2 py-1 text-my-white-dark text-sm"
                           >
                             <span title={mid}>
-                              {budgetMeta.memberEmails?.[mid] ?? mid.slice(0, 8) + "…"}
+                              {budgetMeta.memberEmails?.[mid] ??
+                                mid.slice(0, 8) + "…"}
                             </span>
                             <button
                               type="button"
@@ -921,8 +933,8 @@ export default function Settings() {
         </div>
       )}
       <div className="overflow-y-scroll  flex flex-col items-center justify-start py-4  bg-my-white-dark mt-[3rem] border-y-4 border-my-black-dark">
-      <LogoutButton user={user!} onClick={() => signout()} />
-        
+        <LogoutButton user={user!} onClick={() => signout()} />
+
         {showBudgets && (
           <>
             <BackupSelectionScreen />

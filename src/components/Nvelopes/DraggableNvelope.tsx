@@ -28,7 +28,7 @@ export default function DraggableNvelope({
   }
 
   return (
-    <div className="flex flex-wrap bg-my-white-light justify-center gap-3 p-3">
+    <div className="flex flex-wrap bg-my-white-light justify-center gap-8 p-3">
       {envelopes.map((envelope) => (
         <div
           key={envelope.id}

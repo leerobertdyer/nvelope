@@ -928,7 +928,7 @@ export default function MainEnvelopesView() {
           ]}
         />
 
-        <main className="flex flex-col items-center pt-[1rem] w-full">
+        <main className="flex flex-col items-center pt-[4rem] w-full">
           <h2 className="text-lg font-semibold text-my-black-dark mb-2 py-2">
             {activeBudgetName}
           </h2>
@@ -961,7 +961,7 @@ export default function MainEnvelopesView() {
           </div>
         </main>
 
-        <div className="fixed bottom-0 left-0 w-full flex flex-col items-center gap-3 pt-3 pb-4 bg-my-white-light border-t-2 border-my-white-dark">
+        <div className="fixed bottom-0 left-0 w-full flex flex-col items-center gap-3 pt-3 pb-4 bg-my-white-light">
           <ActionButtons
             onPaymentClick={handleAddPayment}
             onCashClick={handleAddCash}
