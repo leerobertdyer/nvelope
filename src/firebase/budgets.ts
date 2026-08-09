@@ -1,4 +1,4 @@
-import { doc, updateDoc, Timestamp, getDoc, setDoc, collection, query, getDocs, deleteDoc, where, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, updateDoc, Timestamp, getDoc, setDoc, collection, deleteDoc, arrayRemove } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
 import { MONTHLY, BUDGET_DATA_DOC_ID } from "../constants";
@@ -12,12 +12,10 @@ export function budgetDataRef(budgetId: string) {
   return doc(db, "budgets", budgetId, "data", BUDGET_DATA_DOC_ID);
 }
 
-const BUDGET_INVITES_COLLECTION = "budgetInvites";
-
 const defaultBudgetName = (user: User) =>
   user?.email ? `${user.email}'s Budget` : "My Budget";
 
-/**
+/** 
  * Creates the first budget for a user (first-time setup). Writes budget meta, data doc, and users/{uid}/budgets/{budgetId}.
  * Returns the new budgetId or null on failure.
  */
@@ -194,122 +192,6 @@ export async function updateBudgetName(
     console.error("updateBudgetName failed:", error);
     return false;
   }
-}
-
-/**
- * Decode ID token payload (client-side, for debugging). Does not verify signature.
- * Returns the payload object or null if decode fails.
- */
-function decodeIdTokenPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = parts[1];
-    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const json = atob(base64);
-    return JSON.parse(json) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-export interface PendingInvite {
-  inviteId: string;
-  budgetId: string;
-  budgetName: string;
-  inviterEmail: string;
-}
-
-/**
- * Returns pending invites for the current user (by email). Does not accept or delete; for modal UX.
- */
-export async function getPendingInvites(user: User): Promise<PendingInvite[]> {
-  let tokenEmail: string | null = null;
-  try {
-    const token = await user.getIdToken(false);
-    const payload = decodeIdTokenPayload(token);
-    tokenEmail = payload?.email != null ? String(payload.email).trim().toLowerCase() : null;
-  } catch {
-    return [];
-  }
-  if (!tokenEmail) return [];
-
-  try {
-    const q = query(
-      collection(db, BUDGET_INVITES_COLLECTION),
-      where("email", "==", tokenEmail)
-    );
-    const snap = await getDocs(q);
-    const result: PendingInvite[] = [];
-    for (const inviteDoc of snap.docs) {
-      const data = inviteDoc.data();
-      const bid = data.budgetId as string;
-      if (!bid) continue;
-      const budgetSnap = await getDoc(budgetRef(bid));
-      if (!budgetSnap.exists()) continue;
-      const budgetData = budgetSnap.data();
-      const memberIds = (budgetData.memberIds as string[]) ?? [];
-      if (memberIds.includes(user.uid)) continue; // already member
-      const name = (budgetData.name as string) ?? "Budget";
-      const inviterEmail = (data.inviterEmail as string)?.trim() || "Someone";
-      result.push({
-        inviteId: inviteDoc.id,
-        budgetId: bid,
-        budgetName: name,
-        inviterEmail,
-      });
-    }
-    return result;
-  } catch (error) {
-    console.error("[nvelope invite] getPendingInvites failed:", error);
-    return [];
-  }
-}
-
-/**
- * Accept one invite: add user to budget (memberIds + memberEmails), create user budget ref, delete invite.
- */
-export async function acceptInvite(user: User, budgetId: string): Promise<void> {
-  let tokenEmail: string | null = null;
-  try {
-    const token = await user.getIdToken(false);
-    const payload = decodeIdTokenPayload(token);
-    tokenEmail = payload?.email != null ? String(payload.email).trim().toLowerCase() : null;
-  } catch (e) {
-    throw new Error(`Could not get email from token: ${e}`);
-  }
-  if (!tokenEmail) throw new Error("No email in token");
-
-  const budgetSnap = await getDoc(budgetRef(budgetId));
-  if (!budgetSnap.exists()) throw new Error("Budget not found");
-  const budgetData = budgetSnap.data();
-  const name = (budgetData.name as string) ?? "Budget";
-  const memberIds = (budgetData.memberIds as string[]) ?? [];
-  if (memberIds.includes(user.uid)) {
-    // Already member; just delete invite if exists
-    const inviteId = budgetId + "_" + tokenEmail;
-    const inviteRef = doc(db, BUDGET_INVITES_COLLECTION, inviteId);
-    await deleteDoc(inviteRef).catch(() => {});
-    return;
-  }
-
-  await updateDoc(budgetRef(budgetId), {
-    memberIds: arrayUnion(user.uid),
-    [`memberEmails.${user.uid}`]: tokenEmail,
-  });
-  await setDoc(doc(db, "users", user.uid, "budgets", budgetId), { name, budgetId });
-
-  const inviteId = budgetId + "_" + tokenEmail;
-  const inviteRef = doc(db, BUDGET_INVITES_COLLECTION, inviteId);
-  await deleteDoc(inviteRef);
-}
-
-/**
- * Decline one invite: delete the invite doc so it is not shown again.
- */
-export async function declineInvite(inviteId: string): Promise<void> {
-  const inviteRef = doc(db, BUDGET_INVITES_COLLECTION, inviteId);
-  await deleteDoc(inviteRef);
 }
 
 /**

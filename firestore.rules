@@ -14,18 +14,9 @@ service cloud.firestore {
       allow read, write: if request.auth != null
         && (request.auth.uid == resource.data.ownerId
             || request.auth.uid in resource.data.get('memberIds', []));
-      // Invited user (has matching budgetInvites doc) may read budget to get name/memberIds before accepting
-      allow read: if request.auth != null
-        && exists(/databases/$(database)/documents/budgetInvites/$(budgetId + '_' + request.auth.token.email));
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.ownerId
         && request.auth.uid in request.resource.data.get('memberIds', []);
-      // Invited user (not yet a member) may update ONLY to add themselves to memberIds and memberEmails.
-      allow update: if request.auth != null
-        && request.auth.uid != resource.data.ownerId
-        && !(request.auth.uid in resource.data.get('memberIds', []))
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'memberEmails'])
-        && exists(/databases/$(database)/documents/budgetInvites/$(budgetId + '_' + request.auth.token.email));
     }
     match /budgets/{budgetId}/data/{dataId} {
       allow read, write: if request.auth != null
@@ -45,13 +36,6 @@ service cloud.firestore {
     // Public read so the /i/:token landing page can show status before the user signs in.
     match /invites/{token} {
       allow read: if true;
-    }
-    // Invites by email: owner can create (doc ID must be budgetId_email); invited user can read/delete (to accept)
-    match /budgetInvites/{inviteId} {
-      allow read, delete: if request.auth != null && resource.data.email == request.auth.token.email;
-      allow create: if request.auth != null
-        && get(/databases/$(database)/documents/budgets/$(request.resource.data.budgetId)).data.ownerId == request.auth.uid
-        && request.resource.id == request.resource.data.budgetId + '_' + request.resource.data.email;
     }
   }
 }

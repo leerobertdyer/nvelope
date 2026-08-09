@@ -57,7 +57,12 @@ export default function Feedback() {
 
   return (
     <div className="min-h-screen flex flex-col bg-my-blue-dark text-my-white-dark">
-      <Header links={[{ label: "Home", href: "/" }]} />
+      <Header
+        links={[
+          { label: "Home", href: "/" },
+          { label: "Support", href: "/support" },
+        ]}
+      />
       <div className="flex-1 flex flex-col items-center justify-start py-8 px-4 pt-16">
         <p className="text-center text-my-white-light max-w-md mb-8">
           Thanks for using Nvelopes. I really appreciate any feedback on the site, or if you just want to reach out.

@@ -84,13 +84,12 @@ export default function FirstTimeSetup() {
   }
 
   return (
-    <div className="absolute inset-0 z-9990 flex flex-col bg-my-black-dark text-my-white-light">
-      {user && <Header links={[]} />}
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
+    <div className="absolute inset-0 z-9990 flex flex-col h-screen">
+      <div className="flex flex-col items-center justify-center gap-6 p-6 bg-my-white-light py-[4rem]">
         <h2 className="text-center text-lg sm:text-xl">
           When was your last pay date?
         </h2>
-        <p className="text-center text-sm text-my-white-dark">
+        <p className="text-center text-sm text-my-black-base">
           (Or when do you want to start budgeting from?)
         </p>
         <PayDateCalendar
@@ -102,7 +101,7 @@ export default function FirstTimeSetup() {
         <h3 className="text-center text-base sm:text-lg">
           How often are you paid?
         </h3>
-        <p className="text-center text-sm text-my-white-dark">
+        <p className="text-center text-sm text-my-black-base">
           (Or how often do you want to budget?)
         </p>
         <IntervalSelector
@@ -110,7 +109,7 @@ export default function FirstTimeSetup() {
           onChange={(v) => setInterval(v)}
           label=""
         />
-        <div className="flex flex-col gap-3 pt-4">
+        <div className="flex flex-col gap-3 pt-4 w-full items-center">
           <Button
             color="green"
             onClick={handleSubmit}
@@ -122,7 +121,7 @@ export default function FirstTimeSetup() {
             type="button"
             onClick={handleSkip}
             disabled={isSubmitting}
-            className="text-sm text-my-white-dark hover:text-my-white-light underline"
+            className="text-sm text-my-blue-dark hover:text-my-blue-light underline cursor-pointer"
           >
             Skip for now
           </button>

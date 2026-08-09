@@ -7,13 +7,11 @@ import BudgetProvider from "./Context/BudgetContext/BudgetProvider.tsx";
 import DatabaseProvider from "./Context/DatabaseContext/DatabaseProvider.tsx";
 import TransactionProvider from "./Context/TransactionContext/TransactionProvider.tsx";
 import ToastProvider from "./Context/ToastContext/ToastProvider.tsx";
-import InviteModal from "./components/InviteModal.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <BudgetProvider>
-        <InviteModal />
         <DatabaseProvider>
           <TransactionProvider>
             <ToastProvider>

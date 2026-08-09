@@ -69,8 +69,8 @@ export default function Settings() {
   const [providerType, setProviderType] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
   const [showBudgets, setShowBudgets] = useState(false);
-  const [showAccountSettings, setShowAccountSettings] = useState(true);
-  const [showShareBudgetModal, setShowShareBudgetModal] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [showShareBudgetModal, setShowShareBudgetModal] = useState(true);
 
   // Safe backups (stored in separate collection - survives user doc corruption)
   const [safeBackups, setSafeBackups] = useState<
@@ -357,6 +357,7 @@ export default function Settings() {
   }
 
   async function handleInvite() {
+    console.log("handleInvite", user, activeBudgetId, shareEmail);
     if (!user || !activeBudgetId || !shareEmail.trim()) {
       showToast("Please enter a valid email address", "error");
       return;
@@ -365,6 +366,7 @@ export default function Settings() {
     const budgetName =
       budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
     try {
+console.log("HERE")
       const token = await inviteUserToBudget({
         activeBudgetId,
         budgetName,
@@ -376,10 +378,13 @@ export default function Settings() {
         showToast(
           `Invite sent to ${toEmail}. They'll receive an email with a link to open or sign up for Nvelopes.`,
         );
+        console.log("TOKEN", token, toEmail, user.email)
       } else {
         showToast("Failed to send invite", "error");
       }
-    } finally {
+    } catch(error) {
+    console.error("Error inviting user to budget", error);
+    }finally {
       setShowShareBudgetModal(false);
     }
   }
@@ -479,10 +484,10 @@ export default function Settings() {
     }
   }
 
-  function SettingsButton({ text }: { text: string }) {
+  function SettingsButton({ text, active }: { text: string, active: boolean }) {
     return (
       <button
-        className="p-2 cursor-pointer text-my-blue-dark"
+        className={`p-2 cursor-pointer text-my-blue-dark ${active ? "bg-my-blue-dark text-my-white-light" : "bg-my-white-light text-my-blue-dark"} rounded-md`}
         onClick={() => {
           switch (text.toLowerCase()) {
             case "budgets":
@@ -749,14 +754,15 @@ export default function Settings() {
           { label: "Home", href: "/" },
           { label: "Debt", href: "/debt" },
           { label: "Feedback", href: "/feedback" },
+          { label: "Support", href: "/support" },
         ]}
       />
       <h1 className="text-3xl font-bold mb-4 w-fit m-auto text-my-black-dark text-center p-2 mt-4 rounded-b-md ">
         Settings
       </h1>
       <div className="w-full flex justify-center items-center gap-4 mb-4">
-        <SettingsButton text="Budgets" />
-        <SettingsButton text="Account" />
+        <SettingsButton text="Budgets" active={showBudgets} />
+        <SettingsButton text="Account" active={showAccountSettings} />
       </div>
       {/* Budgets: name, members, switcher, create, share, edit, delete/leave */}
       {showBudgets && (
@@ -862,7 +868,7 @@ export default function Settings() {
                 id="budget-switcher"
                 value={activeBudgetId ?? ""}
                 onChange={(e) => setActiveBudgetId(e.target.value || null)}
-                className="bg-my-white-light border-2 border-my-white-dark rounded-md px-3 py-2 text-my-black-dark max-w-[20rem] w-[80%]"
+                className="bg-my-white-light border-2 border-my-white-dark rounded-md px-3 py-2 text-my-black-dark max-w-[20rem] w-[80%] text-center"
               >
                 {budgets.map((b) => (
                   <option key={b.id} value={b.id}>

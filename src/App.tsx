@@ -11,6 +11,7 @@ import { useAuth } from "./Context/AuthContext/useAuth";
 import { useDisableNumberScroll } from "./hooks";
 import Debt from "./Pages/Debt";
 import Feedback from "./Pages/Feedback";
+import Support from "./Pages/Support";
 import InviteLandingPage from "./Pages/Invite";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,7 @@ function App() {
           }
         />
         <Route path="/feedback" element={<Feedback />} />
+        <Route path="/support" element={<Support />} />
         <Route path="/i/:token" element={<InviteLandingPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
