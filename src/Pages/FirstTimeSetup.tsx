@@ -8,7 +8,6 @@ import { createFirstBudget, completeDemoWithDefaults } from "../firebase/budgets
 import { createUserProfile, editPayDate, editPayPeriodInterval } from "../firebase/editData";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../Context/ToastContext/useToast";
-import Header from "../components/Nav/Header";
 import Button from "../components/Buttons/Button";
 import PayDateCalendar from "../components/Forms/PayDateCalendar";
 import IntervalSelector from "../components/Forms/IntervalSelector";
