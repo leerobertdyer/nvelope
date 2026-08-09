@@ -8,6 +8,7 @@ import { useState } from "react";
 import type { User } from "firebase/auth";
 import { editPayments } from "../../firebase/editData";
 import {
+  deriveIsPaid,
   generateFreshPayment,
   isDateInCurrentPayPeriod,
   removeVirtualIdPortion,
@@ -160,7 +161,7 @@ export default function PaymentForm({
       if (activeBudgetId) editPayments(updatedPayments, activeBudgetId);
       return updatedPayments;
     });
-    if (paymentToEdit.isInInterval && !paymentToEdit.paid) {
+    if (paymentToEdit.isInInterval && !deriveIsPaid(paymentToEdit)) {
       await handleUpdateBudget(diffAmount);
     }
     resetForm();
@@ -173,7 +174,10 @@ export default function PaymentForm({
       showToast("Payment name already exists", "error");
       return;
     }
-    const updatedPayments = [...payments, newPayment];
+    const updatedPayments =
+      newPayment.type === "DEBT"
+        ? [...payments, { ...newPayment, originalTotal: newPayment.total }]
+        : [...payments, newPayment];
     setPayments(updatedPayments);
     if (!activeBudgetId) return;
     await editPayments(updatedPayments, activeBudgetId);
@@ -183,8 +187,7 @@ export default function PaymentForm({
         payPeriodInterval,
         payDate.toDate(),
         newPayment.dueDate.toDate()
-      ) &&
-      !newPayment.paid
+      )
     ) {
       await handleUpdateBudget(newPayment.amount * -1);
     }

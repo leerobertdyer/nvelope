@@ -1,7 +1,7 @@
 import { Timestamp, doc, onSnapshot } from "firebase/firestore";
 import { DatabaseContext } from "./DatabaseContext";
 import { useEffect, useRef, useState } from "react";
-import { type Backup, type Envelope, type Interval, type OneTimeAmount, type Payment } from "../../types";
+import { type Backup, type Envelope, type Interval, type Payment } from "../../types";
 import { useAuth } from "../AuthContext/useAuth";
 import { useBudget } from "../BudgetContext/useBudget";
 import { db } from "../../firebase/firebase";
@@ -16,7 +16,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const lastPaymentsWriteAtRef = useRef(0);
 
     const [isLoadingDb, setIsLoadingDb] = useState(true);
-    const [snowball, setSnowball] = useState<number>(0);
     const [snowballTargetPaymentId, setSnowballTargetPaymentId] = useState<string | null>(null);
     const [payDate, setPayDate] = useState<Timestamp | null | undefined>(undefined);
     const [payPeriodInterval, setPayPeriodInterval] = useState<Interval>("MONTHLY");
@@ -28,8 +27,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     };
     const [isNewUser, setIsNewUser] = useState<boolean>(false);
     const [totalSpendingBudget, setTotalSpendingBudget] = useState<number>(0);
-    const [resetBudgetTimestamp, setResetBudgetTimestamp] = useState<Timestamp | null>(null);
-    const [oneTimeCash, setOneTimeCash] = useState<OneTimeAmount[] | null>(null);
     const [backups, setBackups] = useState<Backup | null>(null);
     const [dbError, setDbError] = useState<string | null>(null);
     const [documentExists, setDocumentExists] = useState<boolean | null>(null);
@@ -65,7 +62,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     setDbError(null);
                     setDocumentExists(true);
                     setIsLoadingDb(false);
-                    setSnowball(data.snowball ?? 0);
                     setSnowballTargetPaymentId(data.snowballTargetPaymentId ?? null);
                     setEnvelopes(data.envelopes ?? []);
                     setPayDate(data.payDate ?? null);
@@ -76,8 +72,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
                     }
                     setIsNewUser(data.isNewUser ?? false);
                     setTotalSpendingBudget(data.totalSpendingBudget ?? 0);
-                    setOneTimeCash(data.oneTimeCash ?? null);
-                    setResetBudgetTimestamp(data.resetBudgetTimestamp ?? null);
                     setBackups(data.backups ?? null);
                 } else {
                     setDocumentExists(false);
@@ -111,8 +105,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
     const value = {
         isLoadingDb,
         setIsLoadingDb,
-        snowball,
-        setSnowball,
         snowballTargetPaymentId,
         setSnowballTargetPaymentId,
         payDate,
@@ -127,10 +119,6 @@ export default function DatabaseProvider({ children }: { children: React.ReactNo
         setIsNewUser,
         totalSpendingBudget,
         setTotalSpendingBudget,
-        oneTimeCash,
-        setOneTimeCash,
-        resetBudgetTimestamp,
-        setResetBudgetTimestamp,
         backups,
         setBackups,
         dbError,

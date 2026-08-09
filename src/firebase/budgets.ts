@@ -49,9 +49,6 @@ export async function createFirstBudget(
       payPeriodInterval: "MONTHLY",
       payments: [],
       totalSpendingBudget: 0,
-      oneTimeCash: null,
-      resetBudgetTimestamp: null,
-      snowball: 0,
       snowballTargetPaymentId: null,
       isNewUser: true,
       backups: null,
@@ -98,9 +95,6 @@ export async function createBudget(
       payPeriodInterval: payPeriodInterval ?? MONTHLY,
       payments: [],
       totalSpendingBudget: 0,
-      oneTimeCash: null,
-      resetBudgetTimestamp: null,
-      snowball: 0,
       snowballTargetPaymentId: null,
       isNewUser: false,
       backups: null,
@@ -198,58 +192,6 @@ export async function updateBudgetName(
     return true;
   } catch (error) {
     console.error("updateBudgetName failed:", error);
-    return false;
-  }
-}
-
-const INVITE_DEBUG = true; // set false to reduce console noise
-
-/** Owner invites by email. Writes a single doc to budgetInvites (doc ID = budgetId_email for rule lookup). */
-export async function addInviteToBudget(
-  budgetId: string,
-  email: string,
-  ownerId: string,
-  ownerEmail: string
-): Promise<boolean> {
-  try {
-    if (INVITE_DEBUG) {
-      console.log("[nvelope invite] addInviteToBudget called:", { budgetId, email, ownerId });
-    }
-    const meta = await getBudgetMeta(budgetId);
-    if (!meta || meta.ownerId !== ownerId) {
-      if (INVITE_DEBUG) console.log("[nvelope invite] addInviteToBudget: not owner or no meta, skipping");
-      return false;
-    }
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      if (INVITE_DEBUG) console.log("[nvelope invite] addInviteToBudget: empty email after normalize");
-      return false;
-    }
-    const inviteDocId = budgetId + "_" + normalizedEmail;
-    const inviterEmail = (ownerEmail ?? "").trim().toLowerCase();
-    const invitePayload = {
-      budgetId,
-      email: normalizedEmail,
-      invitedBy: ownerId,
-      inviterEmail: inviterEmail || undefined,
-      createdAt: Timestamp.now(),
-    };
-    if (INVITE_DEBUG) {
-      console.log("[nvelope invite] addInviteToBudget: persisting", {
-        toEmail: normalizedEmail,
-        inviteDocId,
-        path: `${BUDGET_INVITES_COLLECTION}/${inviteDocId}`,
-        payload: invitePayload,
-      });
-    }
-    const inviteRef = doc(db, BUDGET_INVITES_COLLECTION, inviteDocId);
-    await setDoc(inviteRef, invitePayload);
-    if (INVITE_DEBUG) {
-      console.log("[nvelope invite] addInviteToBudget: persisted OK at", inviteRef.path);
-    }
-    return true;
-  } catch (error) {
-    console.error("[nvelope invite] addInviteToBudget failed:", error);
     return false;
   }
 }
@@ -368,124 +310,6 @@ export async function acceptInvite(user: User, budgetId: string): Promise<void> 
 export async function declineInvite(inviteId: string): Promise<void> {
   const inviteRef = doc(db, BUDGET_INVITES_COLLECTION, inviteId);
   await deleteDoc(inviteRef);
-}
-
-/**
- * Call on app load: for current user's email, consume any invites (add user to budget, delete invite). Returns count processed.
- * Firestore rule allows update on budgets/{id} when budgetInvites/{budgetId_email} exists.
- * @deprecated Use getPendingInvites + acceptInvite/declineInvite for modal UX instead.
- */
-export async function processInvitesForUser(user: User): Promise<number> {
-  const email = user?.email?.trim()?.toLowerCase();
-  if (INVITE_DEBUG) {
-    console.log("[nvelope invite] processInvitesForUser:", {
-      uid: user?.uid,
-      emailRaw: user?.email ?? "(none)",
-      emailNormalized: email ?? "(none)",
-    });
-  }
-  if (!email) return 0;
-
-  // Firestore rule allows read only when resource.data.email == request.auth.token.email.
-  // If the ID token has no email claim, the query would get permission-denied. Skip the query in that case.
-  let tokenEmail: string | null = null;
-  try {
-    const token = await user.getIdToken(false);
-    const payload = decodeIdTokenPayload(token);
-    tokenEmail = payload?.email != null ? String(payload.email).trim().toLowerCase() : null;
-    if (INVITE_DEBUG) {
-      console.log("[nvelope invite] processInvitesForUser: ID token email claim:", tokenEmail ?? "(missing)");
-    }
-  } catch (e) {
-    if (INVITE_DEBUG) console.warn("[nvelope invite] processInvitesForUser: could not get/decode ID token", e);
-  }
-  if (tokenEmail == null || tokenEmail === "") {
-    if (INVITE_DEBUG) {
-      console.log("[nvelope invite] processInvitesForUser: skipping invite query (no email in ID token; rule would deny). Sign in with a provider that includes email (e.g. Google).");
-    }
-    return 0;
-  }
-
-  try {
-    const q = query(
-      collection(db, BUDGET_INVITES_COLLECTION),
-      where("email", "==", tokenEmail)
-    );
-    if (INVITE_DEBUG) {
-      console.log("[nvelope invite] processInvitesForUser: running query where email ==", tokenEmail);
-    }
-    const snap = await getDocs(q);
-    if (INVITE_DEBUG) {
-      console.log("[nvelope invite] processInvitesForUser: query returned", snap.docs.length, "invite(s)");
-    }
-    let count = 0;
-    const metaCache: Record<string, { name: string }> = {};
-    for (const inviteDoc of snap.docs) {
-      const data = inviteDoc.data();
-      const bid = data.budgetId as string;
-      if (INVITE_DEBUG) {
-        console.log("[nvelope invite] processInvitesForUser: processing invite", {
-          inviteDocId: inviteDoc.id,
-          budgetId: bid,
-          inviteEmail: data.email,
-          ruleCheckPath: `budgetInvites/${bid}_${tokenEmail}`,
-        });
-      }
-      if (!bid) continue;
-      let name = metaCache[bid]?.name;
-      if (name === undefined) {
-        const m = await getBudgetMeta(bid);
-        name = m?.name ?? "Budget";
-        metaCache[bid] = { name };
-      }
-      const budgetSnap = await getDoc(budgetRef(bid));
-      if (!budgetSnap.exists()) {
-        if (INVITE_DEBUG) console.log("[nvelope invite] processInvitesForUser: budget missing, deleting stale invite");
-        await deleteDoc(inviteDoc.ref);
-        continue;
-      }
-      const budgetData = budgetSnap.data();
-      const memberIds = (budgetData.memberIds as string[]) ?? [];
-      if (INVITE_DEBUG) {
-        console.log("[nvelope invite] processInvitesForUser: budget meta", {
-          budgetId: bid,
-          ownerId: budgetData?.ownerId,
-          memberIds,
-          currentUserInMembers: memberIds.includes(user.uid),
-        });
-      }
-      if (memberIds.includes(user.uid)) {
-        if (INVITE_DEBUG) console.log("[nvelope invite] processInvitesForUser: already member, deleting invite");
-        await deleteDoc(inviteDoc.ref);
-        continue;
-      }
-      if (INVITE_DEBUG) {
-        console.log("[nvelope invite] processInvitesForUser: about to update budget", bid, "memberIds (arrayUnion)", user.uid, "- rule will check exists(budgetInvites/" + bid + "_" + tokenEmail + ")");
-      }
-      await updateDoc(budgetRef(bid), {
-        memberIds: arrayUnion(user.uid),
-        [`memberEmails.${user.uid}`]: tokenEmail,
-      });
-      await setDoc(doc(db, "users", user.uid, "budgets", bid), { name, budgetId: bid });
-      await deleteDoc(inviteDoc.ref);
-      count++;
-    }
-    return count;
-  } catch (error: unknown) {
-    const err = error as { code?: string; message?: string };
-    console.error("[nvelope invite] processInvitesForUser failed:", {
-      message: err?.message,
-      code: err?.code,
-      fullError: error,
-    });
-    return 0;
-  }
-}
-
-/** @deprecated Use createFirstBudget. Kept for migration script / reference. */
-export async function createUserDocument(user: User) {
-  const budgetId = await createFirstBudget(user);
-  return budgetId != null;
 }
 
 /**

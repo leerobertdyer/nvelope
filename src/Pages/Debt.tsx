@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { applyPayoffRoll, calculatePayoffDate, calculateSnowballPayoffDate, paymentsTotal } from "../util";
+import { applyPayoffRoll, calculatePayoffDate, calculateSnowballPayoffDate, createTransactionId, paymentsTotal, removeVirtualIdPortion } from "../util";
+import { getSnowballAmount, getSnowballName } from "../util/paymentUtils";
 import Loading from "../components/Loading";
 import type { Payment } from "../types";
 import ShowAndHide from "../components/Buttons/ShowAndHide";
 import Header from "../components/Nav/Header";
-import { editIsNewUser, editPayments, editSnowball, editSnowballTargetPaymentId } from "../firebase/editData";
+import { editDatabaseWithTransaction, editIsNewUser, editPayments, editSnowballTargetPaymentId } from "../firebase/editData";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useToast } from "../Context/ToastContext/useToast";
 import { format, parse } from "date-fns";
+import { Timestamp } from "firebase/firestore";
 import { IoWarning } from "react-icons/io5";
 import PaymentForm from "../components/Forms/PaymentForm";
 import FullScreen from "../Views/FullScreen";
@@ -22,7 +24,7 @@ export default function Debt() {
     const { user } = useAuth();
     const { activeBudgetId } = useBudget();
     const { showToast } = useToast();
-    const { payments, setPayments, payPeriodInterval, payDate, snowball, setSnowball, snowballTargetPaymentId, setSnowballTargetPaymentId, isNewUser, setIsNewUser } = useDatabase();
+    const { payments, setPayments, payPeriodInterval, payDate, snowballTargetPaymentId, setSnowballTargetPaymentId, isNewUser, setIsNewUser } = useDatabase();
     const { remainingDebt } = paymentsTotal(payments, payPeriodInterval, payDate ?? null)
 
     const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +40,7 @@ export default function Debt() {
     const [additionalPaymentDebt, setAdditionalPaymentDebt] = useState<Payment | null>(null);
     const [additionalPaymentAmount, setAdditionalPaymentAmount] = useState(0);
     const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
+    const [newSnowballAmount, setNewSnowballAmount] = useState(getSnowballAmount(payments));
 
     function debtHasAllValues(d: Payment) {
         return (typeof d.total === "number" && typeof d.amount === "number" && typeof d.interestRate === "number")
@@ -96,7 +99,7 @@ export default function Debt() {
 
         for (const p of payments) {
             if (p.type === "DEBT") {
-                if (p.total != null && p.total <= 0) {
+                if (p.total != null && p.total <= 0 && p.originalTotal) {
                     nextPaidOff.push(p);
                     continue;
                 }
@@ -134,20 +137,55 @@ export default function Debt() {
                 : null;
 
     async function handleSnowballTargetChange(debtId: string) {
-        setSnowballTargetPaymentId(debtId);
-        await editSnowballTargetPaymentId(activeBudgetId!, debtId);
-        showToast("Snowball target updated");
+        if (!user) return;
+        try {
+            setSnowballTargetPaymentId(debtId);
+            const debt = payments.find((p) => p.id === debtId);
+            await editDatabaseWithTransaction({
+                t: {
+                    id: createTransactionId(user),
+                    type: "SNOWBALL",
+                    createdAt: Timestamp.now(),
+                    nvelopeOrPaymentId: debt?.id,
+                    description: `Snowball target changed to ${debt?.name}`,
+                    createdBy: user.email ?? user.uid,
+                },
+                budgetId: activeBudgetId!,
+                func: () => editSnowballTargetPaymentId(activeBudgetId!, debtId),
+            });
+            showToast("Snowball target updated");
+        } catch (error) {
+            console.error(`There was an issue changing snowball targets: ${error}`);
+            showToast(`There was an issue changing snowball targets: ${error}`, "error");
+        }
     }
 
-    async function handleEditSnowball() {
-        await editSnowball(activeBudgetId!, snowball);
+    async function handleUpdateSnowball(n: number) {
+        if (!user) return;
+        const newPayments = payments.map((p) =>
+            p.id === "SNOWBALL" ? { ...p, amount: p.amount + n } : p,
+        );
+        setPayments(newPayments);
+        setNewSnowballAmount(n);
+        await editDatabaseWithTransaction({
+            t: {
+                id: createTransactionId(user),
+                type: "SNOWBALL",
+                createdAt: Timestamp.now(),
+                amount: n,
+                description: `Manually edited snowball to $${n}`,
+                createdBy: user.email ?? user.uid,
+            },
+            budgetId: activeBudgetId!,
+            func: () => editPayments(newPayments, activeBudgetId!),
+        });
         setShowEditSnowball(false);
         showToast("Snowball updated");
     }
 
     async function handleApplyAdditionalPayment() {
         const debt = additionalPaymentDebt;
-        if (!debt || !activeBudgetId) return;
+        if (!debt || !activeBudgetId || !user) return;
         const amount = additionalPaymentAmount;
         if (amount <= 0) {
             showToast("Enter a valid amount", "error");
@@ -159,22 +197,66 @@ export default function Debt() {
             p.id === debt.id ? { ...p, total: newTotal } : p
         );
         setPayments(updatedPayments);
-        await editPayments(updatedPayments, activeBudgetId);
+        await editDatabaseWithTransaction({
+            t: {
+                id: createTransactionId(user),
+                type: "EXTRA",
+                createdAt: Timestamp.now(),
+                nvelopeOrPaymentId: debt.id,
+                description: `Extra payment of $${additionalPaymentAmount} applied to ${debt?.name}`,
+                createdBy: user.email ?? user.uid,
+            },
+            budgetId: activeBudgetId,
+            func: () => editPayments(updatedPayments, activeBudgetId),
+        });
         setAdditionalPaymentDebt(null);
         setAdditionalPaymentAmount(0);
         if (newTotal <= 0 && debt.amount != null) {
             const paidOffPayment = updatedPayments.find((p) => p.id === debt.id)!;
             const { updatedPayments: withBakedSnowball, nextTargetId: nextId } =
-                applyPayoffRoll(updatedPayments, paidOffPayment, snowball);
+                applyPayoffRoll(updatedPayments, paidOffPayment, getSnowballAmount(payments));
             setSnowballTargetPaymentId(nextId);
-            await editSnowballTargetPaymentId(activeBudgetId, nextId);
+            const nextSnowball = payments.find((p) => p.id === nextId);
+            await editDatabaseWithTransaction({
+                t: {
+                    id: createTransactionId(user),
+                    type: "SNOWBALL",
+                    createdAt: Timestamp.now(),
+                    nvelopeOrPaymentId: debt.id,
+                    description: `Extra payment of $${additionalPaymentAmount} Paid off ${debt?.name}! Changing snowball to ${nextSnowball?.name}`,
+                    createdBy: user.email ?? user.uid,
+                },
+                budgetId: activeBudgetId,
+                func: () => editSnowballTargetPaymentId(activeBudgetId, nextId),
+            });
             setPayments(withBakedSnowball);
             await editPayments(withBakedSnowball, activeBudgetId);
-            setSnowball(0);
-            await editSnowball(activeBudgetId, 0);
             setPaidOffDebtName(debt.name);
         }
         showToast("Payment applied");
+    }
+
+    async function deleteBill() {
+        if (!user || !debtMenuOpen) return;
+        const originalPaymentToEditId = removeVirtualIdPortion(debtMenuOpen);
+        const updatedPayments = payments.filter((p) => {
+            const originalPId = removeVirtualIdPortion(p);
+            return originalPId !== originalPaymentToEditId;
+        });
+        setPayments(updatedPayments);
+        await editDatabaseWithTransaction({
+            t: {
+                id: createTransactionId(user),
+                type: "DELETE",
+                createdAt: Timestamp.now(),
+                description: `Deleted debt ${debtMenuOpen.name}`,
+                createdBy: user.email ?? user.uid,
+            },
+            budgetId: activeBudgetId!,
+            func: () => editPayments(updatedPayments, activeBudgetId!),
+        });
+        setDebtMenuOpen(null);
+        showToast("Payment deleted");
     }
 
     if (isLoading) return <Loading text="Crunching Numbers" />;
@@ -184,7 +266,7 @@ export default function Debt() {
             <FullScreen
                 theme="DARK"
                 onClose={() => setShowEditSnowball(false)}
-                onSave={handleEditSnowball}
+                onSave={() => handleUpdateSnowball(newSnowballAmount)}
                 showButtons={true}
                 saveButtonColor="gold"
                 saveButtonText="Save"
@@ -194,9 +276,9 @@ export default function Debt() {
                     <MoneyInput
                         id="newSnowballAmount"
                         label="Snowball amount (extra toward target each period)"
-                        value={snowball}
-                        onChange={setSnowball}
-                        placeholder={`$${snowball.toFixed(2)}`}
+                        value={newSnowballAmount}
+                        onChange={setNewSnowballAmount}
+                        placeholder={`$${getSnowballAmount(payments).toFixed(2)}`}
                     />
                 </div>
             </FullScreen>
@@ -261,7 +343,13 @@ export default function Debt() {
                         >
                             Edit debt
                         </Button>
-                        <Button color="red" onClick={() => setDebtMenuOpen(null)}>
+                        <Button
+                            color="red"
+                            onClick={deleteBill}
+                        >
+                            Delete debt
+                        </Button>
+                        <Button color="gold" onClick={() => setDebtMenuOpen(null)}>
                             Cancel
                         </Button>
                     </div>
@@ -320,7 +408,8 @@ export default function Debt() {
             : new Date();
     const finalPaymentDateStr = format(finalPaymentDate, "MMM yyyy");
 
-    const snowballPayoffDate = calculateSnowballPayoffDate(debts, snowball, effectiveSnowballTargetId, new Date(), extraMonthly || undefined);
+    const snowballAmount = getSnowballAmount(payments);
+    const snowballPayoffDate = calculateSnowballPayoffDate(debts, snowballAmount, effectiveSnowballTargetId, new Date(), extraMonthly || undefined);
     const snowballPayoffDateStr = snowballPayoffDate ? format(snowballPayoffDate, "MMM yyyy") : null;
 
     const snowballWithExtraDate = extraMonthly > 0 ? snowballPayoffDate : null;
@@ -341,28 +430,28 @@ export default function Debt() {
                 Track your <span className="text-my-red-light">debts</span> and payoff dates here. Set a <span className="text-my-blue-light">snowball</span> amount to add extra toward one target debt each period. Tap a debt to edit or make an additional payment.
             </p>
         </PageTour>
-        <div className="flex flex-col items-center justify-start py-[5rem] w-full h-full bg-my-blue-dark text-my-white-dark">
-            <Header links={[{ label: "Home", href: "/" }, { label: "Settings", href: "/settings" }, { label: "Bills", href: "/bills" }, { label: "Feedback", href: "/feedback" }]} />
+        <div className="flex flex-col items-center justify-start py-[5rem] w-full h-full bg-my-white-light text-my-black-dark">
+            <Header links={[{ label: "Home", href: "/" }, { label: "Settings", href: "/settings" }, { label: "Feedback", href: "/feedback" }]} />
             <h1 className="text-3xl">Debt</h1>
-            <p className="bg-my-black-base p-2 rounded-md text-my-red-light mb-[1rem] w-[20rem] text-center "><span className="text-my-white-light">TOTAL:</span> ${remainingDebt.toFixed(2)}</p>
-            <div className="bg-my-black-base p-2 rounded-md text-my-blue-base mb-[1rem] w-[20rem] text-center "><span className="text-my-white-light">Final Payoff Date:</span> {finalPaymentDateStr}
+            <p className="bg-my-white-base p-2 rounded-md text-my-red-dark mb-[1rem] w-[20rem] text-center "><span className="text-my-black-dark">TOTAL:</span> ${remainingDebt.toFixed(2)}</p>
+            <div className="bg-my-white-base p-2 rounded-md text-my-blue-dark mb-[1rem] w-[20rem] text-center "><span className="text-my-black-dark">Final Payoff Date:</span> {finalPaymentDateStr}
             </div>
-            <div className="bg-my-black-base p-2 rounded-md text-my-blue-light mb-[1rem] w-[20rem] flex flex-col items-center justify-between gap-2 px-3 py-2">
-                <div className="flex items-center justify-between gap-2">
-                    <span className="text-my-white-light">Snowball ❄️</span>
-                    <span className="text-my-white-dark">${snowball.toFixed(2)}</span>
+            <div className="bg-my-white-base p-2 rounded-md text-my-blue-dark mb-[1rem] w-[20rem] flex flex-col items-center justify-between gap-2 px-3 py-2">
+                <div className="flex items-center justify-between gap-2 w-full">
+                    <span className="text-my-black-dark">{getSnowballName(payments, snowballTargetPaymentId ?? "")} ❄️</span>
+                    <span className="text-my-black-light">${snowballAmount.toFixed(2)}</span>
                 </div>
-                <button className="text-xs text-my-blue-light cursor-pointer" onClick={() => setShowEditSnowball(true)}>Edit</button>
+                <button className="text-xs text-my-blue-dark cursor-pointer" onClick={() => setShowEditSnowball(true)}>Edit</button>
             </div>
             {snowballPayoffDateStr && (
-                <div className="bg-my-black-base p-2 rounded-md text-my-green-light mb-[1rem] w-[20rem] text-center">
-                    <span className="text-my-white-light">With snowball:</span> {snowballPayoffDateStr}
+                <div className="bg-my-white-base p-2 rounded-md text-my-green-dark mb-[1rem] w-[20rem] text-center">
+                    <span className="text-my-black-dark">With snowball:</span> {snowballPayoffDateStr}
                 </div>
             )}
 
             {debts.length > 0 && (
-                <div className="bg-my-black-base p-2 rounded-md text-my-white-light mb-[2rem] w-[20rem] md:w-[24rem]">
-                    <p className="text-my-white-dark text-sm font-medium mb-2 text-center">What if I pay an extra amount each month?</p>
+                <div className="bg-my-white-base p-2 rounded-md text-my-black-dark mb-[2rem] w-[20rem] md:w-[24rem]">
+                    <p className="text-my-black-light text-sm font-medium mb-2 text-center">What if I pay an extra amount each month?</p>
                     <div className="flex flex-col items-center gap-2 mb-2">
                         <MoneyInput
                             id="extra-monthly"
@@ -380,18 +469,18 @@ export default function Debt() {
                 </div>
             )}
 
-            {debtsMissingInfo.length > 0 && <div className="flex flex-col items-center text-my-white-light bg-my-black-base p-2 rounded-md w-[20rem] margin-auto">
-                <p className="text-my-red-light">Missing Information on {debtsMissingInfo.length} debts:</p>
+            {debtsMissingInfo.length > 0 && <div className="flex flex-col items-center text-my-black-dark bg-my-white-base p-2 rounded-md w-[20rem] margin-auto">
+                <p className="text-my-red-dark">Missing Information on {debtsMissingInfo.length} debts:</p>
                 {showMissingInfoDebts
                     ? <div className="w-full ">
-                        <DebtGrid name="Name" interest="Interest" owed="Owed" color="my-white-dark" />
+                        <DebtGrid name="Name" interest="Interest" owed="Owed" color="my-black-light" />
                         {debtsMissingInfo.map((d: Payment) => (
                             <div
                                 key={d.id}
                                 role="button"
                                 tabIndex={0}
                                 onKeyDown={(e) => e.key === "Enter" && setEditingDebt(d)}
-                                className="w-full grid grid-cols-5 cursor-pointer hover:bg-my-black-light rounded px-1 -mx-1"
+                                className="w-full grid grid-cols-5 cursor-pointer hover:bg-my-white-dark rounded px-1 -mx-1"
                             >
                                 <p className="col-span-3 text-left">{d.name}</p>
                                 {d.interestRate
@@ -409,9 +498,9 @@ export default function Debt() {
             {debts.length > 0 && (() => {
                 const debtsByLowestOwed = [...debts].sort((a, b) => (a.total ?? 0) - (b.total ?? 0));
                 return (
-                <div className=" text-my-white-light bg-my-black-base p-4 rounded-md w-[20rem] md:w-[30rem] margin-auto mt-[2rem]">
+                <div className=" text-my-black-dark bg-my-white-base p-4 rounded-md w-[20rem] md:w-[30rem] margin-auto mt-[2rem]">
                     <div className="flex flex-col gap-2 mb-4">
-                        <label htmlFor="snowball-target" className="text-my-white-dark text-sm">Snowball target</label>
+                        <label htmlFor="snowball-target" className="text-my-black-light text-sm">Snowball target</label>
                         <select
                             id="snowball-target"
                             value={effectiveSnowballTargetId ?? ""}
@@ -419,7 +508,7 @@ export default function Debt() {
                                 const id = e.target.value;
                                 if (id) handleSnowballTargetChange(id);
                             }}
-                            className="w-[90%] max-w-[20rem] border-2 p-2 rounded-md border-my-white-dark bg-my-white-light text-my-black-dark text-sm"
+                            className="w-[90%] max-w-[20rem] border-2 p-2 rounded-md border-my-black-light bg-my-white-light text-my-black-dark text-sm"
                         >
                             {debtsByLowestOwed.map((d) => (
                                 <option key={d.id} value={d.id}>
@@ -428,8 +517,8 @@ export default function Debt() {
                             ))}
                         </select>
                     </div>
-                    <p className="text-xs text-my-white-dark mb-1">Click a debt for options</p>
-                    <DebtGrid name="Name" interest="Interest" owed="Owed" color="my-white-dark" paymentsLeft="Payments" payOffDate="Final" />
+                    <p className="text-xs text-my-black-light mb-1">Click a debt for options</p>
+                    <DebtGrid name="Name" interest="Interest" owed="Owed" color="my-black-light" paymentsLeft="Payments" payOffDate="Final" />
                     {debtsByLowestOwed.map((d: Payment) => {
                         const cannotPayOff = d.paymentsLeft == null || d.payOffDate == null;
                         return (
@@ -439,11 +528,11 @@ export default function Debt() {
                             tabIndex={0}
                             onClick={() => setDebtMenuOpen(d)}
                             onKeyDown={(e) => e.key === "Enter" && setDebtMenuOpen(d)}
-                            className={`cursor-pointer hover:bg-my-black-light rounded px-1 -mx-1 flex items-center gap-1 ${d.id === effectiveSnowballTargetId ? "ring-2 ring-my-white-dark rounded px-1 -mx-1" : ""}`}
+                            className={`cursor-pointer hover:bg-my-white-dark rounded px-1 -mx-1 flex items-center gap-1 ${d.id === effectiveSnowballTargetId ? "ring-2 ring-my-black-light rounded px-1 -mx-1" : ""}`}
                         >
                             <div className="flex-1 min-w-0">
                                 <DebtGrid
-                                    color="my-white-light"
+                                    color="my-black-dark"
                                     name={d.name + (d.id === effectiveSnowballTargetId ? " ❄️" : "")}
                                     interest={d.interestRate != null ? d.interestRate.toString() + " %" : "—"}
                                     owed={`$${d.total?.toFixed(0) ?? ''}`}
@@ -454,7 +543,7 @@ export default function Debt() {
                             {cannotPayOff && (
                                 <span
                                     title="Payoff cannot be calculated. Your minimum payment may be too low to cover interest – try increasing the payment amount."
-                                    className="flex-shrink-0 text-my-red-light"
+                                    className="flex-shrink-0 text-my-red-dark"
                                     aria-label="Warning: payoff cannot be calculated"
                                 >
                                     <IoWarning size={20} />
@@ -467,11 +556,17 @@ export default function Debt() {
             })()}
 
             {paidOffDebts.length > 0 && (
-                <div className="text-my-white-light bg-my-black-base p-4 rounded-md w-[20rem] md:w-[30rem] margin-auto mt-[2rem]">
-                    <p className="text-my-white-dark text-sm mb-2">Paid off</p>
+                <div className="text-my-black-dark bg-my-white-base p-4 rounded-md w-[20rem] md:w-[30rem] margin-auto mt-[2rem]">
+                    <p className="text-my-black-light text-sm text-center">Paid off</p>
+                    <p className="text-my-green-dark w-full text-center text-sm mb-4">
+                        Total: ${paidOffDebts.reduce((acc, d) => (d.originalTotal ?? 0) + acc, 0)}
+                    </p>
                     <ul className="list-none text-my-green-dark">
                         {paidOffDebts.map((d) => (
-                            <li key={d.id}>{d.name}</li>
+                            <li key={d.id} className="flex justify-center gap-4">
+                                <span>{d.name}</span>
+                                <span>${d.originalTotal}</span>
+                            </li>
                         ))}
                     </ul>
                 </div>

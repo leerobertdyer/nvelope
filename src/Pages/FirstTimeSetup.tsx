@@ -5,7 +5,7 @@ import { useAuth } from "../Context/AuthContext/useAuth";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import { createFirstBudget, completeDemoWithDefaults } from "../firebase/budgets";
-import { editPayDate, editPayPeriodInterval } from "../firebase/editData";
+import { createUserProfile, editPayDate, editPayPeriodInterval } from "../firebase/editData";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../Context/ToastContext/useToast";
 import Header from "../components/Nav/Header";
@@ -33,6 +33,7 @@ export default function FirstTimeSetup() {
   async function handleSkip() {
     if (!user) return;
     setIsSubmitting(true);
+    await createUserProfile(user);
     const ok = await completeDemoWithDefaults(user);
     if (!ok) {
       showToast("Could not continue. Please try again.", "error");
@@ -57,6 +58,7 @@ export default function FirstTimeSetup() {
       return;
     }
     setIsSubmitting(true);
+    await createUserProfile(user);
     const budgetId = await createFirstBudget(user);
     if (!budgetId) {
       showToast("Could not create account. Please try again.", "error");

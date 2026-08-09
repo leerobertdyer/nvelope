@@ -8,9 +8,10 @@ import PaymentForm from "../components/Forms/PaymentForm";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import { useBudget } from "../Context/BudgetContext/useBudget";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
-import { editPayments } from "../firebase/editData";
-import { removeVirtualIdPortion } from "../util";
+import { editDatabaseWithTransaction, editPayments } from "../firebase/editData";
+import { createTransactionId, deriveIsPaid, removeVirtualIdPortion } from "../util";
 import { format } from "date-fns";
+import { Timestamp } from "firebase/firestore";
 import FullScreen from "./FullScreen";
 import MoneyInput from "../components/MoneyInput";
 
@@ -44,7 +45,6 @@ export default function BigPayment({
   const { payments, setPayments } = useDatabase();
   async function updatePaid() {
     if (!p) return;
-    setP((prev) => prev && { ...prev, paid: !prev.paid });
     const updated = await handleUpdatePaid(p);
     if (updated) setP(updated);
   }
@@ -54,8 +54,8 @@ export default function BigPayment({
     onPaymentUpdated?.(updated);
   }
 
-  function applyExtraToDebt(extra: number) {
-    if (!user || !p || p.type !== "DEBT") return;
+  async function applyExtraToDebt(extra: number) {
+    if (!user || !p || p.type !== "DEBT" || !activeBudgetId) return;
     const currentTotal = p.total ?? 0;
     if (currentTotal <= 0) return;
     const amount = Math.min(extra, currentTotal);
@@ -66,7 +66,18 @@ export default function BigPayment({
       removeVirtualIdPortion(pay) === originalId ? updatedPayment : pay,
     );
     setPayments(updatedPayments);
-    if (activeBudgetId) editPayments(updatedPayments, activeBudgetId);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "EXTRA",
+        description: `Paid $${extra} extra towards debt for ${p.name}`,
+        nvelopeOrPaymentId: p.id,
+        createdAt: Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId,
+      func: () => editPayments(updatedPayments, activeBudgetId),
+    });
     setP(updatedPayment);
     onPaymentUpdated?.(updatedPayment);
   }
@@ -84,16 +95,16 @@ export default function BigPayment({
       return;
     }
     setExtraPaymentError(null);
-    applyExtraToDebt(extraPaymentAmount);
+    await applyExtraToDebt(extraPaymentAmount);
     setExtraPaymentAmount(0);
     setShowExtraPaymentForm(false);
   }
 
-  function handlePayAll() {
+  async function handlePayAll() {
     if (!p || p.type !== "DEBT") return;
     const currentTotal = p.total ?? 0;
     if (currentTotal <= 0) return;
-    applyExtraToDebt(currentTotal);
+    await applyExtraToDebt(currentTotal);
     setShowExtraPaymentForm(false);
     setExtraPaymentAmount(0);
     setExtraPaymentError(null);
@@ -161,16 +172,16 @@ export default function BigPayment({
         <br />
         <div className="flex flex-col justify-center items-center gap-2 ">
           <div
-            className={`cursor-pointer hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px] ${p.paid && "bg-my-green-dark text-my-white-dark"}`}
+            className={`cursor-pointer hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px] ${deriveIsPaid(p) && "bg-my-green-dark text-my-white-dark"}`}
             onClick={() => {
               updatePaid();
             }}
           >
             <GiMoneyStack
-              className={`p-[2px] ${!p.paid && "border-2"} rounded-md bg-my-green-dark text-white border-my-black-dark`}
+              className={`p-[2px] ${!deriveIsPaid(p) && "border-2"} rounded-md bg-my-green-dark text-white border-my-black-dark`}
               size={27}
             />
-            <p className="text-xs">Mark As {!p.paid ? "Paid" : "Not Paid"}</p>
+            <p className="text-xs">Mark As {!deriveIsPaid(p) ? "Paid" : "Not Paid"}</p>
           </div>
           <div
             className="cursor-pointer  hover:scale-105 flex justify-start gap-2 items-center w-full border-2 rounded-md p-[5px]"

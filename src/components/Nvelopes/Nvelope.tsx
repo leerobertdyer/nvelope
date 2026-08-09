@@ -35,7 +35,12 @@ interface NvelopeProps {
   onClick?: () => void;
   handleBack?: () => void;
   handleSaveEnvelope?: (envelope: Envelope) => Promise<void>;
-  editEnvelope?: (envelope: Envelope) => Promise<void>;
+  editEnvelope?: (
+    envelope: Envelope,
+    isSpending?: boolean,
+    spendDesc?: string,
+    amount?: number
+  ) => Promise<void>;
   handleDeleteEnvelope?: () => void;
 }
 export default function Nvelope({
@@ -70,7 +75,7 @@ export default function Nvelope({
   function handleEnterAmount(amount: number, n: Envelope) {
     if (amount <= 0) return;
     n.spent = Number(n.spent) + amount;
-    editEnvelope?.(n);
+    editEnvelope?.(n, true, `Spent $${amount} from ${n.name}`, amount);
     handleBack?.();
   }
 

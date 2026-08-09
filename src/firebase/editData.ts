@@ -2,23 +2,52 @@ import type {
   Payment,
   Envelope,
   Interval,
-  OneTimeAmount,
+  NvelopesTransaction,
 } from "../types";
-import { doc, updateDoc, Timestamp, getDoc, collection, query, orderBy, getDocs, addDoc, deleteDoc } from "firebase/firestore";
+import { doc, updateDoc, setDoc, Timestamp, getDoc, collection, query, orderBy, getDocs, addDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 import type { User } from "firebase/auth";
-import { MONTHLY } from "../constants";
-import { cleanPaymentsForFirebase, randomUUID } from "../util";
+import { cleanPaymentsForFirebase } from "../util";
 import { budgetDataRef } from "./budgets";
 
-export async function editResetBudgetTimestamp(
-  resetBudgetTimestamp: Timestamp,
-  budgetId: string
-) {
+export async function addTransaction(t: NvelopesTransaction, budgetId: string) {
   try {
-    await updateDoc(budgetDataRef(budgetId), { resetBudgetTimestamp });
+    await setDoc(doc(db, "budgets", budgetId, "transactions", t.id), t);
   } catch (error) {
-    console.error("Firebase, editResetBudgetTimestamp Failed", error);
+    console.error("Error adding transaction: ", error);
+  }
+}
+
+export async function editDatabaseWithTransaction<T>({
+  t,
+  budgetId,
+  func,
+}: {
+  t: NvelopesTransaction;
+  budgetId: string;
+  func: () => Promise<T>;
+}): Promise<T> {
+  await addTransaction(t, budgetId);
+  return await func();
+}
+
+export async function createUserProfile(user: {
+  uid: string;
+  email: string | null;
+}) {
+  try {
+    await setDoc(
+      doc(db, "users", user.uid),
+      {
+        email: user.email?.toLowerCase() ?? "",
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    return true;
+  } catch (e) {
+    console.error("Failed to create user profile document:", e);
+    return false;
   }
 }
 
@@ -71,33 +100,6 @@ export async function editPayDate(payDate: Date, budgetId: string) {
   }
 }
 
-export async function editOneTimeCashAndBudget(
-  newCashEntry: OneTimeAmount | null,
-  budgetId: string,
-  currentBudget: number
-) {
-  try {
-    const dataRef = budgetDataRef(budgetId);
-    const docSnap = await getDoc(dataRef);
-    if (!newCashEntry) {
-      await updateDoc(dataRef, { oneTimeCash: [], totalSpendingBudget: currentBudget });
-      return;
-    }
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      const oneTimeCash = data.oneTimeCash ?? [];
-      await updateDoc(dataRef, {
-        oneTimeCash: [...oneTimeCash, newCashEntry],
-        totalSpendingBudget: currentBudget + newCashEntry.amount,
-      });
-    } else {
-      console.error("Firebase, editOneTimeCashAndBudget Failed: Document does not exist");
-    }
-  } catch (error) {
-    console.error("Firebase, editOneTimeCashAndBudget Failed", error);
-  }
-}
-
 export async function editTotalSpendingBudget(newTotal: number, budgetId: string) {
   try {
     await updateDoc(budgetDataRef(budgetId), { totalSpendingBudget: newTotal });
@@ -121,74 +123,6 @@ export async function editTotalSpendingBudget(newTotal: number, budgetId: string
  * 
  * This would enable pie charts, spending trends, and period comparisons.
  */
-
-export async function setDefaultPaymentInterval(budgetId: string) {
-  try {
-    const dataRef = budgetDataRef(budgetId);
-    const docSnap = await getDoc(dataRef);
-    if (!docSnap.exists()) return;
-    const payments = docSnap.data().payments || [];
-    const newPayments = payments.map((p: Payment) => ({
-      ...p,
-      interval: p.interval ?? MONTHLY,
-    }));
-    await updateDoc(dataRef, { payments: newPayments });
-  } catch (error) {
-    console.error("Firebase, error in setDefaultPaymentInterval:", error);
-  }
-}
-
-export async function importAndTransformLegacyBills(budgetId: string) {
-  const dataRef = budgetDataRef(budgetId);
-  const docSnap = await getDoc(dataRef);
-  if (!docSnap.exists()) return [];
-  const data = docSnap.data();
-  const bills = data.bills || [];
-  const existingPayments = data.payments || [];
-  const newPayments = transformBillsToPayments(bills).filter((p) =>
-    existingPayments.every((e: Payment) => e.name !== p.name)
-  );
-  await updateDoc(dataRef, { payments: [...existingPayments, ...newPayments] });
-}
-
-type Bill = {
-  amount: number;
-  interval: string;
-  name: string;
-  originalDate: Timestamp;
-  paid: boolean;
-};
-
-function transformBillsToPayments(bills: Bill[]): Payment[] {
-  const paymentsMap: Payment[] = [];
-  bills.forEach((b) => {
-    const i = validIntervals.includes(b.interval.toUpperCase() as Interval)
-      ? (b.interval.toUpperCase() as Interval)
-      : "MONTHLY";
-    paymentsMap.push({
-      id: randomUUID(),
-      interval: i,
-      paid: b.paid,
-      dueDate: b.originalDate,
-      name: b.name,
-      amount: b.amount,
-      type: "BILL",
-    });
-  });
-  return paymentsMap;
-}
-
-export const validIntervals: Interval[] = [
-  "WEEKLY",
-  "BIWEEKLY",
-  "MONTHLY",
-  "YEARLY",
-  "SPLIT",
-];
-
-export async function editSnowball(budgetId: string, amount: number) {
-  await updateDoc(budgetDataRef(budgetId), { snowball: amount });
-}
 
 export async function editSnowballTargetPaymentId(budgetId: string, paymentId: string | null) {
   await updateDoc(budgetDataRef(budgetId), { snowballTargetPaymentId: paymentId });
@@ -258,11 +192,9 @@ export async function backupUserDataSafe(user: User, budgetId: string) {
       budgetId,
       nvelopes: data.envelopes ?? [],
       payments: data.payments ?? [],
-      cash: data.oneTimeCash ?? [],
       payDate: data.payDate ?? null,
       payPeriodInterval: data.payPeriodInterval ?? "MONTHLY",
       shouldReset: data.shouldReset ?? false,
-      snowball: data.snowball ?? 0,
       snowballTargetPaymentId: data.snowballTargetPaymentId ?? null,
       totalSpendingBudget: data.totalSpendingBudget ?? 0,
     };

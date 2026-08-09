@@ -1,6 +1,6 @@
 export default function SpendBtn({ onClick }: { onClick: () => void }) {
   return (
-    <div className="w-[12rem] h-[12rem] bg-my-white-dark flex items-center justify-center rounded-3xl animate-glow">
+    <div className="w-[12rem] h-[12rem] bg-my-white-dark flex items-center justify-center rounded-3xl">
       <div
         onClickCapture={() => {
           onClick();

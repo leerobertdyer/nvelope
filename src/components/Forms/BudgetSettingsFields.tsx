@@ -5,7 +5,7 @@ import IntervalSelector from "./IntervalSelector";
 import PayDateCalendar from "./PayDateCalendar";
 
 const cardClass =
-  "hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark animate-glow shadow-lg shadow-my-black-dark mb-4";
+  "hover:transform-[scale(1.05)] cursor-pointer flex flex-col justify-between h-[5rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-white-dark text-my-black-dark shadow-lg shadow-my-black-dark mb-4";
 
 export interface BudgetSettingsFieldsProps {
   /** "create" = interval + pay date only; "edit" = Edit Remaining Balance card + interval + pay date */

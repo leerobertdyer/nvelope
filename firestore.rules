@@ -32,8 +32,19 @@ service cloud.firestore {
         && (request.auth.uid == get(/databases/$(database)/documents/budgets/$(budgetId)).data.ownerId
             || request.auth.uid in get(/databases/$(database)/documents/budgets/$(budgetId)).data.get('memberIds', []));
     }
+    // Append-only audit log written by both clients; no update/delete once created.
+    match /budgets/{budgetId}/transactions/{transactionId} {
+      allow read, create: if request.auth != null
+        && (request.auth.uid == get(/databases/$(database)/documents/budgets/$(budgetId)).data.ownerId
+            || request.auth.uid in get(/databases/$(database)/documents/budgets/$(budgetId)).data.get('memberIds', []));
+    }
     match /userBackups/{userId}/backups/{backupId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    // Invite tokens (mobile token API): server (Admin SDK) creates/updates via backend, bypassing rules.
+    // Public read so the /i/:token landing page can show status before the user signs in.
+    match /invites/{token} {
+      allow read: if true;
     }
     // Invites by email: owner can create (doc ID must be budgetId_email); invited user can read/delete (to accept)
     match /budgetInvites/{inviteId} {

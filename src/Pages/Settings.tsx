@@ -21,9 +21,9 @@ import {
   deleteBudgetAsOwner,
   leaveBudget,
   removeMemberFromBudget,
-  addInviteToBudget,
   updateBudgetName,
 } from "../firebase/budgets";
+import { inviteUserToBudget } from "../firebase/invites";
 import { useAuth } from "../Context/AuthContext/useAuth";
 import signout from "../firebase/signOut";
 import { deleteAccount } from "../firebase/deleteAccount";
@@ -41,8 +41,6 @@ import { useToast } from "../Context/ToastContext/useToast";
 import type { User } from "firebase/auth";
 import { IoTrash } from "react-icons/io5";
 import PageTour from "../components/PageTour";
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -365,29 +363,14 @@ export default function Settings() {
     const toEmail = shareEmail.trim();
     const budgetName = budgets.find((b) => b.id === activeBudgetId)?.name ?? "Budget";
     try {
-      const ok = await addInviteToBudget(
+      const token = await inviteUserToBudget({
         activeBudgetId,
+        budgetName,
         toEmail,
-        user.uid,
-        user.email ?? "",
-      );
-      if (ok) {
+        user,
+      });
+      if (token) {
         setShareEmail("");
-        if (SERVER_URL) {
-          try {
-            await fetch(`${SERVER_URL}/nvelopes/invite`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                toEmail: toEmail.toLowerCase(),
-                inviterEmail: user.email ?? "",
-                budgetName,
-              }),
-            });
-          } catch (e) {
-            console.error("Failed to send invite email", e);
-          }
-        }
         showToast(
           `Invite sent to ${toEmail}. They'll receive an email with a link to open or sign up for Nvelopes.`,
         );
@@ -557,7 +540,7 @@ export default function Settings() {
 
   function BackupSelectionScreen() {
     return (
-      <div className="flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4">
+      <div className="flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light shadow-lg shadow-my-black-dark my-4">
         <p className="text-sm font-bold">⚠️ Revert To A Backup</p>
         <p className="text-xs">Restores payments and envelopes</p>
         <div>
@@ -624,7 +607,7 @@ export default function Settings() {
     if (!localStorageBackup) return null;
     return (
       <div
-        className="flex flex-col justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light animate-glow shadow-lg shadow-my-black-dark my-4 cursor-pointer hover:bg-my-blue-base gap-2"
+        className="flex flex-col justify-around h-[6rem] w-[80%] max-w-[20rem] h-fit items-center p-2 bg-my-blue-dark rounded-md border-2 border-my-white-dark text-my-white-light shadow-lg shadow-my-black-dark my-4 cursor-pointer hover:bg-my-blue-base gap-2"
         onClick={() => setShowUndoConfirm(true)}
       >
         <p className="text-sm font-bold">Undo Last Restore</p>
@@ -762,7 +745,6 @@ export default function Settings() {
         links={[
           { label: "Home", href: "/" },
           { label: "Debt", href: "/debt" },
-          { label: "Bills", href: "/bills" },
           { label: "Feedback", href: "/feedback" },
         ]}
       />

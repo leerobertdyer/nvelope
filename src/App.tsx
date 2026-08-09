@@ -10,7 +10,6 @@ import Settings from "./Pages/Settings";
 import { useAuth } from "./Context/AuthContext/useAuth";
 import { useDisableNumberScroll } from "./hooks";
 import Debt from "./Pages/Debt";
-import Bills from "./Pages/Bills";
 import Feedback from "./Pages/Feedback";
 import InviteLandingPage from "./Pages/Invite";
 
@@ -43,14 +42,6 @@ function App() {
           element={
             <ProtectedRoute>
               <Debt />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/bills"
-          element={
-            <ProtectedRoute>
-              <Bills />
             </ProtectedRoute>
           }
         />

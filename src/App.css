@@ -1,9 +1,9 @@
 #root, html, body {
     height: 100%;
-    background-color: var(--color-my-blue-dark);
+    background-color: var(--color-my-white-light);
 }
 * {
-    box-sizing: content-box;
+    box-sizing: border-box;
     transition: all .3s ease;
 }
 
@@ -40,18 +40,6 @@ input::placeholder {
 }
 
 /* Fonts */
-@font-face {
-    font-family: 'gowun';
-    src: url('/fonts/Gowun.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-    }
-@font-face {
-    font-family: 'wdx';
-    src: url('/fonts/WDX.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-    }
 @font-face {
     font-family: 'posten';
     src: url('/fonts/posten.ttf') format('truetype');

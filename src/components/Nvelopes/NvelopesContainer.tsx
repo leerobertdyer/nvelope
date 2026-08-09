@@ -1,22 +1,26 @@
 /**
- * Nvelopes – Main envelope list container on the main view.
- * Renders the envelope section header (Nvelope / Remaining / Total), uses ListEnvelope
- * for each envelope row, and handles give/take between envelopes and opening the
- * selected envelope in BigEnvelope (Views). Parent of ListEnvelope; coordinates
- * drag-and-drop reorder and selection state.
+ * Nvelopes – Main envelope card grid on the main view.
+ * Renders draggable NvelopeCards (swap-to-reorder), and handles give/take between
+ * envelopes and opening the selected envelope in BigEnvelope (Views). Parent of
+ * DraggableNvelope/NvelopeCard; coordinates drag-and-drop reorder and selection state.
  */
-import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
+import { useState } from "react";
 import type { Envelope } from "../../types";
+import { useDatabase } from "../../Context/DatabaseContext/useDatabase";
+import { useBudget } from "../../Context/BudgetContext/useBudget";
+import { useAuth } from "../../Context/AuthContext/useAuth";
 import {
+  addTransaction,
+  editDatabaseWithTransaction,
   editEnvelopes,
   editTotalSpendingBudget,
 } from "../../firebase/editData";
-import { useBudget } from "../../Context/BudgetContext/useBudget";
-import { useEffect, useState } from "react";
+import { createTransactionId } from "../../util";
+import { Timestamp } from "firebase/firestore";
 import GiveAndTake from "../../Views/GiveAndTake";
-import ListEnvelope from "./NvelopeListRow";
 import BigEnvelope from "../../Views/BigEnvelope";
-import ShowHideButton from "../Buttons/ShowHideButton";
+import DraggableNvelope from "./DraggableNvelope";
+import Loading from "../Loading";
 
 interface NvelopeProps {
   resetState: () => void;
@@ -42,19 +46,12 @@ export default function Nvelopes({
     setEnvelopes,
   } = useDatabase();
   const { activeBudgetId } = useBudget();
+  const { user } = useAuth();
+
   const [showGiveAndTake, setShowGiveAndTake] = useState(false);
   const [envelopeToEdit, setEnvelopeToEdit] = useState<Envelope | null>(null);
   const [isEnvelopeSelected, setIsEnvelopeSelected] = useState(false);
-  const [sortedEnvelopes, setSortedEnvelopes] = useState<Envelope[]>([]);
-  const [showEnvelopes, setShowEnvelopes] = useState(true);
-
-  useEffect(() => {
-    const stupidLargeNumber = 1000;
-    const sorted = [...envelopes].sort(
-      (a, b) => (a.order || stupidLargeNumber) - (b.order || stupidLargeNumber),
-    );
-    setSortedEnvelopes(sorted);
-  }, [envelopes]);
+  const [loadingText, setLoadingText] = useState("");
 
   function handleBack() {
     setShowGiveAndTake(false);
@@ -64,7 +61,8 @@ export default function Nvelopes({
   }
 
   async function takeBalanceFromEnvelope(amount?: number) {
-    if (!envelopeToEdit) return;
+    if (!envelopeToEdit || !user || !activeBudgetId) return;
+    setLoadingText("Taking...");
     let remainingBalancePlusTotal;
     if (amount) {
       envelopeToEdit.total -= amount;
@@ -74,24 +72,58 @@ export default function Nvelopes({
         totalSpendingBudget + (envelopeToEdit.total - envelopeToEdit.spent);
       envelopeToEdit.total = envelopeToEdit.spent;
     }
-    await editEnvelope(envelopeToEdit);
-    await editTotalSpendingBudget(remainingBalancePlusTotal, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "TAKE",
+        description: `Put $${amount} from ${envelopeToEdit.name} back into available funds`,
+        nvelopeOrPaymentId: envelopeToEdit.id,
+        createdAt: Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId,
+      func: () => editEnvelope(envelopeToEdit),
+    });
+    await editTotalSpendingBudget(remainingBalancePlusTotal, activeBudgetId);
     setTotalSpendingBudget(remainingBalancePlusTotal);
+    setLoadingText("");
     handleBack();
   }
 
   async function takeAndGive(envelope: Envelope, amount: number) {
-    if (!envelope || !envelopeToEdit) return;
+    if (!envelope || !envelopeToEdit || !user || !activeBudgetId) return;
     envelope.total += amount;
     envelopeToEdit.total -= amount;
     const newEnvelopes = [...envelopes];
     const envelopeIndex = newEnvelopes.findIndex((e) => e.id === envelope.id);
     newEnvelopes[envelopeIndex] = envelope;
     const envelopeToEditIndex = newEnvelopes.findIndex(
-      (e) => e.id === envelopeToEdit.id,
+      (e) => e.id === envelopeToEdit.id
     );
     newEnvelopes[envelopeToEditIndex] = envelopeToEdit;
-    await editEnvelopes(newEnvelopes, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "TAKE",
+        description: `${user.email ?? user.uid} took $${amount} from "${envelopeToEdit.name}" and put it in "${envelope.name}"`,
+        nvelopeOrPaymentId: envelope.id,
+        createdAt: Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId,
+      func: () => editEnvelopes(newEnvelopes, activeBudgetId),
+    });
+    await addTransaction(
+      {
+        id: createTransactionId(user),
+        type: "GIVE",
+        description: `Gave $${amount} to ${envelope.name} from ${envelopeToEdit.name}.`,
+        nvelopeOrPaymentId: envelopeToEdit.id,
+        createdAt: Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      activeBudgetId
+    );
     setEnvelopes(newEnvelopes);
     handleBack();
   }
@@ -101,10 +133,18 @@ export default function Nvelopes({
     setEnvelopeToEdit(envelope);
   }
 
-  function handleSelectListEnvelope(envelope: Envelope) {
+  function handleSelectEnvelope(envelope: Envelope) {
     setIsEnvelopeSelected(true);
     setEnvelopeToEdit(envelope);
   }
+
+  async function handleReorderNvelopes(newEnvelopes: Envelope[]) {
+    if (!activeBudgetId) return;
+    setEnvelopes(newEnvelopes);
+    await editEnvelopes(newEnvelopes, activeBudgetId);
+  }
+
+  if (loadingText) return <Loading text={loadingText} />;
 
   if (showGiveAndTake && envelopeToEdit) {
     return (
@@ -132,100 +172,15 @@ export default function Nvelopes({
     );
   }
 
-  function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
-    event.dataTransfer.setData("text/plain", event.currentTarget.id);
-  }
-
-  function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-  }
-
-  async function handleDrop(event: React.DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    const id = event.dataTransfer.getData("text/plain");
-    const draggedEnvelope = envelopes.find((e) => e.id === id);
-    if (!draggedEnvelope) return;
-    const newEnvelopes = [...envelopes];
-    const draggedEnvelopeIndex = newEnvelopes.findIndex((e) => e.id === id);
-    newEnvelopes.splice(draggedEnvelopeIndex, 1); // removes the dragged envelope
-    const targetEnvelopeIndex = newEnvelopes.findIndex(
-      (e) => e.id === event.currentTarget.id,
-    );
-    newEnvelopes.splice(targetEnvelopeIndex, 0, draggedEnvelope); // places the dragged envelope in the new position
-    // set the new order by looping over the newEnvelopes
-    for (let i = 0; i < newEnvelopes.length; i++) {
-      newEnvelopes[i].order = i + 1;
-    }
-    setEnvelopes(newEnvelopes);
-    await editEnvelopes(newEnvelopes, activeBudgetId!);
-  }
-
-  function handleDragEnd(event: React.DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-  }
-
-  const envelopesTotal = sortedEnvelopes.reduce((sum, e) => sum + e.total, 0);
-  const envelopesTotalStr = `$${Math.ceil(envelopesTotal).toFixed(2)}`;
-
-  function EnvelopeBox({
-    name,
-    total,
-    isShown,
-    setter,
-  }: {
-    isShown: boolean;
-    setter: () => void;
-    total: string;
-    name: string;
-  }) {
-    return (
-      <div className="relative grid grid-cols-4 p-2 text-center bg-my-white-dark text-my-black-dark border-b-2 border-my-black-dark">
-        <div className="absolute ml-2 w-fit h-full flex items-center">
-          <ShowHideButton isShown={isShown} onClick={setter} />
-        </div>
-        <p className="col-span-3">{name}</p>
-        <p className="col-span-1 text-my-green-dark">{total}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col justify-center items-center w-full h-fit overflow-y-auto overflow-x-hidden">
-      <div className="w-screen max-w-[40rem]">
-        <EnvelopeBox
-          name="Nvelopes"
-          total={envelopesTotalStr}
-          isShown={showEnvelopes}
-          setter={() => setShowEnvelopes(!showEnvelopes)}
+    <div className="flex flex-col justify-center items-center w-full h-fit">
+      {envelopes.length > 0 && (
+        <DraggableNvelope
+          onReorder={handleReorderNvelopes}
+          envelopes={envelopes}
+          onPress={handleSelectEnvelope}
         />
-        {showEnvelopes && (
-          <>
-            <div className="w-screen max-w-[40rem] h-[2rem] grid grid-cols-7 divide-x-2 divide-my-black-dark border-x-2 border-my-white-dark bg-my-white-dark text-my-black-light font-bold">
-              <div className="col-span-3 flex justify-start items-center ml-2">
-                <p className="text-sm">Nvelope</p>
-              </div>
-              <div className="flex justify-center items-center col-span-2">
-                <p className="text-sm">Remaining</p>
-              </div>
-              <div className="flex justify-end items-center mr-2 col-span-2">
-                <p className="text-sm">Total</p>
-              </div>
-            </div>
-            {sortedEnvelopes.map((e) => (
-              <div key={e.id}>
-                <ListEnvelope
-                  envelope={e}
-                  onClick={() => handleSelectListEnvelope(e)}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onDragEnd={handleDragEnd}
-                />
-              </div>
-            ))}
-          </>
-        )}
-      </div>
+      )}
     </div>
   );
 }

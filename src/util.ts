@@ -27,6 +27,21 @@ import {
   subYears,
 } from "date-fns";
 import { Timestamp } from "firebase/firestore";
+import type { User } from "firebase/auth";
+
+export function deriveIsPaid(payment: Payment, occurrenceDate?: Date): boolean {
+  return (
+    payment.paidDates?.some(
+      (pd) =>
+        startOfDay(pd.toDate()).getTime() ===
+        startOfDay(occurrenceDate ?? payment.dueDate.toDate()).getTime()
+    ) ?? false
+  );
+}
+
+export function createTransactionId(user: User) {
+  return `${new Date().getTime()}-${user.uid.slice(0, 6)}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 export function recalculateBudget(params: {
   currentAvailableBudget: number;
@@ -318,46 +333,6 @@ export function getEffectivePaymentAmount(p: Payment): number {
     return Math.min(p.amount, p.total);
   }
   return p.amount;
-}
-
-const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
-
-/**
- * Human-readable interval label for a bill (e.g. "Weekly on Fri", "Monthly").
- * Used on Bills page for list display.
- */
-export function getBillIntervalLabel(p: Payment): string {
-  const interval = p.interval ?? "MONTHLY";
-  if (interval === WEEKLY) {
-    const day = p.dueDate?.toDate?.() ? getDay(p.dueDate.toDate()) : 0;
-    return `${WEEKDAY_NAMES[day]}s`;
-  }
-  if (interval === BIWEEKLY) return "Biweekly";
-  if (interval === MONTHLY) return "Monthly";
-  if (interval === YEARLY) return "Yearly";
-  if (interval === SPLIT) return "Split";
-  return "Monthly";
-}
-
-/**
- * Approximate monthly amount for a bill (for Bills page monthly view).
- * WEEKLY → amount * 4.33, BIWEEKLY → amount * 2, MONTHLY/SPLIT → amount, YEARLY → amount / 12.
- */
-export function getBillMonthlyAmount(p: Payment): number {
-  const interval = p.interval ?? "MONTHLY";
-  switch (interval) {
-    case WEEKLY:
-      return p.amount * (52 / 12);
-    case BIWEEKLY:
-      return p.amount * 2;
-    case MONTHLY:
-    case SPLIT:
-      return p.amount;
-    case YEARLY:
-      return p.amount / 12;
-    default:
-      return p.amount;
-  }
 }
 
 export function paymentsTotal(
@@ -794,16 +769,9 @@ export function getPaymentOccurrencesInRange(
     if (
       isWithinInterval(currentDate, { start: rangeStart, end: rangeEnd })
     ) {
-      const occurrenceTime = startOfDay(currentDate).getTime();
-      const isPaid =
-        payment.paidDates?.some(
-          (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
-        ) ?? false;
-
       occurrences.push({
         ...payment,
         id: `${payment.id}-${payment.interval}-${currentDate.getTime()}`, // Unique ID for each occurrence
-        paid: isPaid,
         dueDate: Timestamp.fromDate(currentDate),
       });
     }
@@ -914,16 +882,10 @@ function getSplitPaymentOccurrencesInRange(
 
   // Generate virtual payments for each pay date in the display range
   while (currentPayDate <= effectiveEnd) {
-    const occurrenceTime = startOfDay(currentPayDate).getTime();
-    const isPaid = payment.paidDates?.some(
-      (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime
-    ) ?? false;
-
     occurrences.push({
       ...payment,
       id: `${payment.id}-SPLIT-${currentPayDate.getTime()}`,
       amount: splitAmount,
-      paid: isPaid,
       dueDate: Timestamp.fromDate(currentPayDate),
     });
 
@@ -944,7 +906,6 @@ function getSplitPaymentOccurrencesInRange(
       ...payment,
       id: `${payment.id}-SPLIT-${displayRangeStart.getTime()}`,
       amount: splitAmount,
-      paid: payment.paid,
       dueDate: Timestamp.fromDate(displayRangeStart),
     });
   }

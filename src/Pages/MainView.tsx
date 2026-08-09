@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Header from "../components/Nav/Header";
 import Nvelopes from "../components/Nvelopes/NvelopesContainer";
-import { type Envelope, type Payment } from "../types";
+import { type Envelope, type Interval, type Payment, type ViewContent } from "../types";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
+  editDatabaseWithTransaction,
   editEnvelopes,
   editIsNewUser,
-  editOneTimeCashAndBudget,
   editPayments,
-  editSnowball,
   editSnowballTargetPaymentId,
   editTotalSpendingBudget,
 } from "../firebase/editData";
@@ -19,18 +18,23 @@ import Button from "../components/Buttons/Button";
 import Nvelope from "../components/Nvelopes/Nvelope";
 import { Timestamp } from "firebase/firestore";
 import {
-  applyPayoffRoll,
-  getCurrentIntervalDateRange,
+  createTransactionId,
+  deriveIsPaid,
   getVirtualPaymentsForCurrentPeriod,
-  randomUUID,
   recalculateBudget,
   removeVirtualIdPortion,
   resetAllNvelopes,
   updateBudgetStateAndDBB,
 } from "../util";
+import {
+  applyAmountToTotal,
+  computeUpdatedPayment,
+  getOriginalIdFromVirtualId,
+  togglePaidDates,
+} from "../util/paymentUtils";
 import ActionButtons from "../components/Buttons/ActionButtons";
+import ContentSelector from "../components/ContentSelector";
 import Loading from "../components/Loading";
-import FullScreen from "../Views/FullScreen";
 import { startOfDay, addMonths } from "date-fns";
 import PaymentMap from "../components/Payments/PaymentMap";
 import BigPayment from "../Views/BigPayment";
@@ -56,8 +60,6 @@ export default function MainEnvelopesView() {
     setIsNewUser,
     payDate,
     payPeriodInterval,
-    snowball,
-    setSnowball,
     snowballTargetPaymentId,
     setSnowballTargetPaymentId,
     payments,
@@ -86,6 +88,7 @@ export default function MainEnvelopesView() {
     new Set(),
   );
   const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
+  const [content, setContent] = useState<ViewContent>("NVELOPES");
 
   // Only ever show current pay period's payments (derived, never full list)
   const paymentsThisPeriod = useMemo(() => {
@@ -111,7 +114,7 @@ export default function MainEnvelopesView() {
       if (p.type !== "FUND") return false;
       if (dismissedDuePayments.has(p.id)) return false;
       const dueDate = startOfDay(p.dueDate.toDate());
-      return dueDate <= today && !p.paid;
+      return dueDate <= today && !deriveIsPaid(p);
     });
 
     if (duePayment && !dueFundPayment) {
@@ -122,6 +125,16 @@ export default function MainEnvelopesView() {
   async function handleEditPayment(p: Payment) {
     setPaymentToEdit(p);
     setShowPaymentInputs(true);
+  }
+
+  // Web-only: unlike mobile, web decrements available budget when a new bill/debt/fund is added.
+  async function handleUpdateBudget(diffAmount: number) {
+    const nextBudget = recalculateBudget({
+      currentAvailableBudget: totalSpendingBudget,
+      diffAmount,
+    });
+    await editTotalSpendingBudget(nextBudget, activeBudgetId!);
+    setTotalSpendingBudget(nextBudget);
   }
 
   // Handler for marking a Fund (planned expense) payment as fully paid
@@ -160,15 +173,6 @@ export default function MainEnvelopesView() {
     setDueFundPayment(null);
   }
 
-  async function handleUpdateBudget(diffAmount: number) {
-    const nextBudget = recalculateBudget({
-      currentAvailableBudget: totalSpendingBudget,
-      diffAmount,
-    });
-    await editTotalSpendingBudget(nextBudget, activeBudgetId!);
-    setTotalSpendingBudget(nextBudget);
-  }
-
   function handleDeleteBill(p: Payment) {
     setPaymentToEdit(p);
     setShowDeletePayment(true);
@@ -182,7 +186,18 @@ export default function MainEnvelopesView() {
       return originalPId !== originalPaymentToEditId;
     });
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "DELETE",
+        createdAt: Timestamp.now(),
+        nvelopeOrPaymentId: originalPaymentToEditId,
+        description: `Deleted payment: "${paymentToEdit?.name}"`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(updatedPayments, activeBudgetId!),
+    });
     resetPaymentState();
     showToast("Payment deleted");
   }
@@ -197,162 +212,160 @@ export default function MainEnvelopesView() {
     setPaymentToEdit(null);
   }
 
-  async function handleUpdatePaid(payment: Payment) {
-    const originalId = payment.id.includes("-WEEKLY-")
-      ? payment.id.split("-WEEKLY-")[0]
-      : payment.id.includes("-BIWEEKLY-")
-        ? payment.id.split("-BIWEEKLY-")[0]
-        : payment.id.includes("-SPLIT-")
-          ? payment.id.split("-SPLIT-")[0]
-          : payment.id;
+  async function applySnowballToTarget(virtualPayment: Payment) {
+    if (!snowballTargetPaymentId || !activeBudgetId || !user) return;
 
-    const updatedPayments = payments.map((p) => {
-      if (p.id !== originalId) return p;
+    const snowballPayment = payments.find((p) => p.id === "SNOWBALL");
+    const targetDebt = payments.find((p) => p.id === snowballTargetPaymentId);
+    if (!snowballPayment || !targetDebt) return;
 
-      // DEBT: mark paid subtracts from total; mark unpaid adds it back (store amount in paidAmounts)
-      if (p.type === "DEBT") {
-        const occurrenceKey =
-          p.interval === "WEEKLY" ||
-          p.interval === "BIWEEKLY" ||
-          p.interval === "SPLIT"
-            ? startOfDay(payment.dueDate.toDate()).getTime().toString()
-            : "monthly";
-        const paidDates = p.paidDates || [];
-        const paidAmounts = { ...(p.paidAmounts || {}) };
-        const occurrenceTime =
-          occurrenceKey === "monthly"
-            ? null
-            : startOfDay(payment.dueDate.toDate()).getTime();
-        const alreadyPaid =
-          occurrenceKey === "monthly"
-            ? p.paid
-            : paidDates.some(
-                (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
-              );
+    const occurrenceDate = virtualPayment.dueDate.toDate();
+    const occurrenceKey = startOfDay(occurrenceDate).getTime().toString();
 
-        if (alreadyPaid) {
-          const amountToAddBack = paidAmounts[occurrenceKey] ?? 0;
-          delete paidAmounts[occurrenceKey];
-          const newTotal = Math.max(0, (p.total ?? 0) + amountToAddBack);
-          if (occurrenceKey === "monthly") {
-            const monthlyOccurrenceTime = startOfDay(
-              payment.dueDate.toDate(),
-            ).getTime();
-            return {
-              ...p,
-              total: newTotal,
-              paid: false,
-              paidAmounts,
-              paidDates: paidDates.filter(
-                (pd) =>
-                  startOfDay(pd.toDate()).getTime() !== monthlyOccurrenceTime,
-              ),
-            };
-          }
-          return {
-            ...p,
-            total: newTotal,
-            paidDates: paidDates.filter(
-              (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime,
-            ),
-            paidAmounts,
-          };
-        }
+    const updatedSnowball = togglePaidDates(snowballPayment, occurrenceDate);
+    const updatedTarget = applyAmountToTotal(
+      targetDebt,
+      virtualPayment.amount,
+      occurrenceKey,
+    );
 
-        const isVirtualOccurrence =
-          payment.id.includes("-SPLIT-") ||
-          payment.id.includes("-WEEKLY-") ||
-          payment.id.includes("-BIWEEKLY-");
-        const occurrenceAmount = isVirtualOccurrence
-          ? payment.amount
-          : p.amount;
-        const isSnowballTarget = p.id === snowballTargetPaymentId;
-        const addSnowballToThisOccurrence =
-          isSnowballTarget &&
-          (p.interval !== "SPLIT" ||
-            (payDate &&
-              payPeriodInterval &&
-              (() => {
-                const { start: periodStart } = getCurrentIntervalDateRange(
-                  payPeriodInterval,
-                  payDate,
-                );
-                const occurrenceTime = startOfDay(
-                  payment.dueDate.toDate(),
-                ).getTime();
-                const periodStartTime = startOfDay(periodStart).getTime();
-                const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-                return occurrenceTime <= periodStartTime + oneWeekMs;
-              })()));
-        const periodPayment =
-          occurrenceAmount + (addSnowballToThisOccurrence ? snowball : 0);
-        const amountToApply = Math.min(periodPayment, p.total ?? 0);
-        const newTotal = Math.max(0, (p.total ?? 0) - amountToApply);
-        paidAmounts[occurrenceKey] = amountToApply;
-
-        if (occurrenceKey === "monthly") {
-          return {
-            ...p,
-            total: newTotal,
-            paid: true,
-            paidAmounts,
-            paidDates: [
-              ...paidDates,
-              Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
-            ],
-          };
-        }
-        return {
-          ...p,
-          total: newTotal,
-          paidDates: [
-            ...paidDates,
-            Timestamp.fromDate(startOfDay(payment.dueDate.toDate())),
-          ],
-          paidAmounts,
-        };
-      }
-
-      // Non-DEBT: toggle paid/paidDates
-      // YEARLY: use stored payment's month/day in the displayed year so we never store the wrong date
-      const occurrenceDate =
-        p.interval === "YEARLY"
-          ? new Date(
-              payment.dueDate.toDate().getFullYear(),
-              p.dueDate.toDate().getMonth(),
-              p.dueDate.toDate().getDate(),
-            )
-          : payment.dueDate.toDate();
-      const occurrenceTime = startOfDay(occurrenceDate).getTime();
-      const paidDates = p.paidDates || [];
-      const alreadyPaid = paidDates.some(
-        (pd) => startOfDay(pd.toDate()).getTime() === occurrenceTime,
-      );
-      if (alreadyPaid) {
-        const newPaidDates = paidDates.filter(
-          (pd) => startOfDay(pd.toDate()).getTime() !== occurrenceTime,
-        );
-        return {
-          ...p,
-          paidDates: newPaidDates,
-          paid: false,
-        };
-      }
-      return {
-        ...p,
-        paidDates: [
-          ...paidDates,
-          Timestamp.fromDate(startOfDay(occurrenceDate)),
-        ],
-        paid: true,
-      };
+    let updatedPayments: Payment[] = payments.map((p) => {
+      if (p.id === "SNOWBALL") return updatedSnowball;
+      if (p.id === snowballTargetPaymentId) return updatedTarget;
+      return p;
     });
 
-    const updatedPayment = updatedPayments.find((x) => x.id === originalId);
+    if (updatedTarget.total! <= 0) {
+      const remainder = virtualPayment.amount - (targetDebt.total ?? 0);
+      updatedPayments = await handleDebtPayoff(
+        targetDebt,
+        updatedPayments,
+        remainder,
+      );
+    }
     setPayments(updatedPayments);
-    await editPayments(updatedPayments, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "SNOWBALL",
+        createdAt: Timestamp.now(),
+        nvelopeOrPaymentId: virtualPayment.id,
+        description: `Applied snowball to  "${targetDebt?.name}"`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(updatedPayments, activeBudgetId!),
+    });
+  }
 
-    // Roll snowball when a debt is paid off (total hit 0): add rolled amount to next target's payment amount, then zero snowball
+  async function handleDebtPayoff(
+    paidOffPayment: Payment,
+    updatedPayments: Payment[],
+    remainder: number = 0,
+  ): Promise<Payment[]> {
+    if (!user) return [];
+    setPaidOffDebtName(paidOffPayment.name);
+
+    const remainingDebts = updatedPayments.filter(
+      (p) =>
+        p.type === "DEBT" &&
+        p.id !== "SNOWBALL" &&
+        p.id !== paidOffPayment.id &&
+        p.total != null &&
+        p.total > 0,
+    );
+    const nextDebt =
+      remainingDebts.sort((a, b) => (a.total ?? 0) - (b.total ?? 0))[0] ?? null;
+
+    setSnowballTargetPaymentId(nextDebt?.id ?? null);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "PAID_OFF",
+        createdAt: Timestamp.now(),
+        nvelopeOrPaymentId: paidOffPayment.id,
+        description: `Snowball paid off "${paidOffPayment?.name}" Rolling into "${nextDebt?.name}"`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () =>
+        editSnowballTargetPaymentId(activeBudgetId!, nextDebt?.id ?? null),
+    });
+
+    const snowballPayment = updatedPayments.find((p) => p.id === "SNOWBALL");
+    const newSnowballAmount =
+      (snowballPayment?.amount ?? 0) + paidOffPayment.amount;
+
+    let finalPayments: Payment[];
+    if (snowballPayment) {
+      finalPayments = updatedPayments.map((p) =>
+        p.id === "SNOWBALL" ? { ...p, amount: newSnowballAmount } : p,
+      );
+    } else {
+      finalPayments = [
+        ...updatedPayments,
+        {
+          id: "SNOWBALL",
+          name: "❄️Snowball❄️",
+          amount: newSnowballAmount,
+          dueDate: payDate!,
+          interval: "SPLIT" as Interval,
+          recurring: true,
+          paidDates: [],
+          paidAmounts: {},
+          type: "DEBT",
+        } as Payment,
+      ];
+    }
+
+    if (remainder > 0) {
+      const newBudget = totalSpendingBudget + remainder;
+      setTotalSpendingBudget(newBudget);
+      await editDatabaseWithTransaction({
+        t: {
+          id: createTransactionId(user),
+          type: "SNOWBALL",
+          createdAt: Timestamp.now(),
+          nvelopeOrPaymentId: paidOffPayment.id,
+          description: `Snowball exeeded final payment. Applied $${remainder} to available budget`,
+          createdBy: user.email ?? user.uid,
+        },
+        budgetId: activeBudgetId!,
+        func: () => editTotalSpendingBudget(newBudget, activeBudgetId!),
+      });
+    }
+
+    showToast(
+      remainder > 0
+        ? `${paidOffPayment.name} paid off! $${remainder.toFixed(2)} returned to budget`
+        : `${paidOffPayment.name} paid off!`,
+    );
+
+    return finalPayments;
+  }
+
+  async function handleUpdatePaid(virtualPayment: Payment) {
+    if (!user) return;
+    const originalId = getOriginalIdFromVirtualId(virtualPayment.id);
+
+    // Snowball payment routes to its own handler
+    if (originalId === "SNOWBALL") {
+      await applySnowballToTarget(virtualPayment);
+      return;
+    }
+
+    const originalPayment = payments.find((p) => p.id === originalId);
+    if (!originalPayment) return;
+
+    const updatedPayment = computeUpdatedPayment(
+      originalPayment,
+      virtualPayment,
+    );
+    let updatedPayments: Payment[] = payments.map((p) =>
+      p.id === originalId ? updatedPayment : p,
+    );
+
+    // Is Debt Paid Off?
     const paidOffPayment = updatedPayments.find(
       (p) =>
         p.id === originalId &&
@@ -360,20 +373,22 @@ export default function MainEnvelopesView() {
         p.total != null &&
         p.total <= 0,
     );
-    if (paidOffPayment && paidOffPayment.amount != null) {
-      setPaidOffDebtName(paidOffPayment.name);
-      showToast(`${paidOffPayment.name} paid off!`);
-      const {
-        updatedPayments: paymentsWithBakedSnowball,
-        nextTargetId: nextId,
-      } = applyPayoffRoll(updatedPayments, paidOffPayment, snowball);
-      setSnowballTargetPaymentId(nextId);
-      await editSnowballTargetPaymentId(activeBudgetId!, nextId);
-      setPayments(paymentsWithBakedSnowball);
-      await editPayments(paymentsWithBakedSnowball, activeBudgetId!);
-      setSnowball(0);
-      await editSnowball(activeBudgetId!, 0);
+    if (paidOffPayment) {
+      updatedPayments = await handleDebtPayoff(paidOffPayment, updatedPayments);
     }
+    setPayments(updatedPayments);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "PAID",
+        createdAt: Timestamp.now(),
+        description: `Toggled "${updatedPayment?.name}" Paid/Unpaid `,
+        nvelopeOrPaymentId: updatedPayment.id,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(updatedPayments, activeBudgetId!),
+    });
 
     return updatedPayment;
   }
@@ -387,7 +402,7 @@ export default function MainEnvelopesView() {
   };
 
   async function saveNewEnvelope(e: Envelope) {
-    if (!e.name.trim()) return;
+    if (!e.name.trim() || !user) return;
     setLoadingText("Adding New Envelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes];
@@ -399,7 +414,19 @@ export default function MainEnvelopesView() {
       order: e.order || 0,
     });
     setEnvelopes(newEnvelopes);
-    await editEnvelopes(newEnvelopes, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "NEW",
+        createdAt: Timestamp.now(),
+        nvelopeOrPaymentId: e.id,
+        amount: e.total,
+        description: `Added new envelope ${e.name} with $${e.total}`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+    });
     await updateBudgetStateAndDBB(
       Number(e.total) * -1,
       activeBudgetId!,
@@ -416,6 +443,7 @@ export default function MainEnvelopesView() {
   }
 
   async function deleteEnvelope() {
+    if (!user || !envelopeToEdit) return;
     try {
       setLoadingText("Deleting Envelope...");
       setShowLoading(true);
@@ -423,7 +451,17 @@ export default function MainEnvelopesView() {
         (e) => e.id !== envelopeToEdit?.id,
       );
       setEnvelopes(newEnvelopes);
-      await editEnvelopes(newEnvelopes, activeBudgetId!);
+      await editDatabaseWithTransaction({
+        t: {
+          id: createTransactionId(user),
+          type: "DELETE",
+          description: `Deleted envelope ${envelopeToEdit.name}`,
+          createdAt: Timestamp.now(),
+          createdBy: user.email ?? user.uid,
+        },
+        budgetId: activeBudgetId!,
+        func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+      });
       resetState();
       showToast("Envelope deleted");
     } catch (error) {
@@ -435,6 +473,7 @@ export default function MainEnvelopesView() {
 
   // Edit Envelopes AND budget
   async function editEnvelopeAndBudget(n: Envelope) {
+    if (!user) return;
     try {
       const originalEnvelope = envelopes.find((e) => e.id === n.id);
       if (!originalEnvelope) return;
@@ -457,7 +496,18 @@ export default function MainEnvelopesView() {
       }
       const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
       setEnvelopes(newEnvelopes);
-      await editEnvelopes(newEnvelopes, activeBudgetId!);
+      await editDatabaseWithTransaction({
+        t: {
+          id: createTransactionId(user),
+          type: "EDIT",
+          description: `Manually Edited "${n.name}"`,
+          nvelopeOrPaymentId: n.id,
+          createdAt: Timestamp.now(),
+          createdBy: user.email ?? user.uid,
+        },
+        budgetId: activeBudgetId!,
+        func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+      });
       resetState();
       showToast("Envelope updated");
     } catch (error) {
@@ -468,14 +518,32 @@ export default function MainEnvelopesView() {
   }
 
   // Edit just the envelopes without affecting budget
-  async function editEnvelope(n: Envelope) {
+  async function editEnvelope(
+    n: Envelope,
+    isSpending?: boolean,
+    spendDesc?: string,
+    amount?: number,
+  ) {
+    if (!user) return;
     const originalEnvelope = envelopes.find((e) => e.id === n.id);
     if (!originalEnvelope) return;
     setLoadingText("Editing Envelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
     setEnvelopes(newEnvelopes);
-    await editEnvelopes(newEnvelopes, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: isSpending ? "SPEND" : "EDIT",
+        description: spendDesc || `Manually edited ${n.name}.`,
+        nvelopeOrPaymentId: n.id,
+        ...(amount !== undefined && { amount }),
+        createdAt: Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+    });
     resetState();
   }
 
@@ -501,6 +569,7 @@ export default function MainEnvelopesView() {
     setShowSpendPage(false);
     setShowBudgetWarning(false);
     setShowLoading(false);
+    setLoadingText("");
     setIsAddingCashToEnvelope(false);
   }
 
@@ -517,30 +586,50 @@ export default function MainEnvelopesView() {
     setIsAddingCash(true);
   }
 
-  async function handleResetNvelopes() {
-    if (!activeBudgetId) return;
+  async function handleResetEnvelopesAndPaid() {
+    if (!activeBudgetId || !user) return;
+    const paymentsMarkedPaid = payments.map((p) => {
+      return { ...p, paidDates: [], paidAmounts: {} };
+    });
+    setPayments(paymentsMarkedPaid);
+    setShowClearNvelopes(false);
     await resetAllNvelopes(envelopes, setEnvelopes, activeBudgetId);
-    showToast("Envelopes cleared");
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "RESET",
+        description: "Reset Nvelopes & Marked Payments as UNPAID",
+        createdAt: Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editPayments(paymentsMarkedPaid, activeBudgetId!),
+    });
+    showToast("Envelopes and Payments reset");
   }
 
   async function addCashToDb() {
     if (cashAmount <= 0 || !cashName || !user) return;
     setLoadingText("Adding Cash...");
     setShowLoading(true);
-    const randomId = randomUUID();
-    const date = Timestamp.fromDate(new Date());
-    const newOneTimeCash = {
-      id: randomId,
-      name: cashName,
-      amount: cashAmount,
-      date,
-    };
-    await editOneTimeCashAndBudget(
-      newOneTimeCash,
-      activeBudgetId!,
-      totalSpendingBudget,
-    );
-    setTotalSpendingBudget(totalSpendingBudget + cashAmount);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "CASH",
+        amount: cashAmount,
+        description: `Added Cash: ${cashName}`,
+        createdAt: Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () =>
+        updateBudgetStateAndDBB(
+          cashAmount,
+          activeBudgetId!,
+          totalSpendingBudget,
+          setTotalSpendingBudget,
+        ),
+    });
     resetState();
     showToast("Cash added to budget");
   }
@@ -564,7 +653,19 @@ export default function MainEnvelopesView() {
       totalSpendingBudget,
       setTotalSpendingBudget,
     );
-    await editEnvelopes(newEnvelopes, activeBudgetId!);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "FILL",
+        description: `Added $${cashAmount} to ${n.name}`,
+        nvelopeOrPaymentId: n.id,
+        amount: cashAmount,
+        createdAt: Timestamp.now(),
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId!,
+      func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
+    });
     setEnvelopes(newEnvelopes);
     showToast(`${cashAmount} added to ${n.name}`);
     resetState();
@@ -572,23 +673,29 @@ export default function MainEnvelopesView() {
 
   if (showClearEnvelopes)
     return (
-      <FullScreen
-        theme="DARK"
-        onSave={handleResetNvelopes}
-        onClose={() => setShowClearNvelopes(false)}
-        showButtons
-      >
-        <div className="flex flex-col items-center">
-          <h1 className="text-xl text-my-red-light">⚠️ Are you sure? ⚠️</h1>
-          <p>
-            This will set{" "}
-            <span className="text-my-blue-light">ALL Nvelopes</span>{" "}
-            totals/spent to <span className="text-my-green-base">$0.00</span>,
+      <div className="flex flex-col items-center justify-center bg-my-blue-dark h-screen w-full m-auto p-6">
+        <div className="items-center w-fit mx-auto bg-my-black-dark/60 p-4 rounded-md text-center">
+          <p className="text-my-white-light text-xl m-2">
+            Reset <span className="text-my-blue-light">Nvelope</span> amounts
+            to <span className="text-my-green-base">$0.00</span>
           </p>
-          <p>and set them all to "unpaid" status.</p>
-          <p>Your budget total will be unaffected.</p>
+          <p className="text-my-white-light text-xl m-2">
+            Mark <span className="text-my-red-light">ALL Payments</span>
+            <span className="text-gray-400"> unpaid</span>.
+          </p>
+          <p className="text-my-white-light text-sm mt-2">
+            (Your budget total will be unaffected)
+          </p>
         </div>
-      </FullScreen>
+        <div className="w-full max-w-[16rem] mt-8 flex flex-col gap-4">
+          <Button color="gold" onClick={handleResetEnvelopesAndPaid}>
+            Clear
+          </Button>
+          <Button color="red" onClick={() => setShowClearNvelopes(false)}>
+            Back
+          </Button>
+        </div>
+      </div>
     );
 
   if (showDeletePayment && payDate && paymentToEdit) {
@@ -697,7 +804,6 @@ export default function MainEnvelopesView() {
           handleBack={resetState}
           handleDeleteEnvelope={() => handleSetupDelete()}
         />
-        ;
       </>
     );
   }
@@ -712,7 +818,6 @@ export default function MainEnvelopesView() {
           handleBack={resetState}
           handleDeleteEnvelope={() => deleteEnvelope()}
         />
-        ;
       </>
     );
   }
@@ -727,7 +832,6 @@ export default function MainEnvelopesView() {
           handleSaveEnvelope={saveNewEnvelope}
           handleBack={resetState}
         />
-        ;
       </>
     );
   }
@@ -799,7 +903,7 @@ export default function MainEnvelopesView() {
             nvelopes for spending categories.
           </p>
           <p>
-            <span className="text-my-white-dark">Clear</span> to clear all
+            <span className="text-my-white-dark">Reset</span> to clear all
             envelopes.
           </p>
           Useful when starting a new period.
@@ -813,53 +917,59 @@ export default function MainEnvelopesView() {
           </div>
         </div>
       </PageTour>
-      <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-blue-dark overflow-y-auto pb-[4rem]">
+      <div className="w-full text-center flex flex-col items-center min-h-screen bg-my-white-light overflow-y-auto pb-[8rem]">
         {showLoading && <Loading text={loadingText} />}
 
         <Header
           links={[
             { label: "Settings", href: "/settings" },
             { label: "Debt", href: "/debt" },
-            { label: "Bills", href: "/bills" },
             { label: "Feedback", href: "/feedback" },
           ]}
         />
 
         <main className="flex flex-col items-center pt-[1rem] w-full">
-          <h2 className="text-lg font-semibold text-my-white-dark mb-2">
+          <h2 className="text-lg font-semibold text-my-black-dark mb-2 py-2">
             {activeBudgetName}
           </h2>
           {!payDate && (
-            <p className="text-sm text-my-white-light mb-2">
-              <a href="/settings" className="text-my-green-light underline">
+            <p className="text-sm text-my-black-light mb-2">
+              <a href="/settings" className="text-my-green-dark underline">
                 Set your pay date in Settings
               </a>{" "}
               to see your pay period in the header.
             </p>
           )}
+
+          <div className="w-full max-w-[56rem]">
+            {content === "NVELOPES" ? (
+              <Nvelopes
+                resetState={resetState}
+                handleSetupEdit={handleSetupEdit}
+                editEnvelope={editEnvelopeAndBudget}
+                handleSetShowSpendingPage={handleSetShowSpendingPage}
+                handleDeleteEnvelope={handleSetupDelete}
+                handleAddCashToEnvelope={handleAddCashToEnvelope}
+              />
+            ) : (
+              <PaymentMap
+                paymentsThisPeriod={paymentsThisPeriod}
+                handleUpdatePaid={handleUpdatePaid}
+                handleEditBill={handleEditPayment}
+              />
+            )}
+          </div>
+        </main>
+
+        <div className="fixed bottom-0 left-0 w-full flex flex-col items-center gap-3 pt-3 pb-4 bg-my-white-light border-t-2 border-my-white-dark">
           <ActionButtons
             onPaymentClick={handleAddPayment}
             onCashClick={handleAddCash}
             onEnvelopeClick={handleSetupNewEnvelope}
             onClearClick={() => setShowClearNvelopes(true)}
           />
-
-          <div className="w-full max-w-[40rem] sm:rounded-md border-2 border-my-white-dark mt-[1.5rem] overflow-hidden">
-            <Nvelopes
-              resetState={resetState}
-              handleSetupEdit={handleSetupEdit}
-              editEnvelope={editEnvelopeAndBudget}
-              handleSetShowSpendingPage={handleSetShowSpendingPage}
-              handleDeleteEnvelope={handleSetupDelete}
-              handleAddCashToEnvelope={handleAddCashToEnvelope}
-            />
-            <PaymentMap
-              paymentsThisPeriod={paymentsThisPeriod}
-              handleUpdatePaid={handleUpdatePaid}
-              handleEditBill={handleEditPayment}
-            />
-          </div>
-        </main>
+          <ContentSelector content={content} setContent={setContent} />
+        </div>
       </div>
       {paidOffDebtName && (
         <CongratsPaidOffModal

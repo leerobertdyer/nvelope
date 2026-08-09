@@ -1,30 +1,48 @@
 import { useEffect, useState } from "react";
 import { type Invite } from "../types";
-import { getInviteToken } from "../firebase/invites";
+import { acceptToken, getInviteToken } from "../firebase/invites";
 import { AppStoreBanner } from "../components/IosAppStoreBanner";
+import { useAuth } from "../Context/AuthContext/useAuth";
+import Button from "../components/Buttons/Button";
 
 export default function InviteLandingPage() {
   const path = window.location.pathname;
   const pathParts = path.split("/"); // ["", "invite", "mockToken123"]
   const inviteToken = pathParts[2];
   const inviteLink = `https://invite.nvelopes.app/i/${inviteToken}`;
+  const { user } = useAuth();
 
   const [tokenMeta, setTokenMeta] = useState<Invite | null>(null);
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
+  const [accepted, setAccepted] = useState(false);
 
   useEffect(() => {
     async function getTokenMeta() {
-      console.log("INSIDE: ", inviteToken);
       const meta = await getInviteToken(inviteToken);
-      console.log("AFTER: ", meta);
       setTokenMeta(meta);
     }
     getTokenMeta();
   }, [inviteToken]);
 
+  async function handleAccept() {
+    if (!user) return;
+    setIsAccepting(true);
+    setAcceptError(null);
+    const result = await acceptToken(inviteToken, user);
+    setIsAccepting(false);
+    if (result.success) {
+      setAccepted(true);
+    } else {
+      setAcceptError(result.error ?? "Failed to accept invite");
+    }
+  }
+
   if (!tokenMeta) return null;
 
-  const statusMessage =
-    tokenMeta.status === "pending"
+  const statusMessage = accepted
+    ? `You've joined "${tokenMeta.budgetName}"!`
+    : tokenMeta.status === "pending"
       ? "Pending..."
       : tokenMeta.status === "consumed"
         ? "This token has already been used."
@@ -42,16 +60,32 @@ export default function InviteLandingPage() {
           </p>
           <p className="p-4">{statusMessage}</p>
         </div>
-        <p className="w-[30rem] text-sm text-center flex flex-col items-center">
-          Click the link below once you've downloaded the app to access
-          <span className="text-my-white-dark">
-            "{tokenMeta.budgetName}"
-          </span>{" "}
-        </p>
+        {!accepted && (
+          <p className="w-[30rem] text-sm text-center flex flex-col items-center">
+            Click the link below once you've downloaded the app to access
+            <span className="text-my-white-dark">
+              "{tokenMeta.budgetName}"
+            </span>{" "}
+          </p>
+        )}
       </div>
-      <a href={inviteLink} className="w-fit underline ">
-        {inviteLink}
-      </a>
+      {!accepted && tokenMeta.status === "pending" && user && (
+        <div className="flex flex-col items-center gap-2">
+          <Button color="green" onClick={handleAccept} disabled={isAccepting}>
+            {isAccepting ? "Joining..." : "Accept Invite (Web)"}
+          </Button>
+          {acceptError && (
+            <p className="text-my-red-light text-sm text-center">
+              {acceptError}
+            </p>
+          )}
+        </div>
+      )}
+      {!accepted && (
+        <a href={inviteLink} className="w-fit underline ">
+          {inviteLink}
+        </a>
+      )}
     </div>
   );
 }

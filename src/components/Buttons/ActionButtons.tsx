@@ -1,5 +1,5 @@
-import { GiEnvelope, GiMoneyStack } from "react-icons/gi";
 import type { RefObject } from "react";
+import MyIcon from "../MyIcon";
 
 interface ActionButtonsProps {
   onPaymentClick?: () => void;
@@ -20,7 +20,7 @@ interface ActionButtonsProps {
 }
 
 /**
- * Reusable action buttons bar for Payment, Cash, Nvelope, and Clear actions.
+ * Reusable action buttons bar for Payment, Cash, Nvelope, and Reset actions.
  * Used in MainView.
  */
 export default function ActionButtons({
@@ -39,53 +39,58 @@ export default function ActionButtons({
   disableHover = false,
   className = "",
 }: ActionButtonsProps) {
-  const hoverClass = disableHover ? "" : "hover:transform-[scale(1.05)] cursor-pointer";
-  
-  const getHighlightClass = (isHighlighted?: boolean) => 
+  const hoverClass = disableHover
+    ? ""
+    : "hover:scale-105 cursor-pointer transition-transform";
+
+  const getHighlightClass = (isHighlighted?: boolean) =>
     isHighlighted ? "relative z-[9950] ring-4" : "";
 
   return (
     <div className={`flex w-full justify-center gap-4 items-center ${className}`}>
-      {/* Payment Button */}
       <div
         ref={paymentRef}
         onClick={onPaymentClick}
-        className={`${hoverClass} flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark text-my-red-dark shadow-my-red-light ${getHighlightClass(highlightPayment)} ${highlightPayment ? "ring-my-red-light" : ""}`}
+        className={`${hoverClass} flex flex-col items-center pt-2 pb-1 bg-[#9c6d00] border-2 border-my-black-dark rounded-lg h-[6rem] w-[6rem] ${getHighlightClass(highlightPayment)} ${highlightPayment ? "ring-my-red-light" : ""}`}
       >
-        <GiMoneyStack className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-        <p className="text-xs">Payment</p>
+        <div className="flex-1 flex items-center justify-center">
+          <MyIcon type="PAYMENT" size={42} />
+        </div>
+        <p className="text-sm w-full text-center text-my-white-light">Payment</p>
       </div>
 
-      {/* Cash Button */}
       <div
         ref={cashRef}
         onClick={onCashClick}
-        className={`${hoverClass} flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark text-my-green-dark shadow-my-green-light ${getHighlightClass(highlightCash)} ${highlightCash ? "ring-my-green-light" : ""}`}
+        className={`${hoverClass} flex flex-col items-center pt-2 pb-1 bg-my-green-dark border-2 border-my-black-dark rounded-lg h-[6rem] w-[6rem] ${getHighlightClass(highlightCash)} ${highlightCash ? "ring-my-green-light" : ""}`}
       >
-        <GiMoneyStack className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-        <p className="text-xs">Cash</p>
+        <div className="flex-1 flex items-center justify-center">
+          <MyIcon type="CASH" size={42} />
+        </div>
+        <p className="text-sm w-full text-center text-my-white-light">Cash</p>
       </div>
 
-      {/* Nvelope Button */}
       <div
         ref={envelopeRef}
         onClick={onEnvelopeClick}
-        className={`${hoverClass} flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-green-dark text-my-green-dark shadow-my-green-light ${getHighlightClass(highlightEnvelope)} ${highlightEnvelope ? "ring-my-green-light" : ""}`}
+        className={`${hoverClass} flex flex-col items-center pt-2 pb-1 bg-my-blue-dark border-2 border-my-black-dark rounded-lg h-[6rem] w-[6rem] ${getHighlightClass(highlightEnvelope)} ${highlightEnvelope ? "ring-my-blue-light" : ""}`}
       >
-        <GiEnvelope className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-        <p className="text-xs">Nvelope</p>
+        <div className="flex-1 flex items-center justify-center">
+          <MyIcon type="NVELOPE" size={42} />
+        </div>
+        <p className="text-sm w-full text-center text-my-white-light">Nvelope</p>
       </div>
 
-      {/* Clear Button */}
       <div
         ref={clearRef}
         onClick={onClearClick}
-        className={`${hoverClass} flex flex-col justify-between h-[3.5rem] w-[3.5rem] items-center p-2 bg-my-white-light rounded-md border-2 border-my-red-dark text-my-red-dark shadow-my-red-light ${getHighlightClass(highlightClear)} ${highlightClear ? "ring-my-red-light" : ""}`}
+        className={`${hoverClass} flex flex-col items-center pt-2 pb-1 bg-my-red-dark border-2 border-my-black-dark rounded-lg h-[6rem] w-[6rem] ${getHighlightClass(highlightClear)} ${highlightClear ? "ring-my-red-light" : ""}`}
       >
-        <GiEnvelope className="border-2 rounded-md w-[2rem] h-[2rem] p-[2px] bg-my-white-base" />
-        <p className="text-xs">Clear</p>
+        <div className="flex-1 flex items-center justify-center">
+          <MyIcon type="RESET" size={42} />
+        </div>
+        <p className="text-sm w-full text-center text-my-white-light">Reset</p>
       </div>
     </div>
   );
 }
-

@@ -20,7 +20,6 @@ export interface PaymentOverrides {
   amount?: number;
   dueDate?: Timestamp | Date;
   interval?: Payment["interval"];
-  paid?: boolean;
   type?: Payment["type"];
   total?: number;
   interestRate?: number;
@@ -43,7 +42,6 @@ export function payment(overrides: PaymentOverrides = {}): Payment {
     amount: overrides.amount ?? 100,
     dueDate,
     interval: overrides.interval ?? "MONTHLY",
-    paid: overrides.paid ?? false,
     type: overrides.type,
     total: overrides.total,
     interestRate: overrides.interestRate,
