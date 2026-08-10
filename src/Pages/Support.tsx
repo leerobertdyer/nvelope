@@ -51,9 +51,9 @@ export default function Support() {
         ]}
       />
       <div className="flex-1 flex flex-col items-center justify-start py-8 px-4 pt-16 ">
-        <div className="flex justify-around items-center gap-4 mb-10">
+        <div className="flex flex-col justify-around items-center gap-4 mb-10">
           <div
-            className="w-[30vw] h-[30vw] max-h-[30rem] max-w-[30rem] bg-my-black-base/40 rounded-md p-4"
+            className="w-[20vw] h-[20vw] max-h-[30rem] max-w-[30rem] bg-my-black-base/40 rounded-md p-4"
             style={{
               backgroundImage: `url("/images/icon.png")`,
               backgroundSize: "cover",
