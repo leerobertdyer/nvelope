@@ -94,6 +94,13 @@ export default function Support() {
 
         <footer className="mt-4 text-center text-sm text-my-white-light">
           <a
+            href="/privacy"
+            className="text-my-green-base hover:underline"
+          >
+            Privacy
+          </a>
+          <span className="mx-2">·</span>
+          <a
             href="https://www.leedyer.com"
             target="_blank"
             rel="noopener noreferrer"
