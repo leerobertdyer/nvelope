@@ -74,6 +74,9 @@ export default function Debt() {
   const [showEditSnowball, setShowEditSnowball] = useState(false);
   const [showSnowballTarget, setShowSnowballTarget] = useState(false);
   const [debtMenuOpen, setDebtMenuOpen] = useState<Payment | null>(null);
+  const [payoffWarningDebtId, setPayoffWarningDebtId] = useState<
+    string | null
+  >(null);
   const [additionalPaymentDebt, setAdditionalPaymentDebt] =
     useState<Payment | null>(null);
   const [additionalPaymentAmount, setAdditionalPaymentAmount] = useState(0);
@@ -797,11 +800,21 @@ export default function Debt() {
                       >
                         <div className="w-full flex justify-center gap-6">
                           <p
-                            className={`text-center w-[40%] text-sm ${d.id === effectiveSnowballTargetId ? "text-my-blue-light" : "text-my-white-light"}`}
+                            className={`text-center w-[40%] text-sm flex items-center justify-center gap-1 ${d.id === effectiveSnowballTargetId ? "text-my-blue-light" : "text-my-white-light"}`}
                           >
                             {d.id === effectiveSnowballTargetId
                               ? `❄️ ${d.name} ❄️`
                               : d.name}
+                            {cannotPayOff && (
+                              <IoWarning
+                                size={14}
+                                className="text-my-red-light shrink-0 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPayoffWarningDebtId(d.id);
+                                }}
+                              />
+                            )}
                           </p>
                           <p className="text-center text-my-white-light w-[20%]">
                             {d.interestRate != null
@@ -813,17 +826,41 @@ export default function Debt() {
                           </p>
                         </div>
                       </div>
-                      {cannotPayOff && (
-                        <p className="text-my-red-light bg-my-black-dark/80 text-center p-2 text-xs flex items-center justify-center gap-1">
-                          <IoWarning size={16} />
-                          Payoff cannot be calculated. Your minimum payment
-                          may be too low to cover interest – try increasing
-                          the payment amount.
-                        </p>
-                      )}
                     </div>
                   );
                 })}
+              </div>
+            );
+          })()}
+
+        {payoffWarningDebtId &&
+          (() => {
+            const warningDebt = debts.find(
+              (d) => d.id === payoffWarningDebtId,
+            );
+            if (!warningDebt) return null;
+            return (
+              <div
+                className="fixed inset-0 z-[10200] bg-my-black-dark/80 flex items-center justify-center p-4"
+                onClick={() => setPayoffWarningDebtId(null)}
+              >
+                <div
+                  className="bg-my-black-base border-2 border-my-red-light rounded-md p-4 max-w-[24rem] flex flex-col items-center gap-2 text-center text-my-white-light"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <IoWarning size={28} className="text-my-red-light" />
+                  <p className="text-sm">
+                    Payoff cannot be calculated for "{warningDebt.name}". Your
+                    minimum payment may be too low to cover interest – try
+                    increasing the payment amount.
+                  </p>
+                  <button
+                    onClick={() => setPayoffWarningDebtId(null)}
+                    className="text-my-blue-light underline text-sm cursor-pointer mt-2"
+                  >
+                    Got it
+                  </button>
+                </div>
               </div>
             );
           })()}
