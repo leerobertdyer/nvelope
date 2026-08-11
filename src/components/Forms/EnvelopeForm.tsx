@@ -37,13 +37,13 @@ export default function EnvelopeForm(props: IProps) {
   return (
     <FullScreen>
       <h2 className="text-2xl text-my-white-base p-2 text-3xl text-center w-full">
-        {isEditing ? "Edit Envelope" : "Add New Nvelope"}
+        {isEditing ? "Edit Nvelope" : "Add New Nvelope"}
       </h2>
       <div className="md:rounded-md bg-my-white-base text-my-black-dark flex flex-col items-center justify-start gap-2 max-w-[40rem] p-4 gap-4 m-auto">
         <TextInput 
           id="newEnvelopeName"
-          label="What is the name of the envelope?"
-          placeholder="Envelope name"
+          label="What is the name of the nvelope?"
+          placeholder="Nvelope name"
           maxLength={16}
           value={newEnvelopeName ?? ""}
           onChange={(e) => setNewEnvelopeName(e.target.value.toLowerCase())}
@@ -53,7 +53,7 @@ export default function EnvelopeForm(props: IProps) {
             <MoneyInput
               id="newTotal"
               label="How much do you want to add?"
-              placeholder="Envelope Amount"
+              placeholder="Nvelope Amount"
               value={newEnvelopeTotal}
               onChange={setNewEnvelopeTotal}
             />

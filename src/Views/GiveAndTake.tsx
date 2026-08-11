@@ -32,19 +32,19 @@ export default function GiveAndTake({ envelope, handleBack, takeAndGive, takeFro
                 <label htmlFor="giveOrTake" className="text-my-white-light">Where do you want to put the $$$?</label>
                 <div className="flex justify-center w-full gap-2 items-center">
                     <input type="radio" id="give" checked={isGiving} name="giveOrTake" value="yes" onChange={() => setIsGiving(true)} />
-                    <label htmlFor="give">Another Envelope</label>
+                    <label htmlFor="give">Another Nvelope</label>
                     <input type="radio"  id="take" checked={!isGiving} name="giveOrTake" value="no" onChange={() => setIsGiving(false)} />
                     <label htmlFor="take">Available Budget</label>
                 </div>
                 {isGiving && (
                     <>
-                        <label htmlFor="giveTo">Enter envelope to give to</label>
+                        <label htmlFor="giveTo">Enter nvelope to give to</label>
                         <select 
                             className="bg-my-white-light border-2 border-my-white-dark rounded-md p-2 w-[80%] max-w-[20rem] text-my-black-dark"
                             onChange={(e) => setEnvelopeToGiveTo(envelopes.find(envelope => envelope.id === e.target.value) || null)}
                             value={envelopeToGiveTo?.id || ''}
                         >
-                            <option disabled value="">Select an envelope</option>
+                            <option disabled value="">Select a nvelope</option>
                             {envelopes.map(e => (
                                e.id !== envelope.id && <option key={e.id} value={e.id}>{e.name}</option>
                             ))}

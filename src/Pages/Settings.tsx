@@ -549,7 +549,7 @@ console.log("HERE")
     return (
       <div className="flex flex-col justify-between h-[6rem] w-[80%] max-w-[20rem] items-center p-2 bg-my-red-dark rounded-md border-2 border-my-white-dark text-my-white-light shadow-lg shadow-my-black-dark my-4">
         <p className="text-sm font-bold">⚠️ Revert To A Backup</p>
-        <p className="text-xs">Restores payments and envelopes</p>
+        <p className="text-xs">Restores payments and nvelopes</p>
         <div>
           {isLoadingSafeBackups ? (
             <p className="text-xs py-2">Loading backups...</p>
@@ -599,7 +599,7 @@ console.log("HERE")
               .toFixed(2)}
           </p>
           <p>
-            You will have {selectedSafeBackup.nvelopes?.length ?? 0} envelopes
+            You will have {selectedSafeBackup.nvelopes?.length ?? 0} nvelopes
             totaling $
             {(selectedSafeBackup.nvelopes ?? [])
               .reduce((acc, p) => p.total + acc, 0)
@@ -622,7 +622,7 @@ console.log("HERE")
           Saved: {new Date(localStorageBackup.timestamp).toLocaleString()}
         </p>
         <p className="text-xs">
-          {localStorageBackup.data.envelopes?.length ?? 0} envelopes,{" "}
+          {localStorageBackup.data.envelopes?.length ?? 0} nvelopes,{" "}
           {localStorageBackup.data.payments?.length ?? 0} payments
         </p>
         <button
@@ -972,7 +972,7 @@ console.log("HERE")
                   </p>
                   <p>
                     You will have{" "}
-                    {localStorageBackup.data.envelopes?.length ?? 0} envelopes
+                    {localStorageBackup.data.envelopes?.length ?? 0} nvelopes
                   </p>
                 </div>
               </FullScreen>
@@ -995,7 +995,7 @@ console.log("HERE")
                     Delete this budget?
                   </h1>
                   <p className="text-my-white-light">
-                    All data (envelopes, payments) will be permanently deleted.
+                    All data (nvelopes, payments) will be permanently deleted.
                     All members will lose access. This cannot be undone.
                   </p>
                   {isDeletingBudget && (
@@ -1106,7 +1106,7 @@ console.log("HERE")
                 </h1>
                 <p className="text-my-white-light mb-2">
                   This will permanently delete your account and all your data
-                  (envelopes, payments, backups).
+                  (nvelopes, payments, backups).
                 </p>
                 <p className="text-my-white-dark text-sm">
                   This cannot be undone.

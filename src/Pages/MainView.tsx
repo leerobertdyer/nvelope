@@ -463,7 +463,7 @@ export default function MainEnvelopesView() {
 
   async function saveNewEnvelope(e: Envelope) {
     if (!e.name.trim() || !user) return;
-    setLoadingText("Adding New Envelope...");
+    setLoadingText("Adding New Nvelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes];
     newEnvelopes.push({
@@ -481,7 +481,7 @@ export default function MainEnvelopesView() {
         createdAt: Timestamp.now(),
         nvelopeOrPaymentId: e.id,
         amount: e.total,
-        description: `Added new envelope ${e.name} with $${e.total}`,
+        description: `Added new nvelope ${e.name} with $${e.total}`,
         createdBy: user.email ?? user.uid,
       },
       budgetId: activeBudgetId!,
@@ -494,7 +494,7 @@ export default function MainEnvelopesView() {
       setTotalSpendingBudget,
     );
     resetState();
-    showToast("Envelope created");
+    showToast("Nvelope created");
   }
 
   async function handleSetShowSpendingPage(e: Envelope) {
@@ -505,7 +505,7 @@ export default function MainEnvelopesView() {
   async function deleteEnvelope() {
     if (!user || !envelopeToEdit) return;
     try {
-      setLoadingText("Deleting Envelope...");
+      setLoadingText("Deleting Nvelope...");
       setShowLoading(true);
       const newEnvelopes = [...envelopes].filter(
         (e) => e.id !== envelopeToEdit?.id,
@@ -515,7 +515,7 @@ export default function MainEnvelopesView() {
         t: {
           id: createTransactionId(user),
           type: "DELETE",
-          description: `Deleted envelope ${envelopeToEdit.name}`,
+          description: `Deleted nvelope ${envelopeToEdit.name}`,
           createdAt: Timestamp.now(),
           createdBy: user.email ?? user.uid,
         },
@@ -523,11 +523,11 @@ export default function MainEnvelopesView() {
         func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
       });
       resetState();
-      showToast("Envelope deleted");
+      showToast("Nvelope deleted");
     } catch (error) {
       console.error("Error deleting envelope:", error);
       setShowLoading(false);
-      showToast("Failed to delete envelope", "error");
+      showToast("Failed to delete nvelope", "error");
     }
   }
 
@@ -537,7 +537,7 @@ export default function MainEnvelopesView() {
     try {
       const originalEnvelope = envelopes.find((e) => e.id === n.id);
       if (!originalEnvelope) return;
-      setLoadingText("Editing Envelope...");
+      setLoadingText("Editing Nvelope...");
       setShowLoading(true);
       if (originalEnvelope.total > n.total) {
         await updateBudgetStateAndDBB(
@@ -569,11 +569,11 @@ export default function MainEnvelopesView() {
         func: () => editEnvelopes(newEnvelopes, activeBudgetId!),
       });
       resetState();
-      showToast("Envelope updated");
+      showToast("Nvelope updated");
     } catch (error) {
       console.error("Error editing envelope:", error);
       setShowLoading(false);
-      showToast("Failed to update envelope", "error");
+      showToast("Failed to update nvelope", "error");
     }
   }
 
@@ -587,7 +587,7 @@ export default function MainEnvelopesView() {
     if (!user) return;
     const originalEnvelope = envelopes.find((e) => e.id === n.id);
     if (!originalEnvelope) return;
-    setLoadingText("Editing Envelope...");
+    setLoadingText(isSpending ? "Stuffing Nvelope..." : "Editing Nvelope...");
     setShowLoading(true);
     const newEnvelopes = [...envelopes].map((e) => (e.id === n.id ? n : e));
     setEnvelopes(newEnvelopes);
@@ -665,7 +665,7 @@ export default function MainEnvelopesView() {
       budgetId: activeBudgetId!,
       func: () => editPayments(paymentsMarkedPaid, activeBudgetId!),
     });
-    showToast("Envelopes and Payments reset");
+    showToast("Nvelopes and Payments reset");
   }
 
   async function addCashToDb() {
@@ -908,7 +908,7 @@ export default function MainEnvelopesView() {
     return (
       <div className="flex flex-col items-center gap-2">
         <p>You have nothing left in your budget!</p>
-        <p>Try moving some money from another envelope</p>
+        <p>Try moving some money from another nvelope</p>
         <Button onClick={() => setShowBudgetWarning(false)} color="green">
           Go Back
         </Button>
