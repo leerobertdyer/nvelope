@@ -1,6 +1,7 @@
 import { startOfDay } from "date-fns";
 import type { Payment } from "../types";
 import { Timestamp } from "firebase/firestore";
+import { SNOWBALL_PAYMENT_ID, SNOWBALL_PAYMENT_NAME } from "../constants";
 
 export function togglePaidDates(payment: Payment, occurrenceDate: Date): Payment {
   const paidDates = payment.paidDates || [];
@@ -47,8 +48,15 @@ export function applyAmountToTotal(
   };
 }
 
+export function isSnowballPayment(p: Payment): boolean {
+  return (
+    p.id === SNOWBALL_PAYMENT_ID ||
+    p.name.toUpperCase() === SNOWBALL_PAYMENT_NAME.toUpperCase()
+  );
+}
+
 export function getSnowballAmount(payments: Payment[]): number {
-  return payments.find((p) => p.name.toUpperCase() === "SNOWBALL")?.amount ?? 0;
+  return payments.find(isSnowballPayment)?.amount ?? 0;
 }
 
 export function getSnowballName(

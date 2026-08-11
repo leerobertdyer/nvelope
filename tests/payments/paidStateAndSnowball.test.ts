@@ -94,18 +94,22 @@ describe("deriveIsPaid + computeUpdatedPayment (paidDates model)", () => {
 });
 
 describe("snowball as a payment row", () => {
-  // NOTE: getSnowballAmount matches on `p.name.toUpperCase() === "SNOWBALL"`,
-  // ported verbatim from mobile. Mobile's actual row is created with
-  // name: "❄️Snowball❄️" (see nvelopes-mobile MainView.tsx), which never
-  // matches that check on either platform - a pre-existing mobile bug, not
-  // something introduced by this port. Test the matcher as it exists today.
-  it("reads the snowball amount from a payment row named SNOWBALL", () => {
+  it("reads the snowball amount by id, regardless of the row's display name", () => {
     const payments = [
       payment({ id: "debt-a", name: "Card A", type: "DEBT", amount: 100 }),
-      payment({ id: "SNOWBALL", name: "SNOWBALL", type: "DEBT", amount: 75 }),
+      payment({ id: "SNOWBALL", name: "❄️Snowball❄️", type: "DEBT", amount: 75 }),
     ];
 
     expect(getSnowballAmount(payments)).toBe(75);
+  });
+
+  it("falls back to matching by name for legacy rows without the SNOWBALL id", () => {
+    const payments = [
+      payment({ id: "debt-a", name: "Card A", type: "DEBT", amount: 100 }),
+      payment({ id: "legacy-row-id", name: "❄️Snowball❄️", type: "DEBT", amount: 42 }),
+    ];
+
+    expect(getSnowballAmount(payments)).toBe(42);
   });
 
   it("returns 0 when there is no snowball row yet", () => {

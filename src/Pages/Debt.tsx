@@ -1,18 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDatabase } from "../Context/DatabaseContext/useDatabase";
 import {
-  applyPayoffRoll,
   calculatePayoffDate,
   calculateSnowballPayoffDate,
   createTransactionId,
+  getRemainingDebtsForSnowball,
   paymentsTotal,
   removeVirtualIdPortion,
+  rollSnowballOnPayoff,
+  setSnowballAmount,
 } from "../util";
-import { getSnowballAmount, getSnowballName } from "../util/paymentUtils";
+import {
+  getSnowballAmount,
+  getSnowballName,
+  isSnowballPayment,
+} from "../util/paymentUtils";
 import Loading from "../components/Loading";
 import type { Payment } from "../types";
 import Header from "../components/Nav/Header";
 import {
+  addTransaction,
   editDatabaseWithTransaction,
   editIsNewUser,
   editPayments,
@@ -65,10 +72,18 @@ export default function Debt() {
   const [additionalPaymentDebt, setAdditionalPaymentDebt] =
     useState<Payment | null>(null);
   const [additionalPaymentAmount, setAdditionalPaymentAmount] = useState(0);
-  const [paidOffDebtName, setPaidOffDebtName] = useState<string | null>(null);
+  const [pendingPayoff, setPendingPayoff] = useState<{
+    paidOffPayment: Payment;
+    paymentsAtPayoff: Payment[];
+  } | null>(null);
   const [newSnowballAmount, setNewSnowballAmount] = useState(
     getSnowballAmount(payments),
   );
+
+  // Keep the edit form's default in sync once payments load/change (e.g. after a roll).
+  useEffect(() => {
+    setNewSnowballAmount(getSnowballAmount(payments));
+  }, [payments]);
 
   function debtHasAllValues(d: Payment) {
     return (
@@ -135,6 +150,7 @@ export default function Debt() {
 
     for (const p of payments) {
       if (p.type === "DEBT") {
+        if (isSnowballPayment(p)) continue;
         if (p.total != null && p.total <= 0 && p.originalTotal) {
           nextPaidOff.push(p);
           continue;
@@ -202,10 +218,8 @@ export default function Debt() {
   }
 
   async function handleUpdateSnowball(n: number) {
-    if (!user) return;
-    const newPayments = payments.map((p) =>
-      p.id === "SNOWBALL" ? { ...p, amount: p.amount + n } : p,
-    );
+    if (!user || !activeBudgetId) return;
+    const newPayments = setSnowballAmount(payments, n, payDate);
     setPayments(newPayments);
     setNewSnowballAmount(n);
     await editDatabaseWithTransaction({
@@ -214,11 +228,11 @@ export default function Debt() {
         type: "SNOWBALL",
         createdAt: Timestamp.now(),
         amount: n,
-        description: `Manually edited snowball to $${n}`,
+        description: `Manually set snowball to $${n}`,
         createdBy: user.email ?? user.uid,
       },
-      budgetId: activeBudgetId!,
-      func: () => editPayments(newPayments, activeBudgetId!),
+      budgetId: activeBudgetId,
+      func: () => editPayments(newPayments, activeBudgetId),
     });
     setShowEditSnowball(false);
     showToast("Snowball updated");
@@ -254,31 +268,58 @@ export default function Debt() {
     setAdditionalPaymentAmount(0);
     if (newTotal <= 0 && debt.amount != null) {
       const paidOffPayment = updatedPayments.find((p) => p.id === debt.id)!;
-      const { updatedPayments: withBakedSnowball, nextTargetId: nextId } =
-        applyPayoffRoll(
-          updatedPayments,
-          paidOffPayment,
-          getSnowballAmount(payments),
-        );
-      setSnowballTargetPaymentId(nextId);
-      const nextSnowball = payments.find((p) => p.id === nextId);
-      await editDatabaseWithTransaction({
-        t: {
+      await addTransaction(
+        {
           id: createTransactionId(user),
-          type: "SNOWBALL",
+          type: "PAID_OFF",
           createdAt: Timestamp.now(),
           nvelopeOrPaymentId: debt.id,
-          description: `Extra payment of $${additionalPaymentAmount} Paid off ${debt?.name}! Changing snowball to ${nextSnowball?.name}`,
+          description: `Extra payment of $${amount} paid off "${debt.name}"`,
           createdBy: user.email ?? user.uid,
         },
-        budgetId: activeBudgetId,
-        func: () => editSnowballTargetPaymentId(activeBudgetId, nextId),
-      });
-      setPayments(withBakedSnowball);
-      await editPayments(withBakedSnowball, activeBudgetId);
-      setPaidOffDebtName(debt.name);
+        activeBudgetId,
+      );
+      setPendingPayoff({ paidOffPayment, paymentsAtPayoff: updatedPayments });
     }
     showToast("Payment applied");
+  }
+
+  const payoffCandidates = pendingPayoff
+    ? getRemainingDebtsForSnowball(
+        pendingPayoff.paymentsAtPayoff,
+        pendingPayoff.paidOffPayment.id,
+      )
+    : [];
+
+  async function handleRollSnowball(targetId: string) {
+    if (!pendingPayoff || !user || !activeBudgetId) return;
+    const { paidOffPayment, paymentsAtPayoff } = pendingPayoff;
+    const withSnowball = rollSnowballOnPayoff(
+      paymentsAtPayoff,
+      paidOffPayment,
+      payDate,
+    );
+    const nextTarget = withSnowball.find((p) => p.id === targetId);
+    setSnowballTargetPaymentId(targetId);
+    await editDatabaseWithTransaction({
+      t: {
+        id: createTransactionId(user),
+        type: "SNOWBALL",
+        createdAt: Timestamp.now(),
+        nvelopeOrPaymentId: paidOffPayment.id,
+        description: `Rolled "${paidOffPayment.name}"'s payment into the snowball, targeting "${nextTarget?.name}"`,
+        createdBy: user.email ?? user.uid,
+      },
+      budgetId: activeBudgetId,
+      func: () => editSnowballTargetPaymentId(activeBudgetId, targetId),
+    });
+    setPayments(withSnowball);
+    await editPayments(withSnowball, activeBudgetId);
+    setPendingPayoff(null);
+  }
+
+  function handleDeclinePayoffRoll() {
+    setPendingPayoff(null);
   }
 
   async function deleteBill() {
@@ -733,10 +774,14 @@ export default function Debt() {
           </div>
         )}
       </div>
-      {paidOffDebtName && (
+      {pendingPayoff && (
         <CongratsPaidOffModal
-          debtName={paidOffDebtName}
-          onClose={() => setPaidOffDebtName(null)}
+          debtName={pendingPayoff.paidOffPayment.name}
+          freedUpAmount={pendingPayoff.paidOffPayment.amount ?? 0}
+          candidates={payoffCandidates}
+          defaultTargetId={payoffCandidates[0]?.id ?? null}
+          onRoll={handleRollSnowball}
+          onDecline={handleDeclinePayoffRoll}
         />
       )}
     </>
