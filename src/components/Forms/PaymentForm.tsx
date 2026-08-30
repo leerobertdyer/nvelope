@@ -122,12 +122,6 @@ export default function PaymentForm({
     }
   }
 
-  function resetForm() {
-    setNewPayment(generateFreshPayment());
-    setSelectedPaymentType(null);
-    setSplitBillAcrossPayPeriods(false);
-  }
-
   function handleSetNewInterval(i: Interval) {
     setNewPayment({
       ...newPayment,
@@ -164,7 +158,7 @@ export default function PaymentForm({
     if (paymentToEdit.isInInterval && !deriveIsPaid(paymentToEdit)) {
       await handleUpdateBudget(diffAmount);
     }
-    resetForm();
+    handleBack();
     showToast("Payment updated");
   }
 
@@ -192,18 +186,12 @@ export default function PaymentForm({
       await handleUpdateBudget(newPayment.amount * -1);
     }
     showToast("Payment added");
-    resetForm();
+    handleBack();
   }
 
   async function handleSavePayment() {
     if (paymentToEdit) await editPayment();
     else await addPayment();
-    resetForm();
-    handleBack();
-  }
-
-  function handleClickBack() {
-    resetForm();
     handleBack();
   }
 
@@ -240,7 +228,7 @@ export default function PaymentForm({
           <div className="w-full flex-1 min-h-0 flex flex-col justify-center px-2">
             <PaymentTypeSelector
               onSelect={handleSelectPaymentType}
-              onBack={handleClickBack}
+              onBack={handleBack}
             />
           </div>
         ) : (
@@ -476,14 +464,14 @@ export default function PaymentForm({
               <Button color="gold" onClick={handleSavePayment}>
                 Save
               </Button>
-              <Button color="red" onClick={() => handleClickBack()}>
+              <Button color="red" onClick={() => handleBack()}>
                 Cancel
               </Button>
             </div>
           </div>
         ) : selectedPaymentType ? (
           <div className="mt-4 w-full flex justify-center items-center">
-            <Button color="red" onClick={() => handleClickBack()}>
+            <Button color="red" onClick={() => handleBack()}>
               Cancel
             </Button>
           </div>
